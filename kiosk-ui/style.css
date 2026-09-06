@@ -1,0 +1,636 @@
+/* ═══════════════════════════════════════════════════════
+   TRENDUM — CYBERPUNK KIOSK STYLE
+   Точная репликация референса: горизонтальные слайды,
+   неоновые заголовки, dark cinematic атмосфера
+═══════════════════════════════════════════════════════ */
+
+/* ─── RESET ─── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: #080808;
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  overflow-x: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+a { text-decoration: none; color: inherit; cursor: pointer; }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: #080808; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+/* ══════════════════════════════════════════════════════
+   PAGE WRAP
+══════════════════════════════════════════════════════ */
+.page-wrap {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ══════════════════════════════════════════════════════
+   SLIDE — базовый блок
+══════════════════════════════════════════════════════ */
+.slide {
+  position: relative;
+  width: 100%;
+  height: 400px;               /* Высота слайда как в референсе */
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+/* Фоновое изображение */
+.slide-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center right;
+  background-repeat: no-repeat;
+  transition: transform 1.2s cubic-bezier(0.16,1,0.3,1),
+              filter 0.6s ease;
+  filter: brightness(0.5) saturate(1.3);
+  transform: scale(1.02);
+  will-change: transform;
+}
+.slide:hover .slide-bg {
+  transform: scale(1.07);
+  filter: brightness(0.65) saturate(1.5);
+}
+
+/* Виньетка — тёмные края */
+.slide-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to right,
+      rgba(8,8,8,0.97) 0%,
+      rgba(8,8,8,0.75) 28%,
+      rgba(8,8,8,0.2)  55%,
+      rgba(8,8,8,0.05) 75%,
+      transparent      100%
+    ),
+    linear-gradient(to bottom,
+      rgba(8,8,8,0.6) 0%,
+      transparent 25%,
+      transparent 70%,
+      rgba(8,8,8,0.8) 100%
+    );
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Цветной тонкий тинт оверлей */
+.slide-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Цвета оверлеев */
+.cowboy-overlay { background: linear-gradient(135deg, rgba(180,230,0,0.04) 0%, transparent 60%); }
+.honor-overlay  { background: linear-gradient(135deg, rgba(180,0,0,0.06)   0%, transparent 60%); }
+.plan-overlay   { background: linear-gradient(135deg, rgba(230,110,0,0.05) 0%, transparent 60%); }
+.robot-overlay  { background: linear-gradient(135deg, rgba(200,0,180,0.07) 0%, transparent 60%); }
+.ruiner-overlay { background: linear-gradient(135deg, rgba(0,200,180,0.05) 0%, transparent 60%); }
+
+/* ── Диагональная жёлтая полоса (Cowboy) ── */
+.slash-line {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+}
+.cowboy-slash {
+  width: 600px;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #C9FF00 30%, #C9FF00 70%, transparent);
+  top: 42%;
+  left: 18%;
+  transform: rotate(-32deg) translateY(-50%);
+  box-shadow: 0 0 18px #C9FF0088, 0 0 40px #C9FF0044;
+  opacity: 0.9;
+}
+
+/* ── CRT scan-line effect ── */
+.slide::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px, transparent 3px,
+    rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px
+  );
+  z-index: 20;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════
+   SLIDE FRAME — контентный слой
+══════════════════════════════════════════════════════ */
+.slide-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+/* ── HEADER ── */
+.slide-header {
+  display: flex;
+  align-items: center;
+  padding: 18px 32px 14px;
+  background: linear-gradient(to bottom, rgba(8,8,8,0.7) 0%, transparent 100%);
+  gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Бренд-логотип */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.brand-icon {
+  color: #A855F7;
+  font-size: 14px;
+  filter: drop-shadow(0 0 6px #A855F788);
+}
+.brand-text {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #B060FF, #FF2D8A);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-center { flex: 1; }
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-right: 28px;
+}
+.hn {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.35);
+  transition: color 0.25s;
+  cursor: pointer;
+}
+.hn:hover { color: rgba(255,255,255,0.8); }
+
+.hamburger {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px;
+}
+.hamburger span {
+  display: block;
+  width: 18px;
+  height: 1.5px;
+  background: rgba(255,255,255,0.5);
+  transition: background 0.25s;
+}
+.hamburger:hover span { background: #fff; }
+
+/* ── BODY ── */
+.slide-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 12px 32px 8px;
+  gap: 0;
+  position: relative;
+}
+
+/* Левая панель */
+.left-panel {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lp-badge {
+  display: inline-block;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.4);
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 3px 8px;
+  border-radius: 2px;
+  width: fit-content;
+}
+
+.lp-meta {
+  display: flex;
+  gap: 16px;
+}
+.lp-meta-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.lp-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.25);
+  text-transform: uppercase;
+}
+.lp-val {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.4);
+}
+
+/* HUD Иконки (Robot slide) */
+.hud-icons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.hud-icon-btn {
+  width: 42px;
+  height: 42px;
+  color: rgba(255,255,255,0.3);
+  cursor: pointer;
+  transition: color 0.3s, filter 0.3s;
+}
+.hud-icon-btn:hover {
+  color: rgba(255,255,255,0.7);
+}
+.hud-icon-btn.active {
+  color: #FF00CC;
+  filter: drop-shadow(0 0 8px #FF00CC88);
+}
+.hud-icon-btn svg { width: 100%; height: 100%; }
+
+.studio-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.3);
+  margin-bottom: 4px;
+}
+
+.slide-desc {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.4);
+  max-width: 200px;
+  margin-bottom: 10px;
+}
+.slide-desc-sm {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: rgba(255,255,255,0.35);
+  max-width: 190px;
+  margin-bottom: 10px;
+}
+
+/* CTA кнопки */
+.cta-btn {
+  display: inline-block;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 7px 18px;
+  border: 1px solid;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s;
+  border-radius: 2px;
+  width: fit-content;
+}
+.plan-btn {
+  border-color: rgba(255,136,0,0.6);
+  color: #FF8800;
+}
+.plan-btn:hover {
+  background: rgba(255,136,0,0.15);
+  border-color: #FF8800;
+}
+.robot-btn {
+  border-color: rgba(180,0,0,0.7);
+  color: #ff4444;
+  background: rgba(180,0,0,0.15);
+}
+.robot-btn:hover {
+  background: rgba(180,0,0,0.3);
+}
+
+/* ── TITLE ZONE ── */
+.title-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding-left: 30px;
+}
+.title-zone--right {
+  align-items: flex-end;
+  text-align: right;
+  padding-left: 0;
+  padding-right: 10px;
+}
+.title-zone--center {
+  align-items: flex-start;
+  padding-left: 40px;
+}
+
+.point-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.25);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+/* ══════════════════════════════════════════════════════
+   ГЛАВНЫЕ ЗАГОЛОВКИ — точно как в референсе
+══════════════════════════════════════════════════════ */
+.main-title {
+  font-family: 'Oswald', sans-serif;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 0.88;
+  letter-spacing: -1px;
+  text-transform: uppercase;
+  display: block;
+}
+
+/* COWBOY — жёлто-зелёный неон */
+.t-cowboy {
+  font-size: clamp(80px, 11vw, 140px);
+  color: #C9FF00;
+  text-shadow:
+    0 0 20px rgba(201,255,0,0.7),
+    0 0 60px rgba(201,255,0,0.4),
+    0 0 120px rgba(201,255,0,0.2),
+    2px 2px 0 rgba(0,0,0,0.5);
+  transform: skewX(-4deg);
+}
+
+/* HONOR — красный + glitch */
+.t-honor {
+  font-size: clamp(80px, 11vw, 140px);
+  color: #CC0000;
+  text-shadow:
+    0 0 20px rgba(204,0,0,0.8),
+    0 0 60px rgba(204,0,0,0.5),
+    0 0 120px rgba(204,0,0,0.2),
+    -3px 0 0 rgba(0,100,255,0.3),
+    3px 0 0 rgba(255,0,0,0.3);
+  transform: skewX(-4deg);
+  animation: glitch-honor 6s infinite;
+}
+@keyframes glitch-honor {
+  0%,94%,100% { text-shadow: 0 0 20px rgba(204,0,0,0.8), 0 0 60px rgba(204,0,0,0.5), -3px 0 0 rgba(0,100,255,0.3), 3px 0 0 rgba(255,0,0,0.3); }
+  95%   { text-shadow: 0 0 20px rgba(204,0,0,0.8), -6px 0 0 rgba(0,200,255,0.5), 6px 0 0 rgba(255,50,50,0.5); }
+  96%   { text-shadow: 0 0 20px rgba(204,0,0,0.8), 0 0 60px rgba(204,0,0,0.5), -3px 0 0 rgba(0,100,255,0.3), 3px 0 0 rgba(255,0,0,0.3); }
+  97%   { text-shadow: -8px 0 0 rgba(0,200,255,0.4), 8px 0 0 rgba(255,50,50,0.4); }
+  98%   { text-shadow: 0 0 20px rgba(204,0,0,0.8), 0 0 60px rgba(204,0,0,0.5); }
+}
+
+/* PLAN — оранжевый */
+.t-plan {
+  font-size: clamp(80px, 11vw, 140px);
+  color: #FF8800;
+  text-shadow:
+    0 0 20px rgba(255,136,0,0.8),
+    0 0 60px rgba(255,136,0,0.5),
+    0 0 120px rgba(255,136,0,0.2);
+  transform: skewX(-4deg);
+  margin-bottom: 10px;
+}
+
+/* ROBOT — розовый/маджента */
+.t-robot {
+  font-size: clamp(80px, 11vw, 140px);
+  color: #FF00CC;
+  text-shadow:
+    0 0 20px rgba(255,0,204,0.9),
+    0 0 60px rgba(255,0,204,0.5),
+    0 0 120px rgba(255,0,204,0.25);
+  transform: skewX(-4deg);
+}
+.robot-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 8px;
+  color: rgba(255,0,204,0.55);
+  text-transform: uppercase;
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* RUINER — тил с обводкой (outline) */
+.t-ruiner {
+  font-size: clamp(80px, 11vw, 140px);
+  color: transparent;
+  -webkit-text-stroke: 2px #00DDCC;
+  text-stroke: 2px #00DDCC;
+  text-shadow:
+    0 0 30px rgba(0,221,204,0.5),
+    0 0 80px rgba(0,221,204,0.25);
+  transform: skewX(-4deg);
+  margin-bottom: 18px;
+}
+
+/* Play кнопка (Ruiner) */
+.play-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.play-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0,221,204,0.6);
+  background: rgba(0,221,204,0.08);
+  color: #00DDCC;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+.play-btn:hover {
+  background: rgba(0,221,204,0.2);
+  border-color: #00DDCC;
+  box-shadow: 0 0 16px rgba(0,221,204,0.4);
+}
+.play-icon { padding-left: 2px; }
+.play-meta { display: flex; flex-direction: column; gap: 2px; }
+.play-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.3);
+}
+.play-sub {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: rgba(0,221,204,0.7);
+}
+
+/* ── FOOTER ── */
+.slide-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 32px 16px;
+  background: linear-gradient(to top, rgba(8,8,8,0.75) 0%, transparent 100%);
+}
+
+.foot-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.foot-ep {
+  font-family: 'Oswald', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 4px;
+  color: rgba(255,255,255,0.7);
+  text-transform: uppercase;
+}
+.foot-date {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.3);
+}
+
+.foot-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pag-num {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.4);
+}
+.pag-dash {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.2);
+  letter-spacing: 2px;
+}
+.pag-arrow {
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: transparent;
+  color: rgba(255,255,255,0.5);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: all 0.25s;
+}
+.pag-arrow:hover {
+  border-color: rgba(255,255,255,0.6);
+  color: #fff;
+  background: rgba(255,255,255,0.06);
+}
+
+/* ══════════════════════════════════════════════════════
+   АНИМАЦИИ — появление при скролле
+══════════════════════════════════════════════════════ */
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.slide {
+  animation: slide-in-up 0.9s ease forwards;
+  opacity: 0;
+}
+#s-cowboy { animation-delay: 0.05s; }
+#s-honor  { animation-delay: 0.18s; }
+#s-plan   { animation-delay: 0.31s; }
+#s-robot  { animation-delay: 0.44s; }
+#s-ruiner { animation-delay: 0.57s; }
+
+/* ══════════════════════════════════════════════════════
+   HOVER — тонкая подсветка активного слайда
+══════════════════════════════════════════════════════ */
+#s-cowboy:hover { border-bottom-color: rgba(201,255,0,0.15); }
+#s-honor:hover  { border-bottom-color: rgba(204,0,0,0.15); }
+#s-plan:hover   { border-bottom-color: rgba(255,136,0,0.15); }
+#s-robot:hover  { border-bottom-color: rgba(255,0,204,0.15); }
+#s-ruiner:hover { border-bottom-color: rgba(0,221,204,0.15); }
+
+/* Левая акцентная линия при ховере */
+.slide::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: transparent;
+  z-index: 30;
+  transition: background 0.4s ease;
+}
+#s-cowboy:hover::before { background: linear-gradient(to bottom, transparent, #C9FF00, transparent); }
+#s-honor:hover::before  { background: linear-gradient(to bottom, transparent, #CC0000, transparent); }
+#s-plan:hover::before   { background: linear-gradient(to bottom, transparent, #FF8800, transparent); }
+#s-robot:hover::before  { background: linear-gradient(to bottom, transparent, #FF00CC, transparent); }
+#s-ruiner:hover::before { background: linear-gradient(to bottom, transparent, #00DDCC, transparent); }
+
+/* ══════════════════════════════════════════════════════
+   КИОСК: вертикальная ориентация 1080×1920
+══════════════════════════════════════════════════════ */
+@media (orientation: portrait) {
+  .slide { height: 350px; }
+  .header-nav { gap: 16px; }
+  .slide-body { padding: 8px 20px; }
+  .left-panel { width: 180px; }
+}
+
+/* ── Для очень широких экранов ── */
+@media (min-width: 1920px) {
+  .slide { height: 460px; }
+}

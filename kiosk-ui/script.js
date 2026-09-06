@@ -1,0 +1,640 @@
+// =============================================
+// TRENDUM AI PHOTO KIOSK — INTERACTIVE ENGINE
+// =============================================
+
+let selectedStyle = 'ROBLOX HERO';
+let selectedStylePhoto = 'images/photo1.jpg';
+let isSelectingCard = false;
+let isAttractClosing = false;
+let currentCategory = 'ФОТО';
+let activeTemplateIndex = 0;
+
+// ТРЕКОВЫЕ ШАБЛОНЫ ДЛЯ 3D COVERFLOW ГАЛЕРЕИ (STYLE DRIBBLE)
+const templateCatalog = {
+    'ФОТО': [
+        { id: 1, title: 'ROBLOX HERO', desc: 'СТАНЬ ГЕРОЕМ ЛЮБИМОЙ ИГРЫ', img: 'images/photo1.jpg' },
+        { id: 2, title: 'CYBER SAMURAI', desc: 'КИБЕРПАНК ВОИН 2077', img: 'images/photo3.jpg' },
+        { id: 3, title: 'ANIME WORLD', desc: 'АНИМЕ ГЕРОЙ В СОЧНЫХ ЦВЕТАХ', img: 'images/photo2.jpg' },
+        { id: 4, title: 'FORBES COVER', desc: 'ТЫ НА ГЛАВНОЙ СТРАНИЦЕ FORBES', img: 'assets/hero_portrait.jpg' },
+        { id: 5, title: 'GIGACHAD SIGMA', desc: 'ХАРИЗМА И СТИЛЬ 100%', img: 'assets/hero_avatar.jpg' }
+    ],
+    'ВИДЕО': [
+        { id: 1, title: 'NEON MOTION', desc: 'ОЖИВИ СВОЙ ПОРТРЕТ В НЕОНЕ', img: 'images/photo3.jpg' },
+        { id: 2, title: 'RETRO 90S VHS', desc: 'КИНЕМАТОГРАФИЧНЫЙ РЕТРО ЭФФЕКТ', img: 'images/photo1.jpg' },
+        { id: 3, title: 'CYBER ROBOT', desc: 'ФУТУРИСТИЧНАЯ АНИМАЦИЯ', img: 'assets/hero_robot.jpg' }
+    ],
+    'ТРЕНДЫ': [
+        { id: 1, title: 'TIKTOK DANCE', desc: 'ВИРУСНЫЙ ТАНЦЕВАЛЬНЫЙ ЧЕЛЛЕНДЖ', img: 'assets/hero_robot.jpg' },
+        { id: 2, title: 'REELS VIBE', desc: 'ПОПУЛЯРНЫЙ ТРЕНД ИЗ ИНСТАГРАМ', img: 'assets/hero_avatar.jpg' }
+    ]
+};
+
+// DYNAMIC CATEGORIES & TEMPLATES ENGINE WITH LOCALSTORAGE
+let kioskCategories = [];
+try {
+    const savedCats = localStorage.getItem('kiosk_categories_v2');
+    if (savedCats) kioskCategories = JSON.parse(savedCats);
+} catch(e) {}
+
+if (!kioskCategories || kioskCategories.length === 0) {
+    kioskCategories = ['ВСЕ', 'ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'ВИДЕО', 'ТРЕНДЫ'];
+}
+
+let masterTemplates = [];
+try {
+    const savedTpls = localStorage.getItem('kiosk_templates_v2');
+    if (savedTpls) masterTemplates = JSON.parse(savedTpls);
+} catch(e) {}
+
+if (!masterTemplates || masterTemplates.length === 0) {
+    masterTemplates = [
+        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png' },
+        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg' },
+        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg' },
+        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg' },
+        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg' },
+        { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg' },
+        { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg' },
+        { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg' },
+        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg' },
+        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg' }
+    ];
+}
+
+// Preload all template images into memory for instant rendering
+function preloadMasterImages() {
+    masterTemplates.forEach(item => {
+        if (item.img) {
+            const img = new Image();
+            img.src = item.img;
+        }
+    });
+}
+preloadMasterImages();
+
+let activeGridTab = 'ВСЕ';
+
+// 1. ВЫБОР КАРТОЧКИ — МГНОВЕННОЕ ОТКРЫТИЕ 2-КОЛОНОЧНОЙ СЕТКИ ШАБЛОНОВ
+window.selectCard = function(cardEl, styleName) {
+    if (isSelectingCard || isAttractClosing) return;
+    isSelectingCard = true;
+
+    // 1. Увеличиваем выбранную карточку
+    if (cardEl) cardEl.classList.add('card-selected');
+
+    // 2. Разлетаются невыбранные карточки
+    const allCards = document.querySelectorAll('.card');
+    allCards.forEach((otherCard, otherIdx) => {
+        if (otherCard !== cardEl) {
+            if (otherIdx % 2 === 0) {
+                otherCard.classList.add('fly-left');
+            } else {
+                otherCard.classList.add('fly-right');
+            }
+        }
+    });
+
+    // 3. Мгновенно открываем галерею шаблонов
+    openTemplateGallery();
+
+    setTimeout(() => {
+        allCards.forEach(c => c.classList.remove('fly-left', 'fly-right', 'card-selected'));
+        isSelectingCard = false;
+    }, 400);
+};
+
+// 2. GRID ROUTER & RENDERER (МГНОВЕННЫЙ РЕНДЕР КАРТИНОК)
+function openTemplateGallery() {
+    const modal = document.getElementById('template-modal');
+    renderCategoryPillsBar();
+    switchGridCategory('ВСЕ');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeTemplateGallery() {
+    const modal = document.getElementById('template-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+// РЕНДЕРИНГ ДИНАМИЧЕСКИХ ПЛАШЕК КАТЕГОРИЙ В ШАПКЕ
+function renderCategoryPillsBar() {
+    const bar = document.getElementById('category-pills-bar');
+    if (!bar) return;
+    bar.innerHTML = '';
+
+    kioskCategories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `cat-pill ${cat.toUpperCase() === activeGridTab.toUpperCase() ? 'active' : ''}`;
+        btn.textContent = cat.toUpperCase();
+        btn.onclick = () => switchGridCategory(cat);
+        bar.appendChild(btn);
+    });
+}
+
+// ПЕРЕКЛЮЧЕНИЕ КАТЕГОРИИ + ДИНАМИЧЕСКИЙ ЗАГОЛОВОК
+window.switchGridCategory = function(catName) {
+    activeGridTab = catName;
+
+    // 1. Динамическое изменение заголовка под выбранную категорию!
+    const titleEl = document.getElementById('grid-modal-title');
+    if (titleEl) {
+        titleEl.textContent = catName.toUpperCase() === 'ВСЕ' ? 'ВСЕ ШАБЛОНЫ' : catName.toUpperCase();
+    }
+
+    // 2. Обновление подсветки плашки
+    document.querySelectorAll('.cat-pill').forEach(pill => {
+        if (pill.textContent.trim().toUpperCase() === catName.toUpperCase()) {
+            pill.classList.add('active');
+        } else {
+            pill.classList.remove('active');
+        }
+    });
+
+    renderGridTemplates();
+};
+
+function renderGridTemplates() {
+    const list = activeGridTab === 'ВСЕ' ? masterTemplates : masterTemplates.filter(item => item.category.toUpperCase() === activeGridTab.toUpperCase());
+    const container = document.getElementById('template-grid-2col');
+
+    if (!container) return;
+    container.innerHTML = '';
+
+    list.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'tile-card';
+
+        const img = document.createElement('img');
+        img.src = item.img;
+        img.alt = item.title;
+        img.loading = 'eager';
+
+        card.appendChild(img);
+
+        card.addEventListener('click', () => {
+            selectedStyle = item.title;
+            selectedStylePhoto = item.img;
+            closeTemplateGallery();
+            openKioskFlow();
+        });
+
+        container.appendChild(card);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Initial pre-render of template tiles grid so opening is instantaneous
+    renderGridTemplates();
+
+    // DOM Elements
+    const modal = document.getElementById('kiosk-modal');
+    const modalClose = document.getElementById('modal-close');
+    
+    // Steps
+    const stepCamera = document.getElementById('step-camera');
+    const stepPayment = document.getElementById('step-payment');
+    const stepProcessing = document.getElementById('step-processing');
+    const stepResult = document.getElementById('step-result');
+
+    // Camera Elements
+    const webcamEl = document.getElementById('webcam');
+    const canvasEl = document.getElementById('photo-canvas');
+    const snapBtn = document.getElementById('snap-btn');
+    const countdownOverlay = document.getElementById('countdown-overlay');
+
+    // Payment Elements
+    const packageCards = document.querySelectorAll('.package-card');
+    const qrPaymentZone = document.getElementById('qr-payment-zone');
+    const simPayBtn = document.getElementById('sim-pay-btn');
+
+    // Result Elements
+    const resultImg = document.getElementById('result-img');
+    const finishBtn = document.getElementById('finish-btn');
+    const aiStatusText = document.getElementById('ai-status-text');
+
+    let mediaStream = null;
+    let capturedPhotoData = null;
+
+    window.openKioskFlow = function() {
+        if (modal) modal.style.display = 'flex';
+        showStep(stepCamera);
+        startWebcam();
+    };
+
+    modalClose.addEventListener('click', closeKioskFlow);
+
+    function closeKioskFlow() {
+        stopWebcam();
+        modal.style.display = 'none';
+        resetState();
+    }
+
+    function showStep(stepEl) {
+        [stepCamera, stepPayment, stepProcessing, stepResult].forEach(s => s.style.display = 'none');
+        stepEl.style.display = 'block';
+    }
+
+    function resetState() {
+        countdownOverlay.textContent = '';
+        qrPaymentZone.style.display = 'none';
+    }
+
+    // 2. WEBCAM LOGIC
+    async function startWebcam() {
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+                audio: false
+            });
+            webcamEl.srcObject = mediaStream;
+        } catch (err) {
+            console.warn('Webcam access error or unavailable, fallback to simulated stream:', err);
+            // In case no camera is physically connected, show animated preview
+        }
+    }
+
+    function stopWebcam() {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
+        }
+    }
+
+    // 3. SNAP PHOTO & COUNTDOWN
+    snapBtn.addEventListener('click', () => {
+        snapBtn.disabled = true;
+        let count = 3;
+        countdownOverlay.textContent = count;
+
+        const timer = setInterval(() => {
+            count--;
+            if (count > 0) {
+                countdownOverlay.textContent = count;
+            } else {
+                clearInterval(timer);
+                countdownOverlay.textContent = '📸';
+                takeSnapshot();
+                setTimeout(() => {
+                    stopWebcam();
+                    showStep(stepPayment);
+                    snapBtn.disabled = false;
+                    countdownOverlay.textContent = '';
+                }, 800);
+            }
+        }, 1000);
+    });
+
+    function takeSnapshot() {
+        const ctx = canvasEl.getContext('2d');
+        canvasEl.width = webcamEl.videoWidth || 640;
+        canvasEl.height = webcamEl.videoHeight || 480;
+        ctx.drawImage(webcamEl, 0, 0, canvasEl.width, canvasEl.height);
+        capturedPhotoData = canvasEl.toDataURL('image/jpeg');
+    }
+
+    // 4. PACKAGE SELECTION & PAYMENT
+    packageCards.forEach(pkg => {
+        pkg.addEventListener('click', () => {
+            packageCards.forEach(p => p.classList.remove('active'));
+            pkg.classList.add('active');
+            qrPaymentZone.style.display = 'block';
+        });
+    });
+
+    // Auto-show QR if standard package active
+    qrPaymentZone.style.display = 'block';
+
+    simPayBtn.addEventListener('click', () => {
+        showStep(stepProcessing);
+        runAIGeneration();
+    });
+
+    // 5. AI GENERATION SIMULATION
+    function runAIGeneration() {
+        const statuses = [
+            `Анализ лица и стиля ${selectedStyle}...`,
+            `Подключение к нейросети (SDXL / InstantID)...`,
+            `Применение эффектов стиля ${selectedStyle}...`,
+            `Генерация финального фото в высоком разрешении...`
+        ];
+
+        let idx = 0;
+        const interval = setInterval(() => {
+            idx++;
+            if (idx < statuses.length) {
+                aiStatusText.textContent = statuses[idx];
+            } else {
+                clearInterval(interval);
+                // Show result image
+                resultImg.src = selectedStylePhoto;
+                showStep(stepResult);
+            }
+        }, 1200);
+    }
+
+    // 6. FINISH & TEMPLATE SELECTION
+    finishBtn.addEventListener('click', closeKioskFlow);
+
+    // 3D Cover Flow Gallery Controls & Touch Swiping
+    const templateBackBtn = document.getElementById('template-back-btn');
+    const selectTemplateBtn = document.getElementById('select-template-btn');
+
+    if (templateBackBtn) {
+        templateBackBtn.addEventListener('click', closeTemplateGallery);
+    }
+
+    if (selectTemplateBtn) {
+        selectTemplateBtn.addEventListener('click', () => {
+            const list = templateCatalog[currentCategory] || templateCatalog['ФОТО'];
+            if (list[activeTemplateIndex]) {
+                selectedStyle = list[activeTemplateIndex].title;
+                selectedStylePhoto = list[activeTemplateIndex].img;
+            }
+            closeTemplateGallery();
+            openKioskFlow();
+        });
+    }
+
+    // Touch Swipe for 3D Cover Flow Carousel
+    let touchStartX = 0;
+    const trackEl = document.getElementById('coverflow-track');
+    if (trackEl) {
+        trackEl.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        }, { passive: true });
+
+        trackEl.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const diff = touchEndX - touchStartX;
+            const list = templateCatalog[currentCategory] || templateCatalog['ФОТО'];
+
+            if (diff > 40 && activeTemplateIndex > 0) {
+                activeTemplateIndex--;
+                renderCoverFlow();
+            } else if (diff < -40 && activeTemplateIndex < list.length - 1) {
+                activeTemplateIndex++;
+                renderCoverFlow();
+            }
+        }, { passive: true });
+    }
+
+    // =============================================
+    // 7. INACTIVITY ATTRACT MODE (PLAYLIST ENGINE FOR VIDEO & PHOTO)
+    // =============================================
+    const INACTIVITY_TIMEOUT = 5000; // 5 секунд простоя для заставки
+    let inactivityTimer = null;
+    let lastX = 0;
+    let lastY = 0;
+
+    // ПЛЕЙЛИСТ ВЕРХНЕГО БЛОКА (3/4): Микс Видео и Фото с поочередным воспроизведением по кругу
+    const topPlaylist = [
+        { type: 'video', src: 'assets/card_loop.mp4', fallbackDuration: 8000 },
+        { type: 'image', src: 'assets/promo_ad.jpg', duration: 5000 },
+        { type: 'image', src: 'images/photo1.jpg', duration: 5000 },
+        { type: 'image', src: 'assets/child.png', duration: 5000 },
+        { type: 'image', src: 'images/photo3.jpg', duration: 5000 }
+    ];
+
+    // ПЛЕЙЛИСТ НИЖНЕЙ КАРТОЧКИ (1/4): Микс Видео и Фото с поочередным воспроизведением по кругу
+    const bottomPlaylist = [
+        { type: 'video', src: 'assets/card_loop.mp4', fallbackDuration: 8000 },
+        { type: 'image', src: 'images/photo2.jpg', duration: 5000 },
+        { type: 'image', src: 'assets/hero_avatar.jpg', duration: 5000 }
+    ];
+
+    let topIndex = 0;
+    let bottomIndex = 0;
+    let topPlaylistTimer = null;
+    let bottomPlaylistTimer = null;
+
+    function resetInactivityTimer() {
+        clearTimeout(inactivityTimer);
+        const modal = document.getElementById('kiosk-modal');
+        const templateModal = document.getElementById('template-modal');
+        const adminModal = document.getElementById('kiosk-admin-modal');
+        const pinModal = document.getElementById('kiosk-pin-modal');
+
+        const isModalOpen = (modal && modal.style.display === 'flex') ||
+                            (templateModal && !templateModal.classList.contains('hidden')) ||
+                            (adminModal && !adminModal.classList.contains('hidden')) ||
+                            (pinModal && !pinModal.classList.contains('hidden'));
+
+        if (!isModalOpen) {
+            inactivityTimer = setTimeout(showAttractScreen, INACTIVITY_TIMEOUT);
+        }
+    }
+
+    function playTopPlaylistNext() {
+        clearTimeout(topPlaylistTimer);
+        const item = topPlaylist[topIndex];
+        const vEl = document.getElementById('attract-promo-video');
+        const imgEl = document.getElementById('attract-promo-img');
+        const fallback = document.getElementById('attract-top-fallback');
+
+        if (!item) return;
+
+        if (item.type === 'video') {
+            if (imgEl) imgEl.classList.remove('active');
+            if (vEl) {
+                vEl.src = item.src;
+                vEl.muted = true;
+                vEl.classList.add('active');
+
+                vEl.onended = () => {
+                    topIndex = (topIndex + 1) % topPlaylist.length;
+                    playTopPlaylistNext();
+                };
+
+                vEl.onerror = () => {
+                    if (fallback) fallback.style.display = 'flex';
+                    topPlaylistTimer = setTimeout(() => {
+                        topIndex = (topIndex + 1) % topPlaylist.length;
+                        playTopPlaylistNext();
+                    }, 5000);
+                };
+
+                vEl.play().then(() => {
+                    if (fallback) fallback.style.display = 'none';
+                }).catch(e => {
+                    topPlaylistTimer = setTimeout(() => {
+                        topIndex = (topIndex + 1) % topPlaylist.length;
+                        playTopPlaylistNext();
+                    }, item.fallbackDuration || 5000);
+                });
+            }
+        } else if (item.type === 'image') {
+            if (vEl) vEl.classList.remove('active');
+            if (imgEl) {
+                imgEl.src = item.src;
+                imgEl.classList.add('active');
+            }
+            if (fallback) fallback.style.display = 'none';
+
+            topPlaylistTimer = setTimeout(() => {
+                topIndex = (topIndex + 1) % topPlaylist.length;
+                playTopPlaylistNext();
+            }, item.duration || 5000);
+        }
+    }
+
+    function playBottomPlaylistNext() {
+        clearTimeout(bottomPlaylistTimer);
+        const item = bottomPlaylist[bottomIndex];
+        const vEl = document.getElementById('attract-card-video');
+        const imgEl = document.getElementById('attract-card-img');
+
+        if (!item) return;
+
+        if (item.type === 'video') {
+            if (imgEl) imgEl.classList.remove('active');
+            if (vEl) {
+                vEl.src = item.src;
+                vEl.muted = true;
+                vEl.classList.add('active');
+
+                vEl.onended = () => {
+                    bottomIndex = (bottomIndex + 1) % bottomPlaylist.length;
+                    playBottomPlaylistNext();
+                };
+
+                vEl.play().catch(e => {
+                    bottomPlaylistTimer = setTimeout(() => {
+                        bottomIndex = (bottomIndex + 1) % bottomPlaylist.length;
+                        playBottomPlaylistNext();
+                    }, item.fallbackDuration || 5000);
+                });
+            }
+        } else if (item.type === 'image') {
+            if (vEl) vEl.classList.remove('active');
+            if (imgEl) {
+                imgEl.src = item.src;
+                imgEl.classList.add('active');
+            }
+
+            bottomPlaylistTimer = setTimeout(() => {
+                bottomIndex = (bottomIndex + 1) % bottomPlaylist.length;
+                playBottomPlaylistNext();
+            }, item.duration || 5000);
+        }
+    }
+
+    function showAttractScreen() {
+        const modal = document.getElementById('kiosk-modal');
+        const templateModal = document.getElementById('template-modal');
+        const adminModal = document.getElementById('kiosk-admin-modal');
+        const pinModal = document.getElementById('kiosk-pin-modal');
+
+        const isModalOpen = (modal && modal.style.display === 'flex') ||
+                            (templateModal && !templateModal.classList.contains('hidden')) ||
+                            (adminModal && !adminModal.classList.contains('hidden')) ||
+                            (pinModal && !pinModal.classList.contains('hidden'));
+
+        if (!isModalOpen) {
+            const attractOverlay = document.getElementById('attract-overlay');
+            if (attractOverlay) {
+                attractOverlay.classList.remove('hidden');
+                attractOverlay.style.display = 'flex';
+            }
+            
+            topIndex = 0;
+            bottomIndex = 0;
+            playTopPlaylistNext();
+            playBottomPlaylistNext();
+        }
+    }
+
+    function stopAttractPlaylists() {
+        clearTimeout(topPlaylistTimer);
+        clearTimeout(bottomPlaylistTimer);
+        const v1 = document.getElementById('attract-promo-video');
+        const v2 = document.getElementById('attract-card-video');
+        if (v1) v1.pause();
+        if (v2) v2.pause();
+    }
+
+    window.hideAttractScreen = function() {
+        const attractOverlay = document.getElementById('attract-overlay');
+        if (attractOverlay && (attractOverlay.style.display === 'flex' || !attractOverlay.classList.contains('hidden'))) {
+            isAttractClosing = true;
+            attractOverlay.classList.add('hidden');
+            attractOverlay.style.display = 'none';
+            stopAttractPlaylists();
+
+            setTimeout(() => {
+                isAttractClosing = false;
+            }, 450);
+        }
+        resetInactivityTimer();
+    };
+
+    // Сброс таймера и закрытие заставки при касании
+    ['touchstart', 'pointerdown', 'click', 'keydown'].forEach(evt => {
+        window.addEventListener(evt, () => {
+            window.hideAttractScreen();
+        }, { passive: true });
+    });
+
+    // Безопасное отслеживание реального перемещения мыши (> 10px)
+    window.addEventListener('mousemove', (e) => {
+        if (Math.abs(e.clientX - lastX) > 10 || Math.abs(e.clientY - lastY) > 10) {
+            lastX = e.clientX;
+            lastY = e.clientY;
+            const attractOverlay = document.getElementById('attract-overlay');
+            if (attractOverlay && !attractOverlay.classList.contains('hidden')) {
+                window.hideAttractScreen();
+            } else {
+                resetInactivityTimer();
+            }
+        }
+    }, { passive: true });
+
+    // =============================================
+    // СЕКРЕТНЫЕ ТРИГГЕРЫ ОТКРЫТИЯ АДМИНКИ С PIN-КОДОМ
+    // =============================================
+    function setupSecretMultiTap(el, requiredCount, maxDelayMs, onTrigger) {
+        if (!el) return;
+        let tapCount = 0;
+        let tapTimer = null;
+
+        el.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            tapCount++;
+            clearTimeout(tapTimer);
+
+            if (tapCount >= requiredCount) {
+                tapCount = 0;
+                onTrigger();
+            } else {
+                tapTimer = setTimeout(() => {
+                    tapCount = 0;
+                }, maxDelayMs);
+            }
+        });
+    }
+
+    // Секретный тап по главному логотипу (5 быстрых нажатий за 2.5 сек)
+    const topLogo = document.querySelector('.top-brand-center');
+    setupSecretMultiTap(topLogo, 5, 2500, () => {
+        openPinModal();
+    });
+
+    // Ввод PIN с клавиатуры (активен только когда окно PIN-кода уже открыто)
+    window.addEventListener('keydown', (e) => {
+        const pinModal = document.getElementById('kiosk-pin-modal');
+        if (pinModal && !pinModal.classList.contains('hidden')) {
+            if (e.key >= '0' && e.key <= '9') {
+                e.preventDefault();
+                pinInputDigit(e.key);
+            } else if (e.key === 'Backspace') {
+                e.preventDefault();
+                pinDeleteDigit();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closePinModal();
+            }
+        }
+    });
+
+    // Запуск таймера простоя при загрузке
+    resetInactivityTimer();
+});

@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRENDUM — Панель управления (Admin)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,700;0,800;0,900;1,700;1,900&family=Orbitron:wght@500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: #06090e;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Admin Navbar */
+        .admin-navbar {
+            background: #0a0e17;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .admin-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .admin-logo-text {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 22px;
+            font-weight: 900;
+            font-style: italic;
+            color: #00F0FF;
+            text-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+            letter-spacing: 2px;
+        }
+
+        .admin-badge {
+            background: rgba(0, 240, 255, 0.15);
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            color: #00F0FF;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 12px;
+            letter-spacing: 1px;
+        }
+
+        .admin-nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-to-kiosk {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            padding: 8px 18px;
+            border-radius: 20px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-to-kiosk:hover {
+            background: rgba(0, 240, 255, 0.2);
+            border-color: #00F0FF;
+            color: #00F0FF;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+
+        .btn-logout {
+            background: rgba(255, 42, 95, 0.15);
+            border: 1px solid rgba(255, 42, 95, 0.4);
+            color: #ff2a5f;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            padding: 8px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            background: #ff2a5f;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 42, 95, 0.6);
+        }
+
+        /* Container Layout */
+        .admin-container {
+            max-width: 1050px;
+            width: 100%;
+            margin: 30px auto;
+            padding: 0 20px;
+            flex: 1;
+        }
+
+        /* Tabs Navigation */
+        .admin-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 15px;
+        }
+
+        .admin-tab {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.7);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 14px;
+            font-weight: 800;
+            padding: 12px 24px;
+            border-radius: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .admin-tab:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .admin-tab.active {
+            background: #00F0FF;
+            color: #07090f;
+            border-color: #00F0FF;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+        }
+
+        /* Card Section */
+        .admin-card {
+            background: #0d121c;
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+            margin-bottom: 30px;
+        }
+
+        .card-header {
+            margin-bottom: 22px;
+        }
+
+        .card-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 20px;
+            font-weight: 900;
+            font-style: italic;
+            color: #00F0FF;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.65);
+            margin-top: 5px;
+        }
+
+        /* Forms */
+        .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .admin-input, .admin-select {
+            flex: 1;
+            min-width: 220px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 12px 18px;
+            color: #ffffff;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .admin-select {
+            background: #111724;
+            cursor: pointer;
+        }
+
+        .admin-input:focus, .admin-select:focus {
+            border-color: #00F0FF;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-primary {
+            background: #00F0FF;
+            color: #07090f;
+            border: none;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 14px;
+            font-weight: 900;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+            white-space: nowrap;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.7);
+        }
+
+        /* Grid / List Display */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .items-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 12px;
+            font-weight: 800;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .items-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 15px;
+            vertical-align: middle;
+        }
+
+        .items-table tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .tpl-preview-thumb {
+            width: 55px;
+            height: 55px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            display: block;
+        }
+
+        .cat-tag {
+            background: rgba(0, 240, 255, 0.12);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            color: #00F0FF;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .btn-del {
+            background: rgba(255, 42, 95, 0.15);
+            border: 1px solid rgba(255, 42, 95, 0.3);
+            color: #ff2a5f;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-del:hover {
+            background: #ff2a5f;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 42, 95, 0.5);
+        }
+
+        .status-msg {
+            min-height: 22px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        .status-msg.success { color: #00ff88; }
+        .status-msg.error { color: #ff2a5f; }
+
+        /* Login Screen Overlay */
+        .auth-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 40%, #0d1422 0%, #04060a 80%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: #0a0e18;
+            border: 2px solid rgba(0, 240, 255, 0.35);
+            border-radius: 28px;
+            width: 100%;
+            max-width: 400px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 240, 255, 0.25), 0 20px 60px rgba(0, 0, 0, 0.9);
+        }
+
+        .auth-icon {
+            font-size: 42px;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.7));
+        }
+
+        .auth-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 22px;
+            font-weight: 900;
+            font-style: italic;
+            color: #00F0FF;
+            letter-spacing: 2px;
+        }
+
+        .auth-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.65);
+            margin-top: 6px;
+            margin-bottom: 25px;
+        }
+
+        .auth-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 240, 255, 0.3);
+            border-radius: 16px;
+            padding: 16px;
+            color: #ffffff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 8px;
+            outline: none;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .auth-input:focus {
+            border-color: #00F0FF;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+        }
+
+        .btn-auth-submit {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            justify-content: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen" class="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-icon">🔒</div>
+            <h1 class="auth-title">TRENDUM ADMIN</h1>
+            <p class="auth-subtitle">Введите пароль / PIN-код для входа</p>
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+                <input type="password" id="auth-pin-input" class="auth-input" placeholder="••••" maxlength="8" autofocus autocomplete="current-password">
+                <button type="submit" class="btn-primary btn-auth-submit">ВОЙТИ В ПАНЕЛЬ</button>
+            </form>
+            <div id="auth-error-msg" class="status-msg error"></div>
+        </div>
+    </div>
+
+    <!-- ADMIN HEADER NAVBAR -->
+    <header class="admin-navbar">
+        <div class="admin-brand">
+            <span class="admin-logo-text">TRENDUM</span>
+            <span class="admin-badge">CONTROL PANEL</span>
+        </div>
+        <div class="admin-nav-actions">
+            <a href="/" class="btn-to-kiosk" title="Перейти к интерфейсу киоска">
+                <span>🖥️</span> Открыть Киоск
+            </a>
+            <button class="btn-logout" onclick="handleLogout()">Выйти</button>
+        </div>
+    </header>
+
+    <!-- MAIN ADMIN CONTENT -->
+    <div class="admin-container">
+        <!-- Tab Navigation -->
+        <nav class="admin-tabs">
+            <button class="admin-tab active" id="tab-btn-cats" onclick="switchAdminTab('cats')">📁 Категории</button>
+            <button class="admin-tab" id="tab-btn-tpls" onclick="switchAdminTab('tpls')">🖼️ Шаблоны</button>
+            <button class="admin-tab" id="tab-btn-security" onclick="switchAdminTab('security')">🔐 Безопасность</button>
+        </nav>
+
+        <!-- TAB 1: CATEGORIES -->
+        <section id="tab-content-cats" class="admin-tab-content">
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">📁 Управление категориями</h2>
+                    <p class="card-subtitle">Создавайте новые тематические разделы для каталога шаблонов киоска</p>
+                </div>
+
+                <div class="form-row">
+                    <input type="text" id="new-cat-name" class="admin-input" placeholder="Название новой категории (напр: РЕТРО, ФАНТАЗИЯ, КИНО)...">
+                    <button class="btn-primary" onclick="addCategory()">+ Добавить категорию</button>
+                </div>
+                <div id="cat-status" class="status-msg"></div>
+
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">#</th>
+                            <th>Название категории</th>
+                            <th>Статус</th>
+                            <th style="width: 120px; text-align: right;">Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categories-table-body">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 2: TEMPLATES -->
+        <section id="tab-content-tpls" class="admin-tab-content hidden">
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">🖼️ Управление шаблонами</h2>
+                    <p class="card-subtitle">Добавляйте стили и шаблоны с привязкой к категориям</p>
+                </div>
+
+                <div class="form-row">
+                    <select id="tpl-cat-select" class="admin-select"></select>
+                    <input type="text" id="tpl-title-input" class="admin-input" placeholder="Название шаблона (напр: CYBER SAMURAI)...">
+                </div>
+                <div class="form-row">
+                    <input type="text" id="tpl-img-input" class="admin-input" placeholder="Путь к фото (напр: assets/man.jpg или images/photo1.jpg)...">
+                    <button class="btn-primary" onclick="addTemplate()">+ Добавить шаблон</button>
+                </div>
+                <div id="tpl-status" class="status-msg"></div>
+
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Превью</th>
+                            <th>Название шаблона</th>
+                            <th>Категория</th>
+                            <th>Путь к файлу</th>
+                            <th style="width: 120px; text-align: right;">Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="templates-table-body">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 3: SECURITY -->
+        <section id="tab-content-security" class="admin-tab-content hidden">
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">🔐 Смена пароля администратора</h2>
+                    <p class="card-subtitle">Измените код доступа к веб-панели управления /admin</p>
+                </div>
+
+                <div class="form-row">
+                    <input type="password" id="new-password-input" class="admin-input" placeholder="Новый пароль / PIN (от 4 знаков)...">
+                    <input type="password" id="confirm-password-input" class="admin-input" placeholder="Повторите пароль...">
+                    <button class="btn-primary" onclick="changePassword()">Сохранить пароль</button>
+                </div>
+                <div id="sec-status" class="status-msg"></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const DEFAULT_PIN = '1234';
+
+        function getStoredPin() {
+            try {
+                const stored = localStorage.getItem('kiosk_admin_pin');
+                if (stored && stored.trim().length >= 4) return stored.trim();
+            } catch(e) {}
+            return DEFAULT_PIN;
+        }
+
+        function getStoredCategories() {
+            try {
+                const cats = localStorage.getItem('kiosk_categories_v2');
+                if (cats) return JSON.parse(cats);
+            } catch(e) {}
+            return ['ВСЕ', 'ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'ВИДЕО', 'ТРЕНДЫ'];
+        }
+
+        function getStoredTemplates() {
+            try {
+                const tpls = localStorage.getItem('kiosk_templates_v2');
+                if (tpls) return JSON.parse(tpls);
+            } catch(e) {}
+            return [
+                { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png' },
+                { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg' },
+                { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg' },
+                { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg' },
+                { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg' },
+                { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg' },
+                { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg' },
+                { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg' },
+                { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg' },
+                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg' }
+            ];
+        }
+
+        let categories = getStoredCategories();
+        let templates = getStoredTemplates();
+
+        // Check Session Authentication
+        function checkAuth() {
+            const isAuth = sessionStorage.getItem('trendum_admin_auth') === 'true';
+            const authScreen = document.getElementById('auth-screen');
+            if (isAuth) {
+                authScreen.classList.add('hidden');
+                renderCategories();
+                renderTemplates();
+                renderCategoryDropdown();
+            } else {
+                authScreen.classList.remove('hidden');
+            }
+        }
+
+        function handleAuthSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('auth-pin-input');
+            const errorMsg = document.getElementById('auth-error-msg');
+            const val = input.value.trim();
+
+            if (val === getStoredPin()) {
+                sessionStorage.setItem('trendum_admin_auth', 'true');
+                errorMsg.textContent = '';
+                input.value = '';
+                checkAuth();
+            } else {
+                errorMsg.textContent = '❌ Неверный пароль / PIN-код';
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem('trendum_admin_auth');
+            location.reload();
+        }
+
+        // Tab Switching
+        function switchAdminTab(tab) {
+            document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.add('hidden'));
+
+            if (tab === 'cats') {
+                document.getElementById('tab-btn-cats').classList.add('active');
+                document.getElementById('tab-content-cats').classList.remove('hidden');
+            } else if (tab === 'tpls') {
+                document.getElementById('tab-btn-tpls').classList.add('active');
+                document.getElementById('tab-content-tpls').classList.remove('hidden');
+            } else if (tab === 'security') {
+                document.getElementById('tab-btn-security').classList.add('active');
+                document.getElementById('tab-content-security').classList.remove('hidden');
+            }
+        }
+
+        // CATEGORIES LOGIC
+        function renderCategories() {
+            const tbody = document.getElementById('categories-table-body');
+            tbody.innerHTML = '';
+
+            categories.forEach((cat, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: rgba(255,255,255,0.4);">${idx + 1}</td>
+                    <td><strong style="color: #ffffff; letter-spacing: 1px;">${cat}</strong></td>
+                    <td><span class="cat-tag">${cat === 'ВСЕ' ? 'Основная' : 'Активна'}</span></td>
+                    <td style="text-align: right;">
+                        ${cat !== 'ВСЕ' ? `<button class="btn-del" onclick="deleteCategory('${cat}')">Удалить</button>` : `<span style="color:rgba(255,255,255,0.4); font-size:12px;">Системная</span>`}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addCategory() {
+            const input = document.getElementById('new-cat-name');
+            const status = document.getElementById('cat-status');
+            const name = input.value.trim().toUpperCase();
+
+            if (!name) return;
+            if (categories.includes(name)) {
+                status.textContent = '❌ Категория с таким именем уже существует';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            categories.push(name);
+            localStorage.setItem('kiosk_categories_v2', JSON.stringify(categories));
+            input.value = '';
+            status.textContent = `✅ Категория "${name}" успешно добавлена`;
+            status.className = 'status-msg success';
+
+            renderCategories();
+            renderCategoryDropdown();
+
+            setTimeout(() => { status.textContent = ''; }, 3000);
+        }
+
+        function deleteCategory(name) {
+            if (name === 'ВСЕ') return;
+            if (!confirm(`Удалить категорию "${name}"?`)) return;
+
+            categories = categories.filter(c => c.toUpperCase() !== name.toUpperCase());
+            localStorage.setItem('kiosk_categories_v2', JSON.stringify(categories));
+            renderCategories();
+            renderCategoryDropdown();
+        }
+
+        function renderCategoryDropdown() {
+            const select = document.getElementById('tpl-cat-select');
+            select.innerHTML = '';
+            categories.filter(c => c !== 'ВСЕ').forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                select.appendChild(opt);
+            });
+        }
+
+        // TEMPLATES LOGIC
+        function renderTemplates() {
+            const tbody = document.getElementById('templates-table-body');
+            tbody.innerHTML = '';
+
+            templates.forEach(tpl => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><img src="${tpl.img}" alt="${tpl.title}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'"></td>
+                    <td><strong>${tpl.title}</strong></td>
+                    <td><span class="cat-tag">${tpl.category}</span></td>
+                    <td style="color: rgba(255,255,255,0.6); font-family: monospace; font-size: 13px;">${tpl.img}</td>
+                    <td style="text-align: right;">
+                        <button class="btn-del" onclick="deleteTemplate(${tpl.id})">Удалить</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addTemplate() {
+            const catSelect = document.getElementById('tpl-cat-select');
+            const titleInput = document.getElementById('tpl-title-input');
+            const imgInput = document.getElementById('tpl-img-input');
+            const status = document.getElementById('tpl-status');
+
+            const category = catSelect.value;
+            const title = titleInput.value.trim();
+            const img = imgInput.value.trim();
+
+            if (!title || !img) {
+                status.textContent = '❌ Заполните название шаблона и путь к фото';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            const newId = Date.now();
+            templates.push({ id: newId, category, title, img });
+            localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
+
+            titleInput.value = '';
+            imgInput.value = '';
+            status.textContent = `✅ Шаблон "${title}" успешно добавлен`;
+            status.className = 'status-msg success';
+
+            renderTemplates();
+            setTimeout(() => { status.textContent = ''; }, 3000);
+        }
+
+        function deleteTemplate(id) {
+            if (!confirm('Удалить этот шаблон?')) return;
+            templates = templates.filter(t => t.id !== id);
+            localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
+            renderTemplates();
+        }
+
+        // SECURITY LOGIC
+        function changePassword() {
+            const newPass = document.getElementById('new-password-input').value.trim();
+            const confirmPass = document.getElementById('confirm-password-input').value.trim();
+            const status = document.getElementById('sec-status');
+
+            if (!newPass || newPass.length < 4) {
+                status.textContent = '❌ Пароль должен состоять минимум из 4 символов';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                status.textContent = '❌ Пароли не совпадают';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            localStorage.setItem('kiosk_admin_pin', newPass);
+            document.getElementById('new-password-input').value = '';
+            document.getElementById('confirm-password-input').value = '';
+            status.textContent = '✅ Пароль администратора успешно обновлен!';
+            status.className = 'status-msg success';
+
+            setTimeout(() => { status.textContent = ''; }, 3000);
+        }
+
+        // Init on load
+        checkAuth();
+    </script>
+</body>
+</html>

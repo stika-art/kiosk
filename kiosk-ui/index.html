@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>TRENDUM — AI PHOTO</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,800;0,900;1,800;1,900&family=Orbitron:wght@400;500;600;700&family=Permanent+Marker&family=Rajdhani:wght@400;500;600;700&family=Rubik+Glitch&family=Rubik+Spray+Paint&family=Russo+One&family=Unbounded:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+    background: #090b0c;
+}
+
+body {
+    font-family: 'Rajdhani', sans-serif;
+    color: white;
+    overflow-x: hidden;
+}
+
+/* =====================================================
+   MAIN CANVAS (NEON CITY SYNTHWAVE ATMOSPHERIC BACKGROUND)
+===================================================== */
+
+.kiosk {
+    width: 100vw;
+    min-height: 100vh;
+    margin: 0;
+    padding: 35px 30px;
+    position: relative;
+    overflow: hidden;
+    background: #060809;
+}
+
+/* Neon City Photo Background Layer */
+.kiosk::before {
+    content: "";
+    position: absolute;
+    inset: -40px;
+    background-image: url("images/city_bg.jpg");
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    filter: blur(35px) brightness(0.4) saturate(1.4);
+    transform: scale(1.1);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Dark Ambient Vignette Overlay for High Card Contrast */
+.kiosk::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(6, 8, 12, 0.75) 0%,
+        rgba(10, 12, 20, 0.60) 50%,
+        rgba(6, 8, 12, 0.88) 100%
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+
+.top-brand-center {
+    display: block !important;
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 28px;
+    position: relative;
+    z-index: 10;
+    cursor: pointer;
+}
+
+.top-brand-title {
+    font-family: 'Unbounded', 'CyberpunkRUS', sans-serif;
+    font-size: clamp(48px, 6.5vw, 78px) !important;
+    font-weight: 900;
+    letter-spacing: 6px;
+    color: #00F0FF;
+    text-shadow:
+        0 0 20px rgba(0, 240, 255, 0.85),
+        0 0 45px rgba(0, 240, 255, 0.45),
+        0 4px 18px rgba(0, 0, 0, 0.95);
+}
+
+.top-brand-subtitle {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(14px, 2vw, 20px) !important;
+    font-weight: 700;
+    letter-spacing: 5px;
+    color: #DFFF00;
+    margin-top: 6px;
+    text-shadow: 0 0 12px rgba(223, 255, 0, 0.8);
+}
+
+.card {
+    position: relative;
+    z-index: 2;
+}
+
+
+/* =====================================================
+   CARD (RESTORED TEXT & BORDER)
+===================================================== */
+
+.card {
+    height: clamp(340px, 24vh, 440px);
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    background: #0d1112;
+    border-radius: 20px !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s ease, opacity 0.5s ease;
+}
+
+/* Flying Animation for Unselected Cards */
+.card.fly-left {
+    transition: transform 0.65s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.5s ease !important;
+    transform: translateX(-200vw) rotate(-25deg) scale(0.7) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.card.fly-right {
+    transition: transform 0.65s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.5s ease !important;
+    transform: translateX(200vw) rotate(25deg) scale(0.7) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Selected Card Maximal Zoom Expansion */
+.card.card-selected {
+    transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.65s ease !important;
+    transform: scale(1.65) translateY(-5px) !important;
+    z-index: 99999 !important;
+    opacity: 1 !important;
+    box-shadow:
+        0 0 80px rgba(0, 240, 255, 0.95),
+        0 40px 100px rgba(0, 0, 0, 0.98) !important;
+}
+
+.card-1 {
+    box-shadow:
+        0 25px 65px rgba(0, 0, 0, 0.95),
+        0 0 30px rgba(199, 255, 0, 0.18),
+        inset 0 2px 2px rgba(255, 255, 255, 0.7);
+}
+
+.card-2 {
+    box-shadow:
+        0 25px 65px rgba(0, 0, 0, 0.95),
+        0 0 30px rgba(255, 0, 204, 0.18),
+        inset 0 2px 2px rgba(255, 255, 255, 0.7);
+}
+
+.card-3 {
+    box-shadow:
+        0 25px 65px rgba(0, 0, 0, 0.95),
+        0 0 30px rgba(0, 221, 204, 0.18),
+        inset 0 2px 2px rgba(255, 255, 255, 0.7);
+}
+
+.card:hover {
+    transform: translateY(-3px) scale(1.005);
+    box-shadow:
+        0 30px 70px rgba(0, 0, 0, 0.95),
+        0 0 35px var(--accent-glow, rgba(199, 255, 0, 0.2)),
+        inset 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+/* image */
+
+.card-image {
+    position: absolute;
+    inset: 0;
+
+    background-position: center;
+    background-size: cover;
+
+    filter:
+        saturate(.9)
+        contrast(1.12)
+        brightness(.70);
+
+    transition: transform .5s ease;
+}
+
+.card:hover .card-image {
+    transform: scale(1.035);
+}
+
+/* dark overlay */
+
+.card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(0,0,0,.70),
+            transparent 50%,
+            rgba(0,0,0,.25)
+        ),
+        linear-gradient(
+            0deg,
+            rgba(0,0,0,.65),
+            transparent 55%
+        );
+
+    pointer-events: none;
+}
+
+
+/* =====================================================
+   TOP CENTER PREMIUM BRAND HEADER
+===================================================== */
+
+.top-brand-center {
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 35px;
+    position: relative;
+    z-index: 10;
+}
+
+.top-brand-title {
+    font-family: 'Permanent Marker', cursive;
+    font-size: clamp(40px, 6vw, 56px);
+    letter-spacing: 5px;
+    color: #ffffff;
+    text-shadow:
+        0 2px 10px rgba(0, 0, 0, 0.9),
+        0 0 12px rgba(199, 255, 0, 0.25);
+    display: inline-block;
+    transform: rotate(-2deg);
+}
+
+.top-brand-subtitle {
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 700;
+    font-size: clamp(10px, 1.5vw, 13px);
+    letter-spacing: 6px;
+    color: #ffffff;
+    margin-top: 10px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.top-brand-line {
+    width: 160px;
+    height: 2px;
+    margin: 14px auto 0;
+    background: linear-gradient(90deg, transparent, #c7ff00 40%, #c7ff00 60%, transparent);
+    box-shadow: 0 0 5px rgba(199, 255, 0, 0.4);
+}
+
+/* Hide top-navigation, monitor badges, tech-left, tech-right, date, slider & grid meshes on cards */
+.top-navigation,
+.card .monitor,
+.card .tech-left,
+.card .tech-right,
+.card .date,
+.card .slider,
+.hud-grid,
+.glitch {
+    display: none !important;
+}
+
+
+/* =====================================================
+   TOP BAR
+===================================================== */
+
+.brand {
+    position: absolute;
+    top: 24px;
+    left: 32px;
+
+    z-index: 5;
+
+    font-family: 'Permanent Marker', cursive;
+    font-size: 23px;
+
+    transform: rotate(-5deg);
+
+    text-shadow:
+        0 0 10px rgba(255,255,255,.45);
+}
+
+.top-navigation {
+    position: absolute;
+    top: 25px;
+    right: 28px;
+
+    display: flex;
+    align-items: center;
+    gap: 20px;
+
+    z-index: 5;
+
+    font-family: 'Orbitron', sans-serif;
+    font-size: 8px;
+    letter-spacing: 2px;
+
+    opacity: .85;
+}
+
+.menu {
+    width: 17px;
+    height: 12px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.menu span {
+    height: 2px;
+    background: white;
+}
+
+
+/* =====================================================
+   TITLE
+===================================================== */.point {
+    position: absolute;
+    left: 68px;
+    top: 22%;
+    z-index: 5;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: #DFFF00;
+    text-shadow: 0 0 8px rgba(223, 255, 0, 0.7);
+}
+
+@font-face {
+    font-family: 'CyberpunkRUS';
+    src: url('fonts/Cyberpunk_RUS.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.title {
+    position: absolute;
+    left: 65px;
+    top: 44%;
+    z-index: 5;
+    font-family: 'CyberpunkRUS', 'Permanent Marker', sans-serif;
+    font-size: clamp(52px, 7vw, 85px);
+    font-weight: 900;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    transform: translateY(-50%);
+}
+
+.card-1 .title {
+    color: #C7FF00;
+    -webkit-text-stroke: 1.5px #C7FF00;
+    text-shadow:
+        0 0 12px rgba(199, 255, 0, 0.85),
+        0 0 28px rgba(199, 255, 0, 0.45),
+        0 4px 20px rgba(0, 0, 0, 0.95);
+}
+
+.card-2 .title {
+    color: #FF00CC;
+    -webkit-text-stroke: 1.5px #FF00CC;
+    text-shadow:
+        0 0 12px rgba(255, 0, 204, 0.85),
+        0 0 28px rgba(255, 0, 204, 0.45),
+        0 4px 20px rgba(0, 0, 0, 0.95);
+}
+
+.card-3 .title {
+    color: #00F0FF;
+    -webkit-text-stroke: 1.5px #00F0FF;
+    text-shadow:
+        0 0 12px rgba(0, 240, 255, 0.85),
+        0 0 28px rgba(0, 240, 255, 0.45),
+        0 4px 20px rgba(0, 0, 0, 0.95);
+}
+
+.point {
+    position: absolute;
+    left: 68px;
+    top: 20%;
+    z-index: 5;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: #DFFF00;
+    text-shadow:
+        0 0 10px rgba(223, 255, 0, 0.85),
+        0 2px 8px rgba(0, 0, 0, 0.95);
+}
+
+.subtitle {
+    position: absolute;
+    left: 68px;
+    top: calc(44% + 46px);
+    z-index: 5;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #FFFFFF;
+    text-shadow:
+        0 0 12px rgba(0, 240, 255, 0.7),
+        0 2px 10px rgba(0, 0, 0, 0.95);
+}
+
+.timer-badge {
+    display: none !important;
+}
+}
+
+.subtitle {
+    position: absolute;
+    left: 70px;
+    top: calc(42% + 48px);
+    z-index: 5;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 8px;
+    letter-spacing: 5px;
+    opacity: .85;
+}
+
+
+/* =====================================================
+   POINT OF NO RETURN
+===================================================== */
+
+.point {
+    position: absolute;
+    left: 70px;
+    top: 25%;
+    z-index: 5;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 7px;
+    letter-spacing: 4px;
+    opacity: .7;
+}
+
+
+/* =====================================================
+   TECHNICAL TEXT
+===================================================== */
+
+.tech {
+    position: absolute;
+
+    z-index: 5;
+
+    font-family: 'Rajdhani', sans-serif;
+
+    font-size: 8px;
+
+    line-height: 1.25;
+
+    letter-spacing: 1px;
+
+    opacity: .7;
+}
+
+.tech-left {
+    left: 34px;
+    bottom: 45px;
+}
+
+.tech-right {
+    right: 28px;
+    bottom: 42px;
+
+    text-align: right;
+}
+
+
+/* =====================================================
+   DATE
+===================================================== */
+
+.date {
+    position: absolute;
+
+    left: 32px;
+    bottom: 22px;
+
+    z-index: 5;
+
+    font-family: 'Orbitron', sans-serif;
+
+    font-size: 9px;
+
+    letter-spacing: 1px;
+}
+
+.date strong {
+    display: block;
+
+    font-size: 13px;
+
+    letter-spacing: 1px;
+}
+
+
+/* =====================================================
+   MONITORING
+===================================================== */
+
+.monitor {
+    position: absolute;
+
+    left: 0;
+    bottom: 0;
+
+    width: 95px;
+    height: 20px;
+
+    display: flex;
+    align-items: center;
+
+    padding-left: 8px;
+
+    z-index: 6;
+
+    background: rgba(125,200,170,.65);
+
+    color: #0a1511;
+
+    font-family: 'Orbitron', sans-serif;
+
+    font-size: 7px;
+
+    letter-spacing: 1px;
+}
+
+
+/* =====================================================
+   SLIDER
+===================================================== */
+
+.slider {
+    position: absolute;
+
+    right: 27px;
+    bottom: 26px;
+
+    z-index: 6;
+
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.slider span {
+    display: block;
+
+    width: 12px;
+    height: 1px;
+
+    background: rgba(255,255,255,.45);
+}
+
+.slider span.active {
+    width: 30px;
+    background: white;
+}
+
+
+/* =====================================================
+   WARNING
+===================================================== */
+
+.warning {
+    position: absolute;
+
+    right: 40px;
+    top: 57%;
+
+    z-index: 7;
+
+    color: #ff3b32;
+
+    font-family: 'Orbitron', sans-serif;
+
+    font-size: 7px;
+
+    letter-spacing: 1px;
+
+    transform: rotate(-2deg);
+}
+
+
+/* =====================================================
+   CARD COLORS
+===================================================== */
+
+.card-1 {
+    --accent: #c7ff00;
+}
+
+.card-2 {
+    --accent: #ff2e61;
+}
+
+.card-3 {
+    --accent: #ffad00;
+}
+
+.card-4 {
+    --accent: #ff00d9;
+}
+
+.card-5 {
+    --accent: #ffe600;
+}
+
+
+/* =====================================================
+   IMAGE EXAMPLES
+===================================================== */
+
+.card-1 .card-image {
+    background-image:
+        url("images/photo1.jpg");
+}
+
+.card-2 .card-image {
+    background-image:
+        url("images/photo2.jpg");
+}
+
+.card-3 .card-image {
+    background-image:
+        url("images/photo3.jpg");
+}
+
+.card-4 .card-image {
+    background-image:
+        url("images/photo4.jpg");
+}
+
+.card-5 .card-image {
+    background-image:
+        url("images/photo5.jpg");
+}
+
+
+/* =====================================================
+   COLOR GLITCH
+===================================================== */
+
+.glitch {
+    position: absolute;
+    inset: 0;
+
+    z-index: 4;
+
+    pointer-events: none;
+
+    opacity: .35;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent 0%,
+            var(--accent) 49%,
+            transparent 51%
+        );
+
+    background-size: 2px 100%;
+
+    mix-blend-mode: screen;
+}
+
+
+/* =====================================================
+   CORNER MARKERS
+===================================================== */
+
+.corner {
+    position: absolute;
+
+    width: 14px;
+    height: 14px;
+
+    z-index: 6;
+
+    opacity: .6;
+}
+
+.corner::before,
+.corner::after {
+    content: "";
+    position: absolute;
+
+    background: var(--accent);
+}
+
+.corner::before {
+    width: 14px;
+    height: 1px;
+}
+
+.corner::after {
+    width: 1px;
+    height: 14px;
+}
+
+.c1 {
+    top: 18px;
+    left: 18px;
+}
+
+.c2 {
+    top: 18px;
+    right: 18px;
+}
+
+.c3 {
+    bottom: 18px;
+    left: 18px;
+}
+
+.c4 {
+    bottom: 18px;
+    right: 18px;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media(max-width:600px) {
+
+    .kiosk {
+        width: 100vw;
+        min-height: 220vw;
+        padding: 25px;
+    }
+
+    .card {
+        height: 31vw;
+        min-height: 210px;
+    }
+
+    .title {
+        font-size: 8vw;
+    }
+
+}
+
+</style>
+</head>
+
+
+<body>
+
+<div class="kiosk">
+
+    <!-- =========================================
+         TOP CENTER PREMIUM HEADER LOGO
+    ========================================== -->
+    <header class="top-brand-center">
+        <h1 class="top-brand-title">TRENDUM</h1>
+        <div class="top-brand-subtitle">ДРУГИЕ ВЕРСИИ ТЕБЯ!</div>
+        <div class="top-brand-line"></div>
+    </header>
+
+
+    <!-- =========================================
+         CARD 1 — ФОТО
+    ========================================== -->
+    <section class="card card-1" onclick="selectCard(this, 'ФОТО')">
+        <div class="card-image" style="background-image: url('images/photo1.jpg');"></div>
+        <div class="point">ОБЛОЖКИ • МУЛЬТИКИ • ИГРЫ</div>
+        <div class="title">ФОТО</div>
+        <div class="subtitle">100+ ШАБЛОНОВ ДЛЯ ФОТОСЕССИИ</div>
+        <div class="timer-badge"><span>07</span><span>30</span><span>56</span></div>
+    </section>
+
+    <!-- =========================================
+         CARD 2 — ВИДЕО
+    ========================================== -->
+    <section class="card card-2" onclick="selectCard(this, 'ВИДЕО')">
+        <div class="card-image" style="background-image: url('images/photo3.jpg');"></div>
+        <div class="point">ОЖИВИ СВОЙ ПОРТРЕТ</div>
+        <div class="title">ВИДЕО</div>
+        <div class="subtitle">КИНЕМАТОГРАФИЧНЫЕ ВИДЕОЭФФЕКТЫ</div>
+        <div class="timer-badge"><span>07</span><span>30</span><span>56</span></div>
+    </section>
+
+    <!-- =========================================
+         CARD 3 — ТРЕНДЫ
+    ========================================== -->
+    <section class="card card-3" onclick="selectCard(this, 'ТРЕНДЫ')">
+        <div class="card-image" style="background-image: url('assets/hero_robot.jpg');"></div>
+        <div class="point">ЗАПИШИ ВИРУСНЫЙ РОЛИК</div>
+        <div class="title">ТРЕНДЫ</div>
+        <div class="subtitle">TIKTOK, REELS & SHORTS ЧЕЛЛЕНДЖИ</div>
+        <div class="timer-badge"><span>07</span><span>30</span><span>56</span></div>
+    </section>
+
+<!-- =========================================
+     ATTRACT MODE SCREEN SAVER (PLAYLIST SUPPORT FOR VIDEO & PHOTO)
+========================================== -->
+<div id="attract-overlay" class="attract-overlay hidden" onclick="hideAttractScreen()" ontouchstart="hideAttractScreen()">
+    <!-- Top 3/4 Video & Photo Playlist Container -->
+    <div class="attract-top-video">
+        <video id="attract-promo-video" autoplay muted playsinline defaultMuted preload="auto" class="media-layer active"></video>
+        <img id="attract-promo-img" class="media-layer" alt="Ad Slide">
+        
+        <div class="attract-video-fallback" id="attract-top-fallback">
+            <div class="cyber-glow-orb"></div>
+            <div class="fallback-title">TRENDUM ADVERTISING</div>
+            <div class="fallback-subtitle">ВИДЕО И ФОТО РЕКЛАМА ИЗ АДМИНКИ</div>
+        </div>
+        <div class="attract-ad-badge">РЕКЛАМА • PROMO</div>
+    </div>
+
+    <!-- Bottom 1/4 Video & Photo Playlist Container -->
+    <div class="attract-bottom-card">
+        <video id="attract-card-video" autoplay muted playsinline defaultMuted preload="auto" class="media-layer active"></video>
+        <img id="attract-card-img" class="media-layer" alt="Card Slide">
+    </div>
+</div>
+
+<!-- =========================================
+     2-COLUMN PURE IMAGE GRID WITH CATEGORIES & ADMIN
+========================================== -->
+<div id="template-modal" class="template-modal hidden">
+    <!-- Header Controls -->
+    <div class="grid-modal-header">
+        <div class="header-top-bar">
+            <button id="template-back-btn" class="grid-back-btn">
+                <span>←</span> НАЗАД
+            </button>
+            <div class="grid-modal-title" id="grid-modal-title">ВСЕ ШАБЛОНЫ</div>
+            <div class="header-spacer"></div>
+        </div>
+        
+        <!-- Categories Pills Bar (Dynamic from JS) -->
+        <div class="category-pills" id="category-pills-bar">
+            <!-- Category Pills generated dynamically by JS -->
+        </div>
+    </div>
+
+    <!-- 2-Column Pure Image Tiles Grid -->
+    <div class="template-grid-2col" id="template-grid-2col">
+        <!-- Pure image tile cards generated by JS -->
+    </div>
+</div>
+
+<style>
+/* HEADER SPACER FOR CENTERING TITLE */
+.header-spacer {
+    width: 100px;
+    height: 42px;
+    pointer-events: none;
+}
+</style>
+
+<style>
+/* CLEAN PURE IMAGE GRID STYLES */
+.template-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    background: #04060b;
+    padding: 20px 18px 10px 18px;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.template-modal.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Header Top Bar */
+.grid-modal-header {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 18px;
+}
+
+.header-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.grid-back-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 22px;
+    border-radius: 25px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.25s ease;
+}
+
+.grid-back-btn {
+    background: rgba(255, 42, 95, 0.15);
+    border: 1px solid rgba(255, 42, 95, 0.4);
+    color: #ff2a5f;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 900;
+    font-style: italic;
+    padding: 10px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.25s ease;
+    box-shadow: 0 0 15px rgba(255, 42, 95, 0.3);
+}
+
+.grid-back-btn:hover {
+    background: #ff2a5f;
+    color: #ffffff;
+    box-shadow: 0 0 25px rgba(255, 42, 95, 0.7);
+    transform: scale(1.05);
+}
+
+.grid-modal-title {
+    font-family: 'Montserrat', 'CyberpunkRUS', sans-serif;
+    font-size: 32px;
+    font-weight: 900;
+    font-style: italic;
+    color: #ffffff;
+    text-shadow: 0 0 20px rgba(0, 240, 255, 0.7);
+    letter-spacing: 2px;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+/* Category Pills Bar (Cyber / Esports Style as Requested) */
+.category-pills {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 6px 4px 14px 4px;
+    scrollbar-width: none;
+}
+
+.category-pills::-webkit-scrollbar {
+    display: none;
+}
+
+.cat-pill {
+    position: relative;
+    background: rgba(15, 20, 35, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: rgba(255, 255, 255, 0.85);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 900;
+    font-style: italic;
+    letter-spacing: 1px;
+    padding: 12px 28px;
+    border-radius: 30px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.cat-pill:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px) scale(1.03);
+}
+
+.cat-pill.active {
+    color: #07090f;
+    background: #e5ff00;
+    border-color: #e5ff00;
+    font-weight: 900;
+    box-shadow: 0 0 20px rgba(229, 255, 0, 0.6), 0 0 40px rgba(229, 255, 0, 0.25);
+    transform: translateY(-2px) scale(1.05);
+}
+
+/* 2-Column Tetris / Masonry Pure Image Grid (Real Aspect Ratio) */
+.template-grid-2col {
+    column-count: 2;
+    column-gap: 16px;
+    overflow-y: auto;
+    padding: 6px 4px 40px 4px;
+    flex: 1;
+    scrollbar-width: thin;
+}
+
+.tile-card {
+    break-inside: avoid;
+    margin-bottom: 16px;
+    position: relative;
+    width: 100%;
+    border-radius: 22px;
+    background: rgba(15, 20, 35, 0.7);
+    border: 2px solid rgba(255, 255, 255, 0.14);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.85);
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
+}
+
+.tile-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 20px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.tile-card:hover, .tile-card:active {
+    transform: translateY(-4px) scale(1.02);
+    border-color: #00F0FF !important;
+    box-shadow: 0 0 35px rgba(0, 240, 255, 0.85);
+}
+
+.tile-card:hover img {
+    transform: scale(1.03);
+}
+</style>
+
+<style>
+/* CINEVORA TEMPLATE CATALOG STYLES */
+.template-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    background: #080c14;
+    padding: 25px 25px;
+    overflow-y: auto;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.template-modal.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Header & Tabs */
+.cine-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 10;
+    margin-bottom: 20px;
+}
+
+.cine-back-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 22px;
+    border-radius: 25px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.25s ease;
+}
+
+.cine-back-btn:hover {
+    background: rgba(0, 240, 255, 0.2);
+    border-color: #00F0FF;
+    color: #00F0FF;
+}
+
+.cine-nav-tabs {
+    display: flex;
+    gap: 12px;
+}
+
+.cine-tab {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.cine-tab.active, .cine-tab:hover {
+    color: #ffffff;
+    background: rgba(0, 240, 255, 0.15);
+    border: 1px solid rgba(0, 240, 255, 0.4);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+}
+
+/* Hero Section */
+.cine-hero {
+    position: relative;
+    width: 100%;
+    height: 48vh;
+    border-radius: 28px;
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    transition: background-image 0.5s ease;
+    margin-bottom: 25px;
+}
+
+.cine-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(8,12,20,0.1) 0%, rgba(8,12,20,0.92) 85%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 30px;
+}
+
+.cine-hero-tags {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    color: #00F0FF;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+}
+
+.cine-hero-title {
+    font-family: 'CyberpunkRUS', sans-serif;
+    font-size: 42px;
+    color: #ffffff;
+    text-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+    margin-bottom: 8px;
+    line-height: 1.1;
+}
+
+.cine-hero-desc {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.75);
+    margin-bottom: 22px;
+    max-width: 80%;
+}
+
+.cine-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.cine-btn-primary {
+    background: linear-gradient(135deg, #5865F2 0%, #00F0FF 100%);
+    border: none;
+    color: #ffffff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    padding: 15px 36px;
+    border-radius: 35px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 0 30px rgba(88, 101, 242, 0.6);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.select-template-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 50px rgba(0, 240, 255, 0.95);
+}
+
+.attract-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    background: #020305;
+    padding: 15px 15px 15px 15px;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.attract-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Top 3/4 (72% height) Video Ad Container */
+.attract-top-video {
+    height: 72%;
+    width: 100%;
+    position: relative;
+    overflow: hidden !important;
+    background: #05070a;
+    border-radius: 35px !important;
+    -webkit-mask-image: -webkit-radial-gradient(white, black) !important;
+    mask-image: -webkit-radial-gradient(white, black) !important;
+    margin-bottom: 15px;
+    box-shadow: none !important;
+    z-index: 2;
+}
+
+.media-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+
+.media-layer.active {
+    opacity: 1;
+    visibility: visible;
+    z-index: 2;
+}
+
+.attract-video-fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 40%, #151c28 0%, #05070a 80%);
+    z-index: 1;
+}
+
+.cyber-glow-orb {
+    width: 250px;
+    height: 250px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 240, 255, 0.4), rgba(255, 0, 204, 0.2), transparent 70%);
+    animation: orbPulse 3s infinite alternate ease-in-out;
+}
+
+@keyframes orbPulse {
+    0% { transform: scale(0.85); opacity: 0.6; }
+    100% { transform: scale(1.15); opacity: 1; }
+}
+
+.fallback-title {
+    font-family: 'CyberpunkRUS', sans-serif;
+    font-size: 42px;
+    color: #00F0FF;
+    margin-top: 20px;
+    text-shadow: 0 0 15px #00F0FF;
+}
+
+.fallback-subtitle {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    letter-spacing: 4px;
+    color: #DFFF00;
+    margin-top: 8px;
+}
+
+.attract-ad-badge {
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid #00F0FF;
+    color: #00F0FF;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+}
+
+/* Bottom 1/4 (25% height) Card Container */
+.attract-bottom-card {
+    height: 25%;
+    width: 100%;
+    position: relative;
+    overflow: hidden !important;
+    background: linear-gradient(180deg, #090c12 0%, #040608 100%);
+    border-radius: 28px !important;
+    -webkit-mask-image: -webkit-radial-gradient(white, black) !important;
+    mask-image: -webkit-radial-gradient(white, black) !important;
+}
+
+.attract-bottom-card video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.attract-bottom-fallback {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(199, 255, 0, 0.15), transparent 70%);
+}
+
+.attract-tap-prompt {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+}
+
+.tap-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(10, 15, 25, 0.85);
+    border: 2px solid #C7FF00;
+    padding: 18px 36px;
+    border-radius: 40px;
+    box-shadow: 0 0 25px rgba(199, 255, 0, 0.6);
+    animation: tapBounce 1.8s infinite ease-in-out;
+}
+
+@keyframes tapBounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.tap-icon {
+    font-size: 32px;
+    animation: handPoint 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes handPoint {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-8px); }
+}
+
+.tap-text {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: #C7FF00;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(199, 255, 0, 0.8);
+}
+</style>
+
+<!-- =========================================
+     MODAL OVERLAYS (PHOTO FLOW & PAYMENT)
+========================================== -->
+<div id="kiosk-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <button id="modal-close" class="modal-close-btn">&times;</button>
+        
+        <!-- STEP 1: CAMERA PREVIEW -->
+        <div id="step-camera" class="step-view">
+            <h2 class="modal-title">СЪЁМКА ФОТО</h2>
+            <p class="modal-subtitle">Встаньте по центру и смотрите в камеру</p>
+            
+            <div class="webcam-box">
+                <video id="webcam" autoplay playsinline muted></video>
+                <canvas id="photo-canvas" style="display:none;"></canvas>
+                <div class="webcam-hud">
+                    <div class="hud-corner top-left"></div>
+                    <div class="hud-corner top-right"></div>
+                    <div class="hud-corner bottom-left"></div>
+                    <div class="hud-corner bottom-right"></div>
+                    <div id="countdown-overlay" class="countdown-num"></div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="snap-btn" class="action-btn primary-btn">📸 СДЕЛАТЬ ФОТО</button>
+            </div>
+        </div>
+
+        <!-- STEP 2: PAYMENT (SOM) -->
+        <div id="step-payment" class="step-view" style="display:none;">
+            <h2 class="modal-title">ВЫБОР ПАКЕТА И ОПЛАТА</h2>
+            <p class="modal-subtitle">Оплата через O!Bank / MBank / ELQR QR</p>
+
+            <div class="packages-grid">
+                <div class="package-card" data-price="199">
+                    <div class="pkg-name">⭐ БАЗОВЫЙ</div>
+                    <div class="pkg-price">199 <span>сом</span></div>
+                    <div class="pkg-desc">1 ИИ-Фото в выбранном стиле</div>
+                    <button class="pkg-select-btn">ВЫБРАТЬ</button>
+                </div>
+                <div class="package-card active" data-price="499">
+                    <div class="pkg-badge">ПОПУЛЯРНЫЙ</div>
+                    <div class="pkg-name">🌟 СТАНДАРТ</div>
+                    <div class="pkg-price">499 <span>сом</span></div>
+                    <div class="pkg-desc">3 ИИ-Фото + Высокое качество</div>
+                    <button class="pkg-select-btn">ВЫБРАТЬ</button>
+                </div>
+                <div class="package-card" data-price="899">
+                    <div class="pkg-name">💫 ПРЕМИУМ</div>
+                    <div class="pkg-price">899 <span>сом</span></div>
+                    <div class="pkg-desc">5 ИИ-Фото + Видео-слайдшоу</div>
+                    <button class="pkg-select-btn">ВЫБРАТЬ</button>
+                </div>
+            </div>
+
+            <div id="qr-payment-zone" class="qr-pay-box" style="display:none;">
+                <div class="qr-code-img">
+                    <!-- Placeholder ELQR QR -->
+                    <svg viewBox="0 0 200 200" width="160" height="160">
+                        <rect width="200" height="200" fill="white"/>
+                        <path d="M10 10h60v60H10zM130 10h60v60h-60zM10 130h60v60H10z" fill="#000"/>
+                        <path d="M25 25h30v30H25zM145 25h30v30h-30zM25 145h30v30H25z" fill="#fff"/>
+                        <path d="M80 10h40v20H80zM10 80h20v40H10zM170 80h20v40h-20zM90 90h20v20H90zM130 130h20v20h-20zM80 170h40v20H80zM170 150h20v40h-20z" fill="#000"/>
+                    </svg>
+                </div>
+                <p class="qr-instruction">Отсканируйте через приложение <strong>MBank / O!Bank / Элкарт</strong></p>
+                <button id="sim-pay-btn" class="action-btn success-btn">✅ ТЕСТ: ИМИТИРОВАТЬ ОПЛАТУ</button>
+            </div>
+        </div>
+
+        <!-- STEP 3: AI PROCESSING -->
+        <div id="step-processing" class="step-view" style="display:none;">
+            <h2 class="modal-title">ИИ ОБРАБОТКА...</h2>
+            <p class="modal-subtitle" id="ai-status-text">Нейросеть генерирует ваше фото...</p>
+
+            <div class="spinner-box">
+                <div class="cyber-spinner"></div>
+            </div>
+        </div>
+
+        <!-- STEP 4: RESULT & DOWNLOAD QR -->
+        <div id="step-result" class="step-view" style="display:none;">
+            <h2 class="modal-title">ГОТОВО! 🎉</h2>
+            <p class="modal-subtitle">Отсканируйте QR-код, чтобы скачать фото на телефон</p>
+
+            <div class="result-content">
+                <div class="result-image-box">
+                    <img id="result-img" src="" alt="Результат ИИ">
+                </div>
+                <div class="result-qr-box">
+                    <div class="result-qr">
+                        <svg viewBox="0 0 200 200" width="140" height="140">
+                            <rect width="200" height="200" fill="white"/>
+                            <path d="M10 10h60v60H10zM130 10h60v60h-60zM10 130h60v60H10z" fill="#000"/>
+                            <path d="M25 25h30v30H25zM145 25h30v30h-30zM25 145h30v30H25z" fill="#fff"/>
+                            <path d="M80 20h20v20H80zM20 90h40v20H20zM140 90h40v20h-40zM90 140h30v30H90z" fill="#000"/>
+                        </svg>
+                    </div>
+                    <span class="qr-timer">Доступно 24 часа</span>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="finish-btn" class="action-btn primary-btn">🏠 В НАЧАЛО</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* MODAL STYLES INJECTED DIRECTLY */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(5, 8, 10, 0.92);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-content {
+    background: #0d1214;
+    border: 1px solid rgba(199, 255, 0, 0.3);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.9), 0 0 20px rgba(199, 255, 0, 0.15);
+    width: min(90vw, 750px);
+    padding: 35px;
+    border-radius: 4px;
+    position: relative;
+    color: #fff;
+    text-align: center;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 32px;
+    cursor: pointer;
+}
+.modal-close-btn:hover { color: #fff; }
+
+.modal-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    letter-spacing: 3px;
+    color: #c7ff00;
+    margin-bottom: 8px;
+}
+
+.modal-subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 25px;
+}
+
+.webcam-box {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    height: 360px;
+    margin: 0 auto 25px;
+    background: #000;
+    border: 1px solid rgba(255,255,255,0.2);
+    overflow: hidden;
+}
+
+#webcam {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.webcam-hud {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.hud-corner {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    border: 2px solid #c7ff00;
+}
+.top-left { top: 15px; left: 15px; border-right: none; border-bottom: none; }
+.top-right { top: 15px; right: 15px; border-left: none; border-bottom: none; }
+.bottom-left { bottom: 15px; left: 15px; border-right: none; border-top: none; }
+.bottom-right { bottom: 15px; right: 15px; border-left: none; border-top: none; }
+
+.countdown-num {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 90px;
+    font-weight: 700;
+    color: #c7ff00;
+    text-shadow: 0 0 30px #c7ff00;
+}
+
+.action-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    padding: 14px 28px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.primary-btn {
+    background: #c7ff00;
+    color: #090b0c;
+}
+.primary-btn:hover {
+    background: #e1ff66;
+    box-shadow: 0 0 20px rgba(199,255,0,0.5);
+}
+
+.success-btn {
+    background: #00ff88;
+    color: #090b0c;
+}
+
+.packages-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.package-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 20px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s;
+}
+
+.package-card.active, .package-card:hover {
+    border-color: #c7ff00;
+    background: rgba(199,255,0,0.08);
+}
+
+.pkg-badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ff2e61;
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.pkg-name { font-family: 'Orbitron', sans-serif; font-size: 13px; margin-bottom: 10px; }
+.pkg-price { font-size: 26px; font-weight: 700; color: #c7ff00; margin-bottom: 8px; }
+.pkg-price span { font-size: 12px; color: #fff; }
+.pkg-desc { font-size: 11px; color: #aaa; margin-bottom: 15px; }
+
+.pkg-select-btn {
+    font-size: 10px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    cursor: pointer;
+}
+
+.qr-pay-box {
+    background: rgba(0,0,0,0.4);
+    padding: 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    margin-top: 15px;
+}
+
+.qr-code-img {
+    margin-bottom: 12px;
+}
+
+.qr-instruction {
+    font-size: 13px;
+    margin-bottom: 15px;
+}
+
+.cyber-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(199,255,0,0.1);
+    border-top-color: #c7ff00;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 40px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.result-content {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 25px;
+}
+
+.result-image-box img {
+    max-width: 280px;
+    max-height: 280px;
+    border: 2px solid #c7ff00;
+    box-shadow: 0 0 20px rgba(199,255,0,0.3);
+}
+
+.result-qr-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+</style>
+<script src="script.js?v=adminpin1"></script>
+</body>
+</html>
+
+
