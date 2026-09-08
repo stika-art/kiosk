@@ -1,0 +1,5 @@
+kiosk_data/Default/Cache/
+kiosk_data/**/Cache_Data/
+kiosk_data/**/Code Cache/
+kiosk_data/**/DawnGraphiteCache/
+kiosk_data/**/DawnWebGPUCache/
