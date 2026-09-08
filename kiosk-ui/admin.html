@@ -482,6 +482,7 @@
                 <div class="form-row">
                     <select id="tpl-cat-select" class="admin-select"></select>
                     <input type="text" id="tpl-title-input" class="admin-input" placeholder="Название шаблона (напр: CYBER SAMURAI)...">
+                    <input type="number" id="tpl-price-input" class="admin-input" style="max-width: 160px;" placeholder="Цена (сом, напр: 290)" min="10" step="10">
                 </div>
                 <div class="form-row">
                     <input type="text" id="tpl-img-input" class="admin-input" placeholder="Путь к фото (напр: assets/man.jpg или images/photo1.jpg)...">
@@ -495,6 +496,7 @@
                             <th style="width: 80px;">Превью</th>
                             <th>Название шаблона</th>
                             <th>Категория</th>
+                            <th>Цена</th>
                             <th>Путь к файлу</th>
                             <th style="width: 120px; text-align: right;">Действие</th>
                         </tr>
@@ -549,16 +551,16 @@
                 if (tpls) return JSON.parse(tpls);
             } catch(e) {}
             return [
-                { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png' },
-                { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg' },
-                { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg' },
-                { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg' },
-                { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg' },
-                { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg' },
-                { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg' },
-                { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg' },
-                { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg' },
-                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg' }
+                { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290 },
+                { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350 },
+                { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290 },
+                { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390 },
+                { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350 },
+                { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450 },
+                { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450 },
+                { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490 },
+                { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290 },
+                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290 }
             ];
         }
 
@@ -690,10 +692,12 @@
 
             templates.forEach(tpl => {
                 const tr = document.createElement('tr');
+                const priceVal = tpl.price || 290;
                 tr.innerHTML = `
                     <td><img src="${tpl.img}" alt="${tpl.title}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'"></td>
                     <td><strong>${tpl.title}</strong></td>
                     <td><span class="cat-tag">${tpl.category}</span></td>
+                    <td><span style="color: #c7ff00; font-weight: 800; font-family: 'Orbitron', sans-serif;">${priceVal} сом</span></td>
                     <td style="color: rgba(255,255,255,0.6); font-family: monospace; font-size: 13px;">${tpl.img}</td>
                     <td style="text-align: right;">
                         <button class="btn-del" onclick="deleteTemplate(${tpl.id})">Удалить</button>
@@ -706,11 +710,13 @@
         function addTemplate() {
             const catSelect = document.getElementById('tpl-cat-select');
             const titleInput = document.getElementById('tpl-title-input');
+            const priceInput = document.getElementById('tpl-price-input');
             const imgInput = document.getElementById('tpl-img-input');
             const status = document.getElementById('tpl-status');
 
             const category = catSelect.value;
             const title = titleInput.value.trim();
+            const price = Number(priceInput.value) || 290;
             const img = imgInput.value.trim();
 
             if (!title || !img) {
@@ -720,12 +726,13 @@
             }
 
             const newId = Date.now();
-            templates.push({ id: newId, category, title, img });
+            templates.push({ id: newId, category, title, img, price });
             localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
 
             titleInput.value = '';
+            priceInput.value = '';
             imgInput.value = '';
-            status.textContent = `✅ Шаблон "${title}" успешно добавлен`;
+            status.textContent = `✅ Шаблон "${title}" (${price} сом) успешно добавлен`;
             status.className = 'status-msg success';
 
             renderTemplates();

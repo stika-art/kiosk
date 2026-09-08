@@ -1058,6 +1058,33 @@ body {
 .tile-card:hover img {
     transform: scale(1.03);
 }
+
+/* Яркая ценовая плашка в сомах на плитке шаблона */
+.tile-price-badge {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.95), rgba(0, 180, 255, 0.85));
+    color: #050810;
+    font-family: 'Unbounded', 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 6px 12px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 240, 255, 0.6);
+    letter-spacing: 0.5px;
+    pointer-events: none;
+    z-index: 5;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.tile-price-badge span {
+    font-size: 11px;
+    font-weight: 700;
+    opacity: 0.9;
+}
 </style>
 
 <style>
@@ -1424,45 +1451,48 @@ body {
             </div>
         </div>
 
-        <!-- STEP 2: PAYMENT (SOM) -->
+        <!-- STEP 2: PAYMENT (SOM / OBUSINESS ELQR) -->
         <div id="step-payment" class="step-view" style="display:none;">
-            <h2 class="modal-title">ВЫБОР ПАКЕТА И ОПЛАТА</h2>
-            <p class="modal-subtitle">Оплата через O!Bank / MBank / ELQR QR</p>
+            <h2 class="modal-title" style="color: #00F0FF; text-shadow: 0 0 20px rgba(0, 240, 255, 0.6);">ОПЛАТА СТИЛЯ</h2>
+            <p class="modal-subtitle">Отсканируйте QR через O!Bank, MBank, Optima или Элкарт</p>
 
-            <div class="packages-grid">
-                <div class="package-card" data-price="199">
-                    <div class="pkg-name">⭐ БАЗОВЫЙ</div>
-                    <div class="pkg-price">199 <span>сом</span></div>
-                    <div class="pkg-desc">1 ИИ-Фото в выбранном стиле</div>
-                    <button class="pkg-select-btn">ВЫБРАТЬ</button>
+            <div class="pay-summary-card">
+                <div class="pay-summary-left">
+                    <img id="pay-selected-thumb" src="images/photo1.jpg" alt="Превью стиля" class="pay-thumb">
+                    <div class="pay-details">
+                        <span class="pay-label">ВЫБРАННЫЙ ШАБЛОН:</span>
+                        <div id="pay-style-title" class="pay-title">ROBLOX HERO</div>
+                        <div class="pay-subtext">1 ИИ-генерация высокого разрешения</div>
+                    </div>
                 </div>
-                <div class="package-card active" data-price="499">
-                    <div class="pkg-badge">ПОПУЛЯРНЫЙ</div>
-                    <div class="pkg-name">🌟 СТАНДАРТ</div>
-                    <div class="pkg-price">499 <span>сом</span></div>
-                    <div class="pkg-desc">3 ИИ-Фото + Высокое качество</div>
-                    <button class="pkg-select-btn">ВЫБРАТЬ</button>
-                </div>
-                <div class="package-card" data-price="899">
-                    <div class="pkg-name">💫 ПРЕМИУМ</div>
-                    <div class="pkg-price">899 <span>сом</span></div>
-                    <div class="pkg-desc">5 ИИ-Фото + Видео-слайдшоу</div>
-                    <button class="pkg-select-btn">ВЫБРАТЬ</button>
+                <div class="pay-summary-right">
+                    <span class="pay-label">К ОПЛАТЕ:</span>
+                    <div class="pay-amount"><span id="pay-amount-val">290</span> <span class="currency">СОМ</span></div>
                 </div>
             </div>
 
-            <div id="qr-payment-zone" class="qr-pay-box" style="display:none;">
-                <div class="qr-code-img">
-                    <!-- Placeholder ELQR QR -->
-                    <svg viewBox="0 0 200 200" width="160" height="160">
-                        <rect width="200" height="200" fill="white"/>
-                        <path d="M10 10h60v60H10zM130 10h60v60h-60zM10 130h60v60H10z" fill="#000"/>
-                        <path d="M25 25h30v30H25zM145 25h30v30h-30zM25 145h30v30H25z" fill="#fff"/>
-                        <path d="M80 10h40v20H80zM10 80h20v40H10zM170 80h20v40h-20zM90 90h20v20H90zM130 130h20v20h-20zM80 170h40v20H80zM170 150h20v40h-20z" fill="#000"/>
-                    </svg>
+            <div id="qr-payment-zone" class="qr-pay-box">
+                <div class="qr-container-card">
+                    <div id="qr-code-wrapper" class="qr-code-img">
+                        <img id="elqr-img" src="" alt="oBusiness ELQR" class="elqr-real-img">
+                    </div>
+                    <div class="qr-logos-row">
+                        <span class="qr-bank-pill obank">O!Bank</span>
+                        <span class="qr-bank-pill mbank">MBank</span>
+                        <span class="qr-bank-pill optima">Optima</span>
+                        <span class="qr-bank-pill elkart">ЭЛКАРТ</span>
+                    </div>
                 </div>
-                <p class="qr-instruction">Отсканируйте через приложение <strong>MBank / O!Bank / Элкарт</strong></p>
-                <button id="sim-pay-btn" class="action-btn success-btn">✅ ТЕСТ: ИМИТИРОВАТЬ ОПЛАТУ</button>
+
+                <div class="payment-status-indicator">
+                    <div class="pulse-dot"></div>
+                    <span id="payment-status-text">Ожидание оплаты через oBusiness...</span>
+                </div>
+
+                <div class="pay-actions-row">
+                    <button id="sim-pay-btn" class="action-btn success-btn">⚡ ТЕСТ: ИМИТИРОВАТЬ ОПЛАТУ</button>
+                    <button id="cancel-pay-btn" class="action-btn cancel-btn">← ДРУГОЙ ШАБЛОН</button>
+                </div>
             </div>
         </div>
 
@@ -1629,68 +1659,166 @@ body {
     color: #090b0c;
 }
 
-.packages-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    margin-bottom: 25px;
+.pay-summary-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    text-align: left;
 }
 
-.package-card {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.15);
-    padding: 20px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    position: relative;
-    transition: all 0.3s;
+.pay-summary-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
 }
 
-.package-card.active, .package-card:hover {
-    border-color: #c7ff00;
-    background: rgba(199,255,0,0.08);
+.pay-thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 2px solid #00F0FF;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
 }
 
-.pkg-badge {
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #ff2e61;
-    font-size: 9px;
-    padding: 2px 8px;
-    border-radius: 10px;
+.pay-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.pay-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 1px;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.pay-title {
+    font-family: 'Unbounded', 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 2px 0;
+}
+
+.pay-subtext {
+    font-size: 12px;
+    color: #00F0FF;
+}
+
+.pay-summary-right {
+    text-align: right;
+}
+
+.pay-amount {
+    font-family: 'Unbounded', 'Orbitron', sans-serif;
+    font-size: 32px;
+    font-weight: 900;
+    color: #c7ff00;
+    text-shadow: 0 0 15px rgba(199, 255, 0, 0.5);
+}
+
+.pay-amount .currency {
+    font-size: 14px;
     font-weight: 700;
-}
-
-.pkg-name { font-family: 'Orbitron', sans-serif; font-size: 13px; margin-bottom: 10px; }
-.pkg-price { font-size: 26px; font-weight: 700; color: #c7ff00; margin-bottom: 8px; }
-.pkg-price span { font-size: 12px; color: #fff; }
-.pkg-desc { font-size: 11px; color: #aaa; margin-bottom: 15px; }
-
-.pkg-select-btn {
-    font-size: 10px;
-    padding: 6px 12px;
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.3);
-    color: #fff;
-    cursor: pointer;
+    color: #ffffff;
 }
 
 .qr-pay-box {
-    background: rgba(0,0,0,0.4);
-    padding: 20px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    margin-top: 15px;
+    background: rgba(10, 15, 25, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    padding: 24px 20px;
+}
+
+.qr-container-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 18px;
 }
 
 .qr-code-img {
-    margin-bottom: 12px;
+    background: #ffffff;
+    padding: 14px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 240, 255, 0.2);
+    display: inline-block;
+    margin-bottom: 14px;
 }
 
-.qr-instruction {
+.elqr-real-img {
+    width: 200px;
+    height: 200px;
+    display: block;
+}
+
+.qr-logos-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.qr-bank-pill {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+}
+.qr-bank-pill.obank { background: #E4002B; color: #fff; }
+.qr-bank-pill.mbank { background: #00A859; color: #fff; }
+.qr-bank-pill.optima { background: #FF6600; color: #fff; }
+.qr-bank-pill.elkart { background: #0072CE; color: #fff; }
+
+.payment-status-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 18px 0;
+    font-family: 'Orbitron', sans-serif;
     font-size: 13px;
-    margin-bottom: 15px;
+    color: #00F0FF;
+}
+
+.pulse-dot {
+    width: 12px;
+    height: 12px;
+    background: #00F0FF;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #00F0FF;
+    animation: pulseGlow 1.4s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { transform: scale(0.9); opacity: 0.5; }
+    50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 18px #00F0FF; }
+}
+
+.pay-actions-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.cancel-btn {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #ffffff;
 }
 
 .cyber-spinner {
@@ -1726,7 +1854,7 @@ body {
     gap: 10px;
 }
 </style>
-<script src="script.js?v=adminpin1"></script>
+<script src="script.js?v=elqr1"></script>
 </body>
 </html>
 

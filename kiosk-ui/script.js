@@ -4,6 +4,7 @@
 
 let selectedStyle = 'ROBLOX HERO';
 let selectedStylePhoto = 'images/photo1.jpg';
+let selectedStylePrice = 290;
 let isSelectingCard = false;
 let isAttractClosing = false;
 let currentCategory = 'ФОТО';
@@ -48,16 +49,16 @@ try {
 
 if (!masterTemplates || masterTemplates.length === 0) {
     masterTemplates = [
-        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png' },
-        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg' },
-        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg' },
-        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg' },
-        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg' },
-        { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg' },
-        { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg' },
-        { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg' },
-        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg' },
-        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg' }
+        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290 },
+        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350 },
+        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290 },
+        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390 },
+        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350 },
+        { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450 },
+        { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450 },
+        { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490 },
+        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290 },
+        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290 }
     ];
 }
 
@@ -169,11 +170,20 @@ function renderGridTemplates() {
         img.alt = item.title;
         img.loading = 'eager';
 
-        card.appendChild(img);
+        // Плашка с ценой в сомах
+        const itemPrice = item.price || 290;
+        const priceBadge = document.createElement('div');
+        priceBadge.className = 'tile-price-badge';
+        priceBadge.innerHTML = `${itemPrice} <span>СОМ</span>`;
 
+        card.appendChild(img);
+        card.appendChild(priceBadge);
+
+        // При клике на карточку — сразу переходим к экрану оплаты oBusiness!
         card.addEventListener('click', () => {
             selectedStyle = item.title;
             selectedStylePhoto = item.img;
+            selectedStylePrice = itemPrice;
             closeTemplateGallery();
             openKioskFlow();
         });
@@ -203,9 +213,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const countdownOverlay = document.getElementById('countdown-overlay');
 
     // Payment Elements
-    const packageCards = document.querySelectorAll('.package-card');
     const qrPaymentZone = document.getElementById('qr-payment-zone');
     const simPayBtn = document.getElementById('sim-pay-btn');
+    const cancelPayBtn = document.getElementById('cancel-pay-btn');
+    const payStyleTitle = document.getElementById('pay-style-title');
+    const paySelectedThumb = document.getElementById('pay-selected-thumb');
+    const payAmountVal = document.getElementById('pay-amount-val');
+    const elqrImg = document.getElementById('elqr-img');
+    const paymentStatusText = document.getElementById('payment-status-text');
 
     // Result Elements
     const resultImg = document.getElementById('result-img');
@@ -214,16 +229,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let mediaStream = null;
     let capturedPhotoData = null;
+    let currentOrderId = null;
+    let paymentPollTimer = null;
 
+    // ШАГ 1: ОТКРЫТИЕ ПОТОКА — СРАЗУ ЭКРАН ОПЛАТЫ OBUSINESS
     window.openKioskFlow = function() {
         if (modal) modal.style.display = 'flex';
-        showStep(stepCamera);
-        startWebcam();
+        showStep(stepPayment);
+        initiatePaymentOrder();
     };
 
     modalClose.addEventListener('click', closeKioskFlow);
+    if (cancelPayBtn) {
+        cancelPayBtn.addEventListener('click', () => {
+            closeKioskFlow();
+            openTemplateGallery();
+        });
+    }
 
     function closeKioskFlow() {
+        stopPaymentPolling();
         stopWebcam();
         modal.style.display = 'none';
         resetState();
@@ -236,20 +261,149 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function resetState() {
         countdownOverlay.textContent = '';
-        qrPaymentZone.style.display = 'none';
+        currentOrderId = null;
     }
 
-    // 2. WEBCAM LOGIC
-    async function startWebcam() {
+    // ИНИЦИАЛИЗАЦИЯ ЗАКАЗА И QR-КОДА OBUSINESS ELQR
+    async function initiatePaymentOrder() {
+        if (payStyleTitle) payStyleTitle.textContent = selectedStyle;
+        if (paySelectedThumb) paySelectedThumb.src = selectedStylePhoto;
+        if (payAmountVal) payAmountVal.textContent = selectedStylePrice || 290;
+        if (paymentStatusText) paymentStatusText.textContent = 'Подключение к oBusiness ELQR...';
+
         try {
-            mediaStream = await navigator.mediaDevices.getUserMedia({
-                video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-                audio: false
+            const resp = await fetch('/api/payment/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: selectedStylePrice || 290,
+                    templateTitle: selectedStyle
+                })
             });
+            const data = await resp.json();
+
+            if (data.success) {
+                currentOrderId = data.orderId;
+                if (elqrImg) elqrImg.src = data.qrImageUrl;
+                if (paymentStatusText) paymentStatusText.textContent = `Ожидание оплаты заказа #${currentOrderId}...`;
+                startPaymentPolling(currentOrderId);
+            } else {
+                if (paymentStatusText) paymentStatusText.textContent = 'Ошибка создания заказа oBusiness';
+            }
+        } catch (e) {
+            console.warn('API error, using offline mock QR:', e);
+            // Fallback для локального оффлайн запуска (file:///)
+            currentOrderId = 'TRD-' + Date.now();
+            const mockQr = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=elqr%3A%2F%2Fpay%3ForderId%3D${currentOrderId}%26amount%3D${selectedStylePrice || 290}`;
+            if (elqrImg) elqrImg.src = mockQr;
+            if (paymentStatusText) paymentStatusText.textContent = `Ожидание оплаты oBusiness (${selectedStylePrice || 290} сом)...`;
+        }
+    }
+
+    // ПОЛЛИНГ СТАТУСА ПЛАТЕЖА (ПРОВЕРКА ВЕБХУКА КАЖДЫЕ 2.5 СЕКУНДЫ)
+    function startPaymentPolling(orderId) {
+        stopPaymentPolling();
+        paymentPollTimer = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/payment/status?orderId=${encodeURIComponent(orderId)}`);
+                const info = await res.json();
+                if (info.success && info.status === 'PAID') {
+                    stopPaymentPolling();
+                    handlePaymentSuccess();
+                }
+            } catch (err) {
+                // Ignore network hiccups during polling
+            }
+        }, 2500);
+    }
+
+    function stopPaymentPolling() {
+        if (paymentPollTimer) {
+            clearInterval(paymentPollTimer);
+            paymentPollTimer = null;
+        }
+    }
+
+    // ОПЛАТА УСПЕШНО ПОЛУЧЕНА — ПЕРЕХОД К КАМЕРЕ ДЛЯ СЪЕМКИ!
+    function handlePaymentSuccess() {
+        if (paymentStatusText) {
+            paymentStatusText.textContent = '✅ Оплата получена! Включаем камеру...';
+        }
+        setTimeout(() => {
+            showStep(stepCamera);
+            startWebcam();
+        }, 1000);
+    }
+
+    // ТЕСТОВАЯ КНОПКА СИМУЛЯЦИИ ОПЛАТЫ
+    if (simPayBtn) {
+        simPayBtn.addEventListener('click', async () => {
+            if (currentOrderId) {
+                try {
+                    await fetch('/api/payment/simulate-success', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId: currentOrderId })
+                    });
+                } catch(e) {}
+            }
+            handlePaymentSuccess();
+        });
+    }
+
+    // 2. WEBCAM LOGIC (ОПРЕДЕЛЕНИЕ LOGITECH BRIO 500 И НАДЕЖНЫЙ ЗАХВАТ ПОТОКА)
+    async function startWebcam() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert('Браузер не поддерживает камеру или страница открыта без HTTPS.');
+            return;
+        }
+
+        try {
+            // 1. Поиск подключенных камер (ищем Logitech / Brio)
+            let chosenDeviceId = null;
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                console.log('Подключенные камеры:', videoDevices);
+
+                // Ищем целевую камеру Logitech Brio 500
+                const brio = videoDevices.find(d => 
+                    d.label.toLowerCase().includes('brio') || 
+                    d.label.toLowerCase().includes('logitech')
+                );
+
+                if (brio) {
+                    chosenDeviceId = brio.deviceId;
+                    console.log('Найдена камера Logitech Brio:', brio.label);
+                } else if (videoDevices.length > 0) {
+                    // Если Brio не названа в label (до первого разрешения), берем последнюю внешнюю камеру
+                    chosenDeviceId = videoDevices[videoDevices.length - 1].deviceId;
+                }
+            } catch(e) {
+                console.warn('Не удалось получить список устройств:', e);
+            }
+
+            // 2. Настройка видеопотока с адаптивным разрешением
+            const constraints = {
+                audio: false,
+                video: chosenDeviceId 
+                    ? { deviceId: { exact: chosenDeviceId }, width: { ideal: 1920, min: 640 }, height: { ideal: 1080, min: 480 } }
+                    : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
+            };
+
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+            } catch (errHighRes) {
+                console.warn('Высокое разрешение отклонено, пробуем базовое:', errHighRes);
+                // Мягкий fallback на стандартные параметры
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            }
+
             webcamEl.srcObject = mediaStream;
+            await webcamEl.play().catch(() => {});
         } catch (err) {
-            console.warn('Webcam access error or unavailable, fallback to simulated stream:', err);
-            // In case no camera is physically connected, show animated preview
+            console.error('Ошибка доступа к камере:', err);
+            alert('Не удалось подключиться к камере Logitech Brio 500. Убедитесь, что камера не занята другим приложением (Skype, Zoom, OBS) и разрешен доступ в браузере.');
         }
     }
 
@@ -257,6 +411,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mediaStream) {
             mediaStream.getTracks().forEach(track => track.stop());
             mediaStream = null;
+        }
+        if (webcamEl) {
+            webcamEl.srcObject = null;
         }
     }
 
@@ -276,9 +433,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 takeSnapshot();
                 setTimeout(() => {
                     stopWebcam();
-                    showStep(stepPayment);
                     snapBtn.disabled = false;
                     countdownOverlay.textContent = '';
+                    showStep(stepProcessing);
+                    runAIGeneration();
                 }, 800);
             }
         }, 1000);
@@ -292,24 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
         capturedPhotoData = canvasEl.toDataURL('image/jpeg');
     }
 
-    // 4. PACKAGE SELECTION & PAYMENT
-    packageCards.forEach(pkg => {
-        pkg.addEventListener('click', () => {
-            packageCards.forEach(p => p.classList.remove('active'));
-            pkg.classList.add('active');
-            qrPaymentZone.style.display = 'block';
-        });
-    });
-
-    // Auto-show QR if standard package active
-    qrPaymentZone.style.display = 'block';
-
-    simPayBtn.addEventListener('click', () => {
-        showStep(stepProcessing);
-        runAIGeneration();
-    });
-
-    // 5. AI GENERATION SIMULATION
+    // 4. AI GENERATION
     function runAIGeneration() {
         const statuses = [
             `Анализ лица и стиля ${selectedStyle}...`,
@@ -332,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1200);
     }
 
-    // 6. FINISH & TEMPLATE SELECTION
+    // 5. FINISH & TEMPLATE SELECTION
     finishBtn.addEventListener('click', closeKioskFlow);
 
     // 3D Cover Flow Gallery Controls & Touch Swiping
@@ -411,13 +552,9 @@ document.addEventListener('DOMContentLoaded', () => {
         clearTimeout(inactivityTimer);
         const modal = document.getElementById('kiosk-modal');
         const templateModal = document.getElementById('template-modal');
-        const adminModal = document.getElementById('kiosk-admin-modal');
-        const pinModal = document.getElementById('kiosk-pin-modal');
 
         const isModalOpen = (modal && modal.style.display === 'flex') ||
-                            (templateModal && !templateModal.classList.contains('hidden')) ||
-                            (adminModal && !adminModal.classList.contains('hidden')) ||
-                            (pinModal && !pinModal.classList.contains('hidden'));
+                            (templateModal && !templateModal.classList.contains('hidden'));
 
         if (!isModalOpen) {
             inactivityTimer = setTimeout(showAttractScreen, INACTIVITY_TIMEOUT);
@@ -521,13 +658,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function showAttractScreen() {
         const modal = document.getElementById('kiosk-modal');
         const templateModal = document.getElementById('template-modal');
-        const adminModal = document.getElementById('kiosk-admin-modal');
-        const pinModal = document.getElementById('kiosk-pin-modal');
 
         const isModalOpen = (modal && modal.style.display === 'flex') ||
-                            (templateModal && !templateModal.classList.contains('hidden')) ||
-                            (adminModal && !adminModal.classList.contains('hidden')) ||
-                            (pinModal && !pinModal.classList.contains('hidden'));
+                            (templateModal && !templateModal.classList.contains('hidden'));
 
         if (!isModalOpen) {
             const attractOverlay = document.getElementById('attract-overlay');
@@ -587,53 +720,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }, { passive: true });
-
-    // =============================================
-    // СЕКРЕТНЫЕ ТРИГГЕРЫ ОТКРЫТИЯ АДМИНКИ С PIN-КОДОМ
-    // =============================================
-    function setupSecretMultiTap(el, requiredCount, maxDelayMs, onTrigger) {
-        if (!el) return;
-        let tapCount = 0;
-        let tapTimer = null;
-
-        el.addEventListener('pointerdown', (e) => {
-            e.stopPropagation();
-            tapCount++;
-            clearTimeout(tapTimer);
-
-            if (tapCount >= requiredCount) {
-                tapCount = 0;
-                onTrigger();
-            } else {
-                tapTimer = setTimeout(() => {
-                    tapCount = 0;
-                }, maxDelayMs);
-            }
-        });
-    }
-
-    // Секретный тап по главному логотипу (5 быстрых нажатий за 2.5 сек)
-    const topLogo = document.querySelector('.top-brand-center');
-    setupSecretMultiTap(topLogo, 5, 2500, () => {
-        openPinModal();
-    });
-
-    // Ввод PIN с клавиатуры (активен только когда окно PIN-кода уже открыто)
-    window.addEventListener('keydown', (e) => {
-        const pinModal = document.getElementById('kiosk-pin-modal');
-        if (pinModal && !pinModal.classList.contains('hidden')) {
-            if (e.key >= '0' && e.key <= '9') {
-                e.preventDefault();
-                pinInputDigit(e.key);
-            } else if (e.key === 'Backspace') {
-                e.preventDefault();
-                pinDeleteDigit();
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                closePinModal();
-            }
-        }
-    });
 
     // Запуск таймера простоя при загрузке
     resetInactivityTimer();
