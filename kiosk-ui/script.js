@@ -571,21 +571,45 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastX = 0;
     let lastY = 0;
 
-    // ПЛЕЙЛИСТ ВЕРХНЕГО БЛОКА (3/4): Микс Видео и Фото с поочередным воспроизведением по кругу
-    const topPlaylist = [
-        { type: 'video', src: 'assets/card_loop.mp4', fallbackDuration: 8000 },
-        { type: 'image', src: 'assets/promo_ad.jpg', duration: 5000 },
-        { type: 'image', src: 'images/photo1.jpg', duration: 5000 },
-        { type: 'image', src: 'assets/child.png', duration: 5000 },
-        { type: 'image', src: 'images/photo3.jpg', duration: 5000 }
+    // ДЕФОЛТНЫЕ ПЛЕЙЛИСТЫ ЗАСТАВКИ
+    const defaultTopPlaylist = [
+        { id: 1, type: 'video', title: 'Промо Видео', src: 'assets/card_loop.mp4', fallbackDuration: 8000 },
+        { id: 2, type: 'image', title: 'Рекламный баннер', src: 'assets/promo_ad.jpg', duration: 5000 },
+        { id: 3, type: 'image', title: 'Пример фото 1', src: 'images/photo1.jpg', duration: 5000 },
+        { id: 4, type: 'image', title: 'Пример фото 2', src: 'assets/child.png', duration: 5000 },
+        { id: 5, type: 'image', title: 'Пример фото 3', src: 'images/photo3.jpg', duration: 5000 }
     ];
 
-    // ПЛЕЙЛИСТ НИЖНЕЙ КАРТОЧКИ (1/4): Микс Видео и Фото с поочередным воспроизведением по кругу
-    const bottomPlaylist = [
-        { type: 'video', src: 'assets/card_loop.mp4', fallbackDuration: 8000 },
-        { type: 'image', src: 'images/photo2.jpg', duration: 5000 },
-        { type: 'image', src: 'assets/hero_avatar.jpg', duration: 5000 }
+    const defaultBottomPlaylist = [
+        { id: 1, type: 'video', title: 'Нижний цикл видео', src: 'assets/card_loop.mp4', fallbackDuration: 8000 },
+        { id: 2, type: 'image', title: 'Нижний баннер 1', src: 'images/photo2.jpg', duration: 5000 },
+        { id: 3, type: 'image', title: 'Нижний баннер 2', src: 'assets/hero_avatar.jpg', duration: 5000 }
     ];
+
+    function getTopPlaylist() {
+        try {
+            const data = localStorage.getItem('kiosk_ads_top');
+            if (data) {
+                const parsed = JSON.parse(data);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch(e) {}
+        return defaultTopPlaylist;
+    }
+
+    function getBottomPlaylist() {
+        try {
+            const data = localStorage.getItem('kiosk_ads_bottom');
+            if (data) {
+                const parsed = JSON.parse(data);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch(e) {}
+        return defaultBottomPlaylist;
+    }
+
+    let topPlaylist = getTopPlaylist();
+    let bottomPlaylist = getBottomPlaylist();
 
     let topIndex = 0;
     let bottomIndex = 0;
@@ -695,6 +719,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showAttractScreen() {
+        // Подгружаем актуальные рекламные плейлисты из админки
+        topPlaylist = getTopPlaylist();
+        bottomPlaylist = getBottomPlaylist();
+
         const attractOverlay = document.getElementById('attract-overlay');
         if (attractOverlay) {
             attractOverlay.classList.remove('hidden');

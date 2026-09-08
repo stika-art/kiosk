@@ -438,6 +438,7 @@
         <nav class="admin-tabs">
             <button class="admin-tab active" id="tab-btn-cats" onclick="switchAdminTab('cats')">📁 Категории</button>
             <button class="admin-tab" id="tab-btn-tpls" onclick="switchAdminTab('tpls')">🖼️ Шаблоны</button>
+            <button class="admin-tab" id="tab-btn-ads" onclick="switchAdminTab('ads')">📺 Реклама и Баннеры</button>
             <button class="admin-tab" id="tab-btn-settings" onclick="switchAdminTab('settings')">⚙️ Настройки</button>
             <button class="admin-tab" id="tab-btn-security" onclick="switchAdminTab('security')">🔐 Безопасность</button>
         </nav>
@@ -509,7 +510,84 @@
             </div>
         </section>
 
-        <!-- TAB 3: SETTINGS -->
+        <!-- TAB 3: ADS & BANNERS (TOP AD & BOTTOM BANNER) -->
+        <section id="tab-content-ads" class="admin-tab-content hidden">
+            <!-- ВЕРХНИЙ РЕКЛАМНЫЙ БЛОК (3/4) -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">📺 Верхний рекламный блок (3/4 экрана)</h2>
+                    <p class="card-subtitle">Ротация видеороликов и рекламных фото на главном экране заставки</p>
+                </div>
+
+                <div class="form-row">
+                    <select id="ad-top-type" class="admin-select" style="max-width: 140px;">
+                        <option value="video">🎥 Видео (MP4)</option>
+                        <option value="image">🖼️ Фото (JPG/PNG)</option>
+                    </select>
+                    <input type="text" id="ad-top-title" class="admin-input" placeholder="Название ролика / промо...">
+                    <input type="text" id="ad-top-src" class="admin-input" placeholder="Путь: assets/promo.mp4 или URL...">
+                    <input type="number" id="ad-top-duration" class="admin-input" placeholder="Длит. (сек)" style="max-width: 130px;" value="8">
+                    <button class="btn-primary" onclick="addTopAd()">+ Добавить</button>
+                </div>
+                <div id="ad-top-status" class="status-msg"></div>
+
+                <table class="items-table" style="margin-top: 15px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th style="width: 80px;">Превью</th>
+                            <th>Тип</th>
+                            <th>Название</th>
+                            <th>Файл / Источник</th>
+                            <th>Длительность</th>
+                            <th style="width: 100px; text-align: right;">Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ad-top-table-body">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- НИЖНИЙ БАННЕР (1/4) -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">🎯 Нижний баннер (1/4 экрана)</h2>
+                    <p class="card-subtitle">Отдельный нижний интерактивный блок заставки (видео-цикл или баннер)</p>
+                </div>
+
+                <div class="form-row">
+                    <select id="ad-bottom-type" class="admin-select" style="max-width: 140px;">
+                        <option value="video">🎥 Видео (MP4)</option>
+                        <option value="image">🖼️ Фото (JPG/PNG)</option>
+                    </select>
+                    <input type="text" id="ad-bottom-title" class="admin-input" placeholder="Название баннера...">
+                    <input type="text" id="ad-bottom-src" class="admin-input" placeholder="Путь: assets/card_loop.mp4 или URL...">
+                    <input type="number" id="ad-bottom-duration" class="admin-input" placeholder="Длит. (сек)" style="max-width: 130px;" value="8">
+                    <button class="btn-primary" onclick="addBottomAd()">+ Добавить</button>
+                </div>
+                <div id="ad-bottom-status" class="status-msg"></div>
+
+                <table class="items-table" style="margin-top: 15px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th style="width: 80px;">Превью</th>
+                            <th>Тип</th>
+                            <th>Название</th>
+                            <th>Файл / Источник</th>
+                            <th>Длительность</th>
+                            <th style="width: 100px; text-align: right;">Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ad-bottom-table-body">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 4: SETTINGS -->
         <section id="tab-content-settings" class="admin-tab-content hidden">
             <div class="admin-card">
                 <div class="card-header">
@@ -589,8 +667,36 @@
             ];
         }
 
+        function getStoredTopAds() {
+            try {
+                const data = localStorage.getItem('kiosk_ads_top');
+                if (data) return JSON.parse(data);
+            } catch(e) {}
+            return [
+                { id: 1, type: 'video', title: 'Промо Видео', src: 'assets/card_loop.mp4', duration: 8 },
+                { id: 2, type: 'image', title: 'Рекламный баннер', src: 'assets/promo_ad.jpg', duration: 5 },
+                { id: 3, type: 'image', title: 'Пример фото 1', src: 'images/photo1.jpg', duration: 5 },
+                { id: 4, type: 'image', title: 'Пример фото 2', src: 'assets/child.png', duration: 5 },
+                { id: 5, type: 'image', title: 'Пример фото 3', src: 'images/photo3.jpg', duration: 5 }
+            ];
+        }
+
+        function getStoredBottomAds() {
+            try {
+                const data = localStorage.getItem('kiosk_ads_bottom');
+                if (data) return JSON.parse(data);
+            } catch(e) {}
+            return [
+                { id: 1, type: 'video', title: 'Нижний цикл видео', src: 'assets/card_loop.mp4', duration: 8 },
+                { id: 2, type: 'image', title: 'Нижний баннер 1', src: 'images/photo2.jpg', duration: 5 },
+                { id: 3, type: 'image', title: 'Нижний баннер 2', src: 'assets/hero_avatar.jpg', duration: 5 }
+            ];
+        }
+
         let categories = getStoredCategories();
         let templates = getStoredTemplates();
+        let topAds = getStoredTopAds();
+        let bottomAds = getStoredBottomAds();
 
         // Check Session Authentication
         function checkAuth() {
@@ -601,6 +707,7 @@
                 renderCategories();
                 renderTemplates();
                 renderCategoryDropdown();
+                renderAds();
             } else {
                 authScreen.classList.remove('hidden');
             }
@@ -640,6 +747,10 @@
             } else if (tab === 'tpls') {
                 document.getElementById('tab-btn-tpls').classList.add('active');
                 document.getElementById('tab-content-tpls').classList.remove('hidden');
+            } else if (tab === 'ads') {
+                document.getElementById('tab-btn-ads').classList.add('active');
+                document.getElementById('tab-content-ads').classList.remove('hidden');
+                renderAds();
             } else if (tab === 'settings') {
                 document.getElementById('tab-btn-settings').classList.add('active');
                 document.getElementById('tab-content-settings').classList.remove('hidden');
@@ -773,6 +884,156 @@
             templates = templates.filter(t => t.id !== id);
             localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
             renderTemplates();
+        }
+
+        // ADS & BANNERS LOGIC
+        function renderAds() {
+            renderTopAds();
+            renderBottomAds();
+        }
+
+        function renderTopAds() {
+            const tbody = document.getElementById('ad-top-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            topAds.forEach((ad, idx) => {
+                const tr = document.createElement('tr');
+                const isVideo = ad.type === 'video';
+                tr.innerHTML = `
+                    <td style="color: rgba(255,255,255,0.4);">${idx + 1}</td>
+                    <td>
+                        ${isVideo 
+                            ? `<div style="width:55px; height:55px; border-radius:10px; background:#111; display:flex; align-items:center; justify-content:center; border:1px solid rgba(0,240,255,0.3); font-size:20px;">🎥</div>`
+                            : `<img src="${ad.src}" class="tpl-preview-thumb" alt="${ad.title}" onerror="this.src='images/placeholder.jpg'">`
+                        }
+                    </td>
+                    <td><span class="cat-tag" style="background:${isVideo ? 'rgba(255,180,0,0.15)' : 'rgba(0,240,255,0.15)'}; border-color:${isVideo ? '#ffb400' : '#00f0ff'}; color:${isVideo ? '#ffb400' : '#00f0ff'}">${isVideo ? 'Видео (MP4)' : 'Фото'}</span></td>
+                    <td><strong style="color: #ffffff;">${ad.title || 'Без названия'}</strong></td>
+                    <td><code style="color: #00F0FF; font-size: 12px; word-break: break-all;">${ad.src}</code></td>
+                    <td>${ad.duration || 5} сек</td>
+                    <td style="text-align: right;">
+                        <button class="btn-del" onclick="deleteTopAd(${ad.id})">Удалить</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderBottomAds() {
+            const tbody = document.getElementById('ad-bottom-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            bottomAds.forEach((ad, idx) => {
+                const tr = document.createElement('tr');
+                const isVideo = ad.type === 'video';
+                tr.innerHTML = `
+                    <td style="color: rgba(255,255,255,0.4);">${idx + 1}</td>
+                    <td>
+                        ${isVideo 
+                            ? `<div style="width:55px; height:55px; border-radius:10px; background:#111; display:flex; align-items:center; justify-content:center; border:1px solid rgba(0,240,255,0.3); font-size:20px;">🎥</div>`
+                            : `<img src="${ad.src}" class="tpl-preview-thumb" alt="${ad.title}" onerror="this.src='images/placeholder.jpg'">`
+                        }
+                    </td>
+                    <td><span class="cat-tag" style="background:${isVideo ? 'rgba(255,180,0,0.15)' : 'rgba(0,240,255,0.15)'}; border-color:${isVideo ? '#ffb400' : '#00f0ff'}; color:${isVideo ? '#ffb400' : '#00f0ff'}">${isVideo ? 'Видео (MP4)' : 'Фото'}</span></td>
+                    <td><strong style="color: #ffffff;">${ad.title || 'Без названия'}</strong></td>
+                    <td><code style="color: #00F0FF; font-size: 12px; word-break: break-all;">${ad.src}</code></td>
+                    <td>${ad.duration || 5} сек</td>
+                    <td style="text-align: right;">
+                        <button class="btn-del" onclick="deleteBottomAd(${ad.id})">Удалить</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addTopAd() {
+            const type = document.getElementById('ad-top-type').value;
+            const titleInput = document.getElementById('ad-top-title');
+            const srcInput = document.getElementById('ad-top-src');
+            const durInput = document.getElementById('ad-top-duration');
+            const status = document.getElementById('ad-top-status');
+
+            const title = titleInput.value.trim();
+            const src = srcInput.value.trim();
+            const duration = parseInt(durInput.value, 10) || 5;
+
+            if (!src) {
+                status.textContent = '❌ Укажите путь к файлу или URL';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            const newId = topAds.length > 0 ? Math.max(...topAds.map(a => a.id || 0)) + 1 : 1;
+            topAds.push({
+                id: newId,
+                type: type,
+                title: title || (type === 'video' ? 'Видео ролик' : 'Рекламный баннер'),
+                src: src,
+                duration: duration
+            });
+
+            localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));
+
+            titleInput.value = '';
+            srcInput.value = '';
+            status.textContent = `✅ Ролик/баннер успешно добавлен в верхний блок!`;
+            status.className = 'status-msg success';
+
+            renderTopAds();
+            setTimeout(() => { status.textContent = ''; }, 3000);
+        }
+
+        function deleteTopAd(id) {
+            if (!confirm('Удалить эту рекламу из верхнего блока?')) return;
+            topAds = topAds.filter(a => a.id !== id);
+            localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));
+            renderTopAds();
+        }
+
+        function addBottomAd() {
+            const type = document.getElementById('ad-bottom-type').value;
+            const titleInput = document.getElementById('ad-bottom-title');
+            const srcInput = document.getElementById('ad-bottom-src');
+            const durInput = document.getElementById('ad-bottom-duration');
+            const status = document.getElementById('ad-bottom-status');
+
+            const title = titleInput.value.trim();
+            const src = srcInput.value.trim();
+            const duration = parseInt(durInput.value, 10) || 5;
+
+            if (!src) {
+                status.textContent = '❌ Укажите путь к файлу или URL';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            const newId = bottomAds.length > 0 ? Math.max(...bottomAds.map(a => a.id || 0)) + 1 : 1;
+            bottomAds.push({
+                id: newId,
+                type: type,
+                title: title || (type === 'video' ? 'Нижний ролик' : 'Нижний баннер'),
+                src: src,
+                duration: duration
+            });
+
+            localStorage.setItem('kiosk_ads_bottom', JSON.stringify(bottomAds));
+
+            titleInput.value = '';
+            srcInput.value = '';
+            status.textContent = `✅ Баннер успешно добавлен в нижний блок!`;
+            status.className = 'status-msg success';
+
+            renderBottomAds();
+            setTimeout(() => { status.textContent = ''; }, 3000);
+        }
+
+        function deleteBottomAd(id) {
+            if (!confirm('Удалить эту рекламу из нижнего блока?')) return;
+            bottomAds = bottomAds.filter(a => a.id !== id);
+            localStorage.setItem('kiosk_ads_bottom', JSON.stringify(bottomAds));
+            renderBottomAds();
         }
 
         // SECURITY LOGIC
