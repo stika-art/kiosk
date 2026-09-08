@@ -384,34 +384,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('Не удалось получить список устройств:', e);
             }
 
-            // 2. Настройка плавного видеопотока (30/60 fps) для Logitech Brio
-            const idealFps = 30;
-            const constraints = {
-                audio: false,
-                video: chosenDeviceId 
-                    ? {
-                        deviceId: { exact: chosenDeviceId },
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        frameRate: { ideal: idealFps, max: 60 }
-                    }
-                    : {
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        frameRate: { ideal: idealFps, max: 60 },
-                        facingMode: 'user'
-                    }
+            // 2. Настройка видеопотока для Logitech Brio 500 в полном качестве (1080p / 720p 30 FPS)
+            const videoConstraints = {
+                width: { ideal: 1920, min: 1280 },
+                height: { ideal: 1080, min: 720 },
+                frameRate: { ideal: 30 }
             };
 
+            if (chosenDeviceId) {
+                videoConstraints.deviceId = { exact: chosenDeviceId };
+            } else {
+                videoConstraints.facingMode = 'user';
+            }
+
             try {
-                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-            } catch (errHighRes) {
-                console.warn('Оптимизированное разрешение отклонено, пробуем базовое с 30fps:', errHighRes);
-                // Мягкий fallback на стандартные параметры
                 mediaStream = await navigator.mediaDevices.getUserMedia({
-                    video: { frameRate: { ideal: 30 } },
-                    audio: false
+                    audio: false,
+                    video: videoConstraints
                 });
+            } catch (errHighRes) {
+                console.warn('FullHD 1080p отклонено, пробуем стандартное HD 720p 30fps:', errHighRes);
+                const fallbackConstraints = {
+                    audio: false,
+                    video: chosenDeviceId
+                        ? { deviceId: { exact: chosenDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }
+                        : { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }
+                };
+                mediaStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
             }
 
             webcamEl.srcObject = mediaStream;
@@ -470,10 +469,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function takeSnapshot() {
         const ctx = canvasEl.getContext('2d');
-        canvasEl.width = webcamEl.videoWidth || 640;
-        canvasEl.height = webcamEl.videoHeight || 480;
-        ctx.drawImage(webcamEl, 0, 0, canvasEl.width, canvasEl.height);
-        capturedPhotoData = canvasEl.toDataURL('image/jpeg');
+        const w = webcamEl.videoWidth || 1920;
+        const h = webcamEl.videoHeight || 1080;
+        canvasEl.width = w;
+        canvasEl.height = h;
+
+        // Отрисовываем с зеркальным отражением (как в превью камеры)
+        ctx.save();
+        ctx.translate(w, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(webcamEl, 0, 0, w, h);
+        ctx.restore();
+
+        capturedPhotoData = canvasEl.toDataURL('image/jpeg', 0.95);
     }
 
     // 4. ОБРАБОТКА И СОЗДАНИЕ ПОРТРЕТА (БЕЗ УПОМИНАНИЯ ИИ / НЕЙРОСЕТЕЙ)
@@ -548,7 +556,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     // 7. INACTIVITY ATTRACT MODE (PLAYLIST ENGINE FOR VIDEO & PHOTO)
     // =============================================
-    const INACTIVITY_TIMEOUT = 5000; // 5 секунд простоя для заставки
+    // Настройка таймера заставки (берется из админки kiosk_attract_timeout, по умолчанию 5 сек)
+    function getInactivityTimeout() {
+        try {
+            const val = parseInt(localStorage.getItem('kiosk_attract_timeout'), 10);
+            if (!isNaN(val) && val >= 3) {
+                return val * 1000;
+            }
+        } catch(e) {}
+        return 5000; // по умолчанию 5 секунд
+    }
+
     let inactivityTimer = null;
     let lastX = 0;
     let lastY = 0;
@@ -579,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Заставка НЕ работает на экранах оплаты, камеры, генерации, результата
         const modal = document.getElementById('kiosk-modal');
         if (modal && modal.style.display === 'flex') return;
-        inactivityTimer = setTimeout(showAttractScreen, INACTIVITY_TIMEOUT);
+        inactivityTimer = setTimeout(showAttractScreen, getInactivityTimeout());
     }
 
     function playTopPlaylistNext() {

@@ -438,6 +438,7 @@
         <nav class="admin-tabs">
             <button class="admin-tab active" id="tab-btn-cats" onclick="switchAdminTab('cats')">📁 Категории</button>
             <button class="admin-tab" id="tab-btn-tpls" onclick="switchAdminTab('tpls')">🖼️ Шаблоны</button>
+            <button class="admin-tab" id="tab-btn-settings" onclick="switchAdminTab('settings')">⚙️ Настройки</button>
             <button class="admin-tab" id="tab-btn-security" onclick="switchAdminTab('security')">🔐 Безопасность</button>
         </nav>
 
@@ -508,7 +509,31 @@
             </div>
         </section>
 
-        <!-- TAB 3: SECURITY -->
+        <!-- TAB 3: SETTINGS -->
+        <section id="tab-content-settings" class="admin-tab-content hidden">
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">⚙️ Настройки киоска и заставки</h2>
+                    <p class="card-subtitle">Управление временем бездействия до запуска заставки (Screen Saver)</p>
+                </div>
+
+                <div style="max-width: 500px;">
+                    <label style="display:block; font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 8px; font-weight: 600;">
+                        ⏱️ Время ожидания до выхода заставки (секунд):
+                    </label>
+                    <div class="form-row" style="align-items: center;">
+                        <input type="number" id="attract-timeout-input" class="admin-input" min="3" max="300" placeholder="Например: 5" style="max-width: 160px;">
+                        <button class="btn-primary" onclick="saveKioskSettings()">Сохранить настройки</button>
+                    </div>
+                    <p style="font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 5px;">
+                        По умолчанию: <strong>5 сек</strong>. Рекомендуется от 5 до 30 секунд.
+                    </p>
+                    <div id="settings-status" class="status-msg"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: SECURITY -->
         <section id="tab-content-security" class="admin-tab-content hidden">
             <div class="admin-card">
                 <div class="card-header">
@@ -615,6 +640,10 @@
             } else if (tab === 'tpls') {
                 document.getElementById('tab-btn-tpls').classList.add('active');
                 document.getElementById('tab-content-tpls').classList.remove('hidden');
+            } else if (tab === 'settings') {
+                document.getElementById('tab-btn-settings').classList.add('active');
+                document.getElementById('tab-content-settings').classList.remove('hidden');
+                loadKioskSettings();
             } else if (tab === 'security') {
                 document.getElementById('tab-btn-security').classList.add('active');
                 document.getElementById('tab-content-security').classList.remove('hidden');
@@ -773,8 +802,36 @@
             setTimeout(() => { status.textContent = ''; }, 3000);
         }
 
+        // KIOSK SETTINGS LOGIC
+        function loadKioskSettings() {
+            try {
+                const val = localStorage.getItem('kiosk_attract_timeout') || '5';
+                const input = document.getElementById('attract-timeout-input');
+                if (input) input.value = val;
+            } catch(e) {}
+        }
+
+        function saveKioskSettings() {
+            const input = document.getElementById('attract-timeout-input');
+            const status = document.getElementById('settings-status');
+            const val = parseInt(input.value, 10);
+
+            if (isNaN(val) || val < 3 || val > 300) {
+                status.textContent = '❌ Укажите значение от 3 до 300 секунд';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            localStorage.setItem('kiosk_attract_timeout', val.toString());
+            status.textContent = `✅ Время выхода заставки установлено: ${val} сек`;
+            status.className = 'status-msg success';
+
+            setTimeout(() => { status.textContent = ''; }, 3000);
+        }
+
         // Init on load
         checkAuth();
+        loadKioskSettings();
     </script>
 </body>
 </html>
