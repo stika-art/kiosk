@@ -181,6 +181,7 @@ function renderGridTemplates() {
 
         // При клике на карточку — сразу переходим к экрану оплаты oBusiness!
         card.addEventListener('click', () => {
+            if (isAttractClosing) return; // поглощаем клик закрытия заставки
             selectedStyle = item.title;
             selectedStylePhoto = item.img;
             selectedStylePrice = itemPrice;
@@ -575,7 +576,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function resetInactivityTimer() {
         clearTimeout(inactivityTimer);
-        // Заставка включается на ЛЮБОМ экране (даже в галерее шаблонов) через 5 секунд простоя
+        // Заставка НЕ работает на экранах оплаты, камеры, генерации, результата
+        const modal = document.getElementById('kiosk-modal');
+        if (modal && modal.style.display === 'flex') return;
         inactivityTimer = setTimeout(showAttractScreen, INACTIVITY_TIMEOUT);
     }
 
