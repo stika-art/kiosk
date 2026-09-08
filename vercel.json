@@ -1,10 +1,9 @@
 {
-  "version": 2,
   "cleanUrls": true,
   "rewrites": [
     { "source": "/admin", "destination": "/kiosk-ui/admin.html" },
     { "source": "/admin/", "destination": "/kiosk-ui/admin.html" },
     { "source": "/", "destination": "/kiosk-ui/index.html" },
-    { "source": "/(.*)", "destination": "/kiosk-ui/$1" }
+    { "source": "/kiosk-ui", "destination": "/kiosk-ui/index.html" }
   ]
 }
