@@ -383,20 +383,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('Не удалось получить список устройств:', e);
             }
 
-            // 2. Настройка видеопотока с адаптивным разрешением
+            // 2. Настройка плавного видеопотока (30/60 fps) для Logitech Brio
+            const idealFps = 30;
             const constraints = {
                 audio: false,
                 video: chosenDeviceId 
-                    ? { deviceId: { exact: chosenDeviceId }, width: { ideal: 1920, min: 640 }, height: { ideal: 1080, min: 480 } }
-                    : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
+                    ? {
+                        deviceId: { exact: chosenDeviceId },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        frameRate: { ideal: idealFps, max: 60 }
+                    }
+                    : {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        frameRate: { ideal: idealFps, max: 60 },
+                        facingMode: 'user'
+                    }
             };
 
             try {
                 mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
             } catch (errHighRes) {
-                console.warn('Высокое разрешение отклонено, пробуем базовое:', errHighRes);
+                console.warn('Оптимизированное разрешение отклонено, пробуем базовое с 30fps:', errHighRes);
                 // Мягкий fallback на стандартные параметры
-                mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: { frameRate: { ideal: 30 } },
+                    audio: false
+                });
             }
 
             webcamEl.srcObject = mediaStream;
@@ -417,10 +431,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ВЫБОР ДЛИТЕЛЬНОСТИ ТАЙМЕРА СЪЁМКИ (3, 5, 8, 10 СЕКУНД)
+    let selectedCaptureDuration = 3;
+    const timerButtons = document.querySelectorAll('.timer-btn');
+    timerButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            timerButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedCaptureDuration = parseInt(btn.getAttribute('data-timer'), 10) || 3;
+        });
+    });
+
     // 3. SNAP PHOTO & COUNTDOWN
     snapBtn.addEventListener('click', () => {
         snapBtn.disabled = true;
-        let count = 3;
+        let count = selectedCaptureDuration;
         countdownOverlay.textContent = count;
 
         const timer = setInterval(() => {
@@ -450,13 +475,13 @@ document.addEventListener('DOMContentLoaded', () => {
         capturedPhotoData = canvasEl.toDataURL('image/jpeg');
     }
 
-    // 4. AI GENERATION
+    // 4. ОБРАБОТКА И СОЗДАНИЕ ПОРТРЕТА (БЕЗ УПОМИНАНИЯ ИИ / НЕЙРОСЕТЕЙ)
     function runAIGeneration() {
         const statuses = [
-            `Анализ лица и стиля ${selectedStyle}...`,
-            `Подключение к нейросети (SDXL / InstantID)...`,
-            `Применение эффектов стиля ${selectedStyle}...`,
-            `Генерация финального фото в высоком разрешении...`
+            `Анализ ракурса и стиля ${selectedStyle}...`,
+            `Стилизация вашего портрета...`,
+            `Применение кинематографичного освещения...`,
+            `Создание финального фото в высоком разрешении...`
         ];
 
         let idx = 0;
@@ -550,15 +575,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function resetInactivityTimer() {
         clearTimeout(inactivityTimer);
-        const modal = document.getElementById('kiosk-modal');
-        const templateModal = document.getElementById('template-modal');
-
-        const isModalOpen = (modal && modal.style.display === 'flex') ||
-                            (templateModal && !templateModal.classList.contains('hidden'));
-
-        if (!isModalOpen) {
-            inactivityTimer = setTimeout(showAttractScreen, INACTIVITY_TIMEOUT);
-        }
+        // Заставка включается на ЛЮБОМ экране (даже в галерее шаблонов) через 5 секунд простоя
+        inactivityTimer = setTimeout(showAttractScreen, INACTIVITY_TIMEOUT);
     }
 
     function playTopPlaylistNext() {
@@ -656,24 +674,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showAttractScreen() {
-        const modal = document.getElementById('kiosk-modal');
-        const templateModal = document.getElementById('template-modal');
-
-        const isModalOpen = (modal && modal.style.display === 'flex') ||
-                            (templateModal && !templateModal.classList.contains('hidden'));
-
-        if (!isModalOpen) {
-            const attractOverlay = document.getElementById('attract-overlay');
-            if (attractOverlay) {
-                attractOverlay.classList.remove('hidden');
-                attractOverlay.style.display = 'flex';
-            }
-            
-            topIndex = 0;
-            bottomIndex = 0;
-            playTopPlaylistNext();
-            playBottomPlaylistNext();
+        const attractOverlay = document.getElementById('attract-overlay');
+        if (attractOverlay) {
+            attractOverlay.classList.remove('hidden');
+            attractOverlay.style.display = 'flex';
         }
+        
+        topIndex = 0;
+        bottomIndex = 0;
+        playTopPlaylistNext();
+        playBottomPlaylistNext();
     }
 
     function stopAttractPlaylists() {

@@ -1446,6 +1446,17 @@ body {
                 </div>
             </div>
 
+            <!-- ВЫБОР ТАЙМЕРА ДЛЯ СЪЁМКИ (3, 5, 8, 10 СЕКУНД) -->
+            <div class="timer-select-wrapper">
+                <span class="timer-select-label">ТАЙМЕР СЪЁМКИ:</span>
+                <div class="timer-options">
+                    <button type="button" class="timer-btn active" data-timer="3">3 СЕК</button>
+                    <button type="button" class="timer-btn" data-timer="5">5 СЕК</button>
+                    <button type="button" class="timer-btn" data-timer="8">8 СЕК</button>
+                    <button type="button" class="timer-btn" data-timer="10">10 СЕК</button>
+                </div>
+            </div>
+
             <div class="modal-actions">
                 <button id="snap-btn" class="action-btn primary-btn">📸 СДЕЛАТЬ ФОТО</button>
             </div>
@@ -1462,7 +1473,7 @@ body {
                     <div class="pay-details">
                         <span class="pay-label">ВЫБРАННЫЙ ШАБЛОН:</span>
                         <div id="pay-style-title" class="pay-title">ROBLOX HERO</div>
-                        <div class="pay-subtext">1 ИИ-генерация высокого разрешения</div>
+                        <div class="pay-subtext">Финальное фото в высоком качестве</div>
                     </div>
                 </div>
                 <div class="pay-summary-right">
@@ -1496,10 +1507,10 @@ body {
             </div>
         </div>
 
-        <!-- STEP 3: AI PROCESSING -->
+        <!-- STEP 3: PROCESSING -->
         <div id="step-processing" class="step-view" style="display:none;">
-            <h2 class="modal-title">ИИ ОБРАБОТКА...</h2>
-            <p class="modal-subtitle" id="ai-status-text">Нейросеть генерирует ваше фото...</p>
+            <h2 class="modal-title">СОЗДАНИЕ ПОРТРЕТА...</h2>
+            <p class="modal-subtitle" id="ai-status-text">Применение выбранного стиля к вашему фото...</p>
 
             <div class="spinner-box">
                 <div class="cyber-spinner"></div>
@@ -1513,7 +1524,7 @@ body {
 
             <div class="result-content">
                 <div class="result-image-box">
-                    <img id="result-img" src="" alt="Результат ИИ">
+                    <img id="result-img" src="" alt="Ваш результат">
                 </div>
                 <div class="result-qr-box">
                     <div class="result-qr">
@@ -1632,6 +1643,57 @@ body {
     font-weight: 700;
     color: #c7ff00;
     text-shadow: 0 0 30px #c7ff00;
+}
+
+/* СТИЛИ ВЫБОРА ТАЙМЕРА СЪЁМКИ (3, 5, 8, 10 СЕК) */
+.timer-select-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.timer-select-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 2px;
+}
+
+.timer-options {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.timer-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    color: #ffffff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.timer-btn:hover {
+    border-color: #00F0FF;
+    background: rgba(0, 240, 255, 0.15);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+}
+
+.timer-btn.active {
+    background: #00F0FF;
+    color: #06090e;
+    border-color: #00F0FF;
+    font-weight: 900;
+    box-shadow: 0 0 18px rgba(0, 240, 255, 0.7);
+    transform: scale(1.05);
 }
 
 .action-btn {
@@ -1854,7 +1916,7 @@ body {
     gap: 10px;
 }
 </style>
-<script src="script.js?v=elqr1"></script>
+<script src="script.js?v=smoothcam2"></script>
 </body>
 </html>
 
