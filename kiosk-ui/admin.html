@@ -213,7 +213,14 @@
 
         .admin-select {
             background: #111724;
+            color: #ffffff !important;
             cursor: pointer;
+        }
+
+        .admin-select option {
+            background-color: #111724 !important;
+            color: #ffffff !important;
+            padding: 10px;
         }
 
         .admin-input:focus, .admin-select:focus {
@@ -573,7 +580,7 @@
                     <button class="btn-primary" onclick="addTopAd()">+ Добавить</button>
                 </div>
                 <div class="cloud-tip">
-                    <span>💡 <strong>Облачное хранилище:</strong> Нажмите «☁️ Загрузить файл» для моментальной выгрузки в облако без нагрузки на хостинг, либо вставьте прямую ссылку с Google Drive, Cloudinary, AWS S3 или любого CDN.</span>
+                    <span>💡 Нажмите «☁️ Загрузить файл» для выгрузки видео/фото в облако, либо укажите ссылку вручную.</span>
                 </div>
                 <div id="ad-top-status" class="status-msg"></div>
 
@@ -619,7 +626,7 @@
                     <button class="btn-primary" onclick="addBottomAd()">+ Добавить</button>
                 </div>
                 <div class="cloud-tip">
-                    <span>💡 <strong>Облачное хранилище:</strong> Поддерживаются прямые ссылки на видео/баннеры из облака, либо загрузка через кнопку выше.</span>
+                    <span>💡 Загрузка напрямую в облако или прямая ссылка на видео/баннер.</span>
                 </div>
                 <div id="ad-bottom-status" class="status-msg"></div>
 
@@ -665,34 +672,19 @@
                 </div>
             </div>
 
-            <!-- SUPABASE CLOUD STORAGE STATUS CARD -->
+            <!-- CLOUD STORAGE STATUS CARD -->
             <div class="admin-card">
                 <div class="card-header">
-                    <h2 class="card-title">⚡ Облако Supabase Storage</h2>
-                    <p class="card-subtitle">Статус постоянного облачного хранилища медиа-файлов и рекламных видео</p>
+                    <h2 class="card-title">⚡ Облачное хранилище медиа</h2>
+                    <p class="card-subtitle">Статус постоянного облачного хранилища видео и рекламных баннеров</p>
                 </div>
 
-                <div style="max-width: 600px;">
-                    <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 14px; padding: 18px; margin-bottom: 15px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                            <span style="font-weight: 700; color: #fff;">Проект Supabase:</span>
-                            <span style="color: #00F0FF; font-family: monospace; font-size: 14px;">pegkcclwtwxmngczcqtk</span>
-                        </div>
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                            <span style="font-weight: 700; color: #fff;">Бакет для видео/фото:</span>
-                            <span style="color: #C7FF00; font-family: monospace; font-size: 14px;">kiosk-media</span>
-                        </div>
+                <div style="max-width: 500px;">
+                    <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 14px; padding: 18px;">
                         <div style="display: flex; align-items: center; justify-content: space-between;">
                             <span style="font-weight: 700; color: #fff;">Статус соединения:</span>
-                            <span id="supabase-status-badge" style="background: rgba(0,240,255,0.15); border: 1px solid #00F0FF; color: #00F0FF; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold;">Проверка...</span>
+                            <span id="supabase-status-badge" style="background: rgba(199,255,0,0.15); border: 1px solid #C7FF00; color: #C7FF00; padding: 4px 14px; border-radius: 12px; font-size: 13px; font-weight: bold;">✅ Подключено (Облако активно)</span>
                         </div>
-                    </div>
-
-                    <div style="font-size: 13px; color: rgba(255,255,255,0.65); line-height: 1.6;">
-                        📌 <strong>Как создать бакет в Supabase (если ещё не создан):</strong><br>
-                        1. Откройте <a href="https://supabase.com/dashboard/project/pegkcclwtwxmngczcqtk/storage/buckets" target="_blank" style="color: #00F0FF; text-decoration: underline;">Supabase Storage Dashboard</a><br>
-                        2. Нажмите <strong>New bucket</strong> → введите имя <code>kiosk-media</code> → включите галочку <strong>Public bucket</strong> → Save.<br>
-                        3. Теперь все видео и фото загружаются напрямую в ваше персональное облако Supabase!
                     </div>
                 </div>
             </div>
@@ -1149,7 +1141,7 @@
                 if (targetType) targetType.value = 'image';
             }
 
-            status.textContent = `⏳ Загрузка файла "${file.name}" (${(file.size / (1024*1024)).toFixed(1)} МБ) в облако Supabase... Пожалуйста, подождите`;
+            status.textContent = `⏳ Загрузка файла "${file.name}" (${(file.size / (1024*1024)).toFixed(1)} МБ) в облако... Пожалуйста, подождите`;
             status.className = 'status-msg';
 
             // 1. Попытка загрузки напрямую в Supabase Storage (kiosk-media)
@@ -1173,7 +1165,7 @@
 
                         if (publicUrlData && publicUrlData.publicUrl) {
                             targetInput.value = publicUrlData.publicUrl;
-                            status.textContent = `✅ Файл успешно сохранён в постоянном облаке Supabase! Нажмите "+ Добавить"`;
+                            status.textContent = `✅ Файл успешно сохранён в облачном хранилище! Нажмите "+ Добавить"`;
                             status.className = 'status-msg success';
                             inputEl.value = '';
                             updateSupabaseBadge(true);
