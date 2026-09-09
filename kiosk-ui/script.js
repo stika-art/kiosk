@@ -671,6 +671,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const fallbackMs = (item.fallbackDuration ? (item.fallbackDuration > 100 ? item.fallbackDuration : item.fallbackDuration * 1000) : 8000);
 
         if (item.type === 'video') {
+            const blurTop = document.getElementById('attract-top-blur');
+            if (blurTop) { blurTop.style.opacity = '0'; blurTop.style.backgroundImage = 'none'; }
             if (imgEl) imgEl.classList.remove('active');
             if (vEl) {
                 vEl.src = item.src;
@@ -700,6 +702,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         } else if (item.type === 'image') {
+            const blurTop = document.getElementById('attract-top-blur');
+            if (blurTop) {
+                blurTop.style.backgroundImage = `url("${item.src}")`;
+                blurTop.style.opacity = '0.85';
+            }
             if (vEl) vEl.classList.remove('active');
             if (imgEl) {
                 imgEl.src = item.src;
@@ -729,6 +736,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const fallbackMs = (item.fallbackDuration ? (item.fallbackDuration > 100 ? item.fallbackDuration : item.fallbackDuration * 1000) : 8000);
 
         if (item.type === 'video') {
+            const blurBottom = document.getElementById('attract-bottom-blur');
+            if (blurBottom) { blurBottom.style.opacity = '0'; blurBottom.style.backgroundImage = 'none'; }
             if (imgEl) imgEl.classList.remove('active');
             if (vEl) {
                 vEl.src = item.src;
@@ -748,6 +757,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         } else if (item.type === 'image') {
+            const blurBottom = document.getElementById('attract-bottom-blur');
+            if (blurBottom) {
+                blurBottom.style.backgroundImage = `url("${item.src}")`;
+                blurBottom.style.opacity = '0.85';
+            }
             if (vEl) vEl.classList.remove('active');
             if (imgEl) {
                 imgEl.src = item.src;
