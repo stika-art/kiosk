@@ -1304,18 +1304,22 @@
             }
 
             try {
-                const { data, error } = await supabaseClient.storage.getBucket(SUPABASE_BUCKET);
-                if (!error && data) {
+                // Проверяем доступность бакета через list
+                const { data, error } = await supabaseClient.storage
+                    .from(SUPABASE_BUCKET)
+                    .list('', { limit: 1 });
+
+                if (!error) {
                     badge.textContent = '✅ Подключено (Бакет активен)';
                     badge.style.color = '#C7FF00';
                     badge.style.borderColor = '#C7FF00';
                 } else {
-                    badge.textContent = '⚠️ Бакет не найден (создайте "kiosk-media")';
+                    badge.textContent = '⚠️ Ошибка доступа к бакету';
                     badge.style.color = '#ffb400';
                     badge.style.borderColor = '#ffb400';
                 }
             } catch(e) {
-                badge.textContent = '⚠️ Ожидание создания бакета';
+                badge.textContent = '⚠️ Ошибка соединения';
                 badge.style.color = '#ffb400';
                 badge.style.borderColor = '#ffb400';
             }
