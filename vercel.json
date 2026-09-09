@@ -1,9 +1,9 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/admin", "destination": "/kiosk-ui/admin.html" },
-    { "source": "/admin/", "destination": "/kiosk-ui/admin.html" },
-    { "source": "/", "destination": "/kiosk-ui/index.html" },
-    { "source": "/kiosk-ui", "destination": "/kiosk-ui/index.html" }
+    { "source": "/admin", "destination": "/kiosk-ui/admin" },
+    { "source": "/admin/", "destination": "/kiosk-ui/admin" },
+    { "source": "/", "destination": "/kiosk-ui/" },
+    { "source": "/kiosk-ui", "destination": "/kiosk-ui/" }
   ]
 }
