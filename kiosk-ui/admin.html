@@ -357,6 +357,34 @@
             box-shadow: 0 0 15px rgba(255, 42, 95, 0.5);
         }
 
+        .btn-move {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 5px 9px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-right: 4px;
+            line-height: 1;
+        }
+
+        .btn-move:hover:not(:disabled) {
+            background: rgba(0, 240, 255, 0.25);
+            border-color: #00F0FF;
+            color: #00F0FF;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+        }
+
+        .btn-move:disabled {
+            opacity: 0.25;
+            cursor: not-allowed;
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
         .status-msg {
             min-height: 22px;
             font-size: 14px;
@@ -507,7 +535,7 @@
                             <th style="width: 60px;">#</th>
                             <th>Название категории</th>
                             <th>Статус</th>
-                            <th style="width: 120px; text-align: right;">Действие</th>
+                            <th style="width: 170px; text-align: right;">Порядок / Действие</th>
                         </tr>
                     </thead>
                     <tbody id="categories-table-body">
@@ -540,12 +568,13 @@
                 <table class="items-table">
                     <thead>
                         <tr>
+                            <th style="width: 50px;">#</th>
                             <th style="width: 80px;">Превью</th>
                             <th>Название шаблона</th>
                             <th>Категория</th>
                             <th>Цена</th>
                             <th>Путь к файлу</th>
-                            <th style="width: 120px; text-align: right;">Действие</th>
+                            <th style="width: 170px; text-align: right;">Порядок / Действие</th>
                         </tr>
                     </thead>
                     <tbody id="templates-table-body">
@@ -594,7 +623,7 @@
                             <th>Название</th>
                             <th>Файл / Облачный URL</th>
                             <th>Длительность</th>
-                            <th style="width: 100px; text-align: right;">Действие</th>
+                            <th style="width: 170px; text-align: right;">Порядок / Действие</th>
                         </tr>
                     </thead>
                     <tbody id="ad-top-table-body">
@@ -640,7 +669,7 @@
                             <th>Название</th>
                             <th>Файл / Источник</th>
                             <th>Длительность</th>
-                            <th style="width: 100px; text-align: right;">Действие</th>
+                            <th style="width: 170px; text-align: right;">Порядок / Действие</th>
                         </tr>
                     </thead>
                     <tbody id="ad-bottom-table-body">
@@ -858,16 +887,33 @@
 
             categories.forEach((cat, idx) => {
                 const tr = document.createElement('tr');
+                const isSystem = cat === 'ВСЕ';
                 tr.innerHTML = `
                     <td style="color: rgba(255,255,255,0.4);">${idx + 1}</td>
                     <td><strong style="color: #ffffff; letter-spacing: 1px;">${cat}</strong></td>
-                    <td><span class="cat-tag">${cat === 'ВСЕ' ? 'Основная' : 'Активна'}</span></td>
-                    <td style="text-align: right;">
-                        ${cat !== 'ВСЕ' ? `<button class="btn-del" onclick="deleteCategory('${cat}')">Удалить</button>` : `<span style="color:rgba(255,255,255,0.4); font-size:12px;">Системная</span>`}
+                    <td><span class="cat-tag">${isSystem ? 'Основная' : 'Активна'}</span></td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        ${!isSystem ? `
+                            <button class="btn-move" onclick="moveCategory(${idx}, -1)" ${idx <= 1 ? 'disabled' : ''} title="Переместить выше">▲</button>
+                            <button class="btn-move" onclick="moveCategory(${idx}, 1)" ${idx === categories.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
+                            <button class="btn-del" onclick="deleteCategory('${cat}')">Удалить</button>
+                        ` : `<span style="color:rgba(255,255,255,0.4); font-size:12px;">Системная</span>`}
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        function moveCategory(idx, dir) {
+            const newIdx = idx + dir;
+            if (newIdx <= 0 || newIdx >= categories.length || idx <= 0) return;
+            const temp = categories[idx];
+            categories[idx] = categories[newIdx];
+            categories[newIdx] = temp;
+            localStorage.setItem('kiosk_categories_v2', JSON.stringify(categories));
+            syncAllToCloud();
+            renderCategories();
+            renderCategoryDropdown();
         }
 
         function addCategory() {
@@ -922,21 +968,35 @@
             const tbody = document.getElementById('templates-table-body');
             tbody.innerHTML = '';
 
-            templates.forEach(tpl => {
+            templates.forEach((tpl, idx) => {
                 const tr = document.createElement('tr');
                 const priceVal = tpl.price || 290;
                 tr.innerHTML = `
+                    <td style="color: rgba(255,255,255,0.4);">${idx + 1}</td>
                     <td><img src="${tpl.img}" alt="${tpl.title}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'"></td>
                     <td><strong>${tpl.title}</strong></td>
                     <td><span class="cat-tag">${tpl.category}</span></td>
                     <td><span style="color: #c7ff00; font-weight: 800; font-family: 'Orbitron', sans-serif;">${priceVal} сом</span></td>
                     <td style="color: rgba(255,255,255,0.6); font-family: monospace; font-size: 13px;">${tpl.img}</td>
-                    <td style="text-align: right;">
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button class="btn-move" onclick="moveTemplate(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
+                        <button class="btn-move" onclick="moveTemplate(${idx}, 1)" ${idx === templates.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
                         <button class="btn-del" onclick="deleteTemplate(${tpl.id})">Удалить</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        function moveTemplate(idx, dir) {
+            const newIdx = idx + dir;
+            if (newIdx < 0 || newIdx >= templates.length) return;
+            const temp = templates[idx];
+            templates[idx] = templates[newIdx];
+            templates[newIdx] = temp;
+            localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
+            syncAllToCloud();
+            renderTemplates();
         }
 
         function addTemplate() {
@@ -1006,12 +1066,25 @@
                     <td><strong style="color: #ffffff;">${ad.title || 'Без названия'}</strong></td>
                     <td><code style="color: #00F0FF; font-size: 12px; word-break: break-all;">${ad.src}</code></td>
                     <td>${ad.duration || 5} сек</td>
-                    <td style="text-align: right;">
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button class="btn-move" onclick="moveTopAd(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Показывать раньше (вверх)">▲</button>
+                        <button class="btn-move" onclick="moveTopAd(${idx}, 1)" ${idx === topAds.length - 1 ? 'disabled' : ''} title="Показывать позже (вниз)">▼</button>
                         <button class="btn-del" onclick="deleteTopAd(${ad.id})">Удалить</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        function moveTopAd(idx, dir) {
+            const newIdx = idx + dir;
+            if (newIdx < 0 || newIdx >= topAds.length) return;
+            const temp = topAds[idx];
+            topAds[idx] = topAds[newIdx];
+            topAds[newIdx] = temp;
+            localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));
+            syncAllToCloud();
+            renderTopAds();
         }
 
         function renderBottomAds() {
@@ -1034,12 +1107,25 @@
                     <td><strong style="color: #ffffff;">${ad.title || 'Без названия'}</strong></td>
                     <td><code style="color: #00F0FF; font-size: 12px; word-break: break-all;">${ad.src}</code></td>
                     <td>${ad.duration || 5} сек</td>
-                    <td style="text-align: right;">
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button class="btn-move" onclick="moveBottomAd(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Показывать раньше (вверх)">▲</button>
+                        <button class="btn-move" onclick="moveBottomAd(${idx}, 1)" ${idx === bottomAds.length - 1 ? 'disabled' : ''} title="Показывать позже (вниз)">▼</button>
                         <button class="btn-del" onclick="deleteBottomAd(${ad.id})">Удалить</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        function moveBottomAd(idx, dir) {
+            const newIdx = idx + dir;
+            if (newIdx < 0 || newIdx >= bottomAds.length) return;
+            const temp = bottomAds[idx];
+            bottomAds[idx] = bottomAds[newIdx];
+            bottomAds[newIdx] = temp;
+            localStorage.setItem('kiosk_ads_bottom', JSON.stringify(bottomAds));
+            syncAllToCloud();
+            renderBottomAds();
         }
 
         function addTopAd() {
