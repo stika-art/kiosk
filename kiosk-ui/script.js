@@ -586,6 +586,37 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 3, type: 'image', title: 'Нижний баннер 2', src: 'assets/hero_avatar.jpg', duration: 5000 }
     ];
 
+    // ОБЛАЧНАЯ КОНФИГУРАЦИЯ БАННЕРОВ И НАСТРОЕК (SUPABASE STORAGE)
+    const CLOUD_CONFIG_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/config/settings.json';
+
+    async function syncCloudConfig() {
+        try {
+            const res = await fetch(CLOUD_CONFIG_URL + '?_t=' + Date.now(), { cache: 'no-store' });
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data.ads_top) && data.ads_top.length > 0) {
+                    topPlaylist = data.ads_top;
+                    localStorage.setItem('kiosk_ads_top', JSON.stringify(data.ads_top));
+                }
+                if (Array.isArray(data.ads_bottom) && data.ads_bottom.length > 0) {
+                    bottomPlaylist = data.ads_bottom;
+                    localStorage.setItem('kiosk_ads_bottom', JSON.stringify(data.ads_bottom));
+                }
+                if (data.attract_timeout) {
+                    localStorage.setItem('kiosk_attract_timeout', data.attract_timeout);
+                }
+                if (Array.isArray(data.templates) && data.templates.length > 0) {
+                    localStorage.setItem('kiosk_templates_v2', JSON.stringify(data.templates));
+                }
+                if (Array.isArray(data.categories) && data.categories.length > 0) {
+                    localStorage.setItem('kiosk_categories_v2', JSON.stringify(data.categories));
+                }
+            }
+        } catch(e) {
+            console.warn('Cloud config fetch skipped/offline:', e);
+        }
+    }
+
     function getTopPlaylist() {
         try {
             const data = localStorage.getItem('kiosk_ads_top');
@@ -626,12 +657,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function playTopPlaylistNext() {
         clearTimeout(topPlaylistTimer);
+        if (!topPlaylist || topPlaylist.length === 0) return;
+        if (topIndex >= topPlaylist.length) topIndex = 0;
         const item = topPlaylist[topIndex];
         const vEl = document.getElementById('attract-promo-video');
         const imgEl = document.getElementById('attract-promo-img');
         const fallback = document.getElementById('attract-top-fallback');
 
         if (!item) return;
+
+        // Нормализация длительности (секунды в мс)
+        const durMs = (item.duration ? (item.duration > 100 ? item.duration : item.duration * 1000) : 5000);
+        const fallbackMs = (item.fallbackDuration ? (item.fallbackDuration > 100 ? item.fallbackDuration : item.fallbackDuration * 1000) : 8000);
 
         if (item.type === 'video') {
             if (imgEl) imgEl.classList.remove('active');
@@ -659,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     topPlaylistTimer = setTimeout(() => {
                         topIndex = (topIndex + 1) % topPlaylist.length;
                         playTopPlaylistNext();
-                    }, item.fallbackDuration || 5000);
+                    }, fallbackMs);
                 });
             }
         } else if (item.type === 'image') {
@@ -673,17 +710,23 @@ document.addEventListener('DOMContentLoaded', () => {
             topPlaylistTimer = setTimeout(() => {
                 topIndex = (topIndex + 1) % topPlaylist.length;
                 playTopPlaylistNext();
-            }, item.duration || 5000);
+            }, durMs);
         }
     }
 
     function playBottomPlaylistNext() {
         clearTimeout(bottomPlaylistTimer);
+        if (!bottomPlaylist || bottomPlaylist.length === 0) return;
+        if (bottomIndex >= bottomPlaylist.length) bottomIndex = 0;
         const item = bottomPlaylist[bottomIndex];
         const vEl = document.getElementById('attract-card-video');
         const imgEl = document.getElementById('attract-card-img');
 
         if (!item) return;
+
+        // Нормализация длительности (секунды в мс)
+        const durMs = (item.duration ? (item.duration > 100 ? item.duration : item.duration * 1000) : 5000);
+        const fallbackMs = (item.fallbackDuration ? (item.fallbackDuration > 100 ? item.fallbackDuration : item.fallbackDuration * 1000) : 8000);
 
         if (item.type === 'video') {
             if (imgEl) imgEl.classList.remove('active');
@@ -701,7 +744,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     bottomPlaylistTimer = setTimeout(() => {
                         bottomIndex = (bottomIndex + 1) % bottomPlaylist.length;
                         playBottomPlaylistNext();
-                    }, item.fallbackDuration || 5000);
+                    }, fallbackMs);
                 });
             }
         } else if (item.type === 'image') {
@@ -714,12 +757,18 @@ document.addEventListener('DOMContentLoaded', () => {
             bottomPlaylistTimer = setTimeout(() => {
                 bottomIndex = (bottomIndex + 1) % bottomPlaylist.length;
                 playBottomPlaylistNext();
-            }, item.duration || 5000);
+            }, durMs);
         }
     }
 
     function showAttractScreen() {
-        // Подгружаем актуальные рекламные плейлисты из админки
+        // Фоново проверяем обновления в облаке Supabase
+        syncCloudConfig().then(() => {
+            topPlaylist = getTopPlaylist();
+            bottomPlaylist = getBottomPlaylist();
+        });
+
+        // Подгружаем актуальные рекламные плейлисты
         topPlaylist = getTopPlaylist();
         bottomPlaylist = getBottomPlaylist();
 
@@ -780,6 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, { passive: true });
 
-    // Запуск таймера простоя при загрузке
+    // Синхронизация с облаком и запуск таймера простоя при загрузке
+    syncCloudConfig();
     resetInactivityTimer();
 });
