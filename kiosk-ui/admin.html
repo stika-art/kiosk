@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TRENDUM — Панель управления (Admin)</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,700;0,800;0,900;1,700;1,900&family=Orbitron:wght@500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -663,6 +664,38 @@
                     <div id="settings-status" class="status-msg"></div>
                 </div>
             </div>
+
+            <!-- SUPABASE CLOUD STORAGE STATUS CARD -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">⚡ Облако Supabase Storage</h2>
+                    <p class="card-subtitle">Статус постоянного облачного хранилища медиа-файлов и рекламных видео</p>
+                </div>
+
+                <div style="max-width: 600px;">
+                    <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 14px; padding: 18px; margin-bottom: 15px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="font-weight: 700; color: #fff;">Проект Supabase:</span>
+                            <span style="color: #00F0FF; font-family: monospace; font-size: 14px;">pegkcclwtwxmngczcqtk</span>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="font-weight: 700; color: #fff;">Бакет для видео/фото:</span>
+                            <span style="color: #C7FF00; font-family: monospace; font-size: 14px;">kiosk-media</span>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-weight: 700; color: #fff;">Статус соединения:</span>
+                            <span id="supabase-status-badge" style="background: rgba(0,240,255,0.15); border: 1px solid #00F0FF; color: #00F0FF; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold;">Проверка...</span>
+                        </div>
+                    </div>
+
+                    <div style="font-size: 13px; color: rgba(255,255,255,0.65); line-height: 1.6;">
+                        📌 <strong>Как создать бакет в Supabase (если ещё не создан):</strong><br>
+                        1. Откройте <a href="https://supabase.com/dashboard/project/pegkcclwtwxmngczcqtk/storage/buckets" target="_blank" style="color: #00F0FF; text-decoration: underline;">Supabase Storage Dashboard</a><br>
+                        2. Нажмите <strong>New bucket</strong> → введите имя <code>kiosk-media</code> → включите галочку <strong>Public bucket</strong> → Save.<br>
+                        3. Теперь все видео и фото загружаются напрямую в ваше персональное облако Supabase!
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- TAB 4: SECURITY -->
@@ -684,6 +717,16 @@
     </div>
 
     <script>
+        // ИНИЦИАЛИЗАЦИЯ SUPABASE ДЛЯ ОБЛАЧНОГО ХРАНИЛИЩА МЕДИА
+        const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
+        const SUPABASE_BUCKET = 'kiosk-media';
+
+        let supabaseClient = null;
+        if (window.supabase && window.supabase.createClient) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
         const DEFAULT_PIN = '1234';
 
         function getStoredPin() {
@@ -1090,7 +1133,7 @@
             renderBottomAds();
         }
 
-        // ОБЛАЧНАЯ ЗАГРУЗКА ВИДЕО И ФОТО
+        // ОБЛАЧНАЯ ЗАГРУЗКА ВИДЕО И ФОТО (SUPABASE STORAGE)
         async function handleCloudFileUpload(inputEl, targetInputId, targetTypeId, statusId) {
             const file = inputEl.files && inputEl.files[0];
             if (!file) return;
@@ -1106,15 +1149,50 @@
                 if (targetType) targetType.value = 'image';
             }
 
-            status.textContent = `⏳ Загрузка файла "${file.name}" (${(file.size / (1024*1024)).toFixed(1)} МБ) в облако... Пожалуйста, подождите`;
+            status.textContent = `⏳ Загрузка файла "${file.name}" (${(file.size / (1024*1024)).toFixed(1)} МБ) в облако Supabase... Пожалуйста, подождите`;
             status.className = 'status-msg';
 
+            // 1. Попытка загрузки напрямую в Supabase Storage (kiosk-media)
+            if (supabaseClient) {
+                try {
+                    const ext = file.name.split('.').pop() || 'mp4';
+                    const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                    const fileName = `ads/${Date.now()}_${cleanName}`;
+
+                    const { data, error } = await supabaseClient.storage
+                        .from(SUPABASE_BUCKET)
+                        .upload(fileName, file, {
+                            cacheControl: '3600',
+                            upsert: true
+                        });
+
+                    if (!error && data) {
+                        const { data: publicUrlData } = supabaseClient.storage
+                            .from(SUPABASE_BUCKET)
+                            .getPublicUrl(fileName);
+
+                        if (publicUrlData && publicUrlData.publicUrl) {
+                            targetInput.value = publicUrlData.publicUrl;
+                            status.textContent = `✅ Файл успешно сохранён в постоянном облаке Supabase! Нажмите "+ Добавить"`;
+                            status.className = 'status-msg success';
+                            inputEl.value = '';
+                            updateSupabaseBadge(true);
+                            return;
+                        }
+                    } else if (error) {
+                        console.warn('Supabase upload warning:', error);
+                    }
+                } catch(supErr) {
+                    console.warn('Supabase storage error, fallback to CDN:', supErr);
+                }
+            }
+
+            // 2. Резервная загрузка через CDN (если бакет в Supabase ещё не создан в dashboard)
+            status.textContent = `⏳ Сохранение через резервный CDN...`;
             try {
-                // 1. Попытка загрузки на быстрый CDN файловый хостинг (catbox / tmpfiles)
                 const formData = new FormData();
                 formData.append('file', file);
 
-                // Используем надежный облачный сервис временного/постоянного медиа-хостинга tmpfiles.org
                 const response = await fetch('https://tmpfiles.org/api/v1/upload', {
                     method: 'POST',
                     body: formData
@@ -1123,20 +1201,18 @@
                 if (response.ok) {
                     const resData = await response.json();
                     if (resData && resData.data && resData.data.url) {
-                        // Преобразуем URL в прямой raw URL для потокового воспроизведения видео/фото
                         const directUrl = resData.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
                         targetInput.value = directUrl;
-                        status.textContent = `✅ Файл успешно загружен в облако! Ссылка вставлена. Нажмите "+ Добавить"`;
+                        status.textContent = `✅ Файл загружен в облако (CDN)! Нажмите "+ Добавить"`;
                         status.className = 'status-msg success';
                         inputEl.value = '';
                         return;
                     }
                 }
-                throw new Error('Первый облачный провайдер вернул ошибку, пробуем резервный');
+                throw new Error('CDN error');
             } catch (err1) {
-                console.warn('Fallback к запасному облачному провайдеру:', err1);
+                console.warn('Fallback to file.io:', err1);
                 try {
-                    // Резервный облачный провайдер (file.io)
                     const fd = new FormData();
                     fd.append('file', file);
                     const res2 = await fetch('https://file.io/?expires=1y', {
@@ -1154,7 +1230,7 @@
                     throw new Error('file.io error');
                 } catch (err2) {
                     console.error('Ошибка загрузки в облако:', err2);
-                    status.textContent = `❌ Не удалось автоматически выгрузить в облако (${err2.message || 'сеть'}). Вы можете загрузить видео на Google Диск / YouTube / Cloudinary / Dropbox и вставить прямую ссылку в поле URL.`;
+                    status.textContent = `❌ Ошибка загрузки. Убедитесь, что в Supabase создан публичный бакет "kiosk-media", либо вставьте прямую ссылку URL вручную.`;
                     status.className = 'status-msg error';
                     inputEl.value = '';
                 }
@@ -1215,9 +1291,50 @@
             setTimeout(() => { status.textContent = ''; }, 3000);
         }
 
+        // Проверка подключения к Supabase Storage
+        async function checkSupabaseStatus() {
+            const badge = document.getElementById('supabase-status-badge');
+            if (!badge) return;
+
+            if (!supabaseClient) {
+                badge.textContent = '❌ SDK не загружен';
+                badge.style.color = '#ff2a5f';
+                badge.style.borderColor = '#ff2a5f';
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient.storage.getBucket(SUPABASE_BUCKET);
+                if (!error && data) {
+                    badge.textContent = '✅ Подключено (Бакет активен)';
+                    badge.style.color = '#C7FF00';
+                    badge.style.borderColor = '#C7FF00';
+                } else {
+                    badge.textContent = '⚠️ Бакет не найден (создайте "kiosk-media")';
+                    badge.style.color = '#ffb400';
+                    badge.style.borderColor = '#ffb400';
+                }
+            } catch(e) {
+                badge.textContent = '⚠️ Ожидание создания бакета';
+                badge.style.color = '#ffb400';
+                badge.style.borderColor = '#ffb400';
+            }
+        }
+
+        function updateSupabaseBadge(success) {
+            const badge = document.getElementById('supabase-status-badge');
+            if (!badge) return;
+            if (success) {
+                badge.textContent = '✅ Подключено (Файлы сохраняются)';
+                badge.style.color = '#C7FF00';
+                badge.style.borderColor = '#C7FF00';
+            }
+        }
+
         // Init on load
         checkAuth();
         loadKioskSettings();
+        checkSupabaseStatus();
     </script>
 </body>
 </html>
