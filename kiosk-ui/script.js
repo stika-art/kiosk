@@ -44,10 +44,12 @@ if (!kioskCategories || kioskCategories.length === 0) {
 let masterTemplates = [];
 try {
     const savedTpls = localStorage.getItem('kiosk_templates_v2');
-    if (savedTpls) masterTemplates = JSON.parse(savedTpls);
+    if (savedTpls !== null) {
+        masterTemplates = JSON.parse(savedTpls);
+    }
 } catch(e) {}
 
-if (!masterTemplates || masterTemplates.length === 0) {
+if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.getItem('kiosk_templates_v2') === null)) {
     masterTemplates = [
         { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290 },
         { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350 },
@@ -106,9 +108,19 @@ window.selectCard = function(cardEl, styleName) {
 
 // 2. GRID ROUTER & RENDERER (МГНОВЕННЫЙ РЕНДЕР КАРТИНОК)
 function openTemplateGallery() {
+    try {
+        const saved = localStorage.getItem('kiosk_templates_v2');
+        if (saved !== null) {
+            masterTemplates = JSON.parse(saved);
+        }
+        const savedCats = localStorage.getItem('kiosk_categories_v2');
+        if (savedCats !== null) {
+            kioskCategories = JSON.parse(savedCats);
+        }
+    } catch(e) {}
     const modal = document.getElementById('template-modal');
     renderCategoryPillsBar();
-    switchGridCategory('ВСЕ');
+    switchGridCategory(activeGridTab || 'ВСЕ');
     if (modal) modal.classList.remove('hidden');
 }
 
@@ -605,11 +617,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.attract_timeout) {
                     localStorage.setItem('kiosk_attract_timeout', data.attract_timeout);
                 }
-                if (Array.isArray(data.templates) && data.templates.length > 0) {
+                if (Array.isArray(data.templates)) {
+                    masterTemplates = data.templates;
                     localStorage.setItem('kiosk_templates_v2', JSON.stringify(data.templates));
+                    renderGridTemplates();
                 }
-                if (Array.isArray(data.categories) && data.categories.length > 0) {
+                if (Array.isArray(data.categories)) {
+                    kioskCategories = data.categories;
                     localStorage.setItem('kiosk_categories_v2', JSON.stringify(data.categories));
+                    renderCategoryPillsBar();
                 }
             }
         } catch(e) {

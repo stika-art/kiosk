@@ -533,6 +533,7 @@
                 <div class="form-row">
                     <input type="text" id="tpl-img-input" class="admin-input" placeholder="Путь к фото (напр: assets/man.jpg или images/photo1.jpg)...">
                     <button class="btn-primary" onclick="addTemplate()">+ Добавить шаблон</button>
+                    <button type="button" class="btn-upload" onclick="syncAllToCloudManual('tpl-status')" style="margin-left: 10px;" title="Сохранить и отправить шаблоны в киоск">☁️ Синхронизировать с киоском</button>
                 </div>
                 <div id="tpl-status" class="status-msg"></div>
 
@@ -1340,13 +1341,16 @@
                         renderBottomAds();
                         changed = true;
                     }
-                    if (Array.isArray(data.templates) && data.templates.length > 0) {
+                    if (Array.isArray(data.templates)) {
                         templates = data.templates;
                         localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
                         renderTemplates();
                         changed = true;
+                    } else if (templates && templates.length >= 0) {
+                        // Если в облаке шаблоны еще не записаны, отправляем текущие шаблоны админа в облако
+                        syncAllToCloud();
                     }
-                    if (Array.isArray(data.categories) && data.categories.length > 0) {
+                    if (Array.isArray(data.categories)) {
                         categories = data.categories;
                         localStorage.setItem('kiosk_categories_v2', JSON.stringify(categories));
                         renderCategories();
@@ -1364,6 +1368,20 @@
                 }
             } catch(e) {
                 console.warn('Не удалось загрузить настройки из облака:', e);
+            }
+        }
+
+        async function syncAllToCloudManual(statusId) {
+            const status = document.getElementById(statusId);
+            if (status) {
+                status.textContent = '⏳ Синхронизация данных с облаком и киоском...';
+                status.className = 'status-msg';
+            }
+            await syncAllToCloud();
+            if (status) {
+                status.textContent = '✅ Данные успешно сохранены и синхронизированы с киоском!';
+                status.className = 'status-msg success';
+                setTimeout(() => { status.textContent = ''; }, 3500);
             }
         }
 
