@@ -448,8 +448,22 @@
             margin-top: 10px;
         }
 
-        .status-msg.success { color: #00ff88; }
-        .status-msg.error { color: #ff2a5f; }
+        .status-msg.success { 
+            color: #00ff88; 
+            background: rgba(0, 255, 136, 0.12);
+            border: 1px solid rgba(0, 255, 136, 0.35);
+            padding: 8px 16px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+        .status-msg.error { 
+            color: #ff2a5f; 
+            background: rgba(255, 42, 95, 0.12);
+            border: 1px solid rgba(255, 42, 95, 0.35);
+            padding: 8px 16px;
+            border-radius: 8px;
+            display: inline-block;
+        }
 
         /* Login Screen Overlay */
         .auth-overlay {
@@ -1104,17 +1118,65 @@
             return `<span class="model-badge">${m}</span>`;
         }
 
+        function compressImage(file, maxWidth, maxHeight, quality, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                    callback(compressedBase64);
+                };
+                img.onerror = function() {
+                    callback(e.target.result);
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = function() {
+                alert('Не удалось прочитать выбранный файл изображения');
+            };
+            reader.readAsDataURL(file);
+        }
+
         function handleTemplateFileSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Data = e.target.result;
-                document.getElementById('tpl-img-input').value = base64Data;
-                handleTemplateImgInput(base64Data);
-            };
-            reader.readAsDataURL(file);
+            const status = document.getElementById('tpl-status');
+            if (status) {
+                status.textContent = '⏳ Оптимизация изображения...';
+                status.className = 'status-msg';
+            }
+
+            compressImage(file, 800, 800, 0.85, function(compressedBase64) {
+                document.getElementById('tpl-img-input').value = compressedBase64;
+                handleTemplateImgInput(compressedBase64);
+                if (status) {
+                    status.textContent = '✅ Обложка оптимизирована и готова';
+                    status.className = 'status-msg success';
+                    setTimeout(() => { status.textContent = ''; }, 2000);
+                }
+            });
         }
 
         function handleTemplateImgInput(val) {
@@ -1246,11 +1308,15 @@
                 model = customModelInput.value.trim() || 'nano-banana-2';
             }
 
-            const prompt = promptInput.value.trim();
-            const img = imgInput.value.trim();
+            if (!title) {
+                status.textContent = '❌ Введите название шаблона (например: CYBER SAMURAI)';
+                status.className = 'status-msg error';
+                titleInput.focus();
+                return;
+            }
 
-            if (!title || !img) {
-                status.textContent = '❌ Заполните название шаблона и добавьте обложку (фото или base64)';
+            if (!img) {
+                status.textContent = '❌ Загрузите обложку для шаблона через кнопку «📁 Загрузить файл»';
                 status.className = 'status-msg error';
                 return;
             }
@@ -1296,11 +1362,21 @@
                 status.className = 'status-msg success';
             }
 
-            localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
-            syncAllToCloud();
+            try {
+                localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
+            } catch (storageErr) {
+                console.warn('LocalStorage error:', storageErr);
+            }
+
+            try {
+                syncAllToCloud();
+            } catch (cloudErr) {
+                console.warn('Cloud sync error:', cloudErr);
+            }
+
             renderTemplates();
 
-            setTimeout(() => { status.textContent = ''; }, 3500);
+            setTimeout(() => { status.textContent = ''; }, 4000);
         }
 
         function deleteTemplate(id) {
