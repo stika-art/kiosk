@@ -1219,6 +1219,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultVideo.style.display = 'none';
             }
         }
+
+        // Формирование QR-кода для скачивания результата на смартфон
+        const resultQrEl = document.getElementById('result-qr-img');
+        if (resultQrEl && finalResultUrl) {
+            const absoluteDownloadUrl = finalResultUrl.startsWith('http') 
+                ? finalResultUrl 
+                : (window.location.origin + (finalResultUrl.startsWith('/') ? '' : '/') + finalResultUrl);
+            resultQrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(absoluteDownloadUrl)}`;
+        }
+
         showStep(stepResult);
     }
 
