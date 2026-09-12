@@ -1004,11 +1004,12 @@
         }
 
         .attract-top-video {
-            height: 75%;
+            height: calc(75% - 8px);
             width: 100%;
             position: relative;
             overflow: hidden;
             background: #0a0a0a;
+            margin-bottom: 16px;
         }
 
         .attract-blur-backdrop {
@@ -1106,12 +1107,15 @@
         }
 
         .attract-bottom-card {
-            height: 25%;
-            width: 100%;
+            height: calc(25% - 32px);
+            width: calc(100% - 36px);
+            margin: 0 auto 24px;
             position: relative;
             overflow: hidden;
             background: #1A1A1A;
-            border-top: 1px solid var(--border-subtle);
+            border: 1.5px solid rgba(212, 160, 67, 0.35);
+            border-radius: 28px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(212, 160, 67, 0.15);
         }
 
         .attract-bottom-card .media-layer,
@@ -1120,6 +1124,7 @@
             width: 100% !important;
             height: 100% !important;
             object-fit: cover !important;
+            border-radius: 26px;
         }
 
         /* Responsive Tweaks */
