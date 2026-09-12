@@ -643,6 +643,150 @@
             border-top: 1px solid var(--border-subtle);
             background: #1A1A1A;
         }
+
+        /* Панель табов разделов шаблонов */
+        .section-tabs-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 24px;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border-subtle);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .section-tabs-bar::-webkit-scrollbar {
+            display: none;
+        }
+        .section-tab-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .section-tab-chip:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .section-tab-chip.active {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 4px 15px rgba(212, 160, 67, 0.2);
+        }
+        .section-tab-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 6px;
+            border-radius: 11px;
+            font-size: 11px;
+            font-weight: 800;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-dim);
+            transition: all 0.2s ease;
+        }
+        .section-tab-chip.active .section-tab-count {
+            background: var(--primary);
+            color: #141414;
+        }
+
+        /* Заголовок группы шаблонов при общем виде */
+        .tpl-section-group {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            margin-bottom: 24px;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        .tpl-section-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.035);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .tpl-section-group-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+        }
+        .tpl-section-group-badge {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+            background: var(--primary-light);
+            padding: 4px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--primary-border);
+        }
+
+        /* Подпункты сайдбара */
+        .sidebar-sub-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding-left: 20px;
+            padding-right: 8px;
+            margin-top: 2px;
+            margin-bottom: 6px;
+        }
+        .sidebar-sub-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 12px;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+            background: transparent;
+            border: 1px solid transparent;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.15s ease;
+            width: 100%;
+        }
+        .sidebar-sub-item:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .sidebar-sub-item.active {
+            color: var(--primary);
+            font-weight: 700;
+            background: var(--primary-light);
+            border-color: var(--primary-border);
+        }
+        .sidebar-sub-badge {
+            font-size: 11px;
+            padding: 1px 7px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-dim);
+        }
+        .sidebar-sub-item.active .sidebar-sub-badge {
+            background: var(--primary);
+            color: #141414;
+        }
     </style>
 </head>
 <body>
@@ -677,6 +821,9 @@
                 <span class="nav-item-icon">🖼️</span>
                 <span>Шаблоны</span>
             </button>
+            <div id="sidebar-tpl-sub-menu" class="sidebar-sub-menu" style="display: none;">
+                <!-- Заполняется динамически JS: Все, Фото, Видео, Тренды, Пригласительные -->
+            </div>
             <button class="nav-item" id="tab-btn-main" onclick="switchAdminTab('main')">
                 <span class="nav-item-icon">🎴</span>
                 <span>Главный экран</span>
@@ -798,33 +945,15 @@
                 </div>
                 <div id="tpl-status" class="status-msg"></div>
 
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 24px; margin-bottom: 12px; gap: 12px; flex-wrap: wrap;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 13px; color: var(--text-dim); font-weight: 600;">Фильтр шаблонов:</span>
-                        <select id="tpl-filter-section-select" class="admin-select" style="padding: 6px 14px; font-size: 13px; min-width: 180px;" onchange="handleTplFilterSectionChange(this.value)">
-                            <option value="ALL">🌟 Все разделы</option>
-                        </select>
-                    </div>
-                    <span id="tpl-count-badge" style="font-size: 12px; color: var(--text-dim);"></span>
+                <!-- ТАБЫ РАЗДЕЛОВ ШАБЛОНОВ: ВСЕ, ФОТО, ВИДЕО, ТРЕНДЫ, ПРИГЛАСИТЕЛЬНЫЕ -->
+                <div class="section-tabs-bar" id="tpl-section-tabs-bar">
+                    <!-- Заполняется динамически JS -->
                 </div>
 
-                <table class="items-table" style="margin-top: 6px;">
-                    <thead>
-                        <tr>
-                            <th style="width: 40px;">#</th>
-                            <th style="width: 65px;">Превью</th>
-                            <th>Название шаблона</th>
-                            <th style="width: 160px;">Кнопка / Категория</th>
-                            <th style="width: 140px;">Модель ИИ</th>
-                            <th>Промпт</th>
-                            <th style="width: 90px;">Цена</th>
-                            <th style="width: 170px; text-align: right;">Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody id="templates-table-body">
-                        <!-- Rendered by JS -->
-                    </tbody>
-                </table>
+                <!-- ОБЛАСТЬ ОТОБРАЖЕНИЯ ШАБЛОНОВ (РАЗДЕЛЕННАЯ ПО РАЗДЕЛАМ) -->
+                <div id="templates-display-area">
+                    <!-- Заполняется динамически JS -->
+                </div>
             </div>
         </section>
 
@@ -1310,6 +1439,8 @@
                 renderCategories();
                 renderTplSectionSelect();
                 renderTplCategoryDropdown();
+                renderTplSectionTabs();
+                renderSidebarTplSubMenu();
                 renderTemplates();
                 renderAds();
                 renderMainHeaderInputs();
@@ -1345,15 +1476,29 @@
         }
 
         // Tab Navigation
-        function switchAdminTab(tabName) {
+        function switchAdminTab(tabName, sectionId) {
             document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
             const targetContent = document.getElementById('tab-content-' + tabName);
             const targetBtn = document.getElementById('tab-btn-' + tabName);
+            const subMenu = document.getElementById('sidebar-tpl-sub-menu');
 
             if (targetContent) targetContent.classList.remove('hidden');
             if (targetBtn) targetBtn.classList.add('active');
+
+            if (tabName === 'tpls') {
+                if (subMenu) subMenu.style.display = 'flex';
+                renderSidebarTplSubMenu();
+                if (sectionId !== undefined) {
+                    selectTplSection(sectionId);
+                } else {
+                    renderTplSectionTabs();
+                    renderTemplates();
+                }
+            } else {
+                if (subMenu) subMenu.style.display = 'none';
+            }
         }
 
         // =============================================
@@ -1364,6 +1509,7 @@
             if (title.includes('ФОТО')) return '📸';
             if (title.includes('ВИДЕО')) return '🎬';
             if (title.includes('ТРЕНД')) return '🔥';
+            if (title.includes('ПРИГЛАС') || card.id === 4) return '💌';
             return '🎴';
         }
 
@@ -1564,8 +1710,6 @@
 
         function renderTplSectionSelect() {
             const secSelect = document.getElementById('tpl-section-select');
-            const filterSelect = document.getElementById('tpl-filter-section-select');
-
             if (secSelect) {
                 secSelect.innerHTML = '';
                 mainCards.forEach(c => {
@@ -1574,23 +1718,114 @@
                     opt.textContent = `${getCardIcon(c)} ${c.title}`;
                     secSelect.appendChild(opt);
                 });
+                if (activeTplFilterSectionId !== 'ALL') {
+                    secSelect.value = activeTplFilterSectionId;
+                }
+            }
+            renderTplSectionTabs();
+            renderSidebarTplSubMenu();
+        }
+
+        function renderSidebarTplSubMenu() {
+            const subMenu = document.getElementById('sidebar-tpl-sub-menu');
+            if (!subMenu) return;
+            subMenu.innerHTML = '';
+
+            const allBtn = document.createElement('button');
+            allBtn.type = 'button';
+            allBtn.className = `sidebar-sub-item ${activeTplFilterSectionId === 'ALL' ? 'active' : ''}`;
+            allBtn.onclick = () => selectTplSection('ALL');
+            allBtn.innerHTML = `
+                <span>🌟 Все разделы</span>
+                <span class="sidebar-sub-badge">${templates.length}</span>
+            `;
+            subMenu.appendChild(allBtn);
+
+            mainCards.forEach(c => {
+                const count = templates.filter(t => t.sectionId === c.id).length;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `sidebar-sub-item ${activeTplFilterSectionId === c.id ? 'active' : ''}`;
+                btn.onclick = () => selectTplSection(c.id);
+                btn.innerHTML = `
+                    <span>${getCardIcon(c)} ${c.title}</span>
+                    <span class="sidebar-sub-badge">${count}</span>
+                `;
+                subMenu.appendChild(btn);
+            });
+        }
+
+        function renderTplSectionTabs() {
+            const container = document.getElementById('tpl-section-tabs-bar');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // 1. Кнопка "Все разделы"
+            const allChip = document.createElement('div');
+            allChip.className = `section-tab-chip ${activeTplFilterSectionId === 'ALL' ? 'active' : ''}`;
+            allChip.onclick = () => selectTplSection('ALL');
+            allChip.innerHTML = `
+                <span>🌟 Все разделы</span>
+                <span class="section-tab-count">${templates.length}</span>
+            `;
+            container.appendChild(allChip);
+
+            // 2. Кнопки для каждого раздела (Фото, Видео, Тренды, Пригласительные)
+            mainCards.forEach(c => {
+                const count = templates.filter(t => t.sectionId === c.id).length;
+                const chip = document.createElement('div');
+                chip.className = `section-tab-chip ${activeTplFilterSectionId === c.id ? 'active' : ''}`;
+                chip.onclick = () => selectTplSection(c.id);
+                chip.innerHTML = `
+                    <span>${getCardIcon(c)} ${c.title}</span>
+                    <span class="section-tab-count">${count}</span>
+                `;
+                container.appendChild(chip);
+            });
+        }
+
+        function selectTplSection(secId) {
+            activeTplFilterSectionId = (secId === 'ALL' ? 'ALL' : Number(secId));
+            renderTplSectionTabs();
+            renderSidebarTplSubMenu();
+
+            const secSelect = document.getElementById('tpl-section-select');
+            const submitBtn = document.getElementById('tpl-submit-btn');
+
+            if (activeTplFilterSectionId !== 'ALL') {
+                const card = mainCards.find(c => c.id === activeTplFilterSectionId);
+                if (secSelect && card) {
+                    secSelect.value = card.id;
+                    renderTplCategoryDropdown(card.id);
+                }
+                if (submitBtn && !editingTemplateId && card) {
+                    submitBtn.textContent = `+ Добавить шаблон в «${card.title}»`;
+                }
+            } else {
+                if (submitBtn && !editingTemplateId) {
+                    submitBtn.textContent = '+ Добавить шаблон';
+                }
             }
 
-            if (filterSelect) {
-                const currentVal = filterSelect.value || 'ALL';
-                filterSelect.innerHTML = '<option value="ALL">🌟 Все разделы</option>';
-                mainCards.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c.id;
-                    opt.textContent = `${getCardIcon(c)} ${c.title}`;
-                    filterSelect.appendChild(opt);
-                });
-                filterSelect.value = currentVal;
+            renderTemplates();
+        }
+
+        function focusAddTemplateForSection(sectionId) {
+            selectTplSection(sectionId);
+            const titleInput = document.getElementById('tpl-title-input');
+            if (titleInput) {
+                titleInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => titleInput.focus(), 250);
             }
         }
 
         function handleTplSectionChange(val) {
             renderTplCategoryDropdown(Number(val));
+            const submitBtn = document.getElementById('tpl-submit-btn');
+            const card = mainCards.find(c => c.id === Number(val));
+            if (submitBtn && !editingTemplateId && card) {
+                submitBtn.textContent = `+ Добавить шаблон в «${card.title}»`;
+            }
         }
 
         function renderTplCategoryDropdown(targetSectionId, preferredCategory) {
@@ -1626,8 +1861,7 @@
         }
 
         function handleTplFilterSectionChange(val) {
-            activeTplFilterSectionId = val;
-            renderTemplates();
+            selectTplSection(val);
         }
 
         function compressImage(file, maxWidth, maxHeight, quality, callback) {
@@ -1703,82 +1937,136 @@
         }
 
         function renderTemplates() {
-            const tbody = document.getElementById('templates-table-body');
-            const countBadge = document.getElementById('tpl-count-badge');
-            if (!tbody) return;
-            tbody.innerHTML = '';
+            const container = document.getElementById('templates-display-area');
+            if (!container) return;
+            container.innerHTML = '';
 
-            let filtered = templates;
             if (activeTplFilterSectionId !== 'ALL') {
-                const secIdNum = Number(activeTplFilterSectionId);
-                filtered = templates.filter(t => t.sectionId === secIdNum);
+                // Показываем конкретный выбранный раздел (Фото, Видео, Тренды, Пригласительные)
+                const card = mainCards.find(c => c.id === Number(activeTplFilterSectionId)) || mainCards[0];
+                const sectionItems = templates.filter(t => t.sectionId === card.id);
+                const cardEl = buildSectionGroupCard(card, sectionItems, true);
+                container.appendChild(cardEl);
+            } else {
+                // Показываем все разделы, но аккуратно разделенные по отдельным блокам-карточкам!
+                mainCards.forEach(c => {
+                    const sectionItems = templates.filter(t => t.sectionId === c.id);
+                    const cardEl = buildSectionGroupCard(c, sectionItems, false);
+                    container.appendChild(cardEl);
+                });
+            }
+        }
+
+        function buildSectionGroupCard(card, items, isSingleMode) {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'tpl-section-group';
+
+            const countText = `${items.length} ${getPluralTemplates(items.length)}`;
+            const icon = getCardIcon(card);
+
+            cardEl.innerHTML = `
+                <div class="tpl-section-group-header">
+                    <div class="tpl-section-group-title">
+                        <span style="font-size: 20px;">${icon}</span>
+                        <span>РАЗДЕЛ: ${card.title}</span>
+                        <span class="tpl-section-group-badge">${countText}</span>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button type="button" class="btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="focusAddTemplateForSection(${card.id})">
+                            + Добавить в «${card.title}»
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            if (items.length === 0) {
+                const emptyBox = document.createElement('div');
+                emptyBox.style.padding = '36px 20px';
+                emptyBox.style.textAlign = 'center';
+                emptyBox.style.color = 'var(--text-dim)';
+                emptyBox.style.lineHeight = '1.6';
+                emptyBox.innerHTML = `В разделе <strong>«${card.title}»</strong> пока нет шаблонов.<br><span style="font-size: 12px; color: var(--primary);">Нажмите «+ Добавить в «${card.title}»», чтобы добавить первый шаблон!</span>`;
+                cardEl.appendChild(emptyBox);
+                return cardEl;
             }
 
-            if (countBadge) {
-                countBadge.textContent = `Показано: ${filtered.length} из ${templates.length} шаблонов`;
-            }
+            const table = document.createElement('table');
+            table.className = 'items-table';
+            table.style.marginTop = '0';
+            table.style.border = 'none';
 
-            if (filtered.length === 0) {
-                tbody.innerHTML = `
+            table.innerHTML = `
+                <thead>
                     <tr>
-                        <td colspan="8" style="text-align: center; color: var(--text-dim); padding: 36px;">
-                            В этом разделе нет шаблонов. Добавьте первый шаблон через форму выше!
-                        </td>
+                        <th style="width: 40px;">#</th>
+                        <th style="width: 65px;">Превью</th>
+                        <th>Название шаблона</th>
+                        <th style="width: 160px;">Категория</th>
+                        <th style="width: 140px;">Модель ИИ</th>
+                        <th>Промпт</th>
+                        <th style="width: 90px;">Цена</th>
+                        <th style="width: 180px; text-align: right;">Действия</th>
                     </tr>
-                `;
-                return;
-            }
+                </thead>
+                <tbody></tbody>
+            `;
 
-            filtered.forEach((tpl, idx) => {
+            const tbody = table.querySelector('tbody');
+
+            items.forEach((tpl, idx) => {
                 const tr = document.createElement('tr');
                 const priceVal = tpl.price || 290;
                 const modelBadge = getModelBadge(tpl.model);
                 const promptText = tpl.prompt ? tpl.prompt.trim() : '—';
                 const promptEscaped = promptText.replace(/"/g, '&quot;');
-                
-                const card = mainCards.find(c => c.id === tpl.sectionId);
-                const cardTitle = card ? card.title : (tpl.sectionTitle || 'ФОТО');
-                const cardIcon = card ? getCardIcon(card) : '🎴';
 
                 tr.innerHTML = `
                     <td style="color: var(--text-dim);">${idx + 1}</td>
                     <td><img src="${tpl.img}" alt="${tpl.title}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'"></td>
                     <td><strong style="color: #ffffff; font-size: 14px;">${tpl.title}</strong></td>
                     <td>
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <span class="cat-tag" style="background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: #ffffff; font-size: 10px; padding: 2px 8px;">
-                                ${cardIcon} ${cardTitle}
-                            </span>
-                            <span class="cat-tag" style="font-size: 11px; padding: 2px 8px;">
-                                ${tpl.category}
-                            </span>
-                        </div>
+                        <span class="cat-tag" style="font-size: 11px; padding: 3px 10px;">
+                            ${tpl.category || 'ОБЩЕЕ'}
+                        </span>
                     </td>
                     <td>${modelBadge}</td>
                     <td><div class="prompt-preview-cell" title="${promptEscaped}">${promptText}</div></td>
                     <td><span class="price-badge">${priceVal} сом</span></td>
                     <td style="text-align: right; white-space: nowrap;">
-                        <button class="btn-move" onclick="moveTemplate(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
-                        <button class="btn-move" onclick="moveTemplate(${idx}, 1)" ${idx === filtered.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
+                        <button class="btn-move" onclick="moveTemplateInSection(${tpl.id}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше внутри раздела">▲</button>
+                        <button class="btn-move" onclick="moveTemplateInSection(${tpl.id}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Переместить ниже внутри раздела">▼</button>
                         <button class="btn-edit" onclick="editTemplate(${tpl.id})" title="Редактировать">✏️ Ред.</button>
                         <button class="btn-del" onclick="deleteTemplate(${tpl.id})">Удалить</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+
+            cardEl.appendChild(table);
+            return cardEl;
         }
 
-        function moveTemplate(idx, dir) {
-            let filtered = templates;
-            if (activeTplFilterSectionId !== 'ALL') {
-                filtered = templates.filter(t => t.sectionId === Number(activeTplFilterSectionId));
-            }
+        function getPluralTemplates(count) {
+            const mod10 = count % 10;
+            const mod100 = count % 100;
+            if (mod100 >= 11 && mod100 <= 19) return 'шаблонов';
+            if (mod10 === 1) return 'шаблон';
+            if (mod10 >= 2 && mod10 <= 4) return 'шаблона';
+            return 'шаблонов';
+        }
 
-            const currentTpl = filtered[idx];
-            const targetTpl = filtered[idx + dir];
-            if (!currentTpl || !targetTpl) return;
+        function moveTemplateInSection(tplId, dir) {
+            const tpl = templates.find(t => t.id === tplId);
+            if (!tpl) return;
 
-            const realIdx = templates.findIndex(t => t.id === currentTpl.id);
+            const secItems = templates.filter(t => t.sectionId === tpl.sectionId);
+            const curSubIdx = secItems.findIndex(t => t.id === tplId);
+            const targetSubIdx = curSubIdx + dir;
+            if (targetSubIdx < 0 || targetSubIdx >= secItems.length) return;
+
+            const targetTpl = secItems[targetSubIdx];
+
+            const realIdx = templates.findIndex(t => t.id === tpl.id);
             const targetRealIdx = templates.findIndex(t => t.id === targetTpl.id);
 
             const temp = templates[realIdx];
@@ -1787,6 +2075,8 @@
 
             localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
             syncAllToCloud();
+            renderTplSectionTabs();
+            renderSidebarTplSubMenu();
             renderTemplates();
         }
 
@@ -1946,6 +2236,8 @@
                 console.warn('Cloud sync error:', cloudErr);
             }
 
+            renderTplSectionTabs();
+            renderSidebarTplSubMenu();
             renderTemplates();
             setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
         }
@@ -1956,6 +2248,8 @@
             templates = templates.filter(t => t.id !== id);
             localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
             syncAllToCloud();
+            renderTplSectionTabs();
+            renderSidebarTplSubMenu();
             renderTemplates();
         }
 
