@@ -552,6 +552,9 @@
             height: 100%;
             object-fit: cover;
             transform: scaleX(-1);
+            -webkit-transform: scaleX(-1);
+            will-change: transform;
+            backface-visibility: hidden;
         }
 
         .webcam-hud {
@@ -1190,6 +1193,21 @@
             </div>
         </div>
 
+        <!-- STEP 1.5: CONFIRM & RETAKE PHOTO -->
+        <div id="step-confirm" class="step-view" style="display:none;">
+            <h2 class="modal-title">ОТЛИЧНЫЙ КАДР? ✨</h2>
+            <p class="modal-subtitle">Проверьте снимок перед отправкой на создание портрета</p>
+
+            <div class="webcam-box" style="position: relative;">
+                <img id="photo-preview-confirm" src="" alt="Ваш снимок" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+            </div>
+
+            <div class="modal-actions" style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                <button id="retake-btn" class="action-btn cancel-btn" style="min-width: 180px;">🔄 ПЕРЕСНЯТЬ</button>
+                <button id="confirm-photo-btn" class="action-btn primary-btn" style="min-width: 220px;">✨ ПОДТВЕРДИТЬ</button>
+            </div>
+        </div>
+
         <!-- STEP 2: PAYMENT (SOM / OBUSINESS ELQR) -->
         <div id="step-payment" class="step-view" style="display:none;">
             <h2 class="modal-title">ОПЛАТА</h2>
@@ -1269,6 +1287,6 @@
     </div>
 </div>
 
-<script src="script.js?v=clean_pay_v5"></script>
+<script src="script.js?v=camera_confirm_v6"></script>
 </body>
 </html>

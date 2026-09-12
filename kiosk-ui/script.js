@@ -440,15 +440,19 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Steps
     const stepCamera = document.getElementById('step-camera');
+    const stepConfirm = document.getElementById('step-confirm');
     const stepPayment = document.getElementById('step-payment');
     const stepProcessing = document.getElementById('step-processing');
     const stepResult = document.getElementById('step-result');
 
-    // Camera Elements
+    // Camera & Confirm Elements
     const webcamEl = document.getElementById('webcam');
     const canvasEl = document.getElementById('photo-canvas');
     const snapBtn = document.getElementById('snap-btn');
     const countdownOverlay = document.getElementById('countdown-overlay');
+    const photoPreviewConfirm = document.getElementById('photo-preview-confirm');
+    const retakeBtn = document.getElementById('retake-btn');
+    const confirmPhotoBtn = document.getElementById('confirm-photo-btn');
 
     // Payment Elements
     const qrPaymentZone = document.getElementById('qr-payment-zone');
@@ -486,9 +490,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (retakeBtn) {
+        retakeBtn.addEventListener('click', () => {
+            showStep(stepCamera);
+            startWebcam();
+        });
+    }
+
+    if (confirmPhotoBtn) {
+        confirmPhotoBtn.addEventListener('click', () => {
+            showStep(stepProcessing);
+            runAIGeneration();
+        });
+    }
+
     function closeKioskFlow() {
         stopPaymentPolling();
         stopWebcam();
+        if (photoPreviewConfirm) photoPreviewConfirm.src = '';
         if (resultVideo) {
             try {
                 resultVideo.pause();
@@ -500,8 +519,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showStep(stepEl) {
-        [stepCamera, stepPayment, stepProcessing, stepResult].forEach(s => s.style.display = 'none');
-        stepEl.style.display = 'block';
+        [stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult].forEach(s => {
+            if (s) s.style.display = 'none';
+        });
+        if (stepEl) stepEl.style.display = 'block';
     }
 
     function resetState() {
@@ -596,7 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. WEBCAM LOGIC (ОПРЕДЕЛЕНИЕ LOGITECH BRIO 500 И НАДЕЖНЫЙ ЗАХВАТ ПОТОКА)
+    // 2. WEBCAM LOGIC (ОПТИМИЗИРОВАННЫЙ ПОТОК БЕЗ ЛАГОВ И ЗАВИСАНИЙ)
     async function startWebcam() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             alert('Браузер не поддерживает камеру или страница открыта без HTTPS.');
@@ -604,14 +625,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // 1. Поиск подключенных камер (ищем Logitech / Brio)
+            // 1. Поиск подключенных камер (Logitech / Brio или внешняя камера)
             let chosenDeviceId = null;
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const videoDevices = devices.filter(d => d.kind === 'videoinput');
-                console.log('Подключенные камеры:', videoDevices);
 
-                // Ищем целевую камеру Logitech Brio 500
                 const brio = videoDevices.find(d => 
                     d.label.toLowerCase().includes('brio') || 
                     d.label.toLowerCase().includes('logitech')
@@ -619,24 +638,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (brio) {
                     chosenDeviceId = brio.deviceId;
-                    console.log('Найдена камера Logitech Brio:', brio.label);
                 } else if (videoDevices.length > 0) {
-                    // Если Brio не названа в label (до первого разрешения), берем последнюю внешнюю камеру
                     chosenDeviceId = videoDevices[videoDevices.length - 1].deviceId;
                 }
             } catch(e) {
                 console.warn('Не удалось получить список устройств:', e);
             }
 
-            // 2. Настройка видеопотока для Logitech Brio 500 в полном качестве (1080p / 720p 30 FPS)
+            // 2. Оптимальный профиль: 1280x720 30-60 FPS — суперплавный поток без лагов
             const videoConstraints = {
-                width: { ideal: 1920, min: 1280 },
-                height: { ideal: 1080, min: 720 },
-                frameRate: { ideal: 30 }
+                width: { ideal: 1280, max: 1920 },
+                height: { ideal: 720, max: 1080 },
+                frameRate: { ideal: 30, min: 24 }
             };
 
             if (chosenDeviceId) {
-                videoConstraints.deviceId = { exact: chosenDeviceId };
+                videoConstraints.deviceId = { ideal: chosenDeviceId };
             } else {
                 videoConstraints.facingMode = 'user';
             }
@@ -647,21 +664,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     video: videoConstraints
                 });
             } catch (errHighRes) {
-                console.warn('FullHD 1080p отклонено, пробуем стандартное HD 720p 30fps:', errHighRes);
-                const fallbackConstraints = {
+                console.warn('Оптимальный поток отклонен, пробуем базовый режим 720p:', errHighRes);
+                mediaStream = await navigator.mediaDevices.getUserMedia({
                     audio: false,
-                    video: chosenDeviceId
-                        ? { deviceId: { exact: chosenDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }
-                        : { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } }
-                };
-                mediaStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        frameRate: { ideal: 30 }
+                    }
+                });
             }
 
             webcamEl.srcObject = mediaStream;
-            await webcamEl.play().catch(() => {});
+            webcamEl.onloadedmetadata = () => {
+                webcamEl.play().catch(e => console.warn('Webcam play error:', e));
+            };
         } catch (err) {
             console.error('Ошибка доступа к камере:', err);
-            alert('Не удалось подключиться к камере Logitech Brio 500. Убедитесь, что камера не занята другим приложением (Skype, Zoom, OBS) и разрешен доступ в браузере.');
+            alert('Не удалось подключиться к камере. Убедитесь, что камера не занята другим приложением и разрешен доступ в браузере.');
         }
     }
 
@@ -686,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 3. SNAP PHOTO & COUNTDOWN
+    // 3. SNAP PHOTO, COUNTDOWN И ПОДТВЕРЖДЕНИЕ ГОСТЕМ
     snapBtn.addEventListener('click', () => {
         snapBtn.disabled = true;
         let count = selectedCaptureDuration;
@@ -704,9 +724,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     stopWebcam();
                     snapBtn.disabled = false;
                     countdownOverlay.textContent = '';
-                    showStep(stepProcessing);
-                    runAIGeneration();
-                }, 800);
+                    if (photoPreviewConfirm) {
+                        photoPreviewConfirm.src = capturedPhotoData;
+                    }
+                    showStep(stepConfirm);
+                }, 400);
             }
         }, 1000);
     });
