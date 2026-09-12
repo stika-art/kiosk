@@ -483,8 +483,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const stepResult = document.getElementById('step-result');
     const stepInviteSetup = document.getElementById('step-invite-setup');
     const stepInviteReady = document.getElementById('step-invite-ready');
+    const stepInviteDemo = document.getElementById('step-invite-demo');
 
     // Invite Elements
+    const inviteDemoFrame = document.getElementById('invite-demo-frame');
+    const inviteDemoTitle = document.getElementById('invite-demo-title');
+    const inviteDemoName = document.getElementById('invite-demo-name');
+    const inviteDemoPrice = document.getElementById('invite-demo-price');
+    const inviteDemoChooseBtn = document.getElementById('invite-demo-choose-btn');
+    const inviteDemoBackBtn = document.getElementById('invite-demo-back-btn');
+
     const inviteEditQr = document.getElementById('invite-edit-qr');
     const inviteSetupStatus = document.getElementById('invite-setup-status');
     const skipToViewInviteBtn = document.getElementById('skip-to-view-invite-btn');
@@ -536,12 +544,61 @@ document.addEventListener('DOMContentLoaded', () => {
     const SUPABASE_BUCKET = 'kiosk-media';
 
 
-    // ШАГ 1: ОТКРЫТИЕ ПОТОКА — СРАЗУ ЭКРАН ОПЛАТЫ OBUSINESS
+    // ШАГ 1: ОТКРЫТИЕ ПОТОКА — ДЛЯ ПРИГЛАСИТЕЛЬНЫХ СНАЧАЛА ДЕМО, ДЛЯ ОСТАЛЬНЫХ ОПЛАТА
     window.openKioskFlow = function() {
+        const isInvite = isInviteTemplate({ 
+            sectionTitle: activeSectionCard ? activeSectionCard.title : '',
+            category: currentCategory,
+            title: selectedStyle,
+            model: selectedStyleModel
+        });
+
         if (modal) modal.style.display = 'flex';
-        showStep(stepPayment);
-        initiatePaymentOrder();
+
+        if (isInvite) {
+            showInviteDemoStep();
+        } else {
+            showStep(stepPayment);
+            initiatePaymentOrder();
+        }
     };
+
+    function showInviteDemoStep() {
+        if (!stepInviteDemo) {
+            showStep(stepPayment);
+            initiatePaymentOrder();
+            return;
+        }
+
+        if (inviteDemoName) inviteDemoName.textContent = selectedStyle;
+        if (inviteDemoPrice) inviteDemoPrice.textContent = selectedStylePrice || 490;
+
+        // Загрузка демо шаблона во фрейм
+        if (inviteDemoFrame) {
+            if (selectedTemplateHtml) {
+                inviteDemoFrame.srcdoc = selectedTemplateHtml;
+            } else {
+                const origin = window.location.origin || 'https://kiosk394.vercel.app';
+                inviteDemoFrame.src = `${origin}/kiosk-ui/invite.html?preview=1${selectedTemplateId ? '&templateId=' + selectedTemplateId : ''}`;
+            }
+        }
+
+        showStep(stepInviteDemo);
+    }
+
+    if (inviteDemoChooseBtn) {
+        inviteDemoChooseBtn.addEventListener('click', () => {
+            showStep(stepPayment);
+            initiatePaymentOrder();
+        });
+    }
+
+    if (inviteDemoBackBtn) {
+        inviteDemoBackBtn.addEventListener('click', () => {
+            closeKioskFlow();
+            openTemplateGallery();
+        });
+    }
 
     modalClose.addEventListener('click', closeKioskFlow);
     if (cancelPayBtn) {
@@ -597,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showStep(stepEl) {
-        [stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepInviteSetup, stepInviteReady].forEach(s => {
+        [stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepInviteSetup, stepInviteReady, stepInviteDemo].forEach(s => {
             if (s) s.style.display = 'none';
         });
         if (stepEl) stepEl.style.display = 'block';

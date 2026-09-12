@@ -629,7 +629,25 @@
     }
 
     async function loadInviteData() {
+        const isPreview = urlParams.get('preview') === '1';
+        const tplParam = urlParams.get('templateId') || urlParams.get('tpl');
+        if (tplParam && !inviteData.templateId) {
+            inviteData.templateId = tplParam;
+        }
+
         if (inviteId) {
+            // 1. Проверяем, есть ли готовый визуально сохраненный .html файл
+            try {
+                const htmlRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/invites/${inviteId}.html?t=${Date.now()}`);
+                if (htmlRes.ok) {
+                    const savedHtml = await htmlRes.text();
+                    if (savedHtml && savedHtml.trim().length > 20) {
+                        inviteData.customHtml = savedHtml;
+                    }
+                }
+            } catch(e) {}
+
+            // 2. Загружаем метаданные из .json
             try {
                 const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/invites/${inviteId}.json?t=${Date.now()}`);
                 if (res.ok) {
@@ -732,22 +750,24 @@
         }
         customRoot.innerHTML = doc.body.innerHTML || html;
 
-        // Добавляем панель редактирования для владельца внизу кастомного дизайна
-        const editUrl = inviteId ? `invite-edit.html?id=${encodeURIComponent(inviteId)}` : 'invite-edit.html';
-        const ownerPanel = document.createElement('div');
-        ownerPanel.className = 'owner-edit-panel';
-        ownerPanel.style.cssText = 'margin: 30px auto 40px; text-align: center; width: 100%; max-width: 480px; padding: 20px;';
-        ownerPanel.innerHTML = `
-            <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 10px;">Нужно изменить имена, дату, фото или музыку?</p>
-            <a href="${editUrl}" class="owner-edit-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(212,160,67,0.4); color: #D4A043; text-decoration: none; font-size: 13px; font-weight: 600;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
-                <span>Редактировать пригласительное</span>
-            </a>
-        `;
-        customRoot.appendChild(ownerPanel);
+        // Добавляем панель редактирования для владельца внизу кастомного дизайна (только не в режиме превью)
+        if (!isPreview) {
+            const editUrl = inviteId ? `invite-edit.html?id=${encodeURIComponent(inviteId)}` : 'invite-edit.html';
+            const ownerPanel = document.createElement('div');
+            ownerPanel.className = 'owner-edit-panel';
+            ownerPanel.style.cssText = 'margin: 30px auto 40px; text-align: center; width: 100%; max-width: 480px; padding: 20px;';
+            ownerPanel.innerHTML = `
+                <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 10px;">Нужно изменить имена, дату, фото или музыку?</p>
+                <a href="${editUrl}" class="owner-edit-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(212,160,67,0.4); color: #D4A043; text-decoration: none; font-size: 13px; font-weight: 600;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span>Редактировать пригласительное</span>
+                </a>
+            `;
+            customRoot.appendChild(ownerPanel);
+        }
     }
 
     function applyDataToDOM() {
