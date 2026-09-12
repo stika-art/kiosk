@@ -165,22 +165,49 @@
 
     async function startCamera(mode) {
         facingMode = mode || 'user';
-        if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+
+        // Останавливаем предыдущий поток
+        if (stream) {
+            stream.getTracks().forEach(t => t.stop());
+            stream = null;
+        }
+
+        // Небольшая пауза — браузеру нужно время освободить камеру перед переключением
+        await new Promise(r => setTimeout(r, 150));
+
+        const video = document.getElementById('video-preview');
+
+        // Фронтальная и основная камера требуют разных constraints.
+        // Фронтальная не поддерживает 1280x720 на большинстве Android — чёрный экран.
+        const constraints = facingMode === 'user'
+            ? { facingMode: { exact: 'user' } }                // фронт: только режим, без размеров
+            : { facingMode: { exact: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } };
+
         try {
-            stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
-                audio: false
-            });
-            document.getElementById('video-preview').srcObject = stream;
-        } catch(e) {
+            stream = await navigator.mediaDevices.getUserMedia({ video: constraints, audio: false });
+        } catch(e1) {
+            // exact не сработал — пробуем ideal
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                document.getElementById('video-preview').srcObject = stream;
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: facingMode } },
+                    audio: false
+                });
             } catch(e2) {
-                showScreen('screen-error');
-                document.getElementById('error-msg').textContent = 'Нет доступа к камере. Разрешите доступ в браузере.';
+                // Последний fallback — любая доступная камера
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                } catch(e3) {
+                    showScreen('screen-error');
+                    document.getElementById('error-msg').textContent =
+                        'Нет доступа к камере. Разрешите доступ в настройках браузера.';
+                    return;
+                }
             }
         }
+
+        video.srcObject = stream;
+        // Явный play() — обязателен на iOS Safari и некоторых Android-браузерах
+        video.play().catch(() => {});
     }
 
     function takeSnapshot() {
