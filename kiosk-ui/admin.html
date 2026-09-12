@@ -1267,8 +1267,9 @@
                             🗣️ Голос стендапера (Voice ID):
                         </label>
                         <div style="display: flex; gap: 10px;">
-                            <input type="text" id="elevenlabs-voice-input" class="admin-input" style="flex: 1;" placeholder="ErXwobaYiN019PkySvjV (Antoni) или random">
+                            <input type="text" id="elevenlabs-voice-input" class="admin-input" style="flex: 1;" placeholder="XNrB7jz2HCkpU5yK08kP или random">
                             <select class="admin-select" style="max-width: 250px;" onchange="document.getElementById('elevenlabs-voice-input').value = this.value">
+                                <option value="XNrB7jz2HCkpU5yK08kP" selected>🔥 Фирменный (XNrB...)</option>
                                 <option value="ErXwobaYiN019PkySvjV">🎙️ Antoni (Дерзкий)</option>
                                 <option value="pNInz6obpgDQGcFmaJgB">🎙️ Adam (Саркастичный)</option>
                                 <option value="21m00Tcm4TlvDq8ikWAM">🎙️ Rachel (Девушка)</option>
@@ -3384,7 +3385,7 @@
         function loadRoastSettings() {
             try {
                 const elKey = localStorage.getItem('kiosk_elevenlabs_key') || '';
-                const elVoice = localStorage.getItem('kiosk_elevenlabs_voice_id') || 'ErXwobaYiN019PkySvjV';
+                const elVoice = localStorage.getItem('kiosk_elevenlabs_voice_id') || 'XNrB7jz2HCkpU5yK08kP';
                 const openaiKey = localStorage.getItem('kiosk_openai_key') || '';
 
                 const elKeyInput = document.getElementById('elevenlabs-key-input');
@@ -3404,7 +3405,7 @@
             const status = document.getElementById('roast-settings-status');
 
             const elKey = elKeyInput ? elKeyInput.value.trim() : '';
-            const elVoice = elVoiceInput ? elVoiceInput.value.trim() : 'ErXwobaYiN019PkySvjV';
+            const elVoice = elVoiceInput ? elVoiceInput.value.trim() : 'XNrB7jz2HCkpU5yK08kP';
             const openaiKey = openaiKeyInput ? openaiKeyInput.value.trim() : '';
 
             localStorage.setItem('kiosk_elevenlabs_key', elKey);
@@ -3422,8 +3423,8 @@
         async function testElevenLabsSpeech() {
             const elKey = (document.getElementById('elevenlabs-key-input')?.value || localStorage.getItem('kiosk_elevenlabs_key') || '').trim();
             const kieKey = (document.getElementById('aggregator-key-input')?.value || localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd').trim();
-            let elVoice = (document.getElementById('elevenlabs-voice-input')?.value || localStorage.getItem('kiosk_elevenlabs_voice_id') || 'ErXwobaYiN019PkySvjV').trim();
-            if (elVoice.toLowerCase() === 'random') elVoice = 'ErXwobaYiN019PkySvjV';
+            let elVoice = (document.getElementById('elevenlabs-voice-input')?.value || localStorage.getItem('kiosk_elevenlabs_voice_id') || 'XNrB7jz2HCkpU5yK08kP').trim();
+            if (elVoice.toLowerCase() === 'random') elVoice = 'XNrB7jz2HCkpU5yK08kP';
             const status = document.getElementById('roast-settings-status');
 
             if (!elKey && !kieKey) {

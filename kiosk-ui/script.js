@@ -1231,7 +1231,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const aggregatorKey = localStorage.getItem('kiosk_aggregator_key') || '';
                 const elevenlabsKey = localStorage.getItem('kiosk_elevenlabs_key') || '';
-                const elevenlabsVoiceId = localStorage.getItem('kiosk_elevenlabs_voice_id') || 'ErXwobaYiN019PkySvjV';
+                const elevenlabsVoiceId = localStorage.getItem('kiosk_elevenlabs_voice_id') || 'XNrB7jz2HCkpU5yK08kP';
                 const openaiKey = localStorage.getItem('kiosk_openai_key') || '';
 
                 const resp = await fetch('/api/ai/roast', {

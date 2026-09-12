@@ -12,8 +12,8 @@ const SUPABASE_BUCKET = 'kiosk-media';
 const DEFAULT_KIE_URL = 'https://api.kie.ai/api/v1/jobs/createTask';
 const KIE_RECORD_URL = 'https://api.kie.ai/api/v1/jobs/recordInfo';
 
-// Дефолтный Voice ID в ElevenLabs для дерзкого мужского голоса стендапера
-const DEFAULT_ELEVEN_VOICE_ID = 'ErXwobaYiN019PkySvjV';
+// Дефолтный Voice ID в ElevenLabs для фирменного голоса стендапера
+const DEFAULT_ELEVEN_VOICE_ID = 'XNrB7jz2HCkpU5yK08kP';
 
 // 1. Загрузка фото гостя в CDN Supabase Storage
 async function uploadGuestPhotoToCDN(photoBase64OrUrl, orderId) {
@@ -141,40 +141,105 @@ async function analyzePhotoWithGptVision({ photoUrl, openaiKey }) {
   "caricature_prompt": "Детальный персональный промпт на английском для генерации карикатуры в GPT Image 2.5 на базе внешности и одежды гостя"
 }`;
 
-    try {
-        const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${openaiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: 'gpt-4o-mini',
-                temperature: 0.88,
-                response_format: { type: 'json_object' },
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    {
-                        role: 'user',
-                        content: [
-                            { type: 'text', text: 'Проанализируй этого гостя фотобудки в ТЦ и выдай смешную стендап-прожарку с карикатурным промптом.' },
-                            { type: 'image_url', image_url: { url: photoUrl } }
-                        ]
-                    }
-                ],
-                max_tokens: 600
-            })
-        });
+    if (openaiKey) {
+        try {
+            const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${openaiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    temperature: 0.88,
+                    response_format: { type: 'json_object' },
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        {
+                            role: 'user',
+                            content: [
+                                { type: 'text', text: 'Проанализируй этого гостя фотобудки в ТЦ и выдай смешную стендап-прожарку с карикатурным промптом.' },
+                                { type: 'image_url', image_url: { url: photoUrl } }
+                            ]
+                        }
+                    ],
+                    max_tokens: 600
+                })
+            });
 
-        if (resp.ok) {
-            const data = await resp.json();
-            const rawContent = data.choices[0].message.content;
-            return JSON.parse(rawContent);
-        } else {
-            console.warn('[Vision API Error]', await resp.text());
+            if (resp.ok) {
+                const data = await resp.json();
+                const rawContent = data.choices[0].message.content;
+                return JSON.parse(rawContent);
+            } else {
+                console.warn('[Vision API Error]', await resp.text());
+            }
+        } catch (e) {
+            console.warn('[Vision Exception]', e.message);
         }
-    } catch (e) {
-        console.warn('[Vision Exception]', e.message);
+    }
+
+    // Попытка Vision-анализа через Kie.ai (если нет прямого ключа OpenAI)
+    if (apiKey) {
+        try {
+            console.log('[Vision via Kie.ai] Запуск анализа через Kie.ai (gemini-2.5-flash)...');
+            const kieRes = await fetch(DEFAULT_KIE_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'gemini-2.5-flash',
+                    input: {
+                        prompt: `${systemPrompt}\n\nВАЖНО: Верни строго валидный JSON! Проанализируй человека на фото: ${photoUrl}`,
+                        image: photoUrl,
+                        image_url: photoUrl
+                    }
+                })
+            });
+
+            if (kieRes.ok) {
+                const kieData = await kieRes.json();
+                const taskId = kieData.data?.taskId || kieData.taskId;
+                if (taskId) {
+                    const startTime = Date.now();
+                    while (Date.now() - startTime < 20000) {
+                        await new Promise(r => setTimeout(r, 1500));
+                        const rRes = await fetch(`${KIE_RECORD_URL}?taskId=${taskId}`, {
+                            headers: { 'Authorization': `Bearer ${apiKey}` }
+                        });
+                        if (rRes.ok) {
+                            const rData = await rRes.json();
+                            const info = rData.data || rData;
+                            const st = info.state || info.status;
+                            if (st === 'success' || st === 'SUCCESS' || st === 'completed') {
+                                let content = info.result || info.text || '';
+                                if (info.resultJson) {
+                                    try {
+                                        const pj = typeof info.resultJson === 'string' ? JSON.parse(info.resultJson) : info.resultJson;
+                                        content = pj.text || pj.content || pj.result || JSON.stringify(pj);
+                                    } catch(e) {}
+                                }
+                                if (content) {
+                                    const cleanJson = content.replace(/```json/g, '').replace(/```/g, '').trim();
+                                    const parsed = JSON.parse(cleanJson);
+                                    if (parsed.roast_title && parsed.roast_text) {
+                                        console.log('[Vision via Kie.ai] Анализ успешно завершен!');
+                                        return parsed;
+                                    }
+                                }
+                                break;
+                            } else if (st === 'failed' || st === 'FAILED') {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch(e) {
+            console.warn('[Vision via Kie.ai Exception]', e.message);
+        }
     }
 
     return getFallbackRoast(photoUrl);
@@ -266,6 +331,7 @@ async function generateCaricatureViaGptImage({ apiKey, publicPhotoUrl, caricatur
 
 // Разрешение Voice ID (поддержка случайного выбора и кастомных голосов)
 const KNOWN_STANDUP_VOICES = [
+    'XNrB7jz2HCkpU5yK08kP', // Фирменный стендап-голос
     'ErXwobaYiN019PkySvjV', // Antoni (дерзкий парень-стендапер)
     'pNInz6obpgDQGcFmaJgB', // Adam (саркастичный комик)
     '21m00Tcm4TlvDq8ikWAM', // Rachel (ироничная девушка)
@@ -443,7 +509,8 @@ module.exports = async (req, res) => {
         // 2. Vision анализ и генерация текста прожарки + уникального карикатурного промпта
         const roastData = await analyzePhotoWithGptVision({
             photoUrl: publicPhotoUrl,
-            openaiKey: effectiveOpenaiKey
+            openaiKey: effectiveOpenaiKey,
+            apiKey: effectiveAggregatorKey
         });
 
         // 3. Параллельный запуск генерации карикатуры (GPT Image 2.5) и озвучки (ElevenLabs)
