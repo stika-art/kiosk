@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
@@ -526,6 +528,121 @@
             font-size: 12px;
             color: var(--text-dim);
         }
+
+        /* MODAL CROPPER (TRENDUM LUXURY THEME) */
+        .crop-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.88);
+            backdrop-filter: blur(8px);
+            z-index: 100000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .crop-modal-content {
+            background: #1A1A1A;
+            border: 1px solid var(--primary-border);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 860px;
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(212, 160, 67, 0.2);
+        }
+
+        .crop-modal-header {
+            padding: 16px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .crop-modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .crop-modal-body {
+            padding: 16px 20px;
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0D0D0D;
+        }
+
+        .crop-canvas-wrapper {
+            width: 100%;
+            height: 440px;
+            max-height: 55vh;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        .crop-canvas-wrapper img {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+        }
+
+        .crop-modal-toolbar {
+            padding: 12px 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: #161616;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .crop-tool-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            color: #ffffff;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .crop-tool-btn:hover {
+            background: rgba(212, 160, 67, 0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .crop-tool-btn.active {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .crop-modal-footer {
+            padding: 14px 22px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            border-top: 1px solid var(--border-subtle);
+            background: #1A1A1A;
+        }
     </style>
 </head>
 <body>
@@ -731,22 +848,28 @@
                 <div class="form-row">
                     <input type="text" id="main-card-title-input" class="admin-input" placeholder="Заголовок кнопки (напр: ФОТО, ВИДЕО, ТРЕНДЫ)..." style="flex: 1.2;">
                     <input type="text" id="main-card-badge-input" class="admin-input" placeholder="Верхний бейдж (напр: ОБЛОЖКИ • ПОРТРЕТЫ • АРТ)..." style="flex: 1.5;">
-                    <select id="main-card-cat-select" class="admin-select" style="flex: 1;" title="Привязанная категория в каталоге"></select>
+                    <select id="main-card-filter-select" class="admin-select" style="flex: 1.3;" title="Что открывать при клике на карточку">
+                        <option value="PHOTO">📸 Только ФОТО (без видео)</option>
+                        <option value="VIDEO">🎬 Только ВИДЕО (клипы и анимация)</option>
+                        <option value="TRENDS">🔥 Только ТРЕНДЫ (популярное)</option>
+                        <option value="ALL">🌟 Все шаблоны подряд</option>
+                    </select>
                 </div>
 
                 <div class="form-row">
                     <input type="text" id="main-card-sub-input" class="admin-input" placeholder="Нижний подзаголовок (напр: БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ)..." style="flex: 2;">
                 </div>
 
-                <div class="form-row" style="align-items: center; gap: 14px;">
+                <div class="form-row" style="align-items: center; gap: 12px;">
                     <input type="file" id="main-card-file-input" accept="image/*" style="display: none;" onchange="handleMainCardFileSelect(event)">
                     <button type="button" class="btn-upload" onclick="document.getElementById('main-card-file-input').click()">📁 Загрузить фото</button>
+                    <button type="button" class="btn-upload" id="main-card-crop-btn" onclick="openCropModalForCurrent()" style="display: none; background: rgba(212, 160, 67, 0.15); border-color: var(--primary-border); color: var(--primary);" title="Обрезать и подогнать пропорции фото">✂️ Кадрировать</button>
                     <input type="text" id="main-card-img-input" class="admin-input" placeholder="Путь к фото или base64 / ссылка..." oninput="handleMainCardImgInput(this.value)" style="flex: 1; font-size: 12px;">
-                    <div id="main-card-preview-box" style="width: 54px; height: 54px; border: 1px solid var(--border-subtle); border-radius: 12px; overflow: hidden; background: #000; flex-shrink: 0; display: none;">
+                    <div id="main-card-preview-box" style="width: 58px; height: 44px; border: 1px solid var(--border-subtle); border-radius: 10px; overflow: hidden; background: #000; flex-shrink: 0; display: none; cursor: pointer;" onclick="openCropModalForCurrent()" title="Нажмите, чтобы кадрировать фото">
                         <img id="main-card-preview-img" src="" style="width: 100%; height: 100%; object-fit: cover;">
                     </div>
                 </div>
-                <span class="cloud-tip" style="margin-top: -6px; margin-bottom: 12px; display: block;">Загружаемое фото автоматически сжимается до оптимального размера для киоска.</span>
+                <span class="cloud-tip" style="margin-top: -6px; margin-bottom: 12px; display: block;">При выборе фото сразу открывается кадрирование под форму карточки киоска.</span>
 
                 <div class="form-row" style="margin-top: 14px; align-items: center;">
                     <button class="btn-primary" id="main-card-submit-btn" onclick="addOrUpdateMainCard()">+ Добавить карточку</button>
@@ -760,11 +883,11 @@
                     <thead>
                         <tr>
                             <th style="width: 40px;">#</th>
-                            <th style="width: 70px;">Фоновое фото</th>
+                            <th style="width: 75px;">Фоновое фото</th>
                             <th style="width: 130px;">Заголовок</th>
                             <th>Бейдж</th>
                             <th>Подзаголовок</th>
-                            <th style="width: 120px;">Категория</th>
+                            <th style="width: 130px;">Раздел / Фильтр</th>
                             <th style="width: 180px; text-align: right;">Порядок / Действия</th>
                         </tr>
                     </thead>
@@ -1061,9 +1184,9 @@
                 }
             } catch(e) {}
             return [
-                { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', category: 'ФОТО', img: 'images/photo1.jpg' },
-                { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', category: 'ВИДЕО', img: 'images/photo3.jpg' },
-                { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg' }
+                { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg' },
+                { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg' },
+                { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg' }
             ];
         }
 
@@ -1555,14 +1678,164 @@
             });
         }
 
+        // =============================================
+        // КАДРИРОВАНИЕ ФОТО (CROPPER.JS)
+        // =============================================
+        let cropperInstance = null;
+        let cropTargetCallback = null;
+
+        function openCropModal(imageSrc, callback) {
+            cropTargetCallback = callback;
+            const modal = document.getElementById('crop-modal');
+            const targetImg = document.getElementById('crop-image-target');
+            if (!modal || !targetImg) return;
+
+            if (cropperInstance) {
+                cropperInstance.destroy();
+                cropperInstance = null;
+            }
+
+            targetImg.src = imageSrc;
+            modal.style.display = 'flex';
+
+            // Инициализируем Cropper.js после отображения модалки
+            setTimeout(() => {
+                cropperInstance = new Cropper(targetImg, {
+                    aspectRatio: 16 / 9,
+                    viewMode: 2,
+                    dragMode: 'move',
+                    autoCropArea: 0.95,
+                    restore: false,
+                    guides: true,
+                    center: true,
+                    highlight: false,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false
+                });
+            }, 100);
+        }
+
+        function setCropRatio(ratio, btnEl) {
+            if (!cropperInstance) return;
+            cropperInstance.setAspectRatio(ratio);
+            document.querySelectorAll('.crop-tool-btn[id^="crop-ratio-"]').forEach(btn => btn.classList.remove('active'));
+            if (btnEl) btnEl.classList.add('active');
+        }
+
+        function rotateCrop(deg) {
+            if (cropperInstance) cropperInstance.rotate(deg);
+        }
+
+        function zoomCrop(factor) {
+            if (cropperInstance) cropperInstance.zoom(factor);
+        }
+
+        function resetCrop() {
+            if (cropperInstance) cropperInstance.reset();
+        }
+
+        function closeCropModal() {
+            const modal = document.getElementById('crop-modal');
+            if (modal) modal.style.display = 'none';
+            if (cropperInstance) {
+                cropperInstance.destroy();
+                cropperInstance = null;
+            }
+            cropTargetCallback = null;
+            const fileInput = document.getElementById('main-card-file-input');
+            if (fileInput) fileInput.value = '';
+        }
+
+        function applyCrop() {
+            if (!cropperInstance) return;
+            const canvas = cropperInstance.getCroppedCanvas({
+                width: 960,
+                height: 540,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high'
+            });
+
+            if (!canvas) {
+                alert('Не удалось сформировать изображение');
+                return;
+            }
+
+            const croppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+            if (typeof cropTargetCallback === 'function') {
+                cropTargetCallback(croppedBase64);
+            }
+            closeCropModal();
+        }
+
+        function openCropModalForCurrent() {
+            const curSrc = document.getElementById('main-card-img-input').value.trim();
+            if (!curSrc) {
+                alert('Сначала загрузите или укажите фото карточки');
+                return;
+            }
+            openCropModal(curSrc, function(cropped) {
+                document.getElementById('main-card-img-input').value = cropped;
+                handleMainCardImgInput(cropped);
+                const status = document.getElementById('main-card-status');
+                if (status) {
+                    status.textContent = '✅ Фото успешно кадрировано!';
+                    status.className = 'status-msg success';
+                    setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+                }
+            });
+        }
+
+        // =============================================
+        // MAIN SCREEN LOGIC (ШАПКА И КАРТОЧКИ КИОСКА)
+        // =============================================
+        function renderMainHeaderInputs() {
+            const badgeInput = document.getElementById('main-header-badge-input');
+            const titleInput = document.getElementById('main-header-title-input');
+            const subInput = document.getElementById('main-header-sub-input');
+            if (badgeInput) badgeInput.value = mainHeader.badge || '';
+            if (titleInput) titleInput.value = mainHeader.title || '';
+            if (subInput) subInput.value = mainHeader.subtitle || '';
+        }
+
+        function saveMainHeader() {
+            const badgeInput = document.getElementById('main-header-badge-input');
+            const titleInput = document.getElementById('main-header-title-input');
+            const subInput = document.getElementById('main-header-sub-input');
+            const status = document.getElementById('main-header-status');
+
+            mainHeader = {
+                badge: badgeInput ? badgeInput.value.trim() : '',
+                title: titleInput ? titleInput.value.trim() : '',
+                subtitle: subInput ? subInput.value.trim() : ''
+            };
+
+            localStorage.setItem('kiosk_main_header_v1', JSON.stringify(mainHeader));
+            syncAllToCloud();
+
+            if (status) {
+                status.textContent = '✅ Шапка главного экрана сохранена и синхронизирована!';
+                status.className = 'status-msg success';
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+            }
+        }
+
+        function renderMainCardCategoryDropdown() {
+            // Больше не требуется отдельный список категорий для карточки,
+            // так как карточка напрямую управляет разделом (ФОТО, ВИДЕО, ТРЕНДЫ)
+        }
+
         function handleMainCardImgInput(val) {
             const previewBox = document.getElementById('main-card-preview-box');
             const previewImg = document.getElementById('main-card-preview-img');
+            const cropBtn = document.getElementById('main-card-crop-btn');
             if (val && val.trim().length > 5) {
                 previewImg.src = val.trim();
                 previewBox.style.display = 'block';
+                if (cropBtn) cropBtn.style.display = 'inline-flex';
             } else {
                 previewBox.style.display = 'none';
+                if (cropBtn) cropBtn.style.display = 'none';
             }
         }
 
@@ -1572,19 +1845,35 @@
 
             const status = document.getElementById('main-card-status');
             if (status) {
-                status.textContent = '⏳ Сжатие и оптимизация изображения...';
+                status.textContent = '⏳ Открытие инструмента кадрирования...';
                 status.className = 'status-msg';
             }
 
-            compressImage(file, 900, 600, 0.85, function(compressedBase64) {
-                document.getElementById('main-card-img-input').value = compressedBase64;
-                handleMainCardImgInput(compressedBase64);
-                if (status) {
-                    status.textContent = '✅ Картинка успешно оптимизирована';
-                    status.className = 'status-msg success';
-                    setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 2500);
-                }
-            });
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const rawBase64 = e.target.result;
+                openCropModal(rawBase64, function(croppedBase64) {
+                    document.getElementById('main-card-img-input').value = croppedBase64;
+                    handleMainCardImgInput(croppedBase64);
+                    if (status) {
+                        status.textContent = '✅ Фото успешно кадрировано и готово!';
+                        status.className = 'status-msg success';
+                        setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+                    }
+                });
+            };
+            reader.onerror = function() {
+                alert('Не удалось прочитать выбранный файл');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function getCardFilterBadge(filter) {
+            const f = (filter || 'PHOTO').toUpperCase();
+            if (f === 'PHOTO' || f === 'ФОТО') return '<span class="cat-tag" style="background: rgba(212,160,67,0.15); color: #D4A043; border-color: #D4A043;">📸 ФОТО</span>';
+            if (f === 'VIDEO' || f === 'ВИДЕО') return '<span class="cat-tag" style="background: rgba(88,86,214,0.2); color: #b4a7ff; border-color: #5856d6;">🎬 ВИДЕО</span>';
+            if (f === 'TRENDS' || f === 'ТРЕНДЫ') return '<span class="cat-tag" style="background: rgba(255,45,85,0.2); color: #ff6b8b; border-color: #ff2d55;">🔥 ТРЕНДЫ</span>';
+            return '<span class="cat-tag">🌟 ВСЕ</span>';
         }
 
         function renderMainCardsAdmin() {
@@ -1594,15 +1883,18 @@
 
             mainCards.forEach((c, idx) => {
                 const tr = document.createElement('tr');
+                const filterVal = c.filter || (c.category === 'ВИДЕО' ? 'VIDEO' : (c.category === 'ТРЕНДЫ' ? 'TRENDS' : 'PHOTO'));
+                const filterBadge = getCardFilterBadge(filterVal);
+
                 tr.innerHTML = `
                     <td style="color: var(--text-dim);">${idx + 1}</td>
                     <td>
-                        <img src="${c.img || ''}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'" style="width: 58px; height: 38px; border-radius: 8px;">
+                        <img src="${c.img || ''}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'" style="width: 64px; height: 38px; border-radius: 8px; cursor: pointer;" onclick="openCropModalForCard(${c.id})" title="Нажмите для кадрирования">
                     </td>
                     <td><strong style="color: var(--primary); font-size: 15px;">${c.title}</strong></td>
                     <td style="font-size: 12px; color: rgba(255,255,255,0.85);">${c.badge || '—'}</td>
                     <td style="font-size: 12px; color: var(--text-muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.subtitle || '—'}</td>
-                    <td><span class="cat-tag">${c.category || 'ВСЕ'}</span></td>
+                    <td>${filterBadge}</td>
                     <td style="text-align: right; white-space: nowrap;">
                         <button class="btn-move" onclick="moveMainCard(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
                         <button class="btn-move" onclick="moveMainCard(${idx}, 1)" ${idx === mainCards.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
@@ -1614,29 +1906,46 @@
             });
         }
 
+        function openCropModalForCard(id) {
+            const card = mainCards.find(c => c.id === id);
+            if (!card || !card.img) return;
+            openCropModal(card.img, function(cropped) {
+                card.img = cropped;
+                localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
+                syncAllToCloud();
+                renderMainCardsAdmin();
+                const status = document.getElementById('main-card-status');
+                if (status) {
+                    status.textContent = `✅ Фото для "${card.title}" обновлено!`;
+                    status.className = 'status-msg success';
+                    setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+                }
+            });
+        }
+
         function addOrUpdateMainCard() {
             const titleInput = document.getElementById('main-card-title-input');
             const badgeInput = document.getElementById('main-card-badge-input');
             const subInput = document.getElementById('main-card-sub-input');
-            const catSelect = document.getElementById('main-card-cat-select');
+            const filterSelect = document.getElementById('main-card-filter-select');
             const imgInput = document.getElementById('main-card-img-input');
             const status = document.getElementById('main-card-status');
 
             const title = titleInput.value.trim().toUpperCase();
             const badge = badgeInput.value.trim().toUpperCase();
             const subtitle = subInput.value.trim().toUpperCase();
-            const category = catSelect.value;
+            const filter = filterSelect ? filterSelect.value : 'PHOTO';
             const img = imgInput.value.trim();
 
             if (!title) {
-                status.textContent = '❌ Укажите заголовок карточки';
+                status.textContent = '❌ Укажите заголовок карточки (напр: ФОТО, ВИДЕО)';
                 status.className = 'status-msg error';
                 titleInput.focus();
                 return;
             }
 
             if (!img) {
-                status.textContent = '❌ Загрузите или укажите фоновое изображение карточки';
+                status.textContent = '❌ Загрузите фоновое изображение карточки через «📁 Загрузить фото»';
                 status.className = 'status-msg error';
                 return;
             }
@@ -1649,7 +1958,8 @@
                         title,
                         badge,
                         subtitle,
-                        category,
+                        filter,
+                        category: filter,
                         img
                     };
                     status.textContent = `✅ Карточка "${title}" обновлена`;
@@ -1662,7 +1972,8 @@
                     title,
                     badge,
                     subtitle,
-                    category,
+                    filter,
+                    category: filter,
                     img
                 });
 
@@ -1691,7 +2002,10 @@
             document.getElementById('main-card-title-input').value = card.title || '';
             document.getElementById('main-card-badge-input').value = card.badge || '';
             document.getElementById('main-card-sub-input').value = card.subtitle || '';
-            document.getElementById('main-card-cat-select').value = card.category || 'ВСЕ';
+            
+            const filterVal = card.filter || (card.category === 'ВИДЕО' ? 'VIDEO' : (card.category === 'ТРЕНДЫ' ? 'TRENDS' : 'PHOTO'));
+            document.getElementById('main-card-filter-select').value = filterVal;
+            
             document.getElementById('main-card-img-input').value = card.img || '';
             handleMainCardImgInput(card.img || '');
 
@@ -2178,5 +2492,42 @@
         checkSupabaseStatus();
         fetchCloudConfig();
     </script>
+
+    <!-- MODAL FOR IMAGE CROPPING -->
+    <div id="crop-modal" class="crop-modal-overlay" style="display: none;">
+        <div class="crop-modal-content">
+            <div class="crop-modal-header">
+                <div class="crop-modal-title">
+                    <span>✂️</span>
+                    <span>Кадрирование фонового фото карточки</span>
+                </div>
+                <button type="button" class="btn-sidebar-action" onclick="closeCropModal()" style="width: 36px; height: 36px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.06); color: #fff; border: 1px solid var(--border-subtle); cursor: pointer;">✕</button>
+            </div>
+            <div class="crop-modal-body">
+                <div class="crop-canvas-wrapper">
+                    <img id="crop-image-target" src="" alt="Кадрирование">
+                </div>
+            </div>
+            <div class="crop-modal-toolbar">
+                <span style="font-size: 12px; color: var(--text-dim); font-weight: 600; margin-right: 4px;">ПРОПОРЦИЯ:</span>
+                <button type="button" class="crop-tool-btn active" id="crop-ratio-16-9" onclick="setCropRatio(16/9, this)">16:9 (Карточка киоска)</button>
+                <button type="button" class="crop-tool-btn" id="crop-ratio-2-1" onclick="setCropRatio(2/1, this)">2:1</button>
+                <button type="button" class="crop-tool-btn" id="crop-ratio-4-3" onclick="setCropRatio(4/3, this)">4:3</button>
+                <button type="button" class="crop-tool-btn" id="crop-ratio-free" onclick="setCropRatio(NaN, this)">Свободно</button>
+                
+                <div style="height: 20px; width: 1px; background: var(--border-subtle); margin: 0 4px;"></div>
+                
+                <button type="button" class="crop-tool-btn" onclick="rotateCrop(-90)" title="Повернуть против часовой стрелки">↺ 90°</button>
+                <button type="button" class="crop-tool-btn" onclick="rotateCrop(90)" title="Повернуть по часовой стрелке">↻ 90°</button>
+                <button type="button" class="crop-tool-btn" onclick="zoomCrop(0.1)" title="Приблизить">🔍 +</button>
+                <button type="button" class="crop-tool-btn" onclick="zoomCrop(-0.1)" title="Отдалить">🔍 −</button>
+                <button type="button" class="crop-tool-btn" onclick="resetCrop()" title="Сбросить кадрирование">Сброс</button>
+            </div>
+            <div class="crop-modal-footer">
+                <button type="button" class="btn-sidebar-action btn-logout" onclick="closeCropModal()" style="border-radius: 12px; padding: 10px 18px; cursor: pointer;">Отмена</button>
+                <button type="button" class="btn-primary" onclick="applyCrop()" style="border-radius: 12px; padding: 10px 22px;">✂️ Применить кадрирование</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

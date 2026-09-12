@@ -34,9 +34,9 @@ function getStoredMainCards() {
         }
     } catch(e) {}
     return [
-        { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', category: 'ФОТО', img: 'images/photo1.jpg' },
-        { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', category: 'ВИДЕО', img: 'images/photo3.jpg' },
-        { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg' }
+        { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg' },
+        { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg' },
+        { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg' }
     ];
 }
 
@@ -66,7 +66,7 @@ function renderMainCards() {
         const section = document.createElement('section');
         section.className = `card card-${idx + 1}`;
         section.onclick = function() {
-            window.selectCard(this, c.category || c.title);
+            window.selectCard(this, c.filter || c.category || c.title);
         };
 
         const bgImg = c.img ? `background-image: url('${c.img}');` : '';
@@ -145,10 +145,30 @@ function preloadMasterImages() {
 }
 preloadMasterImages();
 
+// ПРОВЕРКА ТИПОВ ШАБЛОНОВ (ФОТО, ВИДЕО, ТРЕНДЫ)
+function isVideoTemplate(tpl) {
+    if (!tpl) return false;
+    const m = (tpl.model || '').toLowerCase();
+    const c = (tpl.category || '').toUpperCase();
+    return c === 'ВИДЕО' || 
+           m.includes('seedance') || 
+           m.includes('omni') || 
+           m.includes('kling') || 
+           m.includes('video');
+}
+
+function isTrendsTemplate(tpl) {
+    if (!tpl) return false;
+    const c = (tpl.category || '').toUpperCase();
+    const t = (tpl.title || '').toUpperCase();
+    return c === 'ТРЕНДЫ' || t.includes('TREND');
+}
+
 let activeGridTab = 'ВСЕ';
+let currentCatalogMode = 'PHOTO'; // 'PHOTO', 'VIDEO', 'TRENDS', 'ALL'
 
 // 1. ВЫБОР КАРТОЧКИ — МГНОВЕННОЕ ОТКРЫТИЕ 2-КОЛОНОЧНОЙ СЕТКИ ШАБЛОНОВ
-window.selectCard = function(cardEl, styleName) {
+window.selectCard = function(cardEl, filterMode) {
     if (isSelectingCard || isAttractClosing) return;
     isSelectingCard = true;
 
@@ -167,13 +187,8 @@ window.selectCard = function(cardEl, styleName) {
         }
     });
 
-    // 3. Устанавливаем категорию при переходе, если передана
-    if (styleName) {
-        activeGridTab = styleName;
-    }
-
-    // 4. Мгновенно открываем галерею шаблонов
-    openTemplateGallery();
+    // 3. Открываем галерею в соответствующем режиме (ФОТО, ВИДЕО или ТРЕНДЫ)
+    openTemplateGallery(filterMode);
 
     setTimeout(() => {
         allCards.forEach(c => c.classList.remove('fly-left', 'fly-right', 'card-selected'));
@@ -181,8 +196,16 @@ window.selectCard = function(cardEl, styleName) {
     }, 400);
 };
 
-// 2. GRID ROUTER & RENDERER (МГНОВЕННЫЙ РЕНДЕР КАРТИНОК)
-function openTemplateGallery() {
+// 2. GRID ROUTER & RENDERER (СТРОГОЕ РАЗДЕЛЕНИЕ: ФОТО, ВИДЕО, ТРЕНДЫ)
+function openTemplateGallery(mode) {
+    if (mode) {
+        const m = mode.toString().toUpperCase();
+        if (m === 'PHOTO' || m === 'ФОТО') currentCatalogMode = 'PHOTO';
+        else if (m === 'VIDEO' || m === 'ВИДЕО') currentCatalogMode = 'VIDEO';
+        else if (m === 'TRENDS' || m === 'ТРЕНДЫ') currentCatalogMode = 'TRENDS';
+        else currentCatalogMode = 'ALL';
+    }
+
     try {
         const saved = localStorage.getItem('kiosk_templates_v2');
         if (saved !== null) {
@@ -193,9 +216,11 @@ function openTemplateGallery() {
             kioskCategories = JSON.parse(savedCats);
         }
     } catch(e) {}
+
     const modal = document.getElementById('template-modal');
+    activeGridTab = 'ВСЕ';
     renderCategoryPillsBar();
-    switchGridCategory(activeGridTab || 'ВСЕ');
+    switchGridCategory('ВСЕ');
     if (modal) modal.classList.remove('hidden');
 }
 
@@ -204,34 +229,77 @@ function closeTemplateGallery() {
     if (modal) modal.classList.add('hidden');
 }
 
-// РЕНДЕРИНГ ДИНАМИЧЕСКИХ ПЛАШЕК КАТЕГОРИЙ В ШАПКЕ
+// РЕНДЕРИНГ ДИНАМИЧЕСКИХ ПЛАШЕК КАТЕГОРИЙ ПО РАЗДЕЛАМ
 function renderCategoryPillsBar() {
     const bar = document.getElementById('category-pills-bar');
     if (!bar) return;
     bar.innerHTML = '';
 
-    kioskCategories.forEach(cat => {
+    let visibleCategories = [];
+
+    if (currentCatalogMode === 'PHOTO') {
+        // ДЛЯ РАЗДЕЛА "ФОТО" — ТОЛЬКО ФОТО-КАТЕГОРИИ (ВИДЕО ИСКЛЮЧЕНО)
+        const photoTpls = masterTemplates.filter(t => !isVideoTemplate(t));
+        const catsSet = new Set(photoTpls.map(t => (t.category || '').toUpperCase()).filter(c => c && c !== 'ВИДЕО'));
+
+        visibleCategories = ['ВСЕ'];
+        kioskCategories.forEach(cat => {
+            const up = cat.toUpperCase();
+            if (up !== 'ВСЕ' && up !== 'ВИДЕО' && catsSet.has(up) && !visibleCategories.includes(up)) {
+                visibleCategories.push(up);
+            }
+        });
+        catsSet.forEach(c => {
+            if (!visibleCategories.includes(c)) visibleCategories.push(c);
+        });
+    } else if (currentCatalogMode === 'VIDEO') {
+        // ДЛЯ РАЗДЕЛА "ВИДЕО" — ТОЛЬКО ВИДЕОРОЛИКИ
+        visibleCategories = ['ВСЕ ВИДЕО'];
+        const videoTpls = masterTemplates.filter(t => isVideoTemplate(t));
+        const catsSet = new Set(videoTpls.map(t => (t.category || '').toUpperCase()).filter(c => c && c !== 'ВИДЕО'));
+        catsSet.forEach(c => {
+            if (!visibleCategories.includes(c)) visibleCategories.push(c);
+        });
+    } else if (currentCatalogMode === 'TRENDS') {
+        // ДЛЯ РАЗДЕЛА "ТРЕНДЫ" — ТОЛЬКО ТРЕНДЫ
+        visibleCategories = ['ТРЕНДЫ'];
+    } else {
+        visibleCategories = kioskCategories;
+    }
+
+    visibleCategories.forEach(cat => {
         const btn = document.createElement('button');
-        btn.className = `cat-pill ${cat.toUpperCase() === activeGridTab.toUpperCase() ? 'active' : ''}`;
+        const isActive = (cat === 'ВСЕ' && activeGridTab === 'ВСЕ') || 
+                         (cat === 'ВСЕ ВИДЕО' && (activeGridTab === 'ВСЕ' || activeGridTab === 'ВСЕ ВИДЕО')) ||
+                         (cat.toUpperCase() === activeGridTab.toUpperCase());
+
+        btn.className = `cat-pill ${isActive ? 'active' : ''}`;
         btn.textContent = cat.toUpperCase();
         btn.onclick = () => switchGridCategory(cat);
         bar.appendChild(btn);
     });
 }
 
-// ПЕРЕКЛЮЧЕНИЕ КАТЕГОРИИ + ДИНАМИЧЕСКИЙ ЗАГОЛОВОК
+// ПЕРЕКЛЮЧЕНИЕ КАТЕГОРИИ ВНУТРИ РАЗДЕЛА
 window.switchGridCategory = function(catName) {
     activeGridTab = catName;
 
-    // 1. Динамическое изменение заголовка под выбранную категорию!
     const titleEl = document.getElementById('grid-modal-title');
     if (titleEl) {
-        titleEl.textContent = catName.toUpperCase() === 'ВСЕ' ? 'ВСЕ ШАБЛОНЫ' : catName.toUpperCase();
+        if (currentCatalogMode === 'PHOTO') {
+            titleEl.textContent = (catName.toUpperCase() === 'ВСЕ') ? 'ФОТОСТУДИЯ' : `ФОТО: ${catName.toUpperCase()}`;
+        } else if (currentCatalogMode === 'VIDEO') {
+            titleEl.textContent = 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО';
+        } else if (currentCatalogMode === 'TRENDS') {
+            titleEl.textContent = 'ТРЕНДЫ И ПОПУЛЯРНЫЕ ОБРАЗЫ';
+        } else {
+            titleEl.textContent = (catName.toUpperCase() === 'ВСЕ') ? 'ВСЕ ШАБЛОНЫ' : catName.toUpperCase();
+        }
     }
 
-    // 2. Обновление подсветки плашки
     document.querySelectorAll('.cat-pill').forEach(pill => {
-        if (pill.textContent.trim().toUpperCase() === catName.toUpperCase()) {
+        const pText = pill.textContent.trim().toUpperCase();
+        if (pText === catName.toUpperCase() || ((catName === 'ВСЕ' || catName === 'ВСЕ ВИДЕО') && (pText === 'ВСЕ' || pText === 'ВСЕ ВИДЕО'))) {
             pill.classList.add('active');
         } else {
             pill.classList.remove('active');
@@ -242,11 +310,36 @@ window.switchGridCategory = function(catName) {
 };
 
 function renderGridTemplates() {
-    const list = activeGridTab === 'ВСЕ' ? masterTemplates : masterTemplates.filter(item => item.category.toUpperCase() === activeGridTab.toUpperCase());
-    const container = document.getElementById('template-grid-2col');
+    // 1. Фильтруем базовый пул шаблонов по активному разделу карточки
+    let scoped = masterTemplates;
+    if (currentCatalogMode === 'PHOTO') {
+        scoped = masterTemplates.filter(t => !isVideoTemplate(t));
+    } else if (currentCatalogMode === 'VIDEO') {
+        scoped = masterTemplates.filter(t => isVideoTemplate(t));
+    } else if (currentCatalogMode === 'TRENDS') {
+        scoped = masterTemplates.filter(t => isTrendsTemplate(t));
+    }
 
+    // 2. Внутри раздела фильтруем по выбранной подкатегории
+    let list = scoped;
+    if (activeGridTab !== 'ВСЕ' && activeGridTab !== 'ВСЕ ВИДЕО') {
+        list = scoped.filter(item => (item.category || '').toUpperCase() === activeGridTab.toUpperCase());
+    }
+
+    const container = document.getElementById('template-grid-2col');
     if (!container) return;
     container.innerHTML = '';
+
+    if (list.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 70px 20px; color: var(--text-dim);">
+                <div style="font-size: 38px; margin-bottom: 12px;">✨</div>
+                <div style="font-size: 17px; font-weight: 700; color: #ffffff;">В этом разделе пока нет шаблонов</div>
+                <div style="font-size: 13px; margin-top: 6px; color: var(--text-muted);">Добавьте шаблоны через панель администратора /admin</div>
+            </div>
+        `;
+        return;
+    }
 
     list.forEach(item => {
         const card = document.createElement('div');
