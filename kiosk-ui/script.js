@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (payStyleTitle) payStyleTitle.textContent = selectedStyle;
         if (paySelectedThumb) paySelectedThumb.src = selectedStylePhoto;
         if (payAmountVal) payAmountVal.textContent = selectedStylePrice || 290;
-        if (paymentStatusText) paymentStatusText.textContent = 'Подключение к oBusiness ELQR...';
+        if (paymentStatusText) paymentStatusText.textContent = 'Генерация Finik ELQR...';
 
         try {
             const resp = await fetch('/api/payment/create', {
@@ -301,15 +301,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (paymentStatusText) paymentStatusText.textContent = `Ожидание оплаты заказа #${currentOrderId}...`;
                 startPaymentPolling(currentOrderId);
             } else {
-                if (paymentStatusText) paymentStatusText.textContent = 'Ошибка создания заказа oBusiness';
+                if (paymentStatusText) paymentStatusText.textContent = 'Ошибка создания заказа Finik';
             }
         } catch (e) {
             console.warn('API error, using offline mock QR:', e);
             // Fallback для локального оффлайн запуска (file:///)
             currentOrderId = 'TRD-' + Date.now();
-            const mockQr = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=elqr%3A%2F%2Fpay%3ForderId%3D${currentOrderId}%26amount%3D${selectedStylePrice || 290}`;
+            const mockQr = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=https%3A%2F%2Fqr.finik.kg%2F%23orderId%3D${currentOrderId}%26amount%3D${selectedStylePrice || 290}`;
             if (elqrImg) elqrImg.src = mockQr;
-            if (paymentStatusText) paymentStatusText.textContent = `Ожидание оплаты oBusiness (${selectedStylePrice || 290} сом)...`;
+            if (paymentStatusText) paymentStatusText.textContent = `Ожидание оплаты Finik ELQR (${selectedStylePrice || 290} сом)...`;
         }
     }
 
