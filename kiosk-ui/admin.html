@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRENDUM — Панель управления (Admin)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,700;0,800;0,900;1,700;1,900&family=Orbitron:wght@500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <title>Altyn Kazyk — Админ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
@@ -13,156 +15,168 @@
             padding: 0;
         }
 
+        :root {
+            --primary: #D4A043;
+            --primary-hover: #B88328;
+            --primary-light: rgba(212, 160, 67, 0.12);
+            --primary-border: rgba(212, 160, 67, 0.3);
+            --bg-dark: #141414;
+            --sidebar-bg: #1A1A1A;
+            --card-bg: #1E1E1E;
+            --input-bg: #2A2A2A;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --text-main: #FFFFFF;
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --text-dim: rgba(255, 255, 255, 0.38);
+        }
+
         body {
-            font-family: 'Rajdhani', sans-serif;
-            background: #06090e;
-            color: #ffffff;
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
+            overflow-x: hidden;
         }
 
-        /* Top Admin Navbar */
-        .admin-navbar {
-            background: #0a0e17;
-            border-bottom: 1px solid rgba(0, 240, 255, 0.2);
-            padding: 16px 28px;
+        /* SIDEBAR (EXACT ALTYN KAZYK THEME) */
+        .admin-sidebar {
+            width: 240px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-subtle);
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            flex-direction: column;
+            flex-shrink: 0;
+            min-height: 100vh;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .admin-brand {
+        .sidebar-brand {
+            padding: 32px 22px 20px;
+        }
+
+        .brand-title {
+            color: var(--primary);
+            font-size: 17px;
+            font-weight: 900;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+        }
+
+        .brand-subtitle {
+            color: var(--text-dim);
+            font-size: 13px;
+            font-weight: 400;
+            margin-top: 3px;
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-item {
             display: flex;
             align-items: center;
             gap: 12px;
-        }
-
-        .admin-logo-text {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 22px;
-            font-weight: 900;
-            font-style: italic;
-            color: #00F0FF;
-            text-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
-            letter-spacing: 2px;
-        }
-
-        .admin-badge {
-            background: rgba(0, 240, 255, 0.15);
-            border: 1px solid rgba(0, 240, 255, 0.4);
-            color: #00F0FF;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 3px 10px;
+            padding: 12px 16px;
             border-radius: 12px;
-            letter-spacing: 1px;
+            color: var(--text-muted);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            background: transparent;
+            width: 100%;
+            text-align: left;
         }
 
-        .admin-nav-actions {
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .nav-item.active {
+            background: var(--primary-light);
+            border-color: var(--primary-border);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-item-icon {
+            font-size: 18px;
             display: flex;
             align-items: center;
-            gap: 15px;
+            justify-content: center;
+        }
+
+        .sidebar-footer {
+            padding: 16px 14px 24px;
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn-sidebar-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
         .btn-to-kiosk {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
             color: #ffffff;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 13px;
-            font-weight: 800;
-            padding: 8px 18px;
-            border-radius: 20px;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s ease;
         }
 
         .btn-to-kiosk:hover {
-            background: rgba(0, 240, 255, 0.2);
-            border-color: #00F0FF;
-            color: #00F0FF;
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
         }
 
         .btn-logout {
-            background: rgba(255, 42, 95, 0.15);
-            border: 1px solid rgba(255, 42, 95, 0.4);
-            color: #ff2a5f;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 13px;
-            font-weight: 800;
-            padding: 8px 18px;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            background: rgba(255, 59, 48, 0.08);
+            border: 1px solid rgba(255, 59, 48, 0.25);
+            color: #ff453a;
         }
 
         .btn-logout:hover {
-            background: #ff2a5f;
-            color: #ffffff;
-            box-shadow: 0 0 15px rgba(255, 42, 95, 0.6);
+            background: rgba(255, 59, 48, 0.18);
+            border-color: #ff453a;
         }
 
-        /* Container Layout */
-        .admin-container {
-            max-width: 1050px;
-            width: 100%;
-            margin: 30px auto;
-            padding: 0 20px;
+        /* MAIN CONTENT */
+        .admin-main {
             flex: 1;
+            padding: 32px 36px;
+            max-width: 1280px;
+            margin: 0 auto;
+            width: 100%;
         }
 
-        /* Tabs Navigation */
-        .admin-tabs {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 25px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 15px;
-        }
-
-        .admin-tab {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: rgba(255, 255, 255, 0.7);
-            font-family: 'Montserrat', sans-serif;
-            font-size: 14px;
-            font-weight: 800;
-            padding: 12px 24px;
-            border-radius: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .admin-tab:hover {
-            color: #ffffff;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .admin-tab.active {
-            background: #00F0FF;
-            color: #07090f;
-            border-color: #00F0FF;
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
-        }
-
-        /* Card Section */
         .admin-card {
-            background: #0d121c;
-            border: 1px solid rgba(0, 240, 255, 0.25);
-            border-radius: 24px;
-            padding: 30px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
-            margin-bottom: 30px;
+            background: var(--card-bg);
+            border-radius: 18px;
+            border: 1px solid var(--border-subtle);
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
         }
 
         .card-header {
@@ -170,420 +184,408 @@
         }
 
         .card-title {
-            font-family: 'Montserrat', sans-serif;
             font-size: 20px;
-            font-weight: 900;
-            font-style: italic;
-            color: #00F0FF;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-weight: 800;
+            color: var(--text-main);
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         .card-subtitle {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.65);
-            margin-top: 5px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
         }
 
-        /* Forms */
+        /* FORMS & INPUTS (ALTYN KAZYK STYLE) */
         .form-row {
             display: flex;
             gap: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 14px;
             flex-wrap: wrap;
         }
 
         .admin-input, .admin-select {
-            flex: 1;
-            min-width: 220px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: var(--input-bg);
+            border: 1px solid var(--border-subtle);
             border-radius: 12px;
-            padding: 12px 18px;
             color: #ffffff;
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 16px;
-            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            padding: 12px 16px;
             outline: none;
             transition: all 0.2s ease;
+            flex: 1;
+            min-width: 160px;
+        }
+
+        .admin-input:focus, .admin-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(212, 160, 67, 0.18);
         }
 
         .admin-select {
-            background: #111724;
-            color: #ffffff !important;
             cursor: pointer;
         }
 
         .admin-select option {
-            background-color: #111724 !important;
-            color: #ffffff !important;
-            padding: 10px;
+            background: #222222;
+            color: #ffffff;
         }
 
-        .admin-input:focus, .admin-select:focus {
-            border-color: #00F0FF;
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
-            background: rgba(255, 255, 255, 0.08);
-        }
-
+        /* BUTTONS (ALTYN KAZYK GOLD) */
         .btn-primary {
-            background: #00F0FF;
-            color: #07090f;
+            background: var(--primary);
+            color: #000000;
             border: none;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 14px;
-            font-weight: 900;
-            padding: 12px 24px;
             border-radius: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 12px 24px;
             cursor: pointer;
             transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
-            white-space: nowrap;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 25px rgba(0, 240, 255, 0.7);
-        }
-
-        .btn-upload {
-            background: rgba(0, 240, 255, 0.15);
-            border: 1px solid #00F0FF;
-            color: #00F0FF;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 13px;
-            font-weight: 800;
-            padding: 12px 18px;
-            border-radius: 12px;
-            cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            box-shadow: 0 4px 16px rgba(212, 160, 67, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(212, 160, 67, 0.35);
+        }
+
+        .btn-upload {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            color: #ffffff;
+            border-radius: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 11px 18px;
+            cursor: pointer;
             transition: all 0.2s ease;
-            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .btn-upload:hover {
-            background: #00F0FF;
-            color: #07090f;
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
-        }
-
-        .cloud-tip {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-            margin-top: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .cloud-tip strong {
-            color: #00F0FF;
-        }
-
-        /* Grid / List Display */
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        .items-table th {
-            text-align: left;
-            padding: 12px 16px;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 12px;
-            font-weight: 800;
-            color: rgba(255, 255, 255, 0.5);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .items-table td {
-            padding: 14px 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-            font-size: 15px;
-            vertical-align: middle;
-        }
-
-        .items-table tr:hover td {
-            background: rgba(255, 255, 255, 0.03);
-        }
-
-        .tpl-preview-thumb {
-            width: 55px;
-            height: 55px;
-            border-radius: 10px;
-            object-fit: cover;
-            border: 1px solid rgba(0, 240, 255, 0.3);
-            display: block;
-        }
-
-        .cat-tag {
-            background: rgba(0, 240, 255, 0.12);
-            border: 1px solid rgba(0, 240, 255, 0.3);
-            color: #00F0FF;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 700;
-            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
         }
 
         .btn-del {
-            background: rgba(255, 42, 95, 0.15);
-            border: 1px solid rgba(255, 42, 95, 0.3);
-            color: #ff2a5f;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 12px;
-            font-weight: 700;
-            padding: 6px 14px;
+            background: rgba(255, 59, 48, 0.1);
+            border: 1px solid rgba(255, 59, 48, 0.25);
+            color: #ff453a;
             border-radius: 8px;
+            padding: 6px 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
         .btn-del:hover {
-            background: #ff2a5f;
-            color: #ffffff;
-            box-shadow: 0 0 15px rgba(255, 42, 95, 0.5);
-        }
-
-        .btn-move {
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #ffffff;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 13px;
-            font-weight: 700;
-            padding: 5px 9px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-right: 4px;
-            line-height: 1;
-        }
-
-        .btn-move:hover:not(:disabled) {
-            background: rgba(0, 240, 255, 0.25);
-            border-color: #00F0FF;
-            color: #00F0FF;
-            box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
-        }
-
-        .btn-move:disabled {
-            opacity: 0.25;
-            cursor: not-allowed;
-            border-color: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 59, 48, 0.2);
+            border-color: #ff453a;
         }
 
         .btn-edit {
-            background: rgba(199, 255, 0, 0.15);
-            border: 1px solid rgba(199, 255, 0, 0.4);
-            color: #c7ff00;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 12px;
-            font-weight: 700;
-            padding: 5px 12px;
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            color: var(--primary);
             border-radius: 8px;
+            padding: 6px 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
-            margin-right: 4px;
+            margin-right: 6px;
         }
 
         .btn-edit:hover {
-            background: #c7ff00;
-            color: #07090f;
-            box-shadow: 0 0 12px rgba(199, 255, 0, 0.5);
+            background: rgba(212, 160, 67, 0.25);
+        }
+
+        .btn-move {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: #ffffff;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-right: 4px;
+        }
+
+        .btn-move:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* TABLES */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 18px;
+        }
+
+        .items-table th {
+            text-align: left;
+            padding: 12px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .items-table td {
+            padding: 14px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-subtle);
+            vertical-align: middle;
+        }
+
+        .items-table tbody tr {
+            transition: background 0.15s ease;
+        }
+
+        .items-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tpl-preview-thumb {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 1px solid var(--border-subtle);
+            background: #000;
+        }
+
+        .cat-tag {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            color: rgba(255, 255, 255, 0.85);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
         }
 
         .model-badge {
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
             display: inline-block;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 700;
-            font-family: 'Orbitron', sans-serif;
-            letter-spacing: 0.5px;
-            background: rgba(0, 240, 255, 0.12);
-            border: 1px solid rgba(0, 240, 255, 0.3);
-            color: #00F0FF;
-            white-space: nowrap;
         }
 
-        .model-badge.kling {
-            background: rgba(255, 42, 95, 0.15);
-            border-color: rgba(255, 42, 95, 0.4);
-            color: #ff2a5f;
-        }
-
-        .model-badge.pulid {
-            background: rgba(199, 255, 0, 0.15);
-            border-color: rgba(199, 255, 0, 0.4);
-            color: #c7ff00;
+        .price-badge {
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 15px;
         }
 
         .prompt-preview-cell {
-            max-width: 180px;
+            max-width: 260px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            color: rgba(255, 255, 255, 0.7);
-            font-family: monospace;
+            color: var(--text-muted);
             font-size: 12px;
+            font-family: monospace;
         }
 
+        /* STATUS MESSAGES */
         .status-msg {
-            min-height: 22px;
-            font-size: 14px;
-            font-weight: 700;
             margin-top: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            min-height: 20px;
         }
 
-        .status-msg.success { 
-            color: #00ff88; 
-            background: rgba(0, 255, 136, 0.12);
-            border: 1px solid rgba(0, 255, 136, 0.35);
+        .status-msg.success {
+            color: #34c759;
+            background: rgba(52, 199, 89, 0.12);
+            border: 1px solid rgba(52, 199, 89, 0.35);
             padding: 8px 16px;
-            border-radius: 8px;
-            display: inline-block;
-        }
-        .status-msg.error { 
-            color: #ff2a5f; 
-            background: rgba(255, 42, 95, 0.12);
-            border: 1px solid rgba(255, 42, 95, 0.35);
-            padding: 8px 16px;
-            border-radius: 8px;
+            border-radius: 10px;
             display: inline-block;
         }
 
-        /* Login Screen Overlay */
+        .status-msg.error {
+            color: #ff3b30;
+            background: rgba(255, 59, 48, 0.12);
+            border: 1px solid rgba(255, 59, 48, 0.35);
+            padding: 8px 16px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        /* LOGIN OVERLAY (EXACT ALTYN KAZYK AUTH) */
         .auth-overlay {
             position: fixed;
             inset: 0;
-            background: radial-gradient(circle at 50% 40%, #0d1422 0%, #04060a 80%);
+            background: var(--bg-dark);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 99999;
-            padding: 20px;
+            padding: 24px;
         }
 
         .auth-card {
-            background: #0a0e18;
-            border: 2px solid rgba(0, 240, 255, 0.35);
-            border-radius: 28px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
             width: 100%;
             max-width: 400px;
-            padding: 40px 30px;
+            padding: 40px 32px;
             text-align: center;
-            box-shadow: 0 0 50px rgba(0, 240, 255, 0.25), 0 20px 60px rgba(0, 0, 0, 0.9);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
         }
 
-        .auth-icon {
-            font-size: 42px;
-            margin-bottom: 12px;
-            filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.7));
+        .auth-icon-box {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
         }
 
         .auth-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 22px;
+            color: #ffffff;
+            font-size: 24px;
             font-weight: 900;
-            font-style: italic;
-            color: #00F0FF;
-            letter-spacing: 2px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
         }
 
         .auth-subtitle {
+            color: var(--text-dim);
             font-size: 14px;
-            color: rgba(255, 255, 255, 0.65);
-            margin-top: 6px;
-            margin-bottom: 25px;
+            margin-top: 4px;
+            margin-bottom: 32px;
         }
 
         .auth-input {
             width: 100%;
             background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(0, 240, 255, 0.3);
-            border-radius: 16px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
             padding: 16px;
             color: #ffffff;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 24px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 22px;
             font-weight: 700;
             text-align: center;
-            letter-spacing: 8px;
+            letter-spacing: 6px;
             outline: none;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             transition: all 0.2s ease;
         }
 
         .auth-input:focus {
-            border-color: #00F0FF;
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(212, 160, 67, 0.2);
         }
 
         .btn-auth-submit {
             width: 100%;
-            padding: 15px;
-            font-size: 16px;
+            padding: 16px;
+            font-size: 15px;
+            font-weight: 800;
             justify-content: center;
+            border-radius: 14px;
         }
 
         .hidden {
             display: none !important;
         }
+
+        .cloud-tip {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
     </style>
 </head>
 <body>
 
-    <!-- AUTH SCREEN -->
+    <!-- AUTH SCREEN (ALTYN KAZYK STYLE) -->
     <div id="auth-screen" class="auth-overlay">
         <div class="auth-card">
-            <div class="auth-icon">🔒</div>
-            <h1 class="auth-title">TRENDUM ADMIN</h1>
-            <p class="auth-subtitle">Введите пароль / PIN-код для входа</p>
+            <div class="auth-icon-box">🔒</div>
+            <h1 class="auth-title">ALTYN KAZYK</h1>
+            <p class="auth-subtitle">Панель управления</p>
             <form id="auth-form" onsubmit="handleAuthSubmit(event)">
                 <input type="password" id="auth-pin-input" class="auth-input" placeholder="••••" maxlength="8" autofocus autocomplete="current-password">
                 <button type="submit" class="btn-primary btn-auth-submit">ВОЙТИ В ПАНЕЛЬ</button>
             </form>
-            <div id="auth-error-msg" class="status-msg error"></div>
+            <div id="auth-error-msg" class="status-msg error" style="display: none; margin-top: 14px;"></div>
         </div>
     </div>
 
-    <!-- ADMIN HEADER NAVBAR -->
-    <header class="admin-navbar">
-        <div class="admin-brand">
-            <span class="admin-logo-text">TRENDUM</span>
-            <span class="admin-badge">CONTROL PANEL</span>
+    <!-- LEFT SIDEBAR -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-title">ALTYN KAZYK</div>
+            <div class="brand-subtitle">Панель управления</div>
         </div>
-        <div class="admin-nav-actions">
-            <a href="/" class="btn-to-kiosk" title="Перейти к интерфейсу киоска">
+
+        <nav class="sidebar-menu">
+            <button class="nav-item active" id="tab-btn-cats" onclick="switchAdminTab('cats')">
+                <span class="nav-item-icon">📁</span>
+                <span>Категории</span>
+            </button>
+            <button class="nav-item" id="tab-btn-tpls" onclick="switchAdminTab('tpls')">
+                <span class="nav-item-icon">🖼️</span>
+                <span>Шаблоны</span>
+            </button>
+            <button class="nav-item" id="tab-btn-ads" onclick="switchAdminTab('ads')">
+                <span class="nav-item-icon">📺</span>
+                <span>Реклама и Баннеры</span>
+            </button>
+            <button class="nav-item" id="tab-btn-settings" onclick="switchAdminTab('settings')">
+                <span class="nav-item-icon">⚙️</span>
+                <span>Настройки</span>
+            </button>
+            <button class="nav-item" id="tab-btn-security" onclick="switchAdminTab('security')">
+                <span class="nav-item-icon">🔐</span>
+                <span>Безопасность</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="/" class="btn-sidebar-action btn-to-kiosk" title="Перейти к интерфейсу киоска">
                 <span>🖥️</span> Открыть Киоск
             </a>
-            <button class="btn-logout" onclick="handleLogout()">Выйти</button>
+            <button class="btn-sidebar-action btn-logout" onclick="handleLogout()">
+                <span>🚪</span> Выйти
+            </button>
         </div>
-    </header>
+    </aside>
 
-    <!-- MAIN ADMIN CONTENT -->
-    <div class="admin-container">
-        <!-- Tab Navigation -->
-        <nav class="admin-tabs">
-            <button class="admin-tab active" id="tab-btn-cats" onclick="switchAdminTab('cats')">📁 Категории</button>
-            <button class="admin-tab" id="tab-btn-tpls" onclick="switchAdminTab('tpls')">🖼️ Шаблоны</button>
-            <button class="admin-tab" id="tab-btn-ads" onclick="switchAdminTab('ads')">📺 Реклама и Баннеры</button>
-            <button class="admin-tab" id="tab-btn-settings" onclick="switchAdminTab('settings')">⚙️ Настройки</button>
-            <button class="admin-tab" id="tab-btn-security" onclick="switchAdminTab('security')">🔐 Безопасность</button>
-        </nav>
+    <!-- MAIN CONTENT AREA -->
+    <main class="admin-main">
 
         <!-- TAB 1: CATEGORIES -->
         <section id="tab-content-cats" class="admin-tab-content">
@@ -639,31 +641,31 @@
 
                 <div class="form-row" style="align-items: flex-start; gap: 16px; margin-top: 10px;">
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
-                        <label style="font-size: 13px; color: #00F0FF; font-weight: 700; letter-spacing: 0.5px;">📝 Текстовый промпт для нейросети (Prompt):</label>
-                        <textarea id="tpl-prompt-input" class="admin-input" style="height: 70px; resize: vertical; font-family: monospace; font-size: 13px; line-height: 1.4;" placeholder="Опишите сцену: напр. Futuristic cyberpunk male samurai in neon carbon armor, rainy Tokyo street, volumetric neon lighting, cinematic 8k, photorealistic..."></textarea>
+                        <label style="font-size: 13px; color: var(--primary); font-weight: 700;">📝 Текстовый промпт для нейросети (Prompt):</label>
+                        <textarea id="tpl-prompt-input" class="admin-input" style="height: 70px; resize: vertical; font-family: monospace; font-size: 13px; line-height: 1.4;" placeholder="Опишите сцену: напр. Futuristic cyberpunk male samurai in neon carbon armor, rainy Tokyo street, volumetric lighting, photorealistic..."></textarea>
                     </div>
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
-                        <label style="font-size: 13px; color: #C7FF00; font-weight: 700; letter-spacing: 0.5px;">🖼️ Обложка шаблона (Загрузка в Base64 или путь):</label>
+                        <label style="font-size: 13px; color: var(--primary); font-weight: 700;">🖼️ Обложка шаблона (Загрузка в Base64 или путь):</label>
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <input type="file" id="tpl-file-input" accept="image/*" style="display: none;" onchange="handleTemplateFileSelect(event)">
-                            <button type="button" class="btn-upload" onclick="document.getElementById('tpl-file-input').click()" style="padding: 10px 14px; font-size: 12px; background: rgba(199,255,0,0.15); border-color: #C7FF00; color: #C7FF00;">📁 Загрузить файл</button>
+                            <button type="button" class="btn-upload" onclick="document.getElementById('tpl-file-input').click()">📁 Загрузить файл</button>
                             <input type="text" id="tpl-img-input" class="admin-input" placeholder="Путь к фото или base64 (data:image/...)" style="font-size: 12px;" oninput="handleTemplateImgInput(this.value)">
-                            <div id="tpl-img-preview-box" style="width: 48px; height: 48px; border: 1px solid rgba(0,240,255,0.4); border-radius: 8px; overflow: hidden; background: #000; flex-shrink: 0; display: none;">
+                            <div id="tpl-img-preview-box" style="width: 48px; height: 48px; border: 1px solid var(--border-subtle); border-radius: 10px; overflow: hidden; background: #000; flex-shrink: 0; display: none;">
                                 <img id="tpl-img-preview" src="" style="width: 100%; height: 100%; object-fit: cover;">
                             </div>
                         </div>
-                        <span class="cloud-tip" style="margin-top: 4px;">Файл автоматически конвертируется в <strong>Base64</strong> и встраивается в шаблон.</span>
+                        <span class="cloud-tip" style="margin-top: 4px;">Файл автоматически сжимается до ~50 КБ и встраивается в шаблон.</span>
                     </div>
                 </div>
 
-                <div class="form-row" style="margin-top: 12px; align-items: center;">
+                <div class="form-row" style="margin-top: 14px; align-items: center;">
                     <button class="btn-primary" id="tpl-submit-btn" onclick="addOrUpdateTemplate()">+ Добавить шаблон</button>
-                    <button type="button" id="tpl-cancel-edit-btn" class="btn-del" style="display: none; margin-left: 10px; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); color: #ccc;" onclick="cancelTemplateEdit()">✕ Отмена</button>
+                    <button type="button" id="tpl-cancel-edit-btn" class="btn-del" style="display: none; margin-left: 10px; background: rgba(255,255,255,0.06); border-color: var(--border-subtle); color: #ccc;" onclick="cancelTemplateEdit()">✕ Отмена</button>
                     <button type="button" class="btn-upload" onclick="syncAllToCloudManual('tpl-status')" style="margin-left: auto;" title="Сохранить и отправить шаблоны в киоск">☁️ Синхронизировать с киоском</button>
                 </div>
                 <div id="tpl-status" class="status-msg"></div>
 
-                <table class="items-table" style="margin-top: 16px;">
+                <table class="items-table" style="margin-top: 20px;">
                     <thead>
                         <tr>
                             <th style="width: 40px;">#</th>
@@ -683,44 +685,39 @@
             </div>
         </section>
 
-        <!-- TAB 3: ADS & BANNERS (TOP AD & BOTTOM BANNER) -->
+        <!-- TAB 3: ADS & BANNERS -->
         <section id="tab-content-ads" class="admin-tab-content hidden">
-            <!-- ВЕРХНИЙ РЕКЛАМНЫЙ БЛОК (3/4) -->
+            <!-- TOP TICKER BANNERS -->
             <div class="admin-card">
                 <div class="card-header">
-                    <h2 class="card-title">📺 Верхний рекламный блок (3/4 экрана)</h2>
-                    <p class="card-subtitle">Ротация видеороликов и рекламных фото. 📐 <strong>Формат:</strong> 1080×1380 px (~3:4) или вертикальный 9:16 (1080×1920) — теперь отображается <strong>целиком без обрезки</strong> с адаптивным размытым фоном.</p>
+                    <h2 class="card-title">📺 Верхняя бегущая строка</h2>
+                    <p class="card-subtitle">Управление горизонтальными карточками и промо-роликами сверху</p>
                 </div>
 
-                <div class="form-row" style="align-items: center;">
-                    <select id="ad-top-type" class="admin-select" style="max-width: 140px;">
-                        <option value="video">🎥 Видео (MP4)</option>
-                        <option value="image">🖼️ Фото (JPG/PNG)</option>
+                <div class="form-row">
+                    <select id="ad-top-type-select" class="admin-select" style="max-width: 160px;">
+                        <option value="video">🎬 Видеоролик (.mp4)</option>
+                        <option value="image">🖼️ Баннер / Фото</option>
                     </select>
-                    <input type="text" id="ad-top-title" class="admin-input" placeholder="Название ролика / промо...">
-                    <input type="text" id="ad-top-src" class="admin-input" placeholder="Прямая облачная ссылка URL или assets/...">
-                    <input type="number" id="ad-top-duration" class="admin-input" placeholder="Длит. (сек)" style="max-width: 110px;" value="8">
-                    
-                    <input type="file" id="file-upload-top" style="display: none;" accept="video/mp4,video/webm,image/*" onchange="handleCloudFileUpload(this, 'ad-top-src', 'ad-top-type', 'ad-top-status')">
-                    <button type="button" class="btn-upload" onclick="document.getElementById('file-upload-top').click()" title="Загрузить видео или фото напрямую в облако">
-                        ☁️ Загрузить файл
-                    </button>
-                    
-                    <button class="btn-primary" onclick="addTopAd()">+ Добавить</button>
+                    <input type="text" id="ad-top-title-input" class="admin-input" placeholder="Заголовок баннера...">
+                    <input type="number" id="ad-top-duration-input" class="admin-input" style="max-width: 150px;" placeholder="Секунд (напр: 8)" min="2" max="60">
                 </div>
-                <div class="cloud-tip">
-                    <span>💡 Нажмите «☁️ Загрузить файл» для выгрузки видео/фото в облако, либо укажите ссылку вручную.</span>
+
+                <div class="form-row">
+                    <input type="file" id="ad-top-file-input" style="display: none;" onchange="uploadAdFile('top', event)">
+                    <button type="button" class="btn-upload" onclick="document.getElementById('ad-top-file-input').click()">📁 Загрузить файл в облако</button>
+                    <input type="text" id="ad-top-src-input" class="admin-input" placeholder="URL файла или путь (напр: assets/promo.mp4)...">
+                    <button class="btn-primary" onclick="addAd('top')">+ Добавить баннер</button>
                 </div>
                 <div id="ad-top-status" class="status-msg"></div>
 
-                <table class="items-table" style="margin-top: 15px;">
+                <table class="items-table" style="margin-top: 16px;">
                     <thead>
                         <tr>
-                            <th style="width: 50px;">#</th>
                             <th style="width: 80px;">Превью</th>
                             <th>Тип</th>
                             <th>Название</th>
-                            <th>Файл / Облачный URL</th>
+                            <th>Файл / Источник</th>
                             <th>Длительность</th>
                             <th style="width: 170px; text-align: right;">Порядок / Действие</th>
                         </tr>
@@ -731,38 +728,33 @@
                 </table>
             </div>
 
-            <!-- НИЖНИЙ БАННЕР (1/4) -->
+            <!-- BOTTOM TICKER BANNERS -->
             <div class="admin-card">
                 <div class="card-header">
-                    <h2 class="card-title">🎯 Нижний баннер (1/4 экрана)</h2>
-                    <p class="card-subtitle">Отдельный нижний интерактивный блок заставки. 📐 <strong>Формат:</strong> 1080×480 px (горизонтальный баннер) или видео-цикл MP4.</p>
+                    <h2 class="card-title">📺 Нижняя бегущая строка</h2>
+                    <p class="card-subtitle">Управление нижним циклом рекламных баннеров</p>
                 </div>
 
-                <div class="form-row" style="align-items: center;">
-                    <select id="ad-bottom-type" class="admin-select" style="max-width: 140px;">
-                        <option value="video">🎥 Видео (MP4)</option>
-                        <option value="image">🖼️ Фото (JPG/PNG)</option>
+                <div class="form-row">
+                    <select id="ad-bottom-type-select" class="admin-select" style="max-width: 160px;">
+                        <option value="image">🖼️ Баннер / Фото</option>
+                        <option value="video">🎬 Видеоролик (.mp4)</option>
                     </select>
-                    <input type="text" id="ad-bottom-title" class="admin-input" placeholder="Название баннера...">
-                    <input type="text" id="ad-bottom-src" class="admin-input" placeholder="Прямая облачная ссылка URL или assets/...">
-                    <input type="number" id="ad-bottom-duration" class="admin-input" placeholder="Длит. (сек)" style="max-width: 110px;" value="8">
-                    
-                    <input type="file" id="file-upload-bottom" style="display: none;" accept="video/mp4,video/webm,image/*" onchange="handleCloudFileUpload(this, 'ad-bottom-src', 'ad-bottom-type', 'ad-bottom-status')">
-                    <button type="button" class="btn-upload" onclick="document.getElementById('file-upload-bottom').click()" title="Загрузить видео или фото напрямую в облако">
-                        ☁️ Загрузить файл
-                    </button>
-                    
-                    <button class="btn-primary" onclick="addBottomAd()">+ Добавить</button>
+                    <input type="text" id="ad-bottom-title-input" class="admin-input" placeholder="Заголовок баннера...">
+                    <input type="number" id="ad-bottom-duration-input" class="admin-input" style="max-width: 150px;" placeholder="Секунд (напр: 5)" min="2" max="60">
                 </div>
-                <div class="cloud-tip">
-                    <span>💡 Загрузка напрямую в облако или прямая ссылка на видео/баннер.</span>
+
+                <div class="form-row">
+                    <input type="file" id="ad-bottom-file-input" style="display: none;" onchange="uploadAdFile('bottom', event)">
+                    <button type="button" class="btn-upload" onclick="document.getElementById('ad-bottom-file-input').click()">📁 Загрузить файл в облако</button>
+                    <input type="text" id="ad-bottom-src-input" class="admin-input" placeholder="URL файла или путь (напр: assets/banner.jpg)...">
+                    <button class="btn-primary" onclick="addAd('bottom')">+ Добавить баннер</button>
                 </div>
                 <div id="ad-bottom-status" class="status-msg"></div>
 
-                <table class="items-table" style="margin-top: 15px;">
+                <table class="items-table" style="margin-top: 16px;">
                     <thead>
                         <tr>
-                            <th style="width: 50px;">#</th>
                             <th style="width: 80px;">Превью</th>
                             <th>Тип</th>
                             <th>Название</th>
@@ -786,18 +778,52 @@
                     <p class="card-subtitle">Управление временем бездействия до запуска заставки (Screen Saver)</p>
                 </div>
 
-                <div style="max-width: 500px;">
-                    <label style="display:block; font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 8px; font-weight: 600;">
+                <div style="max-width: 520px;">
+                    <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">
                         ⏱️ Время ожидания до выхода заставки (секунд):
                     </label>
                     <div class="form-row" style="align-items: center;">
                         <input type="number" id="attract-timeout-input" class="admin-input" min="3" max="300" placeholder="Например: 5" style="max-width: 160px;">
                         <button class="btn-primary" onclick="saveKioskSettings()">Сохранить настройки</button>
                     </div>
-                    <p style="font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 5px;">
+                    <p style="font-size: 13px; color: var(--text-dim); margin-top: 5px;">
                         По умолчанию: <strong>5 сек</strong>. Рекомендуется от 5 до 30 секунд.
                     </p>
                     <div id="settings-status" class="status-msg"></div>
+                </div>
+            </div>
+
+            <!-- AI AGGREGATOR SETTINGS CARD -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">🤖 Настройки агрегатора генерации</h2>
+                    <p class="card-subtitle">Подключение внешнего шлюза/агрегатора (Kie.ai, Nano Banana 2, Seedance 2.5, ChatGPT 2.5)</p>
+                </div>
+
+                <div style="max-width: 600px;">
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🌐 URL эндпоинта агрегатора:
+                        </label>
+                        <input type="text" id="aggregator-url-input" class="admin-input" style="width: 100%;" placeholder="https://api.kie.ai/api/v1/jobs/createTask">
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🔑 API Ключ (Bearer Token):
+                        </label>
+                        <input type="password" id="aggregator-key-input" class="admin-input" style="width: 100%;" placeholder="fde11cd9...">
+                    </div>
+                    <button class="btn-primary" onclick="saveAggregatorSettings()">Сохранить параметры агрегатора</button>
+                    <div id="aggregator-status" class="status-msg" style="margin-top: 10px;"></div>
+
+                    <!-- BALANCE WIDGET -->
+                    <div style="margin-top: 20px; padding: 16px 20px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 14px; display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <span style="font-size: 12px; color: var(--text-muted); display: block; font-weight: 600;">Баланс кредитов Kie.ai:</span>
+                            <strong id="kie-balance-val" style="font-size: 18px; color: var(--primary);">—</strong>
+                        </div>
+                        <button type="button" class="btn-primary" style="padding: 9px 18px; font-size: 13px;" onclick="checkKieBalance()">🔄 Проверить баланс</button>
+                    </div>
                 </div>
             </div>
 
@@ -809,50 +835,17 @@
                 </div>
 
                 <div style="max-width: 500px;">
-                    <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 14px; padding: 18px;">
+                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 18px;">
                         <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <span style="font-weight: 700; color: #fff;">Статус соединения:</span>
-                            <span id="supabase-status-badge" style="background: rgba(199,255,0,0.15); border: 1px solid #C7FF00; color: #C7FF00; padding: 4px 14px; border-radius: 12px; font-size: 13px; font-weight: bold;">✅ Подключено (Облако активно)</span>
+                            <span style="font-weight: 600; color: #fff;">Статус соединения:</span>
+                            <span id="supabase-status-badge" style="background: rgba(52, 199, 89, 0.15); border: 1px solid #34c759; color: #34c759; padding: 4px 14px; border-radius: 10px; font-size: 13px; font-weight: bold;">✅ Подключено (Облако активно)</span>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- AI AGGREGATOR SETTINGS CARD -->
-            <div class="admin-card">
-                <div class="card-header">
-                    <h2 class="card-title">🤖 Настройки агрегатора генерации</h2>
-                    <p class="card-subtitle">Подключение внешнего шлюза/агрегатора (Nano Banana 2, ChatGPT 2.5 и др.)</p>
-                </div>
-
-                <div style="max-width: 580px;">
-                    <div style="margin-bottom: 12px;">
-                        <label style="display:block; font-size: 13px; color: rgba(255,255,255,0.8); margin-bottom: 6px; font-weight: 600;">
-                            🌐 URL эндпоинта агрегатора:
-                        </label>
-                        <input type="text" id="aggregator-url-input" class="admin-input" style="width: 100%;" placeholder="Например: https://api.aggregator.com/v1/generate">
-                    </div>
-                    <div style="margin-bottom: 14px;">
-                        <label style="display:block; font-size: 13px; color: rgba(255,255,255,0.8); margin-bottom: 6px; font-weight: 600;">
-                            🔑 API Ключ (Bearer Token):
-                        </label>
-                        <input type="password" id="aggregator-key-input" class="admin-input" style="width: 100%;" placeholder="sk-...">
-                    </div>
-                    <button class="btn-primary" onclick="saveAggregatorSettings()">Сохранить параметры агрегатора</button>
-                    <div id="aggregator-status" class="status-msg" style="margin-top: 10px;"></div>
-
-                    <div style="margin-top: 18px; padding: 14px 18px; background: rgba(0,240,255,0.06); border: 1px solid rgba(0,240,255,0.25); border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
-                        <div>
-                            <span style="font-size: 12px; color: rgba(255,255,255,0.7); display: block; font-weight: 600;">Баланс кредитов Kie.ai:</span>
-                            <strong id="kie-balance-val" style="font-size: 18px; color: #c7ff00; font-family: 'Orbitron', sans-serif;">—</strong>
-                        </div>
-                        <button type="button" class="btn-primary" style="padding: 8px 16px; font-size: 12px;" onclick="checkKieBalance()">🔄 Проверить баланс</button>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- TAB 4: SECURITY -->
+        <!-- TAB 5: SECURITY -->
         <section id="tab-content-security" class="admin-tab-content hidden">
             <div class="admin-card">
                 <div class="card-header">
@@ -860,7 +853,7 @@
                     <p class="card-subtitle">Измените код доступа к веб-панели управления /admin</p>
                 </div>
 
-                <div class="form-row">
+                <div class="form-row" style="max-width: 600px;">
                     <input type="password" id="new-password-input" class="admin-input" placeholder="Новый пароль / PIN (от 4 знаков)...">
                     <input type="password" id="confirm-password-input" class="admin-input" placeholder="Повторите пароль...">
                     <button class="btn-primary" onclick="changePassword()">Сохранить пароль</button>
@@ -868,7 +861,7 @@
                 <div id="sec-status" class="status-msg"></div>
             </div>
         </section>
-    </div>
+    </main>
 
     <script>
         // ИНИЦИАЛИЗАЦИЯ SUPABASE ДЛЯ ОБЛАЧНОГО ХРАНИЛИЩА МЕДИА
@@ -905,16 +898,16 @@
                 if (tpls) return JSON.parse(tpls);
             } catch(e) {}
             return [
-                { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'face-swap', prompt: 'Cute Pixar 3D animated character portrait, soft Disney lighting, vibrant colors, retain facial likeness' },
-                { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'face-swap', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
-                { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'face-swap', prompt: 'Trending Instagram aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
-                { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'face-swap', prompt: 'Forbes magazine cover, elegant business suit, powerful charismatic gaze, studio magazine lighting' },
-                { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'face-swap', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
-                { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'kling-video', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
-                { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'kling-video', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
-                { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'kling-video', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
-                { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'face-swap', prompt: 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere' },
-                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'face-swap', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' }
+                { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'nano-banana-2', prompt: 'Cute Pixar 3D animated character portrait, soft Disney lighting, vibrant colors, retain facial likeness' },
+                { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'nano-banana-2', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
+                { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'nano-banana-2', prompt: 'Trending Instagram aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
+                { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'nano-banana-2', prompt: 'Forbes magazine cover, elegant business suit, powerful charismatic gaze, studio magazine lighting' },
+                { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'nano-banana-2', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
+                { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'seedance-2.5', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
+                { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'seedance-2.5', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
+                { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'seedance-2.5', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
+                { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'nano-banana-2', prompt: 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere' },
+                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'nano-banana-2', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' }
             ];
         }
 
@@ -972,10 +965,12 @@
 
             if (val === getStoredPin()) {
                 sessionStorage.setItem('trendum_admin_auth', 'true');
+                errorMsg.style.display = 'none';
                 errorMsg.textContent = '';
                 input.value = '';
                 checkAuth();
             } else {
+                errorMsg.style.display = 'inline-block';
                 errorMsg.textContent = '❌ Неверный пароль / PIN-код';
                 input.value = '';
                 input.focus();
@@ -987,29 +982,16 @@
             location.reload();
         }
 
-        // Tab Switching
-        function switchAdminTab(tab) {
-            document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.add('hidden'));
+        // Tab Navigation
+        function switchAdminTab(tabName) {
+            document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
-            if (tab === 'cats') {
-                document.getElementById('tab-btn-cats').classList.add('active');
-                document.getElementById('tab-content-cats').classList.remove('hidden');
-            } else if (tab === 'tpls') {
-                document.getElementById('tab-btn-tpls').classList.add('active');
-                document.getElementById('tab-content-tpls').classList.remove('hidden');
-            } else if (tab === 'ads') {
-                document.getElementById('tab-btn-ads').classList.add('active');
-                document.getElementById('tab-content-ads').classList.remove('hidden');
-                renderAds();
-            } else if (tab === 'settings') {
-                document.getElementById('tab-btn-settings').classList.add('active');
-                document.getElementById('tab-content-settings').classList.remove('hidden');
-                loadKioskSettings();
-            } else if (tab === 'security') {
-                document.getElementById('tab-btn-security').classList.add('active');
-                document.getElementById('tab-content-security').classList.remove('hidden');
-            }
+            const targetContent = document.getElementById('tab-content-' + tabName);
+            const targetBtn = document.getElementById('tab-btn-' + tabName);
+
+            if (targetContent) targetContent.classList.remove('hidden');
+            if (targetBtn) targetBtn.classList.add('active');
         }
 
         // CATEGORIES LOGIC
@@ -1019,17 +1001,15 @@
 
             categories.forEach((cat, idx) => {
                 const tr = document.createElement('tr');
-                const isSystem = cat === 'ВСЕ';
+                const isAll = cat === 'ВСЕ';
                 tr.innerHTML = `
-                    <td style="color: rgba(255,255,255,0.4);">${idx + 1}</td>
-                    <td><strong style="color: #ffffff; letter-spacing: 1px;">${cat}</strong></td>
-                    <td><span class="cat-tag">${isSystem ? 'Основная' : 'Активна'}</span></td>
+                    <td style="color: var(--text-dim);">${idx + 1}</td>
+                    <td><strong>${cat}</strong></td>
+                    <td><span class="cat-tag">${isAll ? 'Системная' : 'Активна'}</span></td>
                     <td style="text-align: right; white-space: nowrap;">
-                        ${!isSystem ? `
-                            <button class="btn-move" onclick="moveCategory(${idx}, -1)" ${idx <= 1 ? 'disabled' : ''} title="Переместить выше">▲</button>
-                            <button class="btn-move" onclick="moveCategory(${idx}, 1)" ${idx === categories.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
-                            <button class="btn-del" onclick="deleteCategory('${cat}')">Удалить</button>
-                        ` : `<span style="color:rgba(255,255,255,0.4); font-size:12px;">Системная</span>`}
+                        <button class="btn-move" onclick="moveCategory(${idx}, -1)" ${idx <= 1 ? 'disabled' : ''} title="Переместить выше">▲</button>
+                        <button class="btn-move" onclick="moveCategory(${idx}, 1)" ${idx === 0 || idx === categories.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
+                        ${!isAll ? `<button class="btn-del" onclick="deleteCategory('${cat}')">Удалить</button>` : ''}
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1038,7 +1018,7 @@
 
         function moveCategory(idx, dir) {
             const newIdx = idx + dir;
-            if (newIdx <= 0 || newIdx >= categories.length || idx <= 0) return;
+            if (newIdx <= 0 || newIdx >= categories.length) return;
             const temp = categories[idx];
             categories[idx] = categories[newIdx];
             categories[newIdx] = temp;
@@ -1053,9 +1033,14 @@
             const status = document.getElementById('cat-status');
             const name = input.value.trim().toUpperCase();
 
-            if (!name) return;
+            if (!name) {
+                status.textContent = '❌ Введите название категории';
+                status.className = 'status-msg error';
+                return;
+            }
+
             if (categories.includes(name)) {
-                status.textContent = '❌ Категория с таким именем уже существует';
+                status.textContent = '❌ Такая категория уже существует';
                 status.className = 'status-msg error';
                 return;
             }
@@ -1063,18 +1048,16 @@
             categories.push(name);
             localStorage.setItem('kiosk_categories_v2', JSON.stringify(categories));
             syncAllToCloud();
-            input.value = '';
-            status.textContent = `✅ Категория "${name}" успешно добавлена`;
-            status.className = 'status-msg success';
-
             renderCategories();
             renderCategoryDropdown();
 
-            setTimeout(() => { status.textContent = ''; }, 3000);
+            input.value = '';
+            status.textContent = `✅ Категория "${name}" добавлена`;
+            status.className = 'status-msg success';
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
         }
 
         function deleteCategory(name) {
-            if (name === 'ВСЕ') return;
             if (!confirm(`Удалить категорию "${name}"?`)) return;
 
             categories = categories.filter(c => c.toUpperCase() !== name.toUpperCase());
@@ -1095,7 +1078,7 @@
             });
         }
 
-        // TEMPLATES LOGIC (WITH PROMPT, MODEL, BASE64 PREVIEW, AND EDITING)
+        // TEMPLATES LOGIC (WITH PROMPT, MODEL, IMAGE COMPRESSION, AND EDITING)
         let editingTemplateId = null;
 
         function toggleCustomModelInput(val) {
@@ -1113,8 +1096,8 @@
             const m = model || 'nano-banana-2';
             if (m === 'nano-banana-2') return '<span class="model-badge">🍌 Nano Banana 2</span>';
             if (m === 'chatgpt-2.5') return '<span class="model-badge">🤖 ChatGPT 2.5</span>';
-            if (m === 'seedance-2.5') return '<span class="model-badge" style="background: rgba(255,0,128,0.15); border-color: #ff0080; color: #ff0080;">🎬 Seedance 2.5</span>';
-            if (m === 'kling-video') return '<span class="model-badge" style="background: rgba(0,240,255,0.15); border-color: #00f0ff; color: #00f0ff;">🎥 Kling AI</span>';
+            if (m === 'seedance-2.5') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">🎬 Seedance 2.5</span>';
+            if (m === 'kling-video') return '<span class="model-badge">🎥 Kling AI</span>';
             return `<span class="model-badge">${m}</span>`;
         }
 
@@ -1202,13 +1185,13 @@
                 const promptEscaped = promptText.replace(/"/g, '&quot;');
 
                 tr.innerHTML = `
-                    <td style="color: rgba(255,255,255,0.4);">${idx + 1}</td>
+                    <td style="color: var(--text-dim);">${idx + 1}</td>
                     <td><img src="${tpl.img}" alt="${tpl.title}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'"></td>
                     <td><strong>${tpl.title}</strong></td>
                     <td><span class="cat-tag">${tpl.category}</span></td>
                     <td>${modelBadge}</td>
                     <td><div class="prompt-preview-cell" title="${promptEscaped}">${promptText}</div></td>
-                    <td><span style="color: #c7ff00; font-weight: 800; font-family: 'Orbitron', sans-serif;">${priceVal} сом</span></td>
+                    <td><span class="price-badge">${priceVal} сом</span></td>
                     <td style="text-align: right; white-space: nowrap;">
                         <button class="btn-move" onclick="moveTemplate(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
                         <button class="btn-move" onclick="moveTemplate(${idx}, 1)" ${idx === templates.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
@@ -1261,11 +1244,8 @@
             const submitBtn = document.getElementById('tpl-submit-btn');
             const cancelBtn = document.getElementById('tpl-cancel-edit-btn');
             submitBtn.textContent = '💾 Сохранить изменения';
-            submitBtn.style.background = '#c7ff00';
-            submitBtn.style.color = '#000';
             cancelBtn.style.display = 'inline-block';
 
-            // Плавный скролл к форме редактирования
             document.getElementById('tab-content-tpls').scrollIntoView({ behavior: 'smooth' });
         }
 
@@ -1284,8 +1264,6 @@
             const submitBtn = document.getElementById('tpl-submit-btn');
             const cancelBtn = document.getElementById('tpl-cancel-edit-btn');
             submitBtn.textContent = '+ Добавить шаблон';
-            submitBtn.style.background = '';
-            submitBtn.style.color = '';
             cancelBtn.style.display = 'none';
         }
 
@@ -1299,9 +1277,9 @@
             const imgInput = document.getElementById('tpl-img-input');
             const status = document.getElementById('tpl-status');
 
-            const category = catSelect.value;
-            const title = titleInput.value.trim();
-            const price = Number(priceInput.value) || 290;
+            const category = catSelect ? catSelect.value : 'ОБЛОЖКИ';
+            const title = titleInput ? titleInput.value.trim() : '';
+            const price = priceInput ? (Number(priceInput.value) || 290) : 290;
             
             let model = modelSelect ? modelSelect.value : 'nano-banana-2';
             if (model === 'custom' && customModelInput) {
@@ -1399,279 +1377,163 @@
 
         function renderTopAds() {
             const tbody = document.getElementById('ad-top-table-body');
-            if (!tbody) return;
             tbody.innerHTML = '';
-
             topAds.forEach((ad, idx) => {
                 const tr = document.createElement('tr');
-                const isVideo = ad.type === 'video';
                 tr.innerHTML = `
-                    <td style="color: rgba(255,255,255,0.4);">${idx + 1}</td>
                     <td>
-                        ${isVideo 
-                            ? `<div style="width:55px; height:55px; border-radius:10px; background:#111; display:flex; align-items:center; justify-content:center; border:1px solid rgba(0,240,255,0.3); font-size:20px;">🎥</div>`
-                            : `<img src="${ad.src}" class="tpl-preview-thumb" alt="${ad.title}" onerror="this.src='images/placeholder.jpg'">`
+                        ${ad.type === 'video' 
+                            ? `<video src="${ad.src}" style="width: 50px; height: 35px; object-fit: cover; border-radius: 6px;" muted loop></video>`
+                            : `<img src="${ad.src}" style="width: 50px; height: 35px; object-fit: cover; border-radius: 6px;">`
                         }
                     </td>
-                    <td><span class="cat-tag" style="background:${isVideo ? 'rgba(255,180,0,0.15)' : 'rgba(0,240,255,0.15)'}; border-color:${isVideo ? '#ffb400' : '#00f0ff'}; color:${isVideo ? '#ffb400' : '#00f0ff'}">${isVideo ? 'Видео (MP4)' : 'Фото'}</span></td>
-                    <td><strong style="color: #ffffff;">${ad.title || 'Без названия'}</strong></td>
-                    <td><code style="color: #00F0FF; font-size: 12px; word-break: break-all;">${ad.src}</code></td>
-                    <td>${ad.duration || 5} сек</td>
+                    <td><span class="cat-tag">${ad.type === 'video' ? '🎬 Видео' : '🖼️ Баннер'}</span></td>
+                    <td><strong>${ad.title}</strong></td>
+                    <td style="color: var(--text-dim); font-size: 12px; max-width: 180px; overflow: hidden; text-overflow: ellipsis;">${ad.src}</td>
+                    <td>${ad.duration} сек</td>
                     <td style="text-align: right; white-space: nowrap;">
-                        <button class="btn-move" onclick="moveTopAd(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Показывать раньше (вверх)">▲</button>
-                        <button class="btn-move" onclick="moveTopAd(${idx}, 1)" ${idx === topAds.length - 1 ? 'disabled' : ''} title="Показывать позже (вниз)">▼</button>
-                        <button class="btn-del" onclick="deleteTopAd(${ad.id})">Удалить</button>
+                        <button class="btn-move" onclick="moveAd('top', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''}>▲</button>
+                        <button class="btn-move" onclick="moveAd('top', ${idx}, 1)" ${idx === topAds.length - 1 ? 'disabled' : ''}>▼</button>
+                        <button class="btn-del" onclick="deleteAd('top', ${ad.id})">Удалить</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
-        }
-
-        function moveTopAd(idx, dir) {
-            const newIdx = idx + dir;
-            if (newIdx < 0 || newIdx >= topAds.length) return;
-            const temp = topAds[idx];
-            topAds[idx] = topAds[newIdx];
-            topAds[newIdx] = temp;
-            localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));
-            syncAllToCloud();
-            renderTopAds();
         }
 
         function renderBottomAds() {
             const tbody = document.getElementById('ad-bottom-table-body');
-            if (!tbody) return;
             tbody.innerHTML = '';
-
             bottomAds.forEach((ad, idx) => {
                 const tr = document.createElement('tr');
-                const isVideo = ad.type === 'video';
                 tr.innerHTML = `
-                    <td style="color: rgba(255,255,255,0.4);">${idx + 1}</td>
                     <td>
-                        ${isVideo 
-                            ? `<div style="width:55px; height:55px; border-radius:10px; background:#111; display:flex; align-items:center; justify-content:center; border:1px solid rgba(0,240,255,0.3); font-size:20px;">🎥</div>`
-                            : `<img src="${ad.src}" class="tpl-preview-thumb" alt="${ad.title}" onerror="this.src='images/placeholder.jpg'">`
+                        ${ad.type === 'video' 
+                            ? `<video src="${ad.src}" style="width: 50px; height: 35px; object-fit: cover; border-radius: 6px;" muted loop></video>`
+                            : `<img src="${ad.src}" style="width: 50px; height: 35px; object-fit: cover; border-radius: 6px;">`
                         }
                     </td>
-                    <td><span class="cat-tag" style="background:${isVideo ? 'rgba(255,180,0,0.15)' : 'rgba(0,240,255,0.15)'}; border-color:${isVideo ? '#ffb400' : '#00f0ff'}; color:${isVideo ? '#ffb400' : '#00f0ff'}">${isVideo ? 'Видео (MP4)' : 'Фото'}</span></td>
-                    <td><strong style="color: #ffffff;">${ad.title || 'Без названия'}</strong></td>
-                    <td><code style="color: #00F0FF; font-size: 12px; word-break: break-all;">${ad.src}</code></td>
-                    <td>${ad.duration || 5} сек</td>
+                    <td><span class="cat-tag">${ad.type === 'video' ? '🎬 Видео' : '🖼️ Баннер'}</span></td>
+                    <td><strong>${ad.title}</strong></td>
+                    <td style="color: var(--text-dim); font-size: 12px; max-width: 180px; overflow: hidden; text-overflow: ellipsis;">${ad.src}</td>
+                    <td>${ad.duration} сек</td>
                     <td style="text-align: right; white-space: nowrap;">
-                        <button class="btn-move" onclick="moveBottomAd(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Показывать раньше (вверх)">▲</button>
-                        <button class="btn-move" onclick="moveBottomAd(${idx}, 1)" ${idx === bottomAds.length - 1 ? 'disabled' : ''} title="Показывать позже (вниз)">▼</button>
-                        <button class="btn-del" onclick="deleteBottomAd(${ad.id})">Удалить</button>
+                        <button class="btn-move" onclick="moveAd('bottom', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''}>▲</button>
+                        <button class="btn-move" onclick="moveAd('bottom', ${idx}, 1)" ${idx === bottomAds.length - 1 ? 'disabled' : ''}>▼</button>
+                        <button class="btn-del" onclick="deleteAd('bottom', ${ad.id})">Удалить</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        function moveBottomAd(idx, dir) {
+        function addAd(zone) {
+            const type = document.getElementById(`ad-${zone}-type-select`).value;
+            const titleInput = document.getElementById(`ad-${zone}-title-input`);
+            const durationInput = document.getElementById(`ad-${zone}-duration-input`);
+            const srcInput = document.getElementById(`ad-${zone}-src-input`);
+            const status = document.getElementById(`ad-${zone}-status`);
+
+            const title = titleInput.value.trim();
+            const duration = parseInt(durationInput.value, 10) || (type === 'video' ? 8 : 5);
+            const src = srcInput.value.trim();
+
+            if (!title || !src) {
+                status.textContent = '❌ Заполните название и файл/URL баннера';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            const newAd = { id: Date.now(), type, title, duration, src };
+            if (zone === 'top') {
+                topAds.push(newAd);
+                localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));
+                renderTopAds();
+            } else {
+                bottomAds.push(newAd);
+                localStorage.setItem('kiosk_ads_bottom', JSON.stringify(bottomAds));
+                renderBottomAds();
+            }
+
+            syncAllToCloud();
+            titleInput.value = '';
+            srcInput.value = '';
+            durationInput.value = '';
+            status.textContent = `✅ Баннер "${title}" добавлен`;
+            status.className = 'status-msg success';
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+        }
+
+        function deleteAd(zone, id) {
+            if (!confirm('Удалить этот медиа-элемент?')) return;
+            if (zone === 'top') {
+                topAds = topAds.filter(a => a.id !== id);
+                localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));
+                renderTopAds();
+            } else {
+                bottomAds = bottomAds.filter(a => a.id !== id);
+                localStorage.setItem('kiosk_ads_bottom', JSON.stringify(bottomAds));
+                renderBottomAds();
+            }
+            syncAllToCloud();
+        }
+
+        function moveAd(zone, idx, dir) {
+            const list = zone === 'top' ? topAds : bottomAds;
             const newIdx = idx + dir;
-            if (newIdx < 0 || newIdx >= bottomAds.length) return;
-            const temp = bottomAds[idx];
-            bottomAds[idx] = bottomAds[newIdx];
-            bottomAds[newIdx] = temp;
-            localStorage.setItem('kiosk_ads_bottom', JSON.stringify(bottomAds));
-            syncAllToCloud();
-            renderBottomAds();
-        }
-
-        function addTopAd() {
-            const type = document.getElementById('ad-top-type').value;
-            const titleInput = document.getElementById('ad-top-title');
-            const srcInput = document.getElementById('ad-top-src');
-            const durInput = document.getElementById('ad-top-duration');
-            const status = document.getElementById('ad-top-status');
-
-            const title = titleInput.value.trim();
-            const src = srcInput.value.trim();
-            const duration = parseInt(durInput.value, 10) || 5;
-
-            if (!src) {
-                status.textContent = '❌ Укажите путь к файлу или URL';
-                status.className = 'status-msg error';
-                return;
+            if (newIdx < 0 || newIdx >= list.length) return;
+            const temp = list[idx];
+            list[idx] = list[newIdx];
+            list[newIdx] = temp;
+            if (zone === 'top') {
+                localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));
+                renderTopAds();
+            } else {
+                localStorage.setItem('kiosk_ads_bottom', JSON.stringify(bottomAds));
+                renderBottomAds();
             }
-
-            const newId = topAds.length > 0 ? Math.max(...topAds.map(a => a.id || 0)) + 1 : 1;
-            topAds.push({
-                id: newId,
-                type: type,
-                title: title || (type === 'video' ? 'Видео ролик' : 'Рекламный баннер'),
-                src: src,
-                duration: duration
-            });
-
-            localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));
             syncAllToCloud();
-
-            titleInput.value = '';
-            srcInput.value = '';
-            status.textContent = `✅ Ролик/баннер успешно добавлен в верхний блок и синхронизирован с облаком!`;
-            status.className = 'status-msg success';
-
-            renderTopAds();
-            setTimeout(() => { status.textContent = ''; }, 3000);
         }
 
-        function deleteTopAd(id) {
-            if (!confirm('Удалить эту рекламу из верхнего блока?')) return;
-            topAds = topAds.filter(a => a.id !== id);
-            localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));
-            syncAllToCloud();
-            renderTopAds();
-        }
-
-        function addBottomAd() {
-            const type = document.getElementById('ad-bottom-type').value;
-            const titleInput = document.getElementById('ad-bottom-title');
-            const srcInput = document.getElementById('ad-bottom-src');
-            const durInput = document.getElementById('ad-bottom-duration');
-            const status = document.getElementById('ad-bottom-status');
-
-            const title = titleInput.value.trim();
-            const src = srcInput.value.trim();
-            const duration = parseInt(durInput.value, 10) || 5;
-
-            if (!src) {
-                status.textContent = '❌ Укажите путь к файлу или URL';
-                status.className = 'status-msg error';
-                return;
-            }
-
-            const newId = bottomAds.length > 0 ? Math.max(...bottomAds.map(a => a.id || 0)) + 1 : 1;
-            bottomAds.push({
-                id: newId,
-                type: type,
-                title: title || (type === 'video' ? 'Нижний ролик' : 'Нижний баннер'),
-                src: src,
-                duration: duration
-            });
-
-            localStorage.setItem('kiosk_ads_bottom', JSON.stringify(bottomAds));
-            syncAllToCloud();
-
-            titleInput.value = '';
-            srcInput.value = '';
-            status.textContent = `✅ Баннер успешно добавлен в нижний блок и синхронизирован с облаком!`;
-            status.className = 'status-msg success';
-
-            renderBottomAds();
-            setTimeout(() => { status.textContent = ''; }, 3000);
-        }
-
-        function deleteBottomAd(id) {
-            if (!confirm('Удалить эту рекламу из нижнего блока?')) return;
-            bottomAds = bottomAds.filter(a => a.id !== id);
-            localStorage.setItem('kiosk_ads_bottom', JSON.stringify(bottomAds));
-            syncAllToCloud();
-            renderBottomAds();
-        }
-
-        // ОБЛАЧНАЯ ЗАГРУЗКА ВИДЕО И ФОТО (SUPABASE STORAGE)
-        async function handleCloudFileUpload(inputEl, targetInputId, targetTypeId, statusId) {
-            const file = inputEl.files && inputEl.files[0];
+        // ОБЛАЧНАЯ ЗАГРУЗКА МЕДИА В SUPABASE STORAGE
+        async function uploadAdFile(zone, event) {
+            const file = event.target.files[0];
             if (!file) return;
 
-            const status = document.getElementById(statusId);
-            const targetInput = document.getElementById(targetInputId);
-            const targetType = document.getElementById(targetTypeId);
+            const status = document.getElementById(`ad-${zone}-status`);
+            const inputEl = document.getElementById(`ad-${zone}-src-input`);
 
-            // Автоопределение типа (видео или фото)
-            if (file.type.startsWith('video/')) {
-                if (targetType) targetType.value = 'video';
-            } else if (file.type.startsWith('image/')) {
-                if (targetType) targetType.value = 'image';
-            }
-
-            status.textContent = `⏳ Загрузка файла "${file.name}" (${(file.size / (1024*1024)).toFixed(1)} МБ) в облако... Пожалуйста, подождите`;
+            status.textContent = `⏳ Загрузка в облако Supabase Storage... (${(file.size / 1024 / 1024).toFixed(1)} МБ)`;
             status.className = 'status-msg';
 
-            // 1. Попытка загрузки напрямую в Supabase Storage (kiosk-media)
+            let uploadedUrl = null;
             if (supabaseClient) {
                 try {
-                    const ext = file.name.split('.').pop() || 'mp4';
                     const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-                    const fileName = `ads/${Date.now()}_${cleanName}`;
-
+                    const filePath = `ads/${Date.now()}_${cleanName}`;
                     const { data, error } = await supabaseClient.storage
                         .from(SUPABASE_BUCKET)
-                        .upload(fileName, file, {
-                            cacheControl: '3600',
-                            upsert: true
-                        });
+                        .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
                     if (!error && data) {
-                        const { data: publicUrlData } = supabaseClient.storage
+                        const { data: pubData } = supabaseClient.storage
                             .from(SUPABASE_BUCKET)
-                            .getPublicUrl(fileName);
-
-                        if (publicUrlData && publicUrlData.publicUrl) {
-                            targetInput.value = publicUrlData.publicUrl;
-                            status.textContent = `✅ Файл успешно сохранён в облачном хранилище! Нажмите "+ Добавить"`;
-                            status.className = 'status-msg success';
-                            inputEl.value = '';
-                            updateSupabaseBadge(true);
-                            return;
-                        }
-                    } else if (error) {
-                        console.warn('Supabase upload warning:', error);
+                            .getPublicUrl(filePath);
+                        uploadedUrl = pubData.publicUrl;
                     }
-                } catch(supErr) {
-                    console.warn('Supabase storage error, fallback to CDN:', supErr);
+                } catch (e) {
+                    console.warn('Supabase upload failed:', e);
                 }
             }
 
-            // 2. Резервная загрузка через CDN (если бакет в Supabase ещё не создан в dashboard)
-            status.textContent = `⏳ Сохранение через резервный CDN...`;
-            try {
-                const formData = new FormData();
-                formData.append('file', file);
-
-                const response = await fetch('https://tmpfiles.org/api/v1/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (response.ok) {
-                    const resData = await response.json();
-                    if (resData && resData.data && resData.data.url) {
-                        const directUrl = resData.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
-                        targetInput.value = directUrl;
-                        status.textContent = `✅ Файл загружен в облако (CDN)! Нажмите "+ Добавить"`;
-                        status.className = 'status-msg success';
-                        inputEl.value = '';
-                        return;
-                    }
-                }
-                throw new Error('CDN error');
-            } catch (err1) {
-                console.warn('Fallback to file.io:', err1);
-                try {
-                    const fd = new FormData();
-                    fd.append('file', file);
-                    const res2 = await fetch('https://file.io/?expires=1y', {
-                        method: 'POST',
-                        body: fd
-                    });
-                    const d2 = await res2.json();
-                    if (d2 && d2.link) {
-                        targetInput.value = d2.link;
-                        status.textContent = `✅ Файл загружен в облако (file.io)! Нажмите "+ Добавить"`;
-                        status.className = 'status-msg success';
-                        inputEl.value = '';
-                        return;
-                    }
-                    throw new Error('file.io error');
-                } catch (err2) {
-                    console.error('Ошибка загрузки в облако:', err2);
-                    status.textContent = `❌ Ошибка загрузки. Убедитесь, что в Supabase создан публичный бакет "kiosk-media", либо вставьте прямую ссылку URL вручную.`;
-                    status.className = 'status-msg error';
-                    inputEl.value = '';
-                }
+            if (uploadedUrl) {
+                inputEl.value = uploadedUrl;
+                status.textContent = `✅ Файл успешно сохранен в облачном хранилище!`;
+                status.className = 'status-msg success';
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+            } else {
+                status.textContent = `❌ Ошибка загрузки. Убедитесь, что бакет kiosk-media создан.`;
+                status.className = 'status-msg error';
             }
         }
 
@@ -1699,7 +1561,7 @@
             status.textContent = '✅ Пароль администратора успешно обновлен!';
             status.className = 'status-msg success';
 
-            setTimeout(() => { status.textContent = ''; }, 3000);
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
         }
 
         // KIOSK SETTINGS LOGIC
@@ -1727,7 +1589,7 @@
             status.textContent = `✅ Время выхода заставки установлено: ${val} сек`;
             status.className = 'status-msg success';
 
-            setTimeout(() => { status.textContent = ''; }, 3000);
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
         }
 
         // AGGREGATOR SETTINGS LOGIC
@@ -1757,7 +1619,7 @@
             status.className = 'status-msg success';
 
             checkKieBalance();
-            setTimeout(() => { status.textContent = ''; }, 3000);
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
         }
 
         async function checkKieBalance() {
@@ -1774,14 +1636,14 @@
                     const credits = data.data !== undefined ? data.data : 0;
                     const usd = (credits * 0.005).toFixed(2);
                     balEl.textContent = `${credits} кредитов ($${usd})`;
-                    balEl.style.color = credits > 0 ? '#c7ff00' : '#ff4466';
+                    balEl.style.color = credits > 0 ? '#34c759' : '#ff3b30';
                 } else {
                     balEl.textContent = 'Ошибка проверки';
-                    balEl.style.color = '#ff4466';
+                    balEl.style.color = '#ff3b30';
                 }
             } catch (e) {
                 balEl.textContent = '0 кредитов ($0.00)';
-                balEl.style.color = '#ff4466';
+                balEl.style.color = '#ff3b30';
             }
         }
 
@@ -1839,7 +1701,6 @@
                         renderTemplates();
                         changed = true;
                     } else if (templates && templates.length >= 0) {
-                        // Если в облаке шаблоны еще не записаны, отправляем текущие шаблоны админа в облако
                         syncAllToCloud();
                     }
                     if (Array.isArray(data.categories)) {
@@ -1873,7 +1734,7 @@
             if (status) {
                 status.textContent = '✅ Данные успешно сохранены и синхронизированы с киоском!';
                 status.className = 'status-msg success';
-                setTimeout(() => { status.textContent = ''; }, 3500);
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3500);
             }
         }
 
@@ -1884,30 +1745,29 @@
 
             if (!supabaseClient) {
                 badge.textContent = '❌ SDK не загружен';
-                badge.style.color = '#ff2a5f';
-                badge.style.borderColor = '#ff2a5f';
+                badge.style.color = '#ff3b30';
+                badge.style.borderColor = '#ff3b30';
                 return;
             }
 
             try {
-                // Проверяем доступность бакета через list
                 const { data, error } = await supabaseClient.storage
                     .from(SUPABASE_BUCKET)
                     .list('', { limit: 1 });
 
                 if (!error) {
                     badge.textContent = '✅ Подключено (Бакет активен)';
-                    badge.style.color = '#C7FF00';
-                    badge.style.borderColor = '#C7FF00';
+                    badge.style.color = '#34c759';
+                    badge.style.borderColor = '#34c759';
                 } else {
                     badge.textContent = '⚠️ Ошибка доступа к бакету';
-                    badge.style.color = '#ffb400';
-                    badge.style.borderColor = '#ffb400';
+                    badge.style.color = '#ff9f0a';
+                    badge.style.borderColor = '#ff9f0a';
                 }
             } catch(e) {
                 badge.textContent = '⚠️ Ошибка соединения';
-                badge.style.color = '#ffb400';
-                badge.style.borderColor = '#ffb400';
+                badge.style.color = '#ff9f0a';
+                badge.style.borderColor = '#ff9f0a';
             }
         }
 
@@ -1916,8 +1776,8 @@
             if (!badge) return;
             if (success) {
                 badge.textContent = '✅ Подключено (Файлы сохраняются)';
-                badge.style.color = '#C7FF00';
-                badge.style.borderColor = '#C7FF00';
+                badge.style.color = '#34c759';
+                badge.style.borderColor = '#34c759';
             }
         }
 
