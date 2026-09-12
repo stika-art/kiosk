@@ -666,8 +666,32 @@
 
 <!-- YouTube IFrame API для предпрослушивания музыки -->
 <script src="https://www.youtube.com/iframe_api"></script>
+<script src="qrcode.min.js"></script>
 
 <script>
+    function renderInstantQR(element, text, size = 260) {
+        if (!element || !text) return;
+        try {
+            if (typeof QRCode !== 'undefined') {
+                const tempDiv = document.createElement('div');
+                new QRCode(tempDiv, {
+                    text: text,
+                    width: size,
+                    height: size,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+                const canvas = tempDiv.querySelector('canvas');
+                if (canvas) {
+                    element.src = canvas.toDataURL('image/png');
+                    return;
+                }
+            }
+        } catch (e) {}
+        element.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}`;
+    }
+
     const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
     const SUPABASE_BUCKET = 'kiosk-media';
@@ -1264,9 +1288,7 @@
             // 3. Показываем финальное окно
             const origin = window.location.origin || 'https://kiosk394.vercel.app';
             const finalInviteUrl = `${origin}/kiosk-ui/invite.html?id=${inviteId}`;
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(finalInviteUrl)}`;
-
-            document.getElementById('final-qr-img').src = qrUrl;
+            renderInstantQR(document.getElementById('final-qr-img'), finalInviteUrl, 260);
             document.getElementById('view-invite-link').href = finalInviteUrl;
 
             if (isEditMode) {
@@ -1452,8 +1474,7 @@
 
                 const origin = window.location.origin || 'https://kiosk394.vercel.app';
                 const finalInviteUrl = `${origin}/kiosk-ui/invite.html?id=${inviteId}`;
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(finalInviteUrl)}`;
-                document.getElementById('final-qr-img').src = qrUrl;
+                renderInstantQR(document.getElementById('final-qr-img'), finalInviteUrl, 260);
                 document.getElementById('view-invite-link').href = finalInviteUrl;
 
                 if (isEditMode) {

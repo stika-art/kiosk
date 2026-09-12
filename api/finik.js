@@ -104,7 +104,8 @@ async function createFinikPayment({ amount, orderId, templateTitle, accountId })
             'signature': signature
         },
         body: jsonBody,
-        redirect: 'manual'
+        redirect: 'manual',
+        signal: AbortSignal.timeout(1500)
     });
     
     const location = response.headers.get('location');

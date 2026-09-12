@@ -590,6 +590,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
     const SUPABASE_BUCKET = 'kiosk-media';
 
+    // МГНОВЕННАЯ ГЕНЕРАЦИЯ QR-КОДОВ (0ms, локально через QRCode.js, с fallback на qrserver)
+    function renderInstantQR(element, text, size = 260) {
+        if (!element || !text) return;
+        try {
+            if (typeof QRCode !== 'undefined') {
+                const tempDiv = document.createElement('div');
+                new QRCode(tempDiv, {
+                    text: text,
+                    width: size,
+                    height: size,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+                const canvas = tempDiv.querySelector('canvas');
+                if (canvas) {
+                    const dataUrl = canvas.toDataURL('image/png');
+                    if (element.tagName === 'IMG') {
+                        element.src = dataUrl;
+                    } else {
+                        element.innerHTML = '';
+                        element.appendChild(canvas);
+                    }
+                    return;
+                }
+            }
+        } catch (qrErr) {
+            console.warn('Локальный QR рендер не сработал, переключаемся на fallback:', qrErr);
+        }
+        // Fallback через api.qrserver.com, если библиотеки нет
+        const fallbackUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}`;
+        if (element.tagName === 'IMG') {
+            element.src = fallbackUrl;
+        } else {
+            element.innerHTML = `<img src="${fallbackUrl}" alt="QR" style="width:100%;height:100%;object-fit:contain;">`;
+        }
+    }
+
 
     // ШАГ 1: ОТКРЫТИЕ ПОТОКА — ДЛЯ ПРИГЛАСИТЕЛЬНЫХ СНАЧАЛА ДЕМО, ДЛЯ ОСТАЛЬНЫХ ОПЛАТА
     window.openKioskFlow = function() {
@@ -788,9 +826,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const origin = location.origin || 'https://kiosk394.vercel.app';
         const phoneUrl = `${origin}/kiosk-ui/phone-cam.html?session=${phoneCamSessionId}`;
 
-        // QR через бесплатный API
+        // Мгновенный QR код для смартфона
         if (phoneQrImg) {
-            phoneQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&bgcolor=ffffff&data=${encodeURIComponent(phoneUrl)}`;
+            renderInstantQR(phoneQrImg, phoneUrl, 200);
         }
 
         // Запускаем полинг появления фото в Supabase
@@ -858,34 +896,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        if (paymentStatusText) paymentStatusText.textContent = 'Подготовка QR-кода оплаты...';
+        // МГНОВЕННЫЙ QR-КОД (0мс): формируем заказ и рендерим QR сразу без ожидания сети!
+        const amount = selectedStylePrice || 290;
+        currentOrderId = 'TRD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        const instantPayload = `https://qr.finik.kg/#orderId=${currentOrderId}&amount=${amount}&title=${encodeURIComponent(selectedStyle || 'Photo')}`;
+        
+        if (elqrImg) {
+            renderInstantQR(elqrImg, instantPayload, 260);
+        }
+        if (paymentStatusText) paymentStatusText.textContent = 'Ожидание оплаты...';
 
+        // Сразу запускаем опрос статуса платежа
+        startPaymentPolling(currentOrderId);
+
+        // В фоне регистрируем заказ в платежной системе
         try {
             const resp = await fetch('/api/payment/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    amount: selectedStylePrice || 290,
+                    orderId: currentOrderId,
+                    amount: amount,
                     templateTitle: selectedStyle
                 })
             });
             const data = await resp.json();
 
-            if (data.success) {
-                currentOrderId = data.orderId;
-                if (elqrImg) elqrImg.src = data.qrImageUrl;
-                if (paymentStatusText) paymentStatusText.textContent = 'Ожидание оплаты...';
-                startPaymentPolling(currentOrderId);
-            } else {
-                if (paymentStatusText) paymentStatusText.textContent = 'Ошибка создания заказа Finik';
+            if (data.success && data.paymentUrl && data.paymentUrl !== instantPayload) {
+                // Если Finik вернул специфический URL платежного шлюза, обновляем QR
+                if (elqrImg) renderInstantQR(elqrImg, data.paymentUrl, 260);
             }
         } catch (e) {
-            console.warn('API error, using offline mock QR:', e);
-            // Fallback для локального оффлайн запуска (file:///)
-            currentOrderId = 'TRD-' + Date.now();
-            const mockQr = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=https%3A%2F%2Fqr.finik.kg%2F%23orderId%3D${currentOrderId}%26amount%3D${selectedStylePrice || 290}`;
-            if (elqrImg) elqrImg.src = mockQr;
-            if (paymentStatusText) paymentStatusText.textContent = 'Ожидание оплаты...';
+            console.warn('API error (автономный режим ELQR активен):', e);
         }
     }
 
@@ -954,7 +996,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (inviteEditQr) {
-            inviteEditQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(editUrl)}`;
+            renderInstantQR(inviteEditQr, editUrl, 250);
         }
         if (inviteSetupStatus) {
             inviteSetupStatus.textContent = 'Ожидание заполнения и публикации со смартфона...';
@@ -1006,7 +1048,7 @@ document.addEventListener('DOMContentLoaded', () => {
             invitePreviewFrame.src = `${finalUrl}&preview_t=${Date.now()}`;
         }
         if (inviteFinalShareQr) {
-            inviteFinalShareQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(finalUrl)}`;
+            renderInstantQR(inviteFinalShareQr, finalUrl, 250);
         }
 
         showStep(stepInviteReady);
@@ -1032,7 +1074,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     editUrl += `&templateId=${encodeURIComponent(selectedTemplateId)}`;
                 }
                 if (inviteEditQr) {
-                    inviteEditQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(editUrl)}`;
+                    renderInstantQR(inviteEditQr, editUrl, 250);
                 }
                 if (inviteSetupStatus) {
                     inviteSetupStatus.textContent = 'Ожидание сохранения правок со смартфона...';
@@ -1267,7 +1309,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // QR код на скачивание
                         if (roastQrImg) {
                             const dlUrl = data.imageUrl || data.originalPhotoUrl || window.location.href;
-                            roastQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(dlUrl)}`;
+                            renderInstantQR(roastQrImg, dlUrl, 220);
                         }
 
                         // Запуск озвучки ElevenLabs
@@ -1357,7 +1399,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const absoluteDownloadUrl = finalResultUrl.startsWith('http') 
                 ? finalResultUrl 
                 : (window.location.origin + (finalResultUrl.startsWith('/') ? '' : '/') + finalResultUrl);
-            resultQrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(absoluteDownloadUrl)}`;
+            renderInstantQR(resultQrEl, absoluteDownloadUrl, 260);
         }
 
         showStep(stepResult);

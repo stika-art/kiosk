@@ -30,7 +30,7 @@ const server = http.createServer(async (req, res) => {
         req.on('end', async () => {
             try {
                 const data = JSON.parse(body || '{}');
-                const orderId = 'TRD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+                const orderId = data.orderId || ('TRD-' + Date.now() + '-' + Math.floor(Math.random() * 1000));
                 const amount = Number(data.amount) || 290;
                 const templateTitle = data.templateTitle || 'AI Photo';
 
@@ -60,21 +60,19 @@ const server = http.createServer(async (req, res) => {
                     createdAt: new Date().toISOString()
                 };
 
-                // Сохраняем в Supabase для облачной синхронизации
-                try {
-                    const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
-                    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
-                    await fetch(`${SUPABASE_URL}/storage/v1/object/kiosk-media/orders/${orderId}.json`, {
-                        method: 'POST',
-                        headers: {
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                            'Content-Type': 'application/json',
-                            'x-upsert': 'true'
-                        },
-                        body: JSON.stringify(ordersDB[orderId])
-                    });
-                } catch(e) {}
+                // Сохраняем в Supabase для облачной синхронизации (асинхронно, без задержки)
+                const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
+                fetch(`${SUPABASE_URL}/storage/v1/object/kiosk-media/orders/${orderId}.json`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'x-upsert': 'true'
+                    },
+                    body: JSON.stringify(ordersDB[orderId])
+                }).catch(() => {});
 
                 res.writeHead(200, {
                     'Content-Type': 'application/json; charset=utf-8',

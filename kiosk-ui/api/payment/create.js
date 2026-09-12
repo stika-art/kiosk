@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
         const amount = Number(body.amount) || 290;
         const templateTitle = body.templateTitle || 'Photo';
-        const orderId = 'TRD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        const orderId = body.orderId || ('TRD-' + Date.now() + '-' + Math.floor(Math.random() * 1000));
 
         let qrImageUrl = '';
         let paymentUrl = '';
@@ -67,8 +67,8 @@ module.exports = async (req, res) => {
             createdAt: new Date().toISOString()
         };
 
-        // Сохраняем в облако Supabase
-        await saveOrderStatus(orderId, orderInfo);
+        // Сохраняем в облако Supabase асинхронно без блокировки ответа
+        saveOrderStatus(orderId, orderInfo).catch(e => console.warn('Failed to save order to Supabase:', e.message));
 
         return res.status(200).json({
             success: true,
