@@ -826,6 +826,14 @@
                     </div>
                     <button class="btn-primary" onclick="saveAggregatorSettings()">Сохранить параметры агрегатора</button>
                     <div id="aggregator-status" class="status-msg" style="margin-top: 10px;"></div>
+
+                    <div style="margin-top: 18px; padding: 14px 18px; background: rgba(0,240,255,0.06); border: 1px solid rgba(0,240,255,0.25); border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <span style="font-size: 12px; color: rgba(255,255,255,0.7); display: block; font-weight: 600;">Баланс кредитов Kie.ai:</span>
+                            <strong id="kie-balance-val" style="font-size: 18px; color: #c7ff00; font-family: 'Orbitron', sans-serif;">—</strong>
+                        </div>
+                        <button type="button" class="btn-primary" style="padding: 8px 16px; font-size: 12px;" onclick="checkKieBalance()">🔄 Проверить баланс</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1669,7 +1677,33 @@
             status.textContent = '✅ Параметры агрегатора успешно сохранены!';
             status.className = 'status-msg success';
 
+            checkKieBalance();
             setTimeout(() => { status.textContent = ''; }, 3000);
+        }
+
+        async function checkKieBalance() {
+            const key = localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd';
+            const balEl = document.getElementById('kie-balance-val');
+            if (!balEl) return;
+            balEl.textContent = '⏳ Проверка...';
+            try {
+                const res = await fetch('https://api.kie.ai/api/v1/chat/credit', {
+                    headers: { 'Authorization': `Bearer ${key}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const credits = data.data !== undefined ? data.data : 0;
+                    const usd = (credits * 0.005).toFixed(2);
+                    balEl.textContent = `${credits} кредитов ($${usd})`;
+                    balEl.style.color = credits > 0 ? '#c7ff00' : '#ff4466';
+                } else {
+                    balEl.textContent = 'Ошибка проверки';
+                    balEl.style.color = '#ff4466';
+                }
+            } catch (e) {
+                balEl.textContent = '0 кредитов ($0.00)';
+                balEl.style.color = '#ff4466';
+            }
         }
 
         // ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ НАСТРОЕК И ПЛЕЙЛИСТОВ (SUPABASE STORAGE)
@@ -1812,6 +1846,7 @@
         checkAuth();
         loadKioskSettings();
         loadAggregatorSettings();
+        checkKieBalance();
         checkSupabaseStatus();
         fetchCloudConfig();
     </script>
