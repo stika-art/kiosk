@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const FINIK_HOST = process.env.FINIK_HOST || 'api.acquiring.averspay.kg';
-const FINIK_API_KEY = process.env.FINIK_API_KEY || '';
+const FINIK_API_KEY = process.env.FINIK_API_KEY || 'zDN9eKsniY6urxK2FAMxW1iy7CUhIARA3tpCkdf3';
+const FINIK_ACCOUNT_ID = process.env.FINIK_ACCOUNT_ID || 'aa01a640-66ec-417f-895d-ba9d988fab18';
 const FINIK_REDIRECT_URL = process.env.FINIK_REDIRECT_URL || 'https://kiosk394.vercel.app/kiosk-ui/';
 
 // Публичный ключ Finik для валидации входящих вебхуков
@@ -63,20 +64,23 @@ function signFinikRequest({ method, path: reqPath, host, apiKey, timestamp, body
     return { signature, sortedBody, jsonBody };
 }
 
-async function createFinikPayment({ amount, orderId, templateTitle }) {
+async function createFinikPayment({ amount, orderId, templateTitle, accountId }) {
     const apiKey = FINIK_API_KEY;
     const host = FINIK_HOST;
     const timestamp = Date.now().toString();
     const reqPath = '/v1/payment';
     
+    const targetAccountId = accountId || FINIK_ACCOUNT_ID;
     const body = {
         Amount: Math.round(Number(amount)),
         CardType: 'FINIK_QR',
         PaymentId: orderId,
         RedirectUrl: FINIK_REDIRECT_URL,
         Data: {
-            orderId: orderId,
-            templateTitle: templateTitle || 'Photo'
+            accountId: targetAccountId,
+            name_en: 'Trendum Kiosk',
+            description: templateTitle || 'Photo',
+            webhookUrl: 'https://kiosk394.vercel.app/api/payment/finik-callback'
         }
     };
     
