@@ -1,66 +1,154 @@
 // ============================================================
-// TRENDUM KIOSK — UNIVERSAL AI AGGREGATOR GATEWAY / ROUTER
+// TRENDUM KIOSK — UNIVERSAL AI GATEWAY (KIE.AI & CUSTOM AGGREGATORS)
 // Models supported:
-// 1. 'nano-banana-2'  -> Nano Banana 2
-// 2. 'chatgpt-2.5'    -> ChatGPT 2.5
-// 3. Custom models from aggregator (e.g. 'kling-video', 'midjourney', etc.)
+// 1. 'nano-banana-2'  -> google/nano-banana-edit (Фото с сохранением лица/композиции)
+// 2. 'seedance-2.5'   -> bytedance/seedance-2-5 (Кинематографичное видео из фото)
+// 3. 'chatgpt-2.5'    -> openai/gpt-4o-image
+// 4. 'kling-video'    -> kwaivgi/kling-v1-6
 // ============================================================
 
-const AGGREGATOR_URL = process.env.AI_AGGREGATOR_URL || '';
-const AGGREGATOR_KEY = process.env.AI_AGGREGATOR_KEY || process.env.AI_AGGREGATOR_API_KEY || '';
+const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
+const SUPABASE_BUCKET = 'kiosk-media';
 
-async function callAIAggregator({ photoData, templateImg, prompt, model, title, orderId, customUrl, customKey }) {
-    const targetUrl = customUrl || AGGREGATOR_URL;
-    const apiKey = customKey || AGGREGATOR_KEY;
+const DEFAULT_KIE_URL = 'https://api.kie.ai/api/v1/jobs/createTask';
+const KIE_RECORD_URL = 'https://api.kie.ai/api/v1/jobs/recordInfo';
 
-    if (!targetUrl) {
-        console.log(`[Aggregator] URL агрегатора не настроен. Возвращаем эталонное фото шаблона.`);
-        return null;
+// 1. Загрузка фото гостя в CDN Supabase для получения публичного URL (требуется Kie.ai)
+async function uploadGuestPhotoToCDN(photoBase64OrUrl, orderId) {
+    if (!photoBase64OrUrl || photoBase64OrUrl.startsWith('http://') || photoBase64OrUrl.startsWith('https://')) {
+        return photoBase64OrUrl;
     }
 
     try {
-        console.log(`[Aggregator] Отправка запроса в агрегатор: ${targetUrl}, модель: ${model}`);
-        const response = await fetch(targetUrl, {
+        const cleanBase64 = photoBase64OrUrl.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(cleanBase64, 'base64');
+        const filename = `guests/guest_${orderId || Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+
+        const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`, {
             method: 'POST',
             headers: {
-                'Authorization': apiKey ? `Bearer ${apiKey}` : '',
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'image/jpeg',
+                'x-upsert': 'true'
+            },
+            body: buffer
+        });
+
+        if (res.ok) {
+            const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${filename}`;
+            console.log('[CDN] Фото гостя успешно сохранено:', publicUrl);
+            return publicUrl;
+        }
+    } catch (e) {
+        console.warn('[CDN Upload Error]', e.message);
+    }
+    return photoBase64OrUrl;
+}
+
+// 2. Вызов Kie.ai API и ожидание результата задачи
+async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateImgUrl }) {
+    if (!apiKey) return null;
+
+    // Сопоставление внутренних имен с официальными идентификаторами моделей Kie.ai
+    let kieModel = 'google/nano-banana-edit';
+    if (model === 'seedance-2.5') kieModel = 'bytedance/seedance-2-5';
+    else if (model === 'nano-banana-2') kieModel = 'google/nano-banana-edit';
+    else if (model === 'kling-video') kieModel = 'kwaivgi/kling-v1-6';
+    else if (model && model.includes('/')) kieModel = model;
+
+    console.log(`[Kie.ai] Запуск задачи для модели "${kieModel}"...`);
+
+    // Формирование входных данных под выбранный тип модели
+    let inputPayload = {};
+    if (kieModel.includes('seedance') || kieModel.includes('kling')) {
+        inputPayload = {
+            prompt: prompt || 'Cinematic movement, 4k resolution, seamless motion',
+            image_url: publicPhotoUrl,
+            duration: 5
+        };
+    } else {
+        inputPayload = {
+            prompt: prompt || 'Photorealistic high-end studio portrait, retain facial likeness',
+            image_urls: [publicPhotoUrl],
+            output_format: 'png',
+            aspect_ratio: '1:1'
+        };
+    }
+
+    try {
+        // Создание задачи
+        const createRes = await fetch(DEFAULT_KIE_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: model || 'nano-banana-2',
-                prompt: prompt || '',
-                image: photoData,
-                template_image: templateImg,
-                order_id: orderId,
-                title: title
+                model: kieModel,
+                input: inputPayload
             })
         });
 
-        if (!response.ok) {
-            const errText = await response.text();
-            console.warn(`[Aggregator Error] Статус ${response.status}: ${errText}`);
+        if (!createRes.ok) {
+            const errText = await createRes.text();
+            console.warn(`[Kie.ai Create Task Error] ${createRes.status}:`, errText);
             return null;
         }
 
-        const data = await response.json();
-        // Поддержка распространенных форматов ответов агрегаторов (фото и видео)
-        const resultUrl = data.video_url
-            || data.video
-            || (data.output && typeof data.output === 'string' ? data.output : (Array.isArray(data.output) ? data.output[0] : null))
-            || data.image_url 
-            || data.url 
-            || (data.data && data.data[0] && (data.data[0].url || data.data[0].b64_json ? (data.data[0].url || `data:image/jpeg;base64,${data.data[0].b64_json}`) : null))
-            || data.result;
+        const createData = await createRes.json();
+        const taskId = createData.data ? (createData.data.taskId || createData.data.id) : createData.taskId;
 
-        return resultUrl || null;
-    } catch (e) {
-        console.warn('[Aggregator Exception]:', e.message);
-        return null;
+        if (!taskId) {
+            console.warn('[Kie.ai] Task ID не получен:', createData);
+            return null;
+        }
+
+        console.log(`[Kie.ai] Задача создана, taskId: ${taskId}. Ожидание завершения...`);
+
+        // Опрос статуса (polling) до 45 секунд
+        const maxWaitMs = 45000;
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < maxWaitMs) {
+            await new Promise(r => setTimeout(r, 2000));
+
+            const recordRes = await fetch(`${KIE_RECORD_URL}?taskId=${encodeURIComponent(taskId)}`, {
+                headers: { 'Authorization': `Bearer ${apiKey}` }
+            });
+
+            if (recordRes.ok) {
+                const recordData = await recordRes.json();
+                const taskInfo = recordData.data || recordData;
+                const state = taskInfo.state || taskInfo.status;
+
+                if (state === 'success' || state === 'SUCCESS' || state === 'completed') {
+                    console.log(`[Kie.ai] Задача ${taskId} успешно выполнена!`);
+                    
+                    let resultUrls = [];
+                    if (taskInfo.resultJson) {
+                        try {
+                            const parsed = typeof taskInfo.resultJson === 'string' ? JSON.parse(taskInfo.resultJson) : taskInfo.resultJson;
+                            resultUrls = parsed.resultUrls || parsed.urls || [parsed.url || parsed.video_url];
+                        } catch(e) {}
+                    }
+
+                    const finalMediaUrl = (resultUrls && resultUrls[0]) || taskInfo.video_url || taskInfo.image_url;
+                    if (finalMediaUrl) return finalMediaUrl;
+                } else if (state === 'failed' || state === 'FAILED' || state === 'error') {
+                    console.warn(`[Kie.ai] Задача ${taskId} завершилась с ошибкой:`, taskInfo.failMsg || 'Неизвестная ошибка');
+                    return null;
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('[Kie.ai Exception]', err.message);
     }
+    return null;
 }
 
 module.exports = async (req, res) => {
-    // Включение CORS для работы с киоском и мобильными устройствами
+    // Включение CORS для киоска
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -77,25 +165,26 @@ module.exports = async (req, res) => {
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
         const { photoData, templateImg, prompt, model, title, orderId, aggregatorUrl, aggregatorKey } = body;
 
-        console.log(`[AI Hub] Новый заказ: "${title}", модель="${model || 'nano-banana-2'}", orderId="${orderId}"`);
-        console.log(`[AI Hub] Промпт: "${prompt ? prompt.slice(0, 80) : '—'}..."`);
+        const effectiveKey = aggregatorKey || process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || '';
 
+        console.log(`[AI Hub] Новый запрос: "${title}", модель="${model}", заказ="${orderId}"`);
+
+        // 1. Получаем публичный URL фото гостя через Supabase
+        const publicPhotoUrl = await uploadGuestPhotoToCDN(photoData, orderId);
+
+        // 2. Запуск генерации через Kie.ai (если ключ указан)
         let resultUrl = null;
+        if (effectiveKey) {
+            resultUrl = await generateViaKie({
+                apiKey: effectiveKey,
+                model: model || 'nano-banana-2',
+                prompt,
+                publicPhotoUrl,
+                templateImgUrl: templateImg
+            });
+        }
 
-        // 1. Вызов агрегатора (если задан URL)
-        resultUrl = await callAIAggregator({
-            photoData,
-            templateImg,
-            prompt,
-            model: model || 'nano-banana-2',
-            title,
-            orderId,
-            customUrl: aggregatorUrl,
-            customKey: aggregatorKey
-        });
-
-        // 2. Если агрегатор ещё не настроен или запрос в процессе тестирования:
-        // Возвращаем фото шаблона, чтобы цикл киоска (печать, показ, QR) не прерывался
+        // 3. Fallback: если ключ еще не введен или генерация не удалась, возвращаем эталонный шаблон
         if (!resultUrl) {
             resultUrl = templateImg;
         }
@@ -104,11 +193,11 @@ module.exports = async (req, res) => {
             success: true,
             orderId,
             model: model || 'nano-banana-2',
-            title: title || 'Фотопортрет',
+            title: title || 'Портрет',
             prompt: prompt || '',
             resultUrl,
-            mode: (aggregatorUrl || AGGREGATOR_URL) ? 'live' : 'preview',
-            message: 'Обработка завершена успешно'
+            mode: effectiveKey ? 'live' : 'preview',
+            message: effectiveKey ? 'Успешно обработано через Kie.ai' : 'Тестовый режим (ключ не задан)'
         });
     } catch (err) {
         console.error('[AI Gateway Error]', err);
