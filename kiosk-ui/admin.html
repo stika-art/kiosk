@@ -1174,7 +1174,7 @@
                 if (status) {
                     status.textContent = '✅ Обложка оптимизирована и готова';
                     status.className = 'status-msg success';
-                    setTimeout(() => { status.textContent = ''; }, 2000);
+                    setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 2500);
                 }
             });
         }
@@ -1303,10 +1303,13 @@
             const title = titleInput.value.trim();
             const price = Number(priceInput.value) || 290;
             
-            let model = modelSelect.value || 'nano-banana-2';
-            if (model === 'custom') {
+            let model = modelSelect ? modelSelect.value : 'nano-banana-2';
+            if (model === 'custom' && customModelInput) {
                 model = customModelInput.value.trim() || 'nano-banana-2';
             }
+
+            const prompt = promptInput ? promptInput.value.trim() : '';
+            const img = imgInput ? imgInput.value.trim() : '';
 
             if (!title) {
                 status.textContent = '❌ Введите название шаблона (например: CYBER SAMURAI)';
@@ -1376,7 +1379,7 @@
 
             renderTemplates();
 
-            setTimeout(() => { status.textContent = ''; }, 4000);
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
         }
 
         function deleteTemplate(id) {
@@ -1814,7 +1817,7 @@
 
         async function fetchCloudConfig() {
             try {
-                const res = await fetch(`https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?_t=${Date.now()}`);
+                const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?_t=${Date.now()}`);
                 if (res.ok) {
                     const data = await res.json();
                     let changed = false;
