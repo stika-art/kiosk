@@ -530,7 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 currentOrderId = data.orderId;
                 if (elqrImg) elqrImg.src = data.qrImageUrl;
-                if (paymentStatusText) paymentStatusText.textContent = `Ожидание оплаты заказа #${currentOrderId}...`;
+                if (paymentStatusText) paymentStatusText.textContent = 'Ожидание оплаты...';
                 startPaymentPolling(currentOrderId);
             } else {
                 if (paymentStatusText) paymentStatusText.textContent = 'Ошибка создания заказа Finik';
@@ -541,7 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
             currentOrderId = 'TRD-' + Date.now();
             const mockQr = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=https%3A%2F%2Fqr.finik.kg%2F%23orderId%3D${currentOrderId}%26amount%3D${selectedStylePrice || 290}`;
             if (elqrImg) elqrImg.src = mockQr;
-            if (paymentStatusText) paymentStatusText.textContent = `Ожидание оплаты Finik ELQR (${selectedStylePrice || 290} сом)...`;
+            if (paymentStatusText) paymentStatusText.textContent = 'Ожидание оплаты...';
         }
     }
 
