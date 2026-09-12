@@ -989,11 +989,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================================
     function startInviteFlow() {
         currentInviteId = 'inv-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
-        const origin = window.location.origin || 'https://kiosk394.vercel.app';
+        const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes('file:'))
+            ? window.location.origin 
+            : 'https://kiosk394.vercel.app';
         let editUrl = `${origin}/kiosk-ui/invite-edit.html?id=${currentInviteId}`;
         if (selectedTemplateId) {
             editUrl += `&templateId=${encodeURIComponent(selectedTemplateId)}`;
         }
+
+        // Пре-сохраняем выбранный пользователем шаблон в облако Supabase сразу же!
+        // Благодаря этому и телефон, и киоск сразу загрузят именно ВЫБРАННЫЙ шаблон, а не старый образец
+        initInviteInCloud(currentInviteId, selectedTemplateId, selectedTemplateHtml, selectedStyle);
 
         if (inviteEditQr) {
             renderInstantQR(inviteEditQr, editUrl, 250);
@@ -1006,6 +1012,57 @@ document.addEventListener('DOMContentLoaded', () => {
         startInvitePolling(currentInviteId, false);
     }
 
+    async function initInviteInCloud(invId, tplId, tplHtml, tplTitle) {
+        if (!invId) return;
+        try {
+            let html = tplHtml;
+            if ((!html || html.length < 50) && tplId) {
+                const t = masterTemplates.find(item => String(item.id) === String(tplId));
+                if (t && t.htmlCode) html = t.htmlCode;
+            }
+
+            const payload = {
+                id: invId,
+                templateId: tplId,
+                templateTitle: tplTitle || '',
+                customHtml: html || '',
+                isInitial: true,
+                isPublished: false,
+                userSaved: false,
+                type: 'ПРИГЛАШЕНИЕ НА ТОРЖЕСТВО',
+                updatedAt: new Date().toISOString()
+            };
+
+            // 1. Начальный .json
+            fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/invites/${invId}.json`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Content-Type': 'application/json',
+                    'x-upsert': 'true'
+                },
+                body: JSON.stringify(payload)
+            }).catch(() => {});
+
+            // 2. Если есть готовый HTML-код выбранного шаблона — сразу сохраняем .html
+            if (html && html.trim().length > 50) {
+                fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/invites/${invId}.html`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'text/html; charset=utf-8',
+                        'x-upsert': 'true'
+                    },
+                    body: html
+                }).catch(() => {});
+            }
+        } catch (e) {
+            console.warn('initInviteInCloud error:', e);
+        }
+    }
+
     function startInvitePolling(invId, isEdit = false) {
         stopInvitePolling();
         invitePollingTimer = setInterval(async () => {
@@ -1016,10 +1073,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.ok) {
                     const data = await res.json();
                     if (!isEdit) {
-                        // Первичное появление файла
-                        stopInvitePolling();
-                        lastKnownInviteTime = data.updatedAt || new Date().toISOString();
-                        handleInviteReady(invId);
+                        // Завершаем только когда пользователь реально сохранил со смартфона
+                        if (data.isPublished || data.userSaved || (data.updatedAt && !data.isInitial)) {
+                            stopInvitePolling();
+                            lastKnownInviteTime = data.updatedAt || new Date().toISOString();
+                            handleInviteReady(invId);
+                        }
                     } else {
                         // Режим редактирования: ждем обновления updatedAt
                         if (data.updatedAt && data.updatedAt !== lastKnownInviteTime) {
@@ -1041,8 +1100,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleInviteReady(invId) {
-        const origin = window.location.origin || 'https://kiosk394.vercel.app';
-        const finalUrl = `${origin}/kiosk-ui/invite.html?id=${invId}`;
+        const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes('file:'))
+            ? window.location.origin 
+            : 'https://kiosk394.vercel.app';
+        let finalUrl = `${origin}/kiosk-ui/invite.html?id=${invId}`;
+        if (selectedTemplateId) {
+            finalUrl += `&templateId=${encodeURIComponent(selectedTemplateId)}`;
+        }
 
         if (invitePreviewFrame) {
             invitePreviewFrame.src = `${finalUrl}&preview_t=${Date.now()}`;
@@ -1068,7 +1132,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inviteReEditBtn) {
         inviteReEditBtn.addEventListener('click', () => {
             if (currentInviteId) {
-                const origin = window.location.origin || 'https://kiosk394.vercel.app';
+                const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes('file:'))
+                    ? window.location.origin 
+                    : 'https://kiosk394.vercel.app';
                 let editUrl = `${origin}/kiosk-ui/invite-edit.html?id=${currentInviteId}`;
                 if (selectedTemplateId) {
                     editUrl += `&templateId=${encodeURIComponent(selectedTemplateId)}`;
@@ -1088,8 +1154,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (inviteRefreshBtn) {
         inviteRefreshBtn.addEventListener('click', () => {
             if (invitePreviewFrame && currentInviteId) {
-                const origin = window.location.origin || 'https://kiosk394.vercel.app';
-                invitePreviewFrame.src = `${origin}/kiosk-ui/invite.html?id=${currentInviteId}&preview_t=${Date.now()}`;
+                const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes('file:'))
+                    ? window.location.origin 
+                    : 'https://kiosk394.vercel.app';
+                let finalUrl = `${origin}/kiosk-ui/invite.html?id=${currentInviteId}`;
+                if (selectedTemplateId) {
+                    finalUrl += `&templateId=${encodeURIComponent(selectedTemplateId)}`;
+                }
+                invitePreviewFrame.src = `${finalUrl}&preview_t=${Date.now()}`;
             }
         });
     }

@@ -3572,7 +3572,6 @@
 
         // ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ НАСТРОЕК И ПЛЕЙЛИСТОВ (SUPABASE STORAGE)
         async function syncAllToCloud() {
-            if (!supabaseClient) return;
             try {
                 const payload = {
                     main_header: mainHeader,
@@ -3587,18 +3586,39 @@
                     openai_key: localStorage.getItem('kiosk_openai_key') || '',
                     updated_at: new Date().toISOString()
                 };
-                const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-                const { error } = await supabaseClient.storage
-                    .from(SUPABASE_BUCKET)
-                    .upload('config/settings.json', blob, {
-                        cacheControl: '0',
-                        upsert: true
+                const jsonContent = JSON.stringify(payload, null, 2);
+                let savedOk = false;
+
+                if (supabaseClient) {
+                    const blob = new Blob([jsonContent], { type: 'application/json' });
+                    const { error } = await supabaseClient.storage
+                        .from(SUPABASE_BUCKET)
+                        .upload('config/settings.json', blob, {
+                            cacheControl: '0',
+                            upsert: true
+                        });
+                    if (!error) savedOk = true;
+                }
+
+                if (!savedOk) {
+                    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/config/settings.json`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Content-Type': 'application/json',
+                            'x-upsert': 'true'
+                        },
+                        body: jsonContent
                     });
-                if (error) {
-                    console.error('Ошибка сохранения настроек в облако:', error);
-                } else {
+                    if (res.ok) savedOk = true;
+                }
+
+                if (savedOk) {
                     console.log('✅ Настройки и баннеры успешно сохранены в облако!');
                     updateSupabaseBadge(true);
+                } else {
+                    console.error('Ошибка сохранения настроек в облако');
                 }
             } catch (err) {
                 console.error('Ошибка syncAllToCloud:', err);

@@ -653,6 +653,9 @@
                 if (res.ok) {
                     const data = await res.json();
                     inviteData = { ...inviteData, ...data };
+                    if (data.templateId && !inviteData.templateId) {
+                        inviteData.templateId = data.templateId;
+                    }
                 }
             } catch (err) {
                 console.warn('Не удалось загрузить данные из облака, используем шаблон:', err);
@@ -660,15 +663,28 @@
         }
 
         // Рендеринг: если есть кастомный HTML-дизайн шаблона
-        if (inviteData.customHtml) {
+        if (inviteData.customHtml && inviteData.customHtml.trim().length > 30) {
             renderCustomInviteHtml(inviteData.customHtml);
-        } else if (inviteData.templateId) {
-            // Если сохранен id шаблона, пытаемся подтянуть его HTML из settings.json
+        } else {
+            // Пытаемся загрузить HTML выбранного шаблона из settings.json
             try {
                 const settingsRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?t=${Date.now()}`);
                 if (settingsRes.ok) {
                     const settingsData = await settingsRes.json();
-                    const matchedTpl = (settingsData.templates || []).find(t => String(t.id) === String(inviteData.templateId));
+                    const templates = settingsData.templates || [];
+                    let matchedTpl = null;
+
+                    if (inviteData.templateId) {
+                        matchedTpl = templates.find(t => String(t.id) === String(inviteData.templateId));
+                    }
+                    if (!matchedTpl && inviteData.templateTitle) {
+                        matchedTpl = templates.find(t => t.title && t.title.toLowerCase() === inviteData.templateTitle.toLowerCase());
+                    }
+                    // Если шаблон не найден по ID, ищем любой доступный шаблон пригласительного с HTML
+                    if (!matchedTpl) {
+                        matchedTpl = templates.find(t => t.htmlCode && (t.model === 'invite-web' || Number(t.sectionId) === 4 || (t.sectionTitle && t.sectionTitle.includes('ПРИГЛАС'))));
+                    }
+
                     if (matchedTpl && matchedTpl.htmlCode) {
                         inviteData.customHtml = matchedTpl.htmlCode;
                         renderCustomInviteHtml(inviteData.customHtml);
@@ -681,8 +697,6 @@
             } catch(e) {
                 applyDataToDOM();
             }
-        } else {
-            applyDataToDOM();
         }
 
         initCountdown();

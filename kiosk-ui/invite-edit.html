@@ -868,6 +868,8 @@
     // ==========================================
     // ЗАГРУЗКА И ВЫБОР ШАБЛОНА ДИЗАЙНА
     // ==========================================
+    // ЗАГРУЗКА И ВЫБОР ШАБЛОНОВ
+    // ==========================================
     async function loadInviteTemplates() {
         try {
             const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?t=${Date.now()}`);
@@ -878,7 +880,8 @@
                         Number(t.sectionId) === 4 || 
                         (t.sectionTitle && t.sectionTitle.toUpperCase().includes('ПРИГЛАС')) || 
                         t.model === 'invite-web' ||
-                        (t.category && ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'ТУШОО ТОЙ'].includes(t.category.toUpperCase()))
+                        (t.htmlCode && t.htmlCode.length > 100) ||
+                        (t.category && ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'ТУШОО ТОЙ', 'ТОЙ', 'СУННОТ ТОЙ'].includes(t.category.toUpperCase()))
                     );
                 }
             }
@@ -900,18 +903,19 @@
         container.innerHTML = '';
         card.style.display = 'block';
 
-        // Если шаблон еще не выбран, выбираем первый или соответствующий templateId
-        if (!currentTemplateId && availableTemplates.length > 0) {
+        // Если передан templateId из URL — выбираем именно его
+        if (currentTemplateId) {
+            const matched = availableTemplates.find(t => String(t.id) === String(currentTemplateId));
+            if (matched && matched.htmlCode) {
+                currentCustomHtml = matched.htmlCode;
+            }
+        } else if (availableTemplates.length > 0) {
             currentTemplateId = String(availableTemplates[0].id);
             currentCustomHtml = availableTemplates[0].htmlCode || '';
         }
 
         availableTemplates.forEach(tpl => {
             const isSelected = String(tpl.id) === String(currentTemplateId);
-            if (isSelected && tpl.htmlCode && !currentCustomHtml) {
-                currentCustomHtml = tpl.htmlCode;
-            }
-
             const chip = document.createElement('div');
             chip.className = `tpl-chip ${isSelected ? 'active' : ''}`;
             chip.setAttribute('data-id', tpl.id);
@@ -924,7 +928,7 @@
                 currentCustomHtml = tpl.htmlCode || '';
                 document.querySelectorAll('.tpl-chip').forEach(c => c.classList.remove('active'));
                 chip.classList.add('active');
-                if (currentCustomHtml && visualEditorActive) {
+                if (currentCustomHtml) {
                     setupVisualEditor(currentCustomHtml);
                 }
             });
@@ -1257,6 +1261,7 @@
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${SUPABASE_ANON}`,
+                    'apikey': SUPABASE_ANON,
                     'Content-Type': 'text/html; charset=utf-8',
                     'x-upsert': 'true'
                 },
@@ -1268,6 +1273,8 @@
                 id: inviteId,
                 templateId: currentTemplateId,
                 customHtml: fullCleanHtml,
+                isPublished: true,
+                userSaved: true,
                 youtubeUrl: visualYoutubeUrl || document.getElementById('youtube-url')?.value || '',
                 mapUrl: visualMapUrl || '',
                 whatsappPhone: visualWhatsappPhone || '',
@@ -1279,6 +1286,7 @@
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${SUPABASE_ANON}`,
+                    'apikey': SUPABASE_ANON,
                     'Content-Type': 'application/json',
                     'x-upsert': 'true'
                 },
@@ -1286,8 +1294,13 @@
             });
 
             // 3. Показываем финальное окно
-            const origin = window.location.origin || 'https://kiosk394.vercel.app';
-            const finalInviteUrl = `${origin}/kiosk-ui/invite.html?id=${inviteId}`;
+            const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes('file:'))
+                ? window.location.origin 
+                : 'https://kiosk394.vercel.app';
+            let finalInviteUrl = `${origin}/kiosk-ui/invite.html?id=${inviteId}`;
+            if (currentTemplateId) {
+                finalInviteUrl += `&templateId=${encodeURIComponent(currentTemplateId)}`;
+            }
             renderInstantQR(document.getElementById('final-qr-img'), finalInviteUrl, 260);
             document.getElementById('view-invite-link').href = finalInviteUrl;
 
@@ -1324,7 +1337,6 @@
             if (htmlRes.ok) {
                 const savedHtml = await htmlRes.text();
                 if (savedHtml && savedHtml.trim().length > 30) {
-                    isEditMode = true;
                     currentCustomHtml = savedHtml;
                     setupVisualEditor(savedHtml);
                     return;
@@ -1338,17 +1350,21 @@
             if (res.ok) {
                 const data = await res.json();
                 if (data) {
-                    isEditMode = true;
+                    if (!data.isInitial) isEditMode = true;
                     if (data.youtubeUrl) visualYoutubeUrl = data.youtubeUrl;
                     if (data.mapUrl) visualMapUrl = data.mapUrl;
                     if (data.whatsappPhone) visualWhatsappPhone = data.whatsappPhone;
+                    if (data.templateId && !currentTemplateId) currentTemplateId = String(data.templateId);
 
-                    if (data.customHtml) {
+                    if (data.customHtml && data.customHtml.trim().length > 30) {
                         currentCustomHtml = data.customHtml;
                         setupVisualEditor(data.customHtml);
                         return;
                     }
-                    populateForm(data);
+                    if (!data.isInitial) {
+                        populateForm(data);
+                        return;
+                    }
                 }
             }
         } catch(err) {
@@ -1360,9 +1376,21 @@
         if (tplParam) currentTemplateId = String(tplParam);
 
         if (currentTemplateId) {
-            const tpl = availableTemplates.find(t => String(t.id) === String(currentTemplateId));
+            let tpl = availableTemplates.find(t => String(t.id) === String(currentTemplateId));
+            if (!tpl) {
+                // Если шаблон не попал под фильтр availableTemplates, ищем напрямую в облачном settings.json
+                try {
+                    const r = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?t=${Date.now()}`);
+                    if (r.ok) {
+                        const sData = await r.json();
+                        tpl = (sData.templates || []).find(t => String(t.id) === String(currentTemplateId));
+                    }
+                } catch(e) {}
+            }
+
             if (tpl && tpl.htmlCode) {
                 currentCustomHtml = tpl.htmlCode;
+                updateTemplatePickerActiveState();
                 setupVisualEditor(tpl.htmlCode);
                 return;
             }
@@ -1371,6 +1399,7 @@
         if (availableTemplates.length > 0 && availableTemplates[0].htmlCode) {
             currentTemplateId = String(availableTemplates[0].id);
             currentCustomHtml = availableTemplates[0].htmlCode;
+            updateTemplatePickerActiveState();
             setupVisualEditor(availableTemplates[0].htmlCode);
         }
     }
@@ -1441,6 +1470,8 @@
                     id: inviteId,
                     templateId: currentTemplateId,
                     customHtml: currentCustomHtml,
+                    isPublished: true,
+                    userSaved: true,
                     type: document.getElementById('event-type').value,
                     name1: name1,
                     name2: document.getElementById('name2').value.trim(),
@@ -1457,23 +1488,66 @@
                     updatedAt: new Date().toISOString()
                 };
 
+                // 1. Сохраняем .json метаданные
                 const jsonPath = `invites/${inviteId}.json`;
                 await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${jsonPath}`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${SUPABASE_ANON}`,
+                        'apikey': SUPABASE_ANON,
                         'Content-Type': 'application/json',
                         'x-upsert': 'true'
                     },
                     body: JSON.stringify(invitePayload)
                 });
 
+                // 2. Если есть HTML-шаблон, подставляем поля и сохраняем чистый .html файл
+                if (currentCustomHtml && currentCustomHtml.trim().length > 50) {
+                    const names = invitePayload.name2 ? `${invitePayload.name1} & ${invitePayload.name2}` : invitePayload.name1;
+                    const cleanQuote = (invitePayload.quote || '').replace(/«|»/g, '');
+                    const rsvpMsg = encodeURIComponent(`Здравствуйте, ${names}! Мы с радостью подтверждаем наше присутствие на вашем торжестве!`);
+                    const rsvpLink = invitePayload.whatsappPhone 
+                        ? `https://wa.me/${invitePayload.whatsappPhone.replace(/\D/g, '')}?text=${rsvpMsg}`
+                        : '#';
+
+                    const populatedHtml = currentCustomHtml
+                        .replace(/\{\{NAMES\}\}/g, names)
+                        .replace(/\{\{NAME1\}\}/g, invitePayload.name1 || '')
+                        .replace(/\{\{NAME2\}\}/g, invitePayload.name2 || '')
+                        .replace(/\{\{EVENT_TYPE\}\}/g, invitePayload.type || 'ПРИГЛАШЕНИЕ НА ТОРЖЕСТВО')
+                        .replace(/\{\{DATE_DISPLAY\}\}/g, invitePayload.dateDisplay || '')
+                        .replace(/\{\{DATE\}\}/g, invitePayload.date || '')
+                        .replace(/\{\{PHOTO\}\}/g, invitePayload.photo || 'assets/hero_portrait.jpg')
+                        .replace(/\{\{QUOTE\}\}/g, cleanQuote)
+                        .replace(/\{\{VENUE_NAME\}\}/g, invitePayload.venueName || '')
+                        .replace(/\{\{VENUE_ADDRESS\}\}/g, invitePayload.venueAddress || '')
+                        .replace(/\{\{MAP_URL\}\}/g, invitePayload.mapUrl || '#')
+                        .replace(/\{\{RSVP_LINK\}\}/g, rsvpLink)
+                        .replace(/\{\{WHATSAPP_PHONE\}\}/g, invitePayload.whatsappPhone || '');
+
+                    await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/invites/${inviteId}.html`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${SUPABASE_ANON}`,
+                            'apikey': SUPABASE_ANON,
+                            'Content-Type': 'text/html; charset=utf-8',
+                            'x-upsert': 'true'
+                        },
+                        body: populatedHtml
+                    });
+                }
+
                 if (previewYtPlayer && isPreviewPlaying) {
                     try { previewYtPlayer.pauseVideo(); } catch(e) {}
                 }
 
-                const origin = window.location.origin || 'https://kiosk394.vercel.app';
-                const finalInviteUrl = `${origin}/kiosk-ui/invite.html?id=${inviteId}`;
+                const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes('file:'))
+                    ? window.location.origin 
+                    : 'https://kiosk394.vercel.app';
+                let finalInviteUrl = `${origin}/kiosk-ui/invite.html?id=${inviteId}`;
+                if (currentTemplateId) {
+                    finalInviteUrl += `&templateId=${encodeURIComponent(currentTemplateId)}`;
+                }
                 renderInstantQR(document.getElementById('final-qr-img'), finalInviteUrl, 260);
                 document.getElementById('view-invite-link').href = finalInviteUrl;
 
