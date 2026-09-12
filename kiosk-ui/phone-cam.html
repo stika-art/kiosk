@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#141414">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>TRENDUM — Камера с телефона</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -173,7 +176,20 @@
     document.getElementById('btn-send').addEventListener('click', uploadPhoto);
     document.getElementById('btn-retry').addEventListener('click', () => { capturedBlob = null; showScreen('screen-cam'); });
 
+    // Скрываем адресную строку (fullscreen) при первом касании пользователя
+    let fullscreenRequested = false;
+    function tryFullscreen() {
+        if (fullscreenRequested) return;
+        fullscreenRequested = true;
+        const el = document.documentElement;
+        const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+        if (req) req.call(el).catch(() => {});
+    }
+    document.addEventListener('touchstart', tryFullscreen, { once: true });
+    document.addEventListener('click', tryFullscreen, { once: true });
+
     if (sessionId) startCamera('user');
 </script>
 </body>
 </html>
+

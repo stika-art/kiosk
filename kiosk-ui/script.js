@@ -528,6 +528,13 @@ document.addEventListener('DOMContentLoaded', () => {
         stopPaymentPolling();
         stopWebcam();
         stopPhoneCamPolling();
+        // Удаляем файл телефонной сессии из Supabase при выходе
+        if (phoneCamSessionId) {
+            fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/phone-cam/${phoneCamSessionId}.jpg`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+            }).catch(() => {});
+        }
         phoneCamMode = false;
         phoneCamSessionId = null;
         if (photoPreviewConfirm) photoPreviewConfirm.src = '';
@@ -598,6 +605,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (snapBtnEl) snapBtnEl.style.display = 'none';
         if (camSubtitle) camSubtitle.textContent = 'Откройте ссылку на телефоне и сделайте снимок';
         if (phoneCamPanel) phoneCamPanel.classList.add('visible');
+
+        // Удаляем старый файл предыдущей сессии из Supabase (не засоряем базу)
+        if (phoneCamSessionId) {
+            const oldPath = `phone-cam/${phoneCamSessionId}.jpg`;
+            fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${oldPath}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+            }).catch(() => {}); // Игнорируем ошибки удаления
+        }
 
         // Генерируем уникальный session ID
         phoneCamSessionId = 'cam-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
