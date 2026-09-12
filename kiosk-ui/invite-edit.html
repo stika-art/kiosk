@@ -193,10 +193,9 @@
             cursor: not-allowed;
         }
 
-        /* Выбор шаблона дизайна */
+        /* Выбор шаблона дизайна — Вертикальная сетка со скроллом вниз */
         .tpl-chip {
-            flex-shrink: 0;
-            width: 105px;
+            width: 100%;
             background: var(--input-bg);
             border: 2px solid rgba(255,255,255,0.1);
             border-radius: 14px;
@@ -204,6 +203,8 @@
             cursor: pointer;
             transition: all 0.2s ease;
             text-align: center;
+            display: flex;
+            flex-direction: column;
         }
         .tpl-chip.active {
             border-color: var(--primary);
@@ -211,14 +212,14 @@
         }
         .tpl-chip-img {
             width: 100%;
-            height: 75px;
+            height: 90px;
             object-fit: cover;
             display: block;
         }
         .tpl-chip-title {
             font-size: 11px;
             font-weight: 700;
-            padding: 6px 4px;
+            padding: 8px 4px;
             color: #ffffff;
             white-space: nowrap;
             overflow: hidden;
@@ -501,7 +502,7 @@
         <div class="card-title">
             <span>🎨</span> Стиль оформления пригласительного
         </div>
-        <div id="template-chips-container" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch;">
+        <div id="template-chips-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 12px; max-height: 280px; overflow-y: auto; overflow-x: hidden; padding: 4px 2px 8px; touch-action: pan-y; -webkit-overflow-scrolling: touch;">
             <!-- JS dynamic templates -->
         </div>
     </div>

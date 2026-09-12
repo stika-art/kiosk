@@ -402,28 +402,40 @@
             transform: translateY(-2px);
         }
 
-        /* 2-Column Pure Image Grid */
+        /* 2-Column Pure Image Grid — Вертикальный скролл строго вниз */
         .template-grid-2col {
-            column-count: 2;
-            column-gap: 18px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
             overflow-y: auto;
-            padding: 6px 4px 40px 4px;
+            overflow-x: hidden;
+            padding: 10px 8px 60px 8px;
             flex: 1;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE/Edge */
+            align-content: start;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) rgba(255, 255, 255, 0.05);
         }
         .template-grid-2col::-webkit-scrollbar {
-            display: none; /* Chrome/Safari/Chromium */
+            width: 6px;
+        }
+        .template-grid-2col::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 4px;
+        }
+        .template-grid-2col::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
         }
 
         .tile-card {
-            break-inside: avoid;
-            margin-bottom: 18px;
             position: relative;
             width: 100%;
-            border-radius: 22px;
+            aspect-ratio: 3 / 4;
+            border-radius: 24px;
             background: var(--card-bg);
-            border: 1px solid var(--border-subtle);
+            border: 1.5px solid var(--border-subtle);
             overflow: hidden;
             cursor: pointer;
             transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
@@ -432,9 +444,9 @@
 
         .tile-card img {
             width: 100%;
-            height: auto;
+            height: 100%;
             display: block;
-            border-radius: 20px;
+            border-radius: 22px;
             object-fit: cover;
             transition: transform 0.4s ease;
         }
