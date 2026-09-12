@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // TRENDUM KIOSK — ROAST & STANDUP COMIC ENGINE
 // 1. GPT Vision: остроумный стендап-анализ фото + генерация промпта
 // 2. GPT Image 2.5: генерация гротескной карикатуры (Kie.ai chatgpt-2.5)
@@ -264,45 +264,154 @@ async function generateCaricatureViaGptImage({ apiKey, publicPhotoUrl, caricatur
     return publicPhotoUrl;
 }
 
-// 6. Генерация эмоциональной озвучки через ElevenLabs API
-async function generateElevenLabsAudio({ text, elevenlabsKey, voiceId, orderId }) {
-    if (!elevenlabsKey) return null;
+// Разрешение Voice ID (поддержка случайного выбора и кастомных голосов)
+const KNOWN_STANDUP_VOICES = [
+    'ErXwobaYiN019PkySvjV', // Antoni (дерзкий парень-стендапер)
+    'pNInz6obpgDQGcFmaJgB', // Adam (саркастичный комик)
+    '21m00Tcm4TlvDq8ikWAM', // Rachel (ироничная девушка)
+    'EXAVITQu4vr4xnSDxMaL'  // Bella (эмоциональная девушка)
+];
 
-    const targetVoiceId = voiceId || DEFAULT_ELEVEN_VOICE_ID;
-    const url = `https://api.elevenlabs.io/v1/text-to-speech/${targetVoiceId}?output_format=mp3_44100_128`;
+function resolveVoiceId(voiceId) {
+    if (!voiceId || voiceId.toLowerCase() === 'random' || voiceId.toLowerCase() === 'случайный') {
+        const picked = KNOWN_STANDUP_VOICES[Math.floor(Math.random() * KNOWN_STANDUP_VOICES.length)];
+        console.log(`[Roast Voice] Случайно выбран голос: ${picked}`);
+        return picked;
+    }
+    return voiceId;
+}
+
+// 6. Генерация эмоциональной озвучки через Kie.ai (ElevenLabs Multilingual V2)
+async function generateElevenLabsViaKie({ text, apiKey, voiceId, orderId }) {
+    if (!apiKey) return null;
+    const targetVoiceId = resolveVoiceId(voiceId);
 
     try {
-        console.log(`[ElevenLabs] Генерация озвучки для голоса ${targetVoiceId}...`);
+        console.log(`[Kie.ai ElevenLabs] Создание задачи озвучки (голос: ${targetVoiceId})...`);
 
-        const resp = await fetch(url, {
+        const createRes = await fetch(DEFAULT_KIE_URL, {
             method: 'POST',
             headers: {
-                'xi-api-key': elevenlabsKey,
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                text: text,
-                model_id: 'eleven_multilingual_v2',
-                voice_settings: {
-                    stability: 0.35,        // Низкая стабильность = максимальная экспрессия и эмоции
-                    similarity_boost: 0.85, // Четкость тембра
-                    style: 0.55,            // Стилизация под естественную разговорную речь
-                    use_speaker_boost: true
+                model: 'elevenlabs/text-to-speech-multilingual-v2',
+                input: {
+                    text: text,
+                    voice: targetVoiceId
                 }
             })
         });
 
-        if (resp.ok) {
-            const arrayBuffer = await resp.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            const audioUrl = await uploadAudioToCDN(buffer, orderId);
-            console.log('[ElevenLabs] Аудио успешно сгенерировано и сохранено:', audioUrl);
-            return audioUrl;
-        } else {
-            console.warn('[ElevenLabs API Error]', resp.status, await resp.text());
+        if (!createRes.ok) {
+            console.warn('[Kie.ai ElevenLabs Create Error]', await createRes.text());
+            return null;
+        }
+
+        const createData = await createRes.json();
+        const taskId = createData.data?.taskId || createData.taskId || createData.id;
+        if (!taskId) {
+            console.warn('[Kie.ai ElevenLabs] taskId не получен:', createData);
+            return null;
+        }
+
+        console.log(`[Kie.ai ElevenLabs] Задача запущена, taskId: ${taskId}`);
+
+        // Опрос статуса до 25 секунд (генерация аудио обычно 2-4 секунды)
+        const startTime = Date.now();
+        while (Date.now() - startTime < 25000) {
+            await new Promise(r => setTimeout(r, 1500));
+            const recordRes = await fetch(`${KIE_RECORD_URL}?taskId=${taskId}`, {
+                headers: { 'Authorization': `Bearer ${apiKey}` }
+            });
+
+            if (recordRes.ok) {
+                const recordData = await recordRes.json();
+                const taskInfo = recordData.data || recordData;
+                const state = taskInfo.state || taskInfo.status;
+
+                if (state === 'success' || state === 'SUCCESS' || state === 'completed') {
+                    let audioUrl = null;
+                    if (taskInfo.resultJson) {
+                        try {
+                            const parsed = typeof taskInfo.resultJson === 'string' ? JSON.parse(taskInfo.resultJson) : taskInfo.resultJson;
+                            const urls = parsed.resultUrls || parsed.urls || [parsed.url || parsed.audio_url];
+                            audioUrl = urls && urls[0];
+                        } catch(e) {}
+                    }
+                    if (!audioUrl) audioUrl = taskInfo.audio_url || taskInfo.url;
+
+                    if (audioUrl) {
+                        console.log('[Kie.ai ElevenLabs] Аудио успешно сгенерировано:', audioUrl);
+                        try {
+                            const aResp = await fetch(audioUrl);
+                            if (aResp.ok) {
+                                const arrBuf = await aResp.arrayBuffer();
+                                const cdnUrl = await uploadAudioToCDN(Buffer.from(arrBuf), orderId);
+                                if (cdnUrl) return cdnUrl;
+                            }
+                        } catch(e) {}
+                        return audioUrl;
+                    }
+                } else if (state === 'failed' || state === 'FAILED') {
+                    console.warn('[Kie.ai ElevenLabs] Ошибка задачи:', taskInfo);
+                    break;
+                }
+            }
         }
     } catch (e) {
-        console.warn('[ElevenLabs Exception]', e.message);
+        console.warn('[Kie.ai ElevenLabs Exception]', e.message);
+    }
+
+    return null;
+}
+
+// 7. Универсальная озвучка: прямой ElevenLabs или через баланс Kie.ai
+async function generateElevenLabsAudio({ text, elevenlabsKey, apiKey, voiceId, orderId }) {
+    const targetVoiceId = resolveVoiceId(voiceId);
+
+    // 1. Если задан прямой ключ ElevenLabs — пробуем прямой вызов API
+    if (elevenlabsKey) {
+        try {
+            console.log(`[ElevenLabs Direct] Генерация озвучки для голоса ${targetVoiceId}...`);
+            const url = `https://api.elevenlabs.io/v1/text-to-speech/${targetVoiceId}?output_format=mp3_44100_128`;
+
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'xi-api-key': elevenlabsKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    text: text,
+                    model_id: 'eleven_multilingual_v2',
+                    voice_settings: {
+                        stability: 0.35,        // Низкая стабильность = максимальная экспрессия и эмоции
+                        similarity_boost: 0.85, // Четкость тембра
+                        style: 0.55,            // Стилизация под естественную разговорную речь
+                        use_speaker_boost: true
+                    }
+                })
+            });
+
+            if (resp.ok) {
+                const arrayBuffer = await resp.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+                const audioUrl = await uploadAudioToCDN(buffer, orderId);
+                console.log('[ElevenLabs Direct] Аудио успешно сгенерировано и сохранено:', audioUrl);
+                return audioUrl;
+            } else {
+                console.warn('[ElevenLabs Direct Error]', resp.status, await resp.text());
+            }
+        } catch (e) {
+            console.warn('[ElevenLabs Direct Exception]', e.message);
+        }
+    }
+
+    // 2. Если прямого ключа нет (или он выдал ошибку) — генерируем через единый баланс Kie.ai!
+    if (apiKey) {
+        return await generateElevenLabsViaKie({ text, apiKey, voiceId: targetVoiceId, orderId });
     }
 
     return null;
@@ -347,6 +456,7 @@ module.exports = async (req, res) => {
             generateElevenLabsAudio({
                 text: roastData.roast_text,
                 elevenlabsKey: effectiveElevenKey,
+                apiKey: effectiveAggregatorKey,
                 voiceId: elevenlabsVoiceId,
                 orderId: effectiveOrderId
             })

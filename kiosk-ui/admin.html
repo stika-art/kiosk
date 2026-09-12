@@ -1256,23 +1256,25 @@
                 <div style="max-width: 620px;">
                     <div style="margin-bottom: 14px;">
                         <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
-                            🔑 ElevenLabs API Key:
+                            🔑 Прямой ElevenLabs API Key (Необязательно):
                         </label>
-                        <input type="password" id="elevenlabs-key-input" class="admin-input" style="width: 100%;" placeholder="sk_... (из личного кабинета elevenlabs.io)">
-                        <span class="cloud-tip" style="margin-top: 4px; display: block;">Используется для генерации живого реалистичного голоса стендап-комика.</span>
+                        <input type="password" id="elevenlabs-key-input" class="admin-input" style="width: 100%;" placeholder="sk_... (оставьте пустым для списания с Kie.ai)">
+                        <span class="cloud-tip" style="margin-top: 4px; display: block;">💡 <strong>Если оставить пустым</strong> — озвучка будет автоматически списываться с вашего баланса <strong>Kie.ai</strong> (модель <em>elevenlabs/text-to-speech-multilingual-v2</em>)!</span>
                     </div>
 
                     <div style="margin-bottom: 14px;">
                         <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
-                            🗣️ ElevenLabs Voice ID (Голос стендапера):
+                            🗣️ Голос стендапера (Voice ID):
                         </label>
                         <div style="display: flex; gap: 10px;">
-                            <input type="text" id="elevenlabs-voice-input" class="admin-input" style="flex: 1;" placeholder="ErXwobaYiN019PkySvjV (Antoni) или ваш кастомный ID">
-                            <select class="admin-select" style="max-width: 200px;" onchange="document.getElementById('elevenlabs-voice-input').value = this.value">
-                                <option value="ErXwobaYiN019PkySvjV">Antoni (Дерзкий)</option>
-                                <option value="pNInz6obpgDQGcFmaJgB">Adam (Энергичный)</option>
-                                <option value="flq6f7yk4E4fJM5XTYuZ">Michael (Ироничный)</option>
-                                <option value="21m00Tcm4TlvDq8ikWAM">Rachel (Саркастичная)</option>
+                            <input type="text" id="elevenlabs-voice-input" class="admin-input" style="flex: 1;" placeholder="ErXwobaYiN019PkySvjV (Antoni) или random">
+                            <select class="admin-select" style="max-width: 250px;" onchange="document.getElementById('elevenlabs-voice-input').value = this.value">
+                                <option value="ErXwobaYiN019PkySvjV">🎙️ Antoni (Дерзкий)</option>
+                                <option value="pNInz6obpgDQGcFmaJgB">🎙️ Adam (Саркастичный)</option>
+                                <option value="21m00Tcm4TlvDq8ikWAM">🎙️ Rachel (Девушка)</option>
+                                <option value="EXAVITQu4vr4xnSDxMaL">🎙️ Bella (Эмоциональная)</option>
+                                <option value="yoZ06aMxZJJ28mfd3POQ">🎙️ Sam (Ведущий)</option>
+                                <option value="random">🎲 Случайный каждый раз</option>
                             </select>
                         </div>
                     </div>
@@ -3419,48 +3421,119 @@
 
         async function testElevenLabsSpeech() {
             const elKey = (document.getElementById('elevenlabs-key-input')?.value || localStorage.getItem('kiosk_elevenlabs_key') || '').trim();
-            const elVoice = (document.getElementById('elevenlabs-voice-input')?.value || localStorage.getItem('kiosk_elevenlabs_voice_id') || 'ErXwobaYiN019PkySvjV').trim();
+            const kieKey = (document.getElementById('aggregator-key-input')?.value || localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd').trim();
+            let elVoice = (document.getElementById('elevenlabs-voice-input')?.value || localStorage.getItem('kiosk_elevenlabs_voice_id') || 'ErXwobaYiN019PkySvjV').trim();
+            if (elVoice.toLowerCase() === 'random') elVoice = 'ErXwobaYiN019PkySvjV';
             const status = document.getElementById('roast-settings-status');
 
-            if (!elKey) {
-                alert('Пожалуйста, введите ElevenLabs API Key для проверки озвучки');
+            if (!elKey && !kieKey) {
+                alert('Пожалуйста, укажите ключ ElevenLabs или ключ Kie.ai для проверки озвучки');
                 return;
             }
 
             if (status) {
-                status.textContent = '⏳ Генерация пробной фразы комика...';
+                status.textContent = elKey ? '⏳ Генерация через прямой ElevenLabs API...' : '⏳ Генерация через баланс Kie.ai (ElevenLabs Multilingual)...';
                 status.className = 'status-msg';
             }
 
-            try {
-                const sampleText = "Так... [sigh] взгляд человека, который зашёл в молл за бесплатным вайфаем... [chuckle] Уверенность на миллион!";
-                const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${elVoice}?output_format=mp3_44100_128`, {
-                    method: 'POST',
-                    headers: {
-                        'xi-api-key': elKey,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        text: sampleText,
-                        model_id: 'eleven_multilingual_v2',
-                        voice_settings: { stability: 0.35, similarity_boost: 0.85, style: 0.55, use_speaker_boost: true }
-                    })
-                });
+            const sampleText = "Так... [sigh] взгляд человека, который зашёл в молл за бесплатным вайфаем... [chuckle] Уверенность на миллион!";
 
-                if (res.ok) {
-                    const blob = await res.blob();
-                    const audio = new Audio(URL.createObjectURL(blob));
-                    audio.play();
-                    if (status) {
-                        status.textContent = '🔊 Воспроизведение тестового голоса ElevenLabs!';
-                        status.className = 'status-msg success';
-                        setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
+            try {
+                if (elKey) {
+                    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${elVoice}?output_format=mp3_44100_128`, {
+                        method: 'POST',
+                        headers: {
+                            'xi-api-key': elKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            text: sampleText,
+                            model_id: 'eleven_multilingual_v2',
+                            voice_settings: { stability: 0.35, similarity_boost: 0.85, style: 0.55, use_speaker_boost: true }
+                        })
+                    });
+
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        const audio = new Audio(URL.createObjectURL(blob));
+                        audio.play();
+                        if (status) {
+                            status.textContent = '🔊 Воспроизведение голоса ElevenLabs!';
+                            status.className = 'status-msg success';
+                            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
+                        }
+                    } else {
+                        const err = await res.text();
+                        if (status) {
+                            status.textContent = '❌ Ошибка ElevenLabs: ' + err;
+                            status.className = 'status-msg error';
+                        }
                     }
                 } else {
-                    const err = await res.text();
-                    if (status) {
-                        status.textContent = '❌ Ошибка ElevenLabs: ' + err;
-                        status.className = 'status-msg error';
+                    // Генерация через Kie.ai createTask
+                    const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${kieKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            model: 'elevenlabs/text-to-speech-multilingual-v2',
+                            input: {
+                                text: sampleText,
+                                voice: elVoice
+                            }
+                        })
+                    });
+
+                    const createData = await createRes.json();
+                    if (createData.code !== 200) {
+                        if (status) {
+                            status.textContent = '❌ Ответ Kie.ai: ' + (createData.msg || JSON.stringify(createData));
+                            status.className = 'status-msg error';
+                        }
+                        return;
+                    }
+
+                    const taskId = createData.data?.taskId || createData.taskId;
+                    if (status) status.textContent = '⏳ Задача создана на Kie.ai, ожидаем аудио...';
+
+                    let audioUrl = null;
+                    for (let i = 0; i < 15; i++) {
+                        await new Promise(r => setTimeout(r, 1500));
+                        const checkRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+                            headers: { 'Authorization': `Bearer ${kieKey}` }
+                        });
+                        const checkData = await checkRes.json();
+                        const tInfo = checkData.data || checkData;
+                        const state = tInfo.state || tInfo.status;
+                        if (state === 'success' || state === 'SUCCESS' || state === 'completed') {
+                            if (tInfo.resultJson) {
+                                try {
+                                    const parsed = typeof tInfo.resultJson === 'string' ? JSON.parse(tInfo.resultJson) : tInfo.resultJson;
+                                    audioUrl = (parsed.resultUrls && parsed.resultUrls[0]) || parsed.url;
+                                } catch(e) {}
+                            }
+                            if (!audioUrl) audioUrl = tInfo.audio_url || tInfo.url;
+                            break;
+                        } else if (state === 'failed' || state === 'FAILED') {
+                            break;
+                        }
+                    }
+
+                    if (audioUrl) {
+                        const audio = new Audio(audioUrl);
+                        audio.play();
+                        if (status) {
+                            status.textContent = '🔊 Воспроизведение тестового голоса через Kie.ai!';
+                            status.className = 'status-msg success';
+                            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
+                        }
+                    } else {
+                        if (status) {
+                            status.textContent = '⚠️ Не удалось получить аудио от Kie.ai. Проверьте баланс кредитов.';
+                            status.className = 'status-msg error';
+                        }
                     }
                 }
             } catch(e) {
