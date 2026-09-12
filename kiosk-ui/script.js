@@ -5,6 +5,8 @@
 let selectedStyle = 'ROBLOX HERO';
 let selectedStylePhoto = 'images/photo1.jpg';
 let selectedStylePrice = 290;
+let selectedStyleModel = 'face-swap';
+let selectedStylePrompt = 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere';
 let isSelectingCard = false;
 let isAttractClosing = false;
 let currentCategory = 'ФОТО';
@@ -13,20 +15,20 @@ let activeTemplateIndex = 0;
 // ТРЕКОВЫЕ ШАБЛОНЫ ДЛЯ 3D COVERFLOW ГАЛЕРЕИ (STYLE DRIBBLE)
 const templateCatalog = {
     'ФОТО': [
-        { id: 1, title: 'ROBLOX HERO', desc: 'СТАНЬ ГЕРОЕМ ЛЮБИМОЙ ИГРЫ', img: 'images/photo1.jpg' },
-        { id: 2, title: 'CYBER SAMURAI', desc: 'КИБЕРПАНК ВОИН 2077', img: 'images/photo3.jpg' },
-        { id: 3, title: 'ANIME WORLD', desc: 'АНИМЕ ГЕРОЙ В СОЧНЫХ ЦВЕТАХ', img: 'images/photo2.jpg' },
-        { id: 4, title: 'FORBES COVER', desc: 'ТЫ НА ГЛАВНОЙ СТРАНИЦЕ FORBES', img: 'assets/hero_portrait.jpg' },
-        { id: 5, title: 'GIGACHAD SIGMA', desc: 'ХАРИЗМА И СТИЛЬ 100%', img: 'assets/hero_avatar.jpg' }
+        { id: 1, title: 'ROBLOX HERO', desc: 'СТАНЬ ГЕРОЕМ ЛЮБИМОЙ ИГРЫ', img: 'images/photo1.jpg', model: 'face-swap', prompt: 'Roblox hero blocky style' },
+        { id: 2, title: 'CYBER SAMURAI', desc: 'КИБЕРПАНК ВОИН 2077', img: 'images/photo3.jpg', model: 'face-swap', prompt: 'Cyberpunk samurai in neon armor' },
+        { id: 3, title: 'ANIME WORLD', desc: 'АНИМЕ ГЕРОЙ В СОЧНЫХ ЦВЕТАХ', img: 'images/photo2.jpg', model: 'face-swap', prompt: 'Anime style hero' },
+        { id: 4, title: 'FORBES COVER', desc: 'ТЫ НА ГЛАВНОЙ СТРАНИЦЕ FORBES', img: 'assets/hero_portrait.jpg', model: 'face-swap', prompt: 'Forbes magazine cover' },
+        { id: 5, title: 'GIGACHAD SIGMA', desc: 'ХАРИЗМА И СТИЛЬ 100%', img: 'assets/hero_avatar.jpg', model: 'face-swap', prompt: 'Sigma male portrait' }
     ],
     'ВИДЕО': [
-        { id: 1, title: 'NEON MOTION', desc: 'ОЖИВИ СВОЙ ПОРТРЕТ В НЕОНЕ', img: 'images/photo3.jpg' },
-        { id: 2, title: 'RETRO 90S VHS', desc: 'КИНЕМАТОГРАФИЧНЫЙ РЕТРО ЭФФЕКТ', img: 'images/photo1.jpg' },
-        { id: 3, title: 'CYBER ROBOT', desc: 'ФУТУРИСТИЧНАЯ АНИМАЦИЯ', img: 'assets/hero_robot.jpg' }
+        { id: 1, title: 'NEON MOTION', desc: 'ОЖИВИ СВОЙ ПОРТРЕТ В НЕОНЕ', img: 'images/photo3.jpg', model: 'kling-video', prompt: 'Neon light streaks swirling around cyberpunk hero' },
+        { id: 2, title: 'RETRO 90S VHS', desc: 'КИНЕМАТОГРАФИЧНЫЙ РЕТРО ЭФФЕКТ', img: 'images/photo1.jpg', model: 'kling-video', prompt: 'Vintage 90s VHS tape glitch effect' },
+        { id: 3, title: 'CYBER ROBOT', desc: 'ФУТУРИСТИЧНАЯ АНИМАЦИЯ', img: 'assets/hero_robot.jpg', model: 'kling-video', prompt: 'Futuristic cyborg awakening' }
     ],
     'ТРЕНДЫ': [
-        { id: 1, title: 'TIKTOK DANCE', desc: 'ВИРУСНЫЙ ТАНЦЕВАЛЬНЫЙ ЧЕЛЛЕНДЖ', img: 'assets/hero_robot.jpg' },
-        { id: 2, title: 'REELS VIBE', desc: 'ПОПУЛЯРНЫЙ ТРЕНД ИЗ ИНСТАГРАМ', img: 'assets/hero_avatar.jpg' }
+        { id: 1, title: 'TIKTOK DANCE', desc: 'ВИРУСНЫЙ ТАНЦЕВАЛЬНЫЙ ЧЕЛЛЕНДЖ', img: 'assets/hero_robot.jpg', model: 'kling-video', prompt: 'TikTok dance animation' },
+        { id: 2, title: 'REELS VIBE', desc: 'ПОПУЛЯРНЫЙ ТРЕНД ИЗ ИНСТАГРАМ', img: 'assets/hero_avatar.jpg', model: 'face-swap', prompt: 'Reels trending aesthetic' }
     ]
 };
 
@@ -51,16 +53,16 @@ try {
 
 if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.getItem('kiosk_templates_v2') === null)) {
     masterTemplates = [
-        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290 },
-        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350 },
-        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290 },
-        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390 },
-        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350 },
-        { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450 },
-        { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450 },
-        { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490 },
-        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290 },
-        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290 }
+        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'face-swap', prompt: 'Cute Pixar 3D animated character portrait, soft Disney lighting, vibrant colors, retain facial likeness' },
+        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'face-swap', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
+        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'face-swap', prompt: 'Trending Instagram aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
+        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'face-swap', prompt: 'Forbes magazine cover, elegant business suit, powerful charismatic gaze, studio magazine lighting' },
+        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'face-swap', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
+        { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'kling-video', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
+        { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'kling-video', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
+        { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'kling-video', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
+        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'face-swap', prompt: 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere' },
+        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'face-swap', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' }
     ];
 }
 
@@ -191,12 +193,14 @@ function renderGridTemplates() {
         card.appendChild(img);
         card.appendChild(priceBadge);
 
-        // При клике на карточку — сразу переходим к экрану оплаты oBusiness!
+        // При клике на карточку — сразу переходим к экрану оплаты Finik ELQR!
         card.addEventListener('click', () => {
             if (isAttractClosing) return; // поглощаем клик закрытия заставки
             selectedStyle = item.title;
             selectedStylePhoto = item.img;
             selectedStylePrice = itemPrice;
+            selectedStyleModel = item.model || 'face-swap';
+            selectedStylePrompt = item.prompt || '';
             closeTemplateGallery();
             openKioskFlow();
         });
@@ -496,27 +500,66 @@ document.addEventListener('DOMContentLoaded', () => {
         capturedPhotoData = canvasEl.toDataURL('image/jpeg', 0.95);
     }
 
-    // 4. ОБРАБОТКА И СОЗДАНИЕ ПОРТРЕТА (БЕЗ УПОМИНАНИЯ ИИ / НЕЙРОСЕТЕЙ)
-    function runAIGeneration() {
+    // 4. ОБРАБОТКА И СОЗДАНИЕ ПОРТРЕТА ЧЕРЕЗ ИИ ШЛЮЗ
+    async function runAIGeneration() {
+        const modelNames = {
+            'face-swap': 'Face Swap',
+            'flux-pulid': 'FLUX.1',
+            'kling-video': 'Kling AI',
+            'gemini-imagen': 'Gemini',
+            'chatgpt-dalle': 'DALL-E'
+        };
+        const currentModelName = modelNames[selectedStyleModel] || 'AI';
+
         const statuses = [
-            `Анализ ракурса и стиля ${selectedStyle}...`,
-            `Стилизация вашего портрета...`,
+            `Анализ ракурса и геометрии лица...`,
+            `Подготовка модели ${currentModelName}...`,
+            `Генерация портрета в стиле "${selectedStyle}"...`,
             `Применение кинематографичного освещения...`,
-            `Создание финального фото в высоком разрешении...`
+            `Создание финального изображения в высоком разрешении...`
         ];
 
         let idx = 0;
+        if (aiStatusText) aiStatusText.textContent = statuses[0];
+
         const interval = setInterval(() => {
             idx++;
-            if (idx < statuses.length) {
+            if (idx < statuses.length && aiStatusText) {
                 aiStatusText.textContent = statuses[idx];
-            } else {
-                clearInterval(interval);
-                // Show result image
-                resultImg.src = selectedStylePhoto;
-                showStep(stepResult);
             }
-        }, 1200);
+        }, 1300);
+
+        let finalResultUrl = selectedStylePhoto;
+
+        try {
+            const resp = await fetch('/api/ai/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    photoData: capturedPhotoData,
+                    templateImg: selectedStylePhoto,
+                    prompt: selectedStylePrompt,
+                    model: selectedStyleModel,
+                    title: selectedStyle,
+                    orderId: currentOrderId
+                })
+            });
+
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data.success && data.resultUrl) {
+                    finalResultUrl = data.resultUrl;
+                }
+            }
+        } catch (err) {
+            console.warn('[AI Pipeline] Ошибка генерации, переключаем на превью стиля:', err);
+        }
+
+        clearInterval(interval);
+        if (resultImg) {
+            resultImg.src = finalResultUrl;
+        }
+        showStep(stepResult);
     }
 
     // 5. FINISH & TEMPLATE SELECTION

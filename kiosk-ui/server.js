@@ -181,6 +181,33 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    // МАРШРУТ ГЕНЕРАЦИИ ИИ
+    if (req.url.startsWith('/api/ai/generate') && req.method === 'POST') {
+        const generateHandler = require('./api/ai/generate');
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', async () => {
+            req.body = body;
+            const fakeRes = {
+                setHeader: (k, v) => res.setHeader(k, v),
+                status: (code) => ({
+                    json: (data) => {
+                        res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
+                        res.end(JSON.stringify(data));
+                    },
+                    end: () => res.end()
+                })
+            };
+            try {
+                await generateHandler(req, fakeRes);
+            } catch (err) {
+                res.writeHead(500, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: err.message }));
+            }
+        });
+        return;
+    }
+
     // Очищаем URL от параметров ?v=9999 для правильного поиска файлов на диске Windows
     const cleanPath = req.url.split('?')[0];
     let reqPath = cleanPath === '/' ? '/index.html' : cleanPath;

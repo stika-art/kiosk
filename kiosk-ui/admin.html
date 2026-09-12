@@ -385,6 +385,62 @@
             border-color: rgba(255, 255, 255, 0.08);
         }
 
+        .btn-edit {
+            background: rgba(199, 255, 0, 0.15);
+            border: 1px solid rgba(199, 255, 0, 0.4);
+            color: #c7ff00;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-right: 4px;
+        }
+
+        .btn-edit:hover {
+            background: #c7ff00;
+            color: #07090f;
+            box-shadow: 0 0 12px rgba(199, 255, 0, 0.5);
+        }
+
+        .model-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 0.5px;
+            background: rgba(0, 240, 255, 0.12);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            color: #00F0FF;
+            white-space: nowrap;
+        }
+
+        .model-badge.kling {
+            background: rgba(255, 42, 95, 0.15);
+            border-color: rgba(255, 42, 95, 0.4);
+            color: #ff2a5f;
+        }
+
+        .model-badge.pulid {
+            background: rgba(199, 255, 0, 0.15);
+            border-color: rgba(199, 255, 0, 0.4);
+            color: #c7ff00;
+        }
+
+        .prompt-preview-cell {
+            max-width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: rgba(255, 255, 255, 0.7);
+            font-family: monospace;
+            font-size: 12px;
+        }
+
         .status-msg {
             min-height: 22px;
             font-size: 14px;
@@ -554,27 +610,55 @@
                 </div>
 
                 <div class="form-row">
-                    <select id="tpl-cat-select" class="admin-select"></select>
+                    <select id="tpl-cat-select" class="admin-select" style="max-width: 170px;" title="Категория"></select>
                     <input type="text" id="tpl-title-input" class="admin-input" placeholder="Название шаблона (напр: CYBER SAMURAI)...">
-                    <input type="number" id="tpl-price-input" class="admin-input" style="max-width: 160px;" placeholder="Цена (сом, напр: 290)" min="10" step="10">
+                    <input type="number" id="tpl-price-input" class="admin-input" style="max-width: 140px;" placeholder="Цена (сом)" min="10" step="10">
+                    <select id="tpl-model-select" class="admin-select" style="max-width: 250px;" title="Модель нейросети">
+                        <option value="face-swap">👤 Face Swap (100% лицо, InsightFace)</option>
+                        <option value="flux-pulid">⚡ FLUX.1 + PuLID (Сцена + лицо)</option>
+                        <option value="gemini-imagen">🎨 Google Gemini / Imagen 3</option>
+                        <option value="kling-video">🎬 Kling AI (Видео ролик 5 сек)</option>
+                        <option value="chatgpt-dalle">🤖 ChatGPT / DALL-E 3</option>
+                    </select>
                 </div>
-                <div class="form-row">
-                    <input type="text" id="tpl-img-input" class="admin-input" placeholder="Путь к фото (напр: assets/man.jpg или images/photo1.jpg)...">
-                    <button class="btn-primary" onclick="addTemplate()">+ Добавить шаблон</button>
-                    <button type="button" class="btn-upload" onclick="syncAllToCloudManual('tpl-status')" style="margin-left: 10px;" title="Сохранить и отправить шаблоны в киоск">☁️ Синхронизировать с киоском</button>
+
+                <div class="form-row" style="align-items: flex-start; gap: 16px; margin-top: 10px;">
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 13px; color: #00F0FF; font-weight: 700; letter-spacing: 0.5px;">📝 Текстовый промпт для нейросети (Prompt):</label>
+                        <textarea id="tpl-prompt-input" class="admin-input" style="height: 70px; resize: vertical; font-family: monospace; font-size: 13px; line-height: 1.4;" placeholder="Опишите сцену: напр. Futuristic cyberpunk male samurai in neon carbon armor, rainy Tokyo street, volumetric neon lighting, cinematic 8k, photorealistic..."></textarea>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 13px; color: #C7FF00; font-weight: 700; letter-spacing: 0.5px;">🖼️ Обложка шаблона (Загрузка в Base64 или путь):</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="file" id="tpl-file-input" accept="image/*" style="display: none;" onchange="handleTemplateFileSelect(event)">
+                            <button type="button" class="btn-upload" onclick="document.getElementById('tpl-file-input').click()" style="padding: 10px 14px; font-size: 12px; background: rgba(199,255,0,0.15); border-color: #C7FF00; color: #C7FF00;">📁 Загрузить файл</button>
+                            <input type="text" id="tpl-img-input" class="admin-input" placeholder="Путь к фото или base64 (data:image/...)" style="font-size: 12px;" oninput="handleTemplateImgInput(this.value)">
+                            <div id="tpl-img-preview-box" style="width: 48px; height: 48px; border: 1px solid rgba(0,240,255,0.4); border-radius: 8px; overflow: hidden; background: #000; flex-shrink: 0; display: none;">
+                                <img id="tpl-img-preview" src="" style="width: 100%; height: 100%; object-fit: cover;">
+                            </div>
+                        </div>
+                        <span class="cloud-tip" style="margin-top: 4px;">Файл автоматически конвертируется в <strong>Base64</strong> и встраивается в шаблон.</span>
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top: 12px; align-items: center;">
+                    <button class="btn-primary" id="tpl-submit-btn" onclick="addOrUpdateTemplate()">+ Добавить шаблон</button>
+                    <button type="button" id="tpl-cancel-edit-btn" class="btn-del" style="display: none; margin-left: 10px; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); color: #ccc;" onclick="cancelTemplateEdit()">✕ Отмена</button>
+                    <button type="button" class="btn-upload" onclick="syncAllToCloudManual('tpl-status')" style="margin-left: auto;" title="Сохранить и отправить шаблоны в киоск">☁️ Синхронизировать с киоском</button>
                 </div>
                 <div id="tpl-status" class="status-msg"></div>
 
-                <table class="items-table">
+                <table class="items-table" style="margin-top: 16px;">
                     <thead>
                         <tr>
-                            <th style="width: 50px;">#</th>
-                            <th style="width: 80px;">Превью</th>
+                            <th style="width: 40px;">#</th>
+                            <th style="width: 65px;">Превью</th>
                             <th>Название шаблона</th>
-                            <th>Категория</th>
-                            <th>Цена</th>
-                            <th>Путь к файлу</th>
-                            <th style="width: 170px; text-align: right;">Порядок / Действие</th>
+                            <th style="width: 110px;">Категория</th>
+                            <th style="width: 150px;">Модель ИИ</th>
+                            <th>Промпт</th>
+                            <th style="width: 100px;">Цена</th>
+                            <th style="width: 190px; text-align: right;">Действия</th>
                         </tr>
                     </thead>
                     <tbody id="templates-table-body">
@@ -773,16 +857,16 @@
                 if (tpls) return JSON.parse(tpls);
             } catch(e) {}
             return [
-                { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290 },
-                { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350 },
-                { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290 },
-                { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390 },
-                { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350 },
-                { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450 },
-                { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450 },
-                { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490 },
-                { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290 },
-                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290 }
+                { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'face-swap', prompt: 'Cute Pixar 3D animated character portrait, soft Disney lighting, vibrant colors, retain facial likeness' },
+                { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'face-swap', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
+                { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'face-swap', prompt: 'Trending Instagram aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
+                { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'face-swap', prompt: 'Forbes magazine cover, elegant business suit, powerful charismatic gaze, studio magazine lighting' },
+                { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'face-swap', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
+                { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'kling-video', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
+                { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'kling-video', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
+                { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'kling-video', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
+                { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'face-swap', prompt: 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere' },
+                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'face-swap', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' }
             ];
         }
 
@@ -963,7 +1047,43 @@
             });
         }
 
-        // TEMPLATES LOGIC
+        // TEMPLATES LOGIC (WITH PROMPT, MODEL, BASE64 PREVIEW, AND EDITING)
+        let editingTemplateId = null;
+
+        function getModelBadge(model) {
+            const m = model || 'face-swap';
+            if (m === 'face-swap') return '<span class="model-badge">👤 Face Swap</span>';
+            if (m === 'flux-pulid') return '<span class="model-badge pulid">⚡ FLUX + PuLID</span>';
+            if (m === 'kling-video') return '<span class="model-badge kling">🎬 Kling AI</span>';
+            if (m === 'gemini-imagen') return '<span class="model-badge">🎨 Gemini</span>';
+            if (m === 'chatgpt-dalle') return '<span class="model-badge">🤖 DALL-E</span>';
+            return `<span class="model-badge">${m}</span>`;
+        }
+
+        function handleTemplateFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result;
+                document.getElementById('tpl-img-input').value = base64Data;
+                handleTemplateImgInput(base64Data);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleTemplateImgInput(val) {
+            const previewBox = document.getElementById('tpl-img-preview-box');
+            const previewImg = document.getElementById('tpl-img-preview');
+            if (val && val.trim().length > 5) {
+                previewImg.src = val.trim();
+                previewBox.style.display = 'block';
+            } else {
+                previewBox.style.display = 'none';
+            }
+        }
+
         function renderTemplates() {
             const tbody = document.getElementById('templates-table-body');
             tbody.innerHTML = '';
@@ -971,16 +1091,22 @@
             templates.forEach((tpl, idx) => {
                 const tr = document.createElement('tr');
                 const priceVal = tpl.price || 290;
+                const modelBadge = getModelBadge(tpl.model);
+                const promptText = tpl.prompt ? tpl.prompt.trim() : '—';
+                const promptEscaped = promptText.replace(/"/g, '&quot;');
+
                 tr.innerHTML = `
                     <td style="color: rgba(255,255,255,0.4);">${idx + 1}</td>
                     <td><img src="${tpl.img}" alt="${tpl.title}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'"></td>
                     <td><strong>${tpl.title}</strong></td>
                     <td><span class="cat-tag">${tpl.category}</span></td>
+                    <td>${modelBadge}</td>
+                    <td><div class="prompt-preview-cell" title="${promptEscaped}">${promptText}</div></td>
                     <td><span style="color: #c7ff00; font-weight: 800; font-family: 'Orbitron', sans-serif;">${priceVal} сом</span></td>
-                    <td style="color: rgba(255,255,255,0.6); font-family: monospace; font-size: 13px;">${tpl.img}</td>
                     <td style="text-align: right; white-space: nowrap;">
                         <button class="btn-move" onclick="moveTemplate(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
                         <button class="btn-move" onclick="moveTemplate(${idx}, 1)" ${idx === templates.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
+                        <button class="btn-edit" onclick="editTemplate(${tpl.id})" title="Редактировать промпт, модель, цену и обложку">✏️ Ред.</button>
                         <button class="btn-del" onclick="deleteTemplate(${tpl.id})">Удалить</button>
                     </td>
                 `;
@@ -999,41 +1125,122 @@
             renderTemplates();
         }
 
-        function addTemplate() {
+        function editTemplate(id) {
+            const tpl = templates.find(t => t.id === id);
+            if (!tpl) return;
+
+            editingTemplateId = id;
+            document.getElementById('tpl-cat-select').value = tpl.category || 'ФОТО';
+            document.getElementById('tpl-title-input').value = tpl.title || '';
+            document.getElementById('tpl-price-input').value = tpl.price || 290;
+            document.getElementById('tpl-model-select').value = tpl.model || 'face-swap';
+            document.getElementById('tpl-prompt-input').value = tpl.prompt || '';
+            document.getElementById('tpl-img-input').value = tpl.img || '';
+
+            handleTemplateImgInput(tpl.img || '');
+
+            const submitBtn = document.getElementById('tpl-submit-btn');
+            const cancelBtn = document.getElementById('tpl-cancel-edit-btn');
+            submitBtn.textContent = '💾 Сохранить изменения';
+            submitBtn.style.background = '#c7ff00';
+            submitBtn.style.color = '#000';
+            cancelBtn.style.display = 'inline-block';
+
+            // Плавный скролл к форме редактирования
+            document.getElementById('tab-content-tpls').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelTemplateEdit() {
+            editingTemplateId = null;
+            document.getElementById('tpl-title-input').value = '';
+            document.getElementById('tpl-price-input').value = '';
+            document.getElementById('tpl-prompt-input').value = '';
+            document.getElementById('tpl-img-input').value = '';
+            document.getElementById('tpl-model-select').value = 'face-swap';
+            document.getElementById('tpl-file-input').value = '';
+            handleTemplateImgInput('');
+
+            const submitBtn = document.getElementById('tpl-submit-btn');
+            const cancelBtn = document.getElementById('tpl-cancel-edit-btn');
+            submitBtn.textContent = '+ Добавить шаблон';
+            submitBtn.style.background = '';
+            submitBtn.style.color = '';
+            cancelBtn.style.display = 'none';
+        }
+
+        function addOrUpdateTemplate() {
             const catSelect = document.getElementById('tpl-cat-select');
             const titleInput = document.getElementById('tpl-title-input');
             const priceInput = document.getElementById('tpl-price-input');
+            const modelSelect = document.getElementById('tpl-model-select');
+            const promptInput = document.getElementById('tpl-prompt-input');
             const imgInput = document.getElementById('tpl-img-input');
             const status = document.getElementById('tpl-status');
 
             const category = catSelect.value;
             const title = titleInput.value.trim();
             const price = Number(priceInput.value) || 290;
+            const model = modelSelect.value || 'face-swap';
+            const prompt = promptInput.value.trim();
             const img = imgInput.value.trim();
 
             if (!title || !img) {
-                status.textContent = '❌ Заполните название шаблона и путь к фото';
+                status.textContent = '❌ Заполните название шаблона и добавьте обложку (фото или base64)';
                 status.className = 'status-msg error';
                 return;
             }
 
-            const newId = Date.now();
-            templates.push({ id: newId, category, title, img, price });
+            if (editingTemplateId) {
+                // РЕЖИМ РЕДАКТИРОВАНИЯ
+                const targetIdx = templates.findIndex(t => t.id === editingTemplateId);
+                if (targetIdx !== -1) {
+                    templates[targetIdx] = {
+                        ...templates[targetIdx],
+                        category,
+                        title,
+                        price,
+                        model,
+                        prompt,
+                        img
+                    };
+                    status.textContent = `✅ Шаблон "${title}" успешно обновлён`;
+                    status.className = 'status-msg success';
+                }
+                cancelTemplateEdit();
+            } else {
+                // РЕЖИМ ДОБАВЛЕНИЯ НОВОГО ШАБЛОНА
+                const newId = Date.now();
+                templates.push({
+                    id: newId,
+                    category,
+                    title,
+                    price,
+                    model,
+                    prompt,
+                    img
+                });
+
+                titleInput.value = '';
+                priceInput.value = '';
+                promptInput.value = '';
+                imgInput.value = '';
+                document.getElementById('tpl-file-input').value = '';
+                handleTemplateImgInput('');
+
+                status.textContent = `✅ Шаблон "${title}" (${price} сом) успешно добавлен`;
+                status.className = 'status-msg success';
+            }
+
             localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
             syncAllToCloud();
-
-            titleInput.value = '';
-            priceInput.value = '';
-            imgInput.value = '';
-            status.textContent = `✅ Шаблон "${title}" (${price} сом) успешно добавлен`;
-            status.className = 'status-msg success';
-
             renderTemplates();
-            setTimeout(() => { status.textContent = ''; }, 3000);
+
+            setTimeout(() => { status.textContent = ''; }, 3500);
         }
 
         function deleteTemplate(id) {
             if (!confirm('Удалить этот шаблон?')) return;
+            if (editingTemplateId === id) cancelTemplateEdit();
             templates = templates.filter(t => t.id !== id);
             localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
             syncAllToCloud();
