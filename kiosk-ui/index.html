@@ -533,6 +533,85 @@
             margin-bottom: 24px;
         }
 
+        /* Переключатель источника камеры */
+        .cam-source-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 18px;
+        }
+        .cam-source-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            border-radius: 50px;
+            border: 1.5px solid rgba(212,160,67,0.35);
+            background: rgba(30,30,30,0.7);
+            color: rgba(255,255,255,0.55);
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .cam-source-tab.active {
+            background: rgba(212,160,67,0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .cam-source-tab svg { flex-shrink: 0; }
+
+        /* Панель QR телефона */
+        #phone-cam-panel {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            padding: 20px;
+            background: rgba(20,20,20,0.9);
+            border: 1.5px solid rgba(212,160,67,0.3);
+            border-radius: 18px;
+            margin-bottom: 20px;
+        }
+        #phone-cam-panel.visible { display: flex; }
+        #phone-qr-img {
+            width: 200px;
+            height: 200px;
+            border-radius: 12px;
+            background: #fff;
+            padding: 6px;
+        }
+        .phone-cam-instruction {
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            line-height: 1.5;
+            max-width: 300px;
+        }
+        .phone-cam-instruction strong { color: var(--primary); }
+        #phone-cam-status {
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px;
+            color: var(--text-dim);
+            letter-spacing: 0.8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .pulse-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: pulse-anim 1.4s ease-in-out infinite;
+        }
+        @keyframes pulse-anim {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.35; transform: scale(0.65); }
+        }
+
         /* Camera View */
         .webcam-box {
             position: relative;
@@ -545,16 +624,22 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(212, 160, 67, 0.15);
             border-radius: 20px;
             overflow: hidden;
+            /* GPU-ускорение — убирает программный рендеринг CPU */
+            contain: strict;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            will-change: contents;
         }
 
         #webcam {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scaleX(-1);
-            -webkit-transform: scaleX(-1);
+            transform: scaleX(-1) translateZ(0);
+            -webkit-transform: scaleX(-1) translateZ(0);
             will-change: transform;
             backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
         }
 
         .webcam-hud {
@@ -1163,9 +1248,22 @@
         <!-- STEP 1: CAMERA PREVIEW -->
         <div id="step-camera" class="step-view">
             <h2 class="modal-title">СЪЁМКА ФОТО</h2>
-            <p class="modal-subtitle">Встаньте по центру и смотрите в камеру</p>
-            
-            <div class="webcam-box">
+            <p class="modal-subtitle" id="cam-subtitle">Встаньте по центру и смотрите в камеру</p>
+
+            <!-- ПЕРЕКЛЮЧАТЕЛЬ ИСТОЧНИКА КАМЕРЫ -->
+            <div class="cam-source-tabs">
+                <button type="button" class="cam-source-tab active" id="tab-kiosk-cam">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    КАМЕРА КИОСКА
+                </button>
+                <button type="button" class="cam-source-tab" id="tab-phone-cam">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                    КАМЕРА ТЕЛЕФОНА
+                </button>
+            </div>
+
+            <!-- ПРЕВЬЮ КАМЕРЫ КИОСКА -->
+            <div class="webcam-box" id="webcam-live-box">
                 <video id="webcam" autoplay playsinline muted></video>
                 <canvas id="photo-canvas" style="display:none;"></canvas>
                 <div class="webcam-hud">
@@ -1177,8 +1275,22 @@
                 </div>
             </div>
 
+            <!-- ПАНЕЛЬ QR ДЛЯ КАМЕРЫ ТЕЛЕФОНА -->
+            <div id="phone-cam-panel">
+                <img id="phone-qr-img" src="" alt="QR-код для телефона">
+                <p class="phone-cam-instruction">
+                    Отсканируйте QR-код камерой телефона.<br>
+                    Откройте ссылку, сделайте снимок —<br>
+                    <strong>фото появится на экране киоска.</strong>
+                </p>
+                <div id="phone-cam-status">
+                    <div class="pulse-dot"></div>
+                    ОЖИДАНИЕ ФОТО С ТЕЛЕФОНА...
+                </div>
+            </div>
+
             <!-- ВЫБОР ТАЙМЕРА ДЛЯ СЪЁМКИ (3, 5, 8, 10 СЕКУНД) -->
-            <div class="timer-select-wrapper">
+            <div class="timer-select-wrapper" id="timer-select-wrapper">
                 <span class="timer-select-label">ТАЙМЕР СЪЁМКИ:</span>
                 <div class="timer-options">
                     <button type="button" class="timer-btn active" data-timer="3">3 СЕК</button>
@@ -1195,6 +1307,7 @@
                 </button>
             </div>
         </div>
+
 
         <!-- STEP 1.5: CONFIRM & RETAKE PHOTO -->
         <div id="step-confirm" class="step-view" style="display:none;">

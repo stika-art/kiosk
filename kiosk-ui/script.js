@@ -480,6 +480,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let capturedPhotoData = null;
     let currentOrderId = null;
     let paymentPollTimer = null;
+    let phoneCamPollTimer = null;       // полинг загруженного фото с телефона
+    let phoneCamSessionId = null;       // уникальный ID сессии телефонной камеры
+    let phoneCamMode = false;           // true = гость использует телефонную камеру
+
+    // Supabase для мгновенного получения фото с телефона (без backend)
+    const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
+    const SUPABASE_BUCKET = 'kiosk-media';
+
 
     // ШАГ 1: ОТКРЫТИЕ ПОТОКА — СРАЗУ ЭКРАН ОПЛАТЫ OBUSINESS
     window.openKioskFlow = function() {
@@ -499,7 +508,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (retakeBtn) {
         retakeBtn.addEventListener('click', () => {
             showStep(stepCamera);
-            startWebcam();
+            // Если был режим телефона — восстановим его UI
+            if (phoneCamMode) {
+                switchToPhoneCam();
+            } else {
+                startWebcam();
+            }
         });
     }
 
@@ -513,6 +527,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeKioskFlow() {
         stopPaymentPolling();
         stopWebcam();
+        stopPhoneCamPolling();
+        phoneCamMode = false;
+        phoneCamSessionId = null;
         if (photoPreviewConfirm) photoPreviewConfirm.src = '';
         if (resultVideo) {
             try {
@@ -535,6 +552,114 @@ document.addEventListener('DOMContentLoaded', () => {
         countdownOverlay.textContent = '';
         currentOrderId = null;
     }
+
+    // ============================================================
+    //  ПЕРЕКЛЮЧЕНИЕ ИСТОЧНИКА КАМЕРЫ: КИОСК / ТЕЛЕФОН
+    // ============================================================
+    const tabKioskCam  = document.getElementById('tab-kiosk-cam');
+    const tabPhoneCam  = document.getElementById('tab-phone-cam');
+    const webcamLiveBox    = document.getElementById('webcam-live-box');
+    const phoneCamPanel    = document.getElementById('phone-cam-panel');
+    const phoneQrImg       = document.getElementById('phone-qr-img');
+    const timerSelectWrap  = document.getElementById('timer-select-wrapper');
+    const snapBtnEl        = document.getElementById('snap-btn');
+    const camSubtitle      = document.getElementById('cam-subtitle');
+
+    if (tabKioskCam) {
+        tabKioskCam.addEventListener('click', () => {
+            phoneCamMode = false;
+            stopPhoneCamPolling();
+            tabKioskCam.classList.add('active');
+            tabPhoneCam.classList.remove('active');
+            // Показываем камеру, скрываем QR
+            if (webcamLiveBox) webcamLiveBox.style.display = '';
+            if (phoneCamPanel) phoneCamPanel.classList.remove('visible');
+            if (timerSelectWrap) timerSelectWrap.style.display = '';
+            if (snapBtnEl) snapBtnEl.style.display = '';
+            if (camSubtitle) camSubtitle.textContent = 'Встаньте по центру и смотрите в камеру';
+            startWebcam();
+        });
+    }
+
+    if (tabPhoneCam) {
+        tabPhoneCam.addEventListener('click', () => {
+            switchToPhoneCam();
+        });
+    }
+
+    function switchToPhoneCam() {
+        phoneCamMode = true;
+        stopWebcam();
+        tabPhoneCam.classList.add('active');
+        if (tabKioskCam) tabKioskCam.classList.remove('active');
+        // Скрываем живую камеру, показываем QR-панель
+        if (webcamLiveBox) webcamLiveBox.style.display = 'none';
+        if (timerSelectWrap) timerSelectWrap.style.display = 'none';
+        if (snapBtnEl) snapBtnEl.style.display = 'none';
+        if (camSubtitle) camSubtitle.textContent = 'Откройте ссылку на телефоне и сделайте снимок';
+        if (phoneCamPanel) phoneCamPanel.classList.add('visible');
+
+        // Генерируем уникальный session ID
+        phoneCamSessionId = 'cam-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+        // Формируем URL мобильной страницы
+        const origin = location.origin || 'https://kiosk394.vercel.app';
+        const phoneUrl = `${origin}/kiosk-ui/phone-cam.html?session=${phoneCamSessionId}`;
+
+        // QR через бесплатный API
+        if (phoneQrImg) {
+            phoneQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&bgcolor=ffffff&data=${encodeURIComponent(phoneUrl)}`;
+        }
+
+        // Запускаем полинг появления фото в Supabase
+        startPhoneCamPolling(phoneCamSessionId);
+    }
+
+    // Полинг фото с телефона каждые 2 секунды
+    function startPhoneCamPolling(sessionId) {
+        stopPhoneCamPolling();
+        phoneCamPollTimer = setInterval(async () => {
+            if (sessionId !== phoneCamSessionId) { clearInterval(phoneCamPollTimer); return; }
+            try {
+                const url = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/phone-cam/${sessionId}.jpg?_t=${Date.now()}`;
+                const res = await fetch(url, { method: 'HEAD' });
+                if (res.ok) {
+                    stopPhoneCamPolling();
+                    // Фото готово — загружаем его как capturedPhotoData
+                    const imgRes = await fetch(url);
+                    const blob = await imgRes.blob();
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        capturedPhotoData = e.target.result;
+                        if (photoPreviewConfirm) photoPreviewConfirm.src = capturedPhotoData;
+                        showStep(stepConfirm);
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            } catch(e) { /* игнорируем сетевые ошибки */ }
+        }, 2000);
+    }
+
+    function stopPhoneCamPolling() {
+        if (phoneCamPollTimer) {
+            clearInterval(phoneCamPollTimer);
+            phoneCamPollTimer = null;
+        }
+    }
+
+    // Сбрасываем UI камеры при открытии шага camera (по умолчанию — киоск)
+    function resetCameraStep() {
+        phoneCamMode = false;
+        if (tabKioskCam) tabKioskCam.classList.add('active');
+        if (tabPhoneCam) tabPhoneCam.classList.remove('active');
+        if (webcamLiveBox) webcamLiveBox.style.display = '';
+        if (phoneCamPanel) phoneCamPanel.classList.remove('visible');
+        if (timerSelectWrap) timerSelectWrap.style.display = '';
+        if (snapBtnEl) snapBtnEl.style.display = '';
+        if (camSubtitle) camSubtitle.textContent = 'Встаньте по центру и смотрите в камеру';
+    }
+
+
 
     // ИНИЦИАЛИЗАЦИЯ ЗАКАЗА И QR-КОДА OBUSINESS ELQR
     async function initiatePaymentOrder() {
@@ -602,10 +727,12 @@ document.addEventListener('DOMContentLoaded', () => {
             paymentStatusText.textContent = '✅ Оплата получена! Включаем камеру...';
         }
         setTimeout(() => {
+            resetCameraStep();
             showStep(stepCamera);
             startWebcam();
         }, 1000);
     }
+
 
     // ТЕСТОВАЯ КНОПКА СИМУЛЯЦИИ ОПЛАТЫ
     if (simPayBtn) {
@@ -651,15 +778,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('Не удалось получить список устройств:', e);
             }
 
-            // 2. Оптимальный профиль: 1280x720 30-60 FPS — суперплавный поток без лагов
+            // 2. Строгий профиль 1280×720 без авторесайзинга — устраняет лаги низкого FPS
             const videoConstraints = {
-                width: { ideal: 1280, max: 1920 },
-                height: { ideal: 720, max: 1080 },
-                frameRate: { ideal: 30, min: 24 }
+                width:  { exact: 1280 },
+                height: { exact: 720 },
+                frameRate: { ideal: 60, min: 30 },
+                resizeMode: 'none'
             };
 
             if (chosenDeviceId) {
-                videoConstraints.deviceId = { ideal: chosenDeviceId };
+                videoConstraints.deviceId = { exact: chosenDeviceId };
             } else {
                 videoConstraints.facingMode = 'user';
             }
@@ -669,27 +797,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     audio: false,
                     video: videoConstraints
                 });
-            } catch (errHighRes) {
-                console.warn('Оптимальный поток отклонен, пробуем базовый режим 720p:', errHighRes);
+            } catch (errExact) {
+                console.warn('exact 1280x720 отклонён, fallback ideal:', errExact);
+                // Fallback: ideal-режим без exact — браузер подберёт ближайшее
                 mediaStream = await navigator.mediaDevices.getUserMedia({
                     audio: false,
                     video: {
                         width: { ideal: 1280 },
                         height: { ideal: 720 },
-                        frameRate: { ideal: 30 }
+                        frameRate: { ideal: 30 },
+                        ...(chosenDeviceId ? { deviceId: { ideal: chosenDeviceId } } : { facingMode: 'user' })
                     }
                 });
             }
 
             webcamEl.srcObject = mediaStream;
-            webcamEl.onloadedmetadata = () => {
-                webcamEl.play().catch(e => console.warn('Webcam play error:', e));
-            };
+            // play() сразу — не ждём loadedmetadata во избежание задержки отображения
+            webcamEl.play().catch(e => console.warn('Webcam play error:', e));
         } catch (err) {
             console.error('Ошибка доступа к камере:', err);
             alert('Не удалось подключиться к камере. Убедитесь, что камера не занята другим приложением и разрешен доступ в браузере.');
         }
     }
+
 
     function stopWebcam() {
         if (mediaStream) {
