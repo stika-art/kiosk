@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -247,8 +247,11 @@
 <div class="container">
     <div class="header">
         <div class="header-logo">TRENDUM INVITE</div>
-        <h1 class="header-title">Настройка пригласительного</h1>
-        <p class="header-sub">Заполните данные вашего торжества</p>
+        <h1 class="header-title" id="page-title">Настройка пригласительного</h1>
+        <p class="header-sub" id="page-sub">Заполните данные вашего торжества</p>
+        <div id="edit-mode-badge" style="display:none; margin: 10px auto 0; padding: 5px 14px; border-radius: 20px; background: rgba(212,160,67,0.18); border: 1px solid var(--primary); color: var(--primary); font-size: 11px; font-weight: 700; width: fit-content; letter-spacing: 0.8px;">
+            ✏️ РЕЖИМ РЕДАКТИРОВАНИЯ (БЕЗ ОПЛАТЫ)
+        </div>
     </div>
 
     <!-- 1. ИМЕНА И ТИП СОБЫТИЯ -->
@@ -325,10 +328,17 @@
         <div class="input-group">
             <label>Ссылка на песню из YouTube</label>
             <input type="text" id="youtube-url" placeholder="https://youtu.be/... или https://youtube.com/watch?v=...">
+            <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px;">
+                <button type="button" id="test-music-btn" style="background: rgba(212, 160, 67, 0.15); border: 1px solid var(--primary); color: var(--primary); padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit;">
+                    <span>▶ Проверить музыку</span>
+                </button>
+                <span id="test-music-status" style="font-size: 12px; color: var(--text-muted);"></span>
+            </div>
             <div class="yt-preview-hint">
-                Вставьте любую ссылку на трек из YouTube. Музыка будет тихо и романтично играть на фоне сайта приглашения.
+                Вставьте любую ссылку на трек из YouTube (видео или Shorts). Музыка будет романтично играть на фоне приглашения.
             </div>
         </div>
+        <div id="test-yt-container" style="position: fixed; left: -9999px; bottom: 0; width: 200px; height: 200px; opacity: 0.01; pointer-events: none;"></div>
     </div>
 
     <!-- 5. ЛОКАЦИЯ И РЕСТОРАН -->
@@ -388,8 +398,8 @@
 <div id="success-modal">
     <div class="success-box">
         <div style="font-size: 32px; margin-bottom: 8px;">🎉</div>
-        <h2 style="font-size: 20px; color: var(--primary); margin-bottom: 8px;">Пригласительное готово!</h2>
-        <p style="font-size: 13px; color: var(--text-muted);">
+        <h2 id="success-title" style="font-size: 20px; color: var(--primary); margin-bottom: 8px;">Пригласительное готово!</h2>
+        <p id="success-sub" style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
             Отсканируйте QR-код или нажмите кнопку ниже, чтобы открыть сайт-приглашение и отправить его гостям в WhatsApp:
         </p>
 
@@ -401,6 +411,9 @@
     </div>
 </div>
 
+<!-- YouTube IFrame API для предпрослушивания музыки -->
+<script src="https://www.youtube.com/iframe_api"></script>
+
 <script>
     const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
@@ -408,6 +421,7 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     let inviteId = urlParams.get('id') || ('inv-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6));
+    let isEditMode = false;
 
     let uploadedPhotoUrl = 'assets/hero_portrait.jpg';
     let selectedPhotoFile = null;
@@ -447,7 +461,172 @@
         }
     });
 
-    // Отправка формы
+    // ==========================================
+    // ПРЕДПРОСЛУШИВАНИЕ YOUTUBE МУЗЫКИ
+    // ==========================================
+    let previewYtPlayer = null;
+    let previewYtReady = false;
+    let isPreviewPlaying = false;
+    const testMusicBtn = document.getElementById('test-music-btn');
+    const testMusicStatus = document.getElementById('test-music-status');
+    const youtubeInput = document.getElementById('youtube-url');
+
+    function extractYouTubeId(url) {
+        if (!url) return null;
+        url = url.trim();
+        if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+
+        const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))([a-zA-Z0-9_-]{11})/i;
+        const match = url.match(regExp);
+        if (match && match[1]) return match[1];
+
+        try {
+            const parsed = new URL(url);
+            if (parsed.searchParams.has('v')) {
+                const v = parsed.searchParams.get('v');
+                if (v && v.length === 11) return v;
+            }
+            const parts = parsed.pathname.split('/').filter(Boolean);
+            const last = parts[parts.length - 1];
+            if (last && last.length === 11) return last;
+        } catch(e) {}
+
+        return null;
+    }
+
+    window.onYouTubeIframeAPIReady = function() {
+        previewYtReady = true;
+    };
+
+    if (testMusicBtn) {
+        testMusicBtn.addEventListener('click', () => {
+            const url = youtubeInput.value.trim();
+            const vId = extractYouTubeId(url);
+
+            if (!vId) {
+                testMusicStatus.style.color = '#ff6b6b';
+                testMusicStatus.textContent = '⚠️ Вставьте правильную ссылку на YouTube';
+                return;
+            }
+
+            if (isPreviewPlaying && previewYtPlayer) {
+                previewYtPlayer.pauseVideo();
+                isPreviewPlaying = false;
+                testMusicBtn.innerHTML = '<span>▶ Проверить музыку</span>';
+                testMusicStatus.style.color = 'var(--text-muted)';
+                testMusicStatus.textContent = 'Пауза';
+                return;
+            }
+
+            testMusicStatus.style.color = 'var(--primary)';
+            testMusicStatus.textContent = '⏳ Подключение звука...';
+
+            if (!previewYtPlayer) {
+                try {
+                    previewYtPlayer = new YT.Player('test-yt-container', {
+                        height: '200',
+                        width: '200',
+                        videoId: vId,
+                        playerVars: {
+                            'playsinline': 1,
+                            'controls': 0,
+                            'loop': 1,
+                            'playlist': vId,
+                            'origin': window.location.origin
+                        },
+                        events: {
+                            'onReady': (event) => {
+                                event.target.unMute();
+                                event.target.setVolume(100);
+                                event.target.playVideo();
+                                isPreviewPlaying = true;
+                                testMusicBtn.innerHTML = '<span>⏸ Остановить звук</span>';
+                                testMusicStatus.textContent = '🎵 Музыка играет отлично!';
+                            },
+                            'onStateChange': (event) => {
+                                if (event.data === YT.PlayerState.PLAYING) {
+                                    isPreviewPlaying = true;
+                                    testMusicBtn.innerHTML = '<span>⏸ Остановить звук</span>';
+                                    testMusicStatus.textContent = '🎵 Музыка играет отлично!';
+                                } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                                    isPreviewPlaying = false;
+                                    testMusicBtn.innerHTML = '<span>▶ Проверить музыку</span>';
+                                }
+                            },
+                            'onError': () => {
+                                testMusicStatus.style.color = '#ff6b6b';
+                                testMusicStatus.textContent = '⚠️ Видео запрещено для встраивания автором';
+                            }
+                        }
+                    });
+                } catch(err) {
+                    testMusicStatus.textContent = 'Ошибка плеера';
+                }
+            } else {
+                try {
+                    previewYtPlayer.loadVideoById(vId);
+                    previewYtPlayer.unMute();
+                    previewYtPlayer.setVolume(100);
+                    previewYtPlayer.playVideo();
+                    isPreviewPlaying = true;
+                    testMusicBtn.innerHTML = '<span>⏸ Остановить звук</span>';
+                    testMusicStatus.textContent = '🎵 Музыка играет отлично!';
+                } catch(e) {
+                    testMusicStatus.textContent = 'Ошибка запуска';
+                }
+            }
+        });
+    }
+
+    // ==========================================
+    // ПРОВЕРКА И ЗАГРУЗКА СУЩЕСТВУЮЩЕГО ПРИГЛАШЕНИЯ
+    // ==========================================
+    async function checkExistingInvite() {
+        if (!inviteId) return;
+        try {
+            const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/invites/${inviteId}.json?t=${Date.now()}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.name1) {
+                    isEditMode = true;
+                    populateForm(data);
+                }
+            }
+        } catch(err) {
+            console.warn('Приглашение не найдено в облаке, создаем новое:', err);
+        }
+    }
+
+    function populateForm(data) {
+        document.getElementById('page-title').textContent = 'Редактирование пригласительного';
+        document.getElementById('page-sub').textContent = 'Внесите исправления и сохраните (повторная оплата не нужна)';
+        document.getElementById('edit-mode-badge').style.display = 'block';
+        document.querySelector('#submit-btn span').textContent = 'Сохранить изменения';
+
+        if (data.type) document.getElementById('event-type').value = data.type;
+        if (data.name1) document.getElementById('name1').value = data.name1;
+        if (data.name2) document.getElementById('name2').value = data.name2;
+        if (data.date) document.getElementById('event-date').value = data.date;
+        if (data.dateDisplay) document.getElementById('date-display').value = data.dateDisplay;
+        if (data.youtubeUrl) document.getElementById('youtube-url').value = data.youtubeUrl;
+        if (data.venueName) document.getElementById('venue-name').value = data.venueName;
+        if (data.venueAddress) document.getElementById('venue-address').value = data.venueAddress;
+        if (data.mapUrl) document.getElementById('map-url').value = data.mapUrl;
+        if (data.whatsappPhone) document.getElementById('whatsapp-phone').value = data.whatsappPhone;
+        if (data.rsvpDeadline) document.getElementById('rsvp-deadline').value = data.rsvpDeadline;
+        if (data.quote) document.getElementById('quote-text').value = data.quote;
+
+        if (data.photo) {
+            uploadedPhotoUrl = data.photo;
+            photoPreview.src = data.photo;
+            photoPreview.style.display = 'block';
+            uploadHint.style.display = 'none';
+        }
+    }
+
+    // ==========================================
+    // СОХРАНЕНИЕ / ОБНОВЛЕНИЕ
+    // ==========================================
     const submitBtn = document.getElementById('submit-btn');
     submitBtn.addEventListener('click', async () => {
         const name1 = document.getElementById('name1').value.trim();
@@ -458,10 +637,10 @@
         }
 
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span>Сохранение и публикация...</span>';
+        submitBtn.innerHTML = `<span>${isEditMode ? 'Сохранение изменений...' : 'Публикация...'}</span>`;
 
         try {
-            // 1. Загрузка фото в Supabase Storage (если выбрано новое)
+            // 1. Загрузка фото в Supabase Storage (если выбрано новое пользователем)
             if (selectedPhotoFile) {
                 const photoPath = `invites/photos/${inviteId}_${Date.now()}.jpg`;
                 const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${photoPath}`, {
@@ -497,7 +676,7 @@
                 updatedAt: new Date().toISOString()
             };
 
-            // 3. Сохранение JSON в Supabase
+            // 3. Сохранение JSON в Supabase (с перезаписью без повторной оплаты)
             const jsonPath = `invites/${inviteId}.json`;
             const jsonRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${jsonPath}`, {
                 method: 'POST',
@@ -510,25 +689,39 @@
             });
 
             if (!jsonRes.ok) {
-                console.warn('Ошибка сохранения JSON в Supabase, используем локальный fallback');
+                console.warn('Ошибка сохранения JSON в Supabase');
             }
 
-            // 4. Показ финального окна
+            // Остановка предпросмотра музыки при публикации
+            if (previewYtPlayer && isPreviewPlaying) {
+                try { previewYtPlayer.pauseVideo(); } catch(e) {}
+            }
+
+            // 4. Показ финального окна успеха
             const origin = window.location.origin || 'https://kiosk394.vercel.app';
             const finalInviteUrl = `${origin}/kiosk-ui/invite.html?id=${inviteId}`;
 
             const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(finalInviteUrl)}`;
             document.getElementById('final-qr-img').src = qrUrl;
             document.getElementById('view-invite-link').href = finalInviteUrl;
+
+            if (isEditMode) {
+                document.getElementById('success-title').textContent = 'Изменения сохранены!';
+                document.getElementById('success-sub').textContent = 'Пригласительное успешно обновлено! Ссылка для гостей и QR-код остались прежними.';
+            }
+
             document.getElementById('success-modal').style.display = 'flex';
 
         } catch (err) {
             console.error('Ошибка сохранения:', err);
-            alert('Произошла ошибка при публикации. Попробуйте еще раз.');
+            alert('Произошла ошибка при сохранении. Попробуйте еще раз.');
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<span>Опубликовать пригласительное</span>';
+            submitBtn.innerHTML = `<span>${isEditMode ? 'Сохранить изменения' : 'Опубликовать пригласительное'}</span>`;
         }
     });
+
+    // Инициализация при открытии
+    checkExistingInvite();
 </script>
 </body>
 </html>

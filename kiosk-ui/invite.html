@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -73,22 +73,61 @@
             transform: scale(0.92);
         }
         .music-btn.playing svg {
-            animation: pulse-music 1.8s infinite ease-in-out;
+            animation: spin-music 4s linear infinite;
             color: var(--gold-main);
         }
-        @keyframes pulse-music {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); }
+        @keyframes spin-music {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        /* Скрытый контейнер плеера YouTube */
+        /* Надежный фоновый контейнер плеера YouTube (спрятан вне экрана, не блокируется мобильными браузерами) */
         #yt-player-container {
-            position: absolute;
-            width: 1px;
-            height: 1px;
+            position: fixed;
+            bottom: 0;
+            left: -9999px;
+            width: 200px;
+            height: 200px;
             opacity: 0.01;
             pointer-events: none;
-            overflow: hidden;
+            z-index: -999;
+        }
+
+        /* Блок редактирования для владельца */
+        .owner-edit-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 35px 20px 15px;
+            padding: 18px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed var(--gold-border);
+            text-align: center;
+        }
+        .owner-edit-panel p {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+        .owner-edit-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(212, 160, 67, 0.12);
+            border: 1px solid var(--gold-main);
+            color: var(--gold-main);
+            padding: 10px 22px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .owner-edit-btn:active {
+            background: rgba(212, 160, 67, 0.3);
+            transform: scale(0.97);
         }
 
         /* Верхняя обложка / Главный экран */
@@ -537,6 +576,18 @@
     <div class="footer-credits">
         Создано с любовью на <span>TRENDUM</span>
     </div>
+
+    <!-- Панель редактирования для владельца (без повторной оплаты) -->
+    <div class="owner-edit-panel" id="owner-edit-panel">
+        <p>Нужно изменить имена, дату, фото или музыку?</p>
+        <a href="#" id="owner-edit-btn" class="owner-edit-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <span>Редактировать пригласительное</span>
+        </a>
+    </div>
 </div>
 
 <!-- YouTube IFrame API -->
@@ -563,13 +614,19 @@
         mapUrl: 'https://2gis.kg/bishkek',
         whatsappPhone: '996555123456',
         rsvpDeadline: '01.06.2025',
-        youtubeUrl: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk', // Дефолтная романтическая мелодия
+        youtubeUrl: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk', // Дефолтная мелодия
         audioFile: ''
     };
 
     // Чтение id пригласительного из URL (?id=...)
     const urlParams = new URLSearchParams(window.location.search);
     const inviteId = urlParams.get('id');
+
+    // Настройка ссылки на редактирование
+    const ownerEditBtn = document.getElementById('owner-edit-btn');
+    if (ownerEditBtn) {
+        ownerEditBtn.href = inviteId ? `invite-edit.html?id=${encodeURIComponent(inviteId)}` : 'invite-edit.html';
+    }
 
     async function loadInviteData() {
         if (inviteId) {
@@ -586,6 +643,14 @@
         applyDataToDOM();
         initCountdown();
         initAudioPlayer();
+        
+        // Запуск YouTube музыки после загрузки актуального URL
+        if (inviteData.youtubeUrl) {
+            const vId = extractYouTubeId(inviteData.youtubeUrl);
+            if (vId) {
+                setupYouTubeAudio(vId);
+            }
+        }
     }
 
     function applyDataToDOM() {
@@ -665,61 +730,113 @@
     // ФОНОВАЯ МУЗЫКА (YOUTUBE & MP3)
     // ==========================================
     let ytPlayer = null;
+    let ytApiReady = false;
+    let pendingVideoId = null;
     let isPlaying = false;
     const musicBtn = document.getElementById('music-btn');
     const localAudio = document.getElementById('local-audio');
 
-    // Извлечение YouTube ID
+    // Универсальный парсер YouTube ссылок (поддерживает обычные, shorts, mobile, music, чистый id)
     function extractYouTubeId(url) {
         if (!url) return null;
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        url = url.trim();
+        if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+
+        const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))([a-zA-Z0-9_-]{11})/i;
         const match = url.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : null;
+        if (match && match[1]) return match[1];
+
+        try {
+            const parsed = new URL(url);
+            if (parsed.searchParams.has('v')) {
+                const v = parsed.searchParams.get('v');
+                if (v && v.length === 11) return v;
+            }
+            const parts = parsed.pathname.split('/').filter(Boolean);
+            const last = parts[parts.length - 1];
+            if (last && last.length === 11) return last;
+        } catch(e) {}
+
+        return null;
     }
 
     // YouTube API Callback
     window.onYouTubeIframeAPIReady = function() {
-        const videoId = extractYouTubeId(inviteData.youtubeUrl);
-        if (videoId) {
+        ytApiReady = true;
+        if (pendingVideoId) {
+            createYouTubePlayer(pendingVideoId);
+        }
+    };
+
+    function setupYouTubeAudio(videoId) {
+        pendingVideoId = videoId;
+        if (ytApiReady && window.YT && window.YT.Player) {
+            if (ytPlayer && typeof ytPlayer.cueVideoById === 'function') {
+                try {
+                    ytPlayer.cueVideoById(videoId);
+                    return;
+                } catch(e) {}
+            }
+            createYouTubePlayer(videoId);
+        }
+    }
+
+    function createYouTubePlayer(videoId) {
+        try {
             ytPlayer = new YT.Player('yt-player-container', {
-                height: '100',
-                width: '100',
+                height: '200',
+                width: '200',
                 videoId: videoId,
                 playerVars: {
                     'playsinline': 1,
                     'controls': 0,
+                    'disablekb': 1,
+                    'fs': 0,
                     'loop': 1,
                     'playlist': videoId,
-                    'modestbranding': 1
+                    'modestbranding': 1,
+                    'origin': window.location.origin
                 },
                 events: {
                     'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange
+                    'onStateChange': onPlayerStateChange,
+                    'onError': (e) => console.warn('YouTube Player Event:', e)
                 }
             });
+        } catch(err) {
+            console.warn('Не удалось создать YT.Player:', err);
         }
-    };
+    }
 
     function onPlayerReady(event) {
-        // На мобильных устройствах автовоспроизведение со звуком часто заблокировано браузером до первого клика
-        // Поэтому мы вешаем запуск на первое касание экрана
-        document.body.addEventListener('click', autoStartMusicOnce, { once: true });
-        document.body.addEventListener('touchstart', autoStartMusicOnce, { once: true });
+        try {
+            event.target.unMute();
+            event.target.setVolume(100);
+        } catch(e) {}
+
+        // Разблокировка воспроизведения на первом пользовательском таче/клике экрана
+        const userGestureStarter = () => {
+            if (!isPlaying && ytPlayer && typeof ytPlayer.playVideo === 'function') {
+                try {
+                    ytPlayer.unMute();
+                    ytPlayer.setVolume(100);
+                    ytPlayer.playVideo();
+                } catch(e) {}
+            }
+            window.removeEventListener('click', userGestureStarter);
+            window.removeEventListener('touchstart', userGestureStarter);
+        };
+        window.addEventListener('click', userGestureStarter, { once: true });
+        window.addEventListener('touchstart', userGestureStarter, { once: true });
     }
 
     function onPlayerStateChange(event) {
         if (event.data === YT.PlayerState.PLAYING) {
             isPlaying = true;
             musicBtn.classList.add('playing');
-        } else {
+        } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
             isPlaying = false;
             musicBtn.classList.remove('playing');
-        }
-    }
-
-    function autoStartMusicOnce() {
-        if (!isPlaying) {
-            toggleMusic();
         }
     }
 
@@ -730,11 +847,13 @@
     }
 
     function toggleMusic() {
+        // 1. Локальный аудиофайл
         if (inviteData.audioFile) {
             if (localAudio.paused) {
-                localAudio.play();
-                isPlaying = true;
-                musicBtn.classList.add('playing');
+                localAudio.play().then(() => {
+                    isPlaying = true;
+                    musicBtn.classList.add('playing');
+                }).catch(e => console.warn('Audio play prevented:', e));
             } else {
                 localAudio.pause();
                 isPlaying = false;
@@ -743,16 +862,26 @@
             return;
         }
 
-        if (ytPlayer && ytPlayer.playVideo) {
-            if (isPlaying) {
-                ytPlayer.pauseVideo();
-                isPlaying = false;
-                musicBtn.classList.remove('playing');
-            } else {
-                ytPlayer.playVideo();
-                isPlaying = true;
-                musicBtn.classList.add('playing');
+        // 2. Фоновый YouTube плеер
+        if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
+            try {
+                ytPlayer.unMute();
+                ytPlayer.setVolume(100);
+                if (isPlaying) {
+                    ytPlayer.pauseVideo();
+                    isPlaying = false;
+                    musicBtn.classList.remove('playing');
+                } else {
+                    ytPlayer.playVideo();
+                    isPlaying = true;
+                    musicBtn.classList.add('playing');
+                }
+            } catch (err) {
+                console.warn('Ошибка управления YouTube плеером:', err);
             }
+        } else if (inviteData.youtubeUrl) {
+            const vId = extractYouTubeId(inviteData.youtubeUrl);
+            if (vId) setupYouTubeAudio(vId);
         }
     }
 
@@ -761,7 +890,7 @@
         toggleMusic();
     });
 
-    // Старт
+    // Старт загрузки
     loadInviteData();
 </script>
 </body>

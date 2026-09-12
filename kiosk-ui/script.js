@@ -487,8 +487,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const invitePreviewFrame = document.getElementById('invite-preview-frame');
     const inviteFinalShareQr = document.getElementById('invite-final-share-qr');
     const inviteFinishBtn = document.getElementById('invite-finish-btn');
+    const inviteReEditBtn = document.getElementById('invite-re-edit-btn');
+    const inviteRefreshBtn = document.getElementById('invite-refresh-btn');
     let currentInviteId = null;
     let invitePollingTimer = null;
+    let lastKnownInviteTime = null;
 
     // Camera & Confirm Elements
     const webcamEl = document.getElementById('webcam');
@@ -833,19 +836,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         showStep(stepInviteSetup);
-        startInvitePolling(currentInviteId);
+        startInvitePolling(currentInviteId, false);
     }
 
-    function startInvitePolling(invId) {
+    function startInvitePolling(invId, isEdit = false) {
         stopInvitePolling();
         invitePollingTimer = setInterval(async () => {
             if (!invId || invId !== currentInviteId) return;
             try {
                 const checkUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/invites/${invId}.json?t=${Date.now()}`;
-                const res = await fetch(checkUrl, { method: 'HEAD' });
+                const res = await fetch(checkUrl);
                 if (res.ok) {
-                    stopInvitePolling();
-                    handleInviteReady(invId);
+                    const data = await res.json();
+                    if (!isEdit) {
+                        // Первичное появление файла
+                        stopInvitePolling();
+                        lastKnownInviteTime = data.updatedAt || new Date().toISOString();
+                        handleInviteReady(invId);
+                    } else {
+                        // Режим редактирования: ждем обновления updatedAt
+                        if (data.updatedAt && data.updatedAt !== lastKnownInviteTime) {
+                            stopInvitePolling();
+                            lastKnownInviteTime = data.updatedAt;
+                            handleInviteReady(invId);
+                        }
+                    }
                 }
             } catch (e) {}
         }, 2000);
@@ -863,7 +878,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const finalUrl = `${origin}/kiosk-ui/invite.html?id=${invId}`;
 
         if (invitePreviewFrame) {
-            invitePreviewFrame.src = finalUrl;
+            invitePreviewFrame.src = `${finalUrl}&preview_t=${Date.now()}`;
         }
         if (inviteFinalShareQr) {
             inviteFinalShareQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(finalUrl)}`;
@@ -881,6 +896,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (inviteFinishBtn) {
         inviteFinishBtn.addEventListener('click', closeKioskFlow);
+    }
+
+    if (inviteReEditBtn) {
+        inviteReEditBtn.addEventListener('click', () => {
+            if (currentInviteId) {
+                const origin = window.location.origin || 'https://kiosk394.vercel.app';
+                const editUrl = `${origin}/kiosk-ui/invite-edit.html?id=${currentInviteId}`;
+                if (inviteEditQr) {
+                    inviteEditQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(editUrl)}`;
+                }
+                if (inviteSetupStatus) {
+                    inviteSetupStatus.textContent = 'Ожидание сохранения правок со смартфона...';
+                }
+                showStep(stepInviteSetup);
+                startInvitePolling(currentInviteId, true);
+            }
+        });
+    }
+
+    if (inviteRefreshBtn) {
+        inviteRefreshBtn.addEventListener('click', () => {
+            if (invitePreviewFrame && currentInviteId) {
+                const origin = window.location.origin || 'https://kiosk394.vercel.app';
+                invitePreviewFrame.src = `${origin}/kiosk-ui/invite.html?id=${currentInviteId}&preview_t=${Date.now()}`;
+            }
+        });
     }
 
 
