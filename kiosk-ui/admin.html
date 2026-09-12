@@ -1646,8 +1646,8 @@
         // AGGREGATOR SETTINGS LOGIC
         function loadAggregatorSettings() {
             try {
-                const url = localStorage.getItem('kiosk_aggregator_url') || '';
-                const key = localStorage.getItem('kiosk_aggregator_key') || '';
+                const url = localStorage.getItem('kiosk_aggregator_url') || 'https://api.kie.ai/api/v1/jobs/createTask';
+                const key = localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd';
                 const urlInput = document.getElementById('aggregator-url-input');
                 const keyInput = document.getElementById('aggregator-key-input');
                 if (urlInput) urlInput.value = url;

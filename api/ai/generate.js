@@ -165,7 +165,7 @@ module.exports = async (req, res) => {
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
         const { photoData, templateImg, prompt, model, title, orderId, aggregatorUrl, aggregatorKey } = body;
 
-        const effectiveKey = aggregatorKey || process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || '';
+        const effectiveKey = aggregatorKey || process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || 'fde11cd9f361b989eb19b8ef8530bfbd';
 
         console.log(`[AI Hub] Новый запрос: "${title}", модель="${model}", заказ="${orderId}"`);
 
