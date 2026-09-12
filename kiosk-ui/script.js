@@ -388,7 +388,13 @@ function renderGridTemplates() {
     if (list.length === 0) {
         container.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 70px 20px; color: var(--text-dim);">
-                <div style="font-size: 38px; margin-bottom: 12px;">✨</div>
+                <div style="margin-bottom: 14px; display: flex; justify-content: center; opacity: 0.9;">
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#D4A043" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="3" ry="3"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                </div>
                 <div style="font-size: 17px; font-weight: 700; color: #ffffff;">В этом разделе пока нет шаблонов</div>
                 <div style="font-size: 13px; margin-top: 6px; color: var(--text-muted);">Добавьте шаблоны через панель администратора /admin</div>
             </div>
@@ -718,7 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 countdownOverlay.textContent = count;
             } else {
                 clearInterval(timer);
-                countdownOverlay.textContent = '📸';
+                countdownOverlay.innerHTML = '<span style="font-size: 72px; color: var(--primary);">✦</span>';
                 takeSnapshot();
                 setTimeout(() => {
                     stopWebcam();
