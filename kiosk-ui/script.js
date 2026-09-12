@@ -44,6 +44,8 @@ function normalizeMainCards(cards) {
                 cats = ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'];
             } else if (c.id === 3 || titleUp === 'ТРЕНДЫ') {
                 cats = ['TIKTOK', 'REELS', 'INSTA VIBE'];
+            } else if (c.id === 4 || titleUp.includes('ПРИГЛАС')) {
+                cats = ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'СУННОТ ТОЙ', 'ТУШОО ТОЙ', 'ДЕНЬ РОЖДЕНИЯ', 'БЕШИК ТОЙ', 'СЫРҒА САЛУ'];
             } else {
                 cats = [c.title || 'ОБЩЕЕ'];
             }
