@@ -1322,7 +1322,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { passive: true });
 
     // Инициализация главного экрана, синхронизация с облаком и запуск таймера
-    renderMainCards();
-    syncCloudConfig();
+    // Скрываем карточки до получения актуальных данных — убираем мигание старого фото
+    const cardsContainer = document.getElementById('main-cards-container');
+    if (cardsContainer) {
+        cardsContainer.style.opacity = '0';
+        cardsContainer.style.transition = 'opacity 0.35s ease';
+    }
+
+    renderMainCards(); // рендер из localStorage (пока скрыт)
+
+    // Показываем карточки только после получения облачных данных
+    syncCloudConfig().finally(() => {
+        if (cardsContainer) cardsContainer.style.opacity = '1';
+    });
+
+    // Fallback: если облако не ответило за 1.5 сек — всё равно показываем
+    setTimeout(() => {
+        if (cardsContainer && cardsContainer.style.opacity === '0') {
+            cardsContainer.style.opacity = '1';
+        }
+    }, 1500);
+
     resetInactivityTimer();
 });
