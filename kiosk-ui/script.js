@@ -559,7 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         clearInterval(interval);
-        const isVideo = finalResultUrl.endsWith('.mp4') || finalResultUrl.endsWith('.webm') || finalResultUrl.includes('/video/') || selectedStyleModel === 'seedance-2.5' || selectedStyleModel === 'kling-video';
+        const isVideo = finalResultUrl.endsWith('.mp4') || finalResultUrl.endsWith('.webm') || finalResultUrl.includes('/video/') || selectedStyleModel === 'seedance-2.5' || selectedStyleModel === 'omni-flash' || selectedStyleModel === 'kling-video' || selectedStyleModel.includes('omni') || selectedStyleModel.includes('video');
         if (isVideo && resultVideo) {
             resultVideo.src = finalResultUrl;
             resultVideo.style.display = 'block';

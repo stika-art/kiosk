@@ -52,16 +52,23 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
 
     // Сопоставление внутренних имен с официальными идентификаторами моделей Kie.ai
     let kieModel = 'google/nano-banana-edit';
-    if (model === 'seedance-2.5') kieModel = 'bytedance/seedance-2-5';
-    else if (model === 'nano-banana-2') kieModel = 'google/nano-banana-edit';
-    else if (model === 'kling-video') kieModel = 'kwaivgi/kling-v1-6';
+    if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') kieModel = 'bytedance/seedance-2-5';
+    else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'google/gemini-omni-flash-1-1' || model === 'gemini-omni-video') kieModel = 'google/gemini-omni-flash-1-1';
+    else if (model === 'nano-banana-2' || model === 'google/nano-banana-edit') kieModel = 'google/nano-banana-edit';
+    else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6') kieModel = 'kwaivgi/kling-v1-6';
     else if (model && model.includes('/')) kieModel = model;
 
     console.log(`[Kie.ai] Запуск задачи для модели "${kieModel}"...`);
 
     // Формирование входных данных под выбранный тип модели
     let inputPayload = {};
-    if (kieModel.includes('seedance') || kieModel.includes('kling')) {
+    if (kieModel.includes('omni-flash') || kieModel.includes('gemini-omni')) {
+        inputPayload = {
+            prompt: prompt || 'Cinematic video portrait, smooth natural motion, 4k high quality',
+            image_url: publicPhotoUrl,
+            duration: '6' // Официально поддерживаемые опции Kie.ai: "4", "6", "8", "10"
+        };
+    } else if (kieModel.includes('seedance') || kieModel.includes('kling')) {
         inputPayload = {
             prompt: prompt || 'Cinematic movement, 4k resolution, seamless motion',
             image_url: publicPhotoUrl,

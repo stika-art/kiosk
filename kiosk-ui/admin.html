@@ -633,6 +633,7 @@
                         <option value="nano-banana-2">🍌 Nano Banana 2 (Фото)</option>
                         <option value="chatgpt-2.5">🤖 ChatGPT 2.5 (Фото)</option>
                         <option value="seedance-2.5">🎬 Seedance 2.5 (Видеоролик)</option>
+                        <option value="omni-flash">⚡ Google Omni Flash (Видеоролик)</option>
                         <option value="kling-video">🎥 Kling AI (Видеоролик)</option>
                         <option value="custom">✏️ Другая модель из агрегатора...</option>
                     </select>
@@ -1097,6 +1098,7 @@
             if (m === 'nano-banana-2') return '<span class="model-badge">🍌 Nano Banana 2</span>';
             if (m === 'chatgpt-2.5') return '<span class="model-badge">🤖 ChatGPT 2.5</span>';
             if (m === 'seedance-2.5') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">🎬 Seedance 2.5</span>';
+            if (m === 'omni-flash' || m === 'google-omni-flash' || m === 'google/gemini-omni-flash-1-1') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">⚡ Omni Flash</span>';
             if (m === 'kling-video') return '<span class="model-badge">🎥 Kling AI</span>';
             return `<span class="model-badge">${m}</span>`;
         }
@@ -1226,7 +1228,7 @@
             const modelVal = tpl.model || 'nano-banana-2';
             const modelSelect = document.getElementById('tpl-model-select');
             const customModelInput = document.getElementById('tpl-custom-model-input');
-            if (['nano-banana-2', 'chatgpt-2.5', 'seedance-2.5', 'kling-video'].includes(modelVal)) {
+            if (['nano-banana-2', 'chatgpt-2.5', 'seedance-2.5', 'omni-flash', 'kling-video'].includes(modelVal)) {
                 modelSelect.value = modelVal;
                 customModelInput.style.display = 'none';
                 customModelInput.value = '';
