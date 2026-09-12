@@ -32,25 +32,27 @@ function normalizeMainCards(cards) {
         return [
             { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
             { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
-            { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'INSTA VIBE'] },
+            { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'] },
             { id: 4, title: 'ПРИГЛАСИТЕЛЬНЫЕ', badge: 'СВАДЬБЫ • ТОЙ • ЮБИЛЕИ', subtitle: 'ИНТЕРАКТИВНЫЕ САЙТЫ С МУЗЫКОЙ И ТАЙМЕРОМ', filter: 'INVITES', category: 'ПРИГЛАСИТЕЛЬНЫЕ', img: 'assets/hero_portrait.jpg', categories: ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'СУННОТ ТОЙ'] }
         ];
     }
     return cards.map(c => {
         const titleUp = (c.title || '').toUpperCase();
-        let cats = Array.isArray(c.categories) && c.categories.length > 0 ? c.categories : null;
+        let cats = Array.isArray(c.categories) && c.categories.length > 0 ? [...c.categories] : null;
         if (!cats) {
             if (c.id === 1 || titleUp === 'ФОТО') {
                 cats = ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'];
             } else if (c.id === 2 || titleUp === 'ВИДЕО') {
                 cats = ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'];
             } else if (c.id === 3 || titleUp === 'ТРЕНДЫ') {
-                cats = ['TIKTOK', 'REELS', 'INSTA VIBE'];
+                cats = ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'];
             } else if (c.id === 4 || titleUp.includes('ПРИГЛАС')) {
                 cats = ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'СУННОТ ТОЙ', 'ТУШОО ТОЙ', 'ДЕНЬ РОЖДЕНИЯ', 'БЕШИК ТОЙ', 'СЫРҒА САЛУ'];
             } else {
                 cats = [c.title || 'ОБЩЕЕ'];
             }
+        } else if ((c.id === 3 || titleUp === 'ТРЕНДЫ') && !cats.some(ct => ct.toUpperCase() === 'ПРОЖАРКА')) {
+            cats.splice(2, 0, 'ПРОЖАРКА');
         }
         return {
             ...c,
@@ -164,7 +166,8 @@ if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.ge
         { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'face-swap', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
         { id: 11, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'СВАДЬБА', title: 'ROYAL WEDDING', img: 'assets/hero_portrait.jpg', price: 490, model: 'invite-web', prompt: 'Свадебное интерактивное пригласительное с таймером и музыкой' },
         { id: 12, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'КЫЗ УЗАТУУ', title: 'КЫЗ УЗАТУУ GOLD', img: 'assets/child.png', price: 490, model: 'invite-web', prompt: 'Интерактивное приглашение на Кыз Узатуу' },
-        { id: 13, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'ЮБИЛЕЙ', title: 'JUBILEE LUXURY', img: 'assets/man.jpg', price: 490, model: 'invite-web', prompt: 'Интерактивное приглашение на Юбилей' }
+        { id: 13, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'ЮБИЛЕЙ', title: 'JUBILEE LUXURY', img: 'assets/man.jpg', price: 490, model: 'invite-web', prompt: 'Интерактивное приглашение на Юбилей' },
+        { id: 99, sectionId: 3, sectionTitle: 'ТРЕНДЫ', category: 'ПРОЖАРКА', title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)', img: 'assets/hero_portrait.jpg', price: 190, model: 'roast-standup', prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice' }
     ];
 }
 
@@ -186,10 +189,10 @@ function normalizeTemplates(tplList, cardsList) {
                 sid = 2;
                 stitle = 'ВИДЕО';
                 if (catUp === 'ВИДЕО') cat = 'НЕОН';
-            } else if (catUp === 'ТРЕНДЫ' || titleUp.includes('TREND')) {
+            } else if (catUp === 'ТРЕНДЫ' || catUp.includes('ПРОЖАР') || modelUp.includes('roast') || titleUp.includes('TREND') || titleUp.includes('ПРОЖАР')) {
                 sid = 3;
                 stitle = 'ТРЕНДЫ';
-                if (catUp === 'ТРЕНДЫ') cat = 'TIKTOK';
+                if (!cat || cat === 'ОБЩЕЕ' || catUp === 'ТРЕНДЫ') cat = modelUp.includes('roast') ? 'ПРОЖАРКА' : 'TIKTOK';
             } else if (catUp.includes('ПРИГЛАС') || modelUp.includes('invite') || titleUp.includes('WEDDING') || titleUp.includes('ТОЙ') || titleUp.includes('УЗАТУУ')) {
                 sid = 4;
                 stitle = 'ПРИГЛАСИТЕЛЬНЫЕ';
@@ -216,6 +219,20 @@ function normalizeTemplates(tplList, cardsList) {
 }
 
 masterTemplates = normalizeTemplates(masterTemplates, mainCardsConfig);
+
+if (!masterTemplates.some(t => (t.model || '').toLowerCase() === 'roast-standup')) {
+    masterTemplates.push({
+        id: 99,
+        sectionId: 3,
+        sectionTitle: 'ТРЕНДЫ',
+        category: 'ПРОЖАРКА',
+        title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)',
+        img: 'assets/hero_portrait.jpg',
+        price: 190,
+        model: 'roast-standup',
+        prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice'
+    });
+}
 
 // Preload all template images into memory for instant rendering
 function preloadMasterImages() {
@@ -320,6 +337,20 @@ function openTemplateGallery(cardIdOrMode) {
             masterTemplates = normalizeTemplates(JSON.parse(saved), mainCardsConfig);
         }
     } catch(e) {}
+
+    if (!masterTemplates.some(t => (t.model || '').toLowerCase() === 'roast-standup')) {
+        masterTemplates.push({
+            id: 99,
+            sectionId: 3,
+            sectionTitle: 'ТРЕНДЫ',
+            category: 'ПРОЖАРКА',
+            title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)',
+            img: 'assets/hero_portrait.jpg',
+            price: 190,
+            model: 'roast-standup',
+            prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice'
+        });
+    }
 
     const modal = document.getElementById('template-modal');
     activeGridTab = 'ВСЕ';
@@ -484,6 +515,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const stepInviteSetup = document.getElementById('step-invite-setup');
     const stepInviteReady = document.getElementById('step-invite-ready');
     const stepInviteDemo = document.getElementById('step-invite-demo');
+    const stepRoastResult = document.getElementById('step-roast-result');
+
+    // Roast Elements
+    const roastCaricatureImg = document.getElementById('roast-caricature-img');
+    const roastPunchTitle = document.getElementById('roast-punch-title');
+    const roastSpeechBody = document.getElementById('roast-speech-body');
+    const roastAudioEl = document.getElementById('roast-audio-el');
+    const roastAudioTrigger = document.getElementById('roast-audio-trigger');
+    const roastAudioIcon = document.getElementById('roast-audio-icon');
+    const roastCharismaVal = document.getElementById('roast-charisma-val');
+    const roastCharismaBar = document.getElementById('roast-charisma-bar');
+    const roastFlawVal = document.getElementById('roast-flaw-val');
+    const roastMallVal = document.getElementById('roast-mall-val');
+    const roastQrImg = document.getElementById('roast-qr-img');
+    const roastReplayBtn = document.getElementById('roast-replay-btn');
+    const roastFinishBtn = document.getElementById('roast-finish-btn');
 
     // Invite Elements
     const inviteDemoFrame = document.getElementById('invite-demo-frame');
@@ -657,12 +704,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultVideo.src = '';
             } catch(e) {}
         }
+        if (roastAudioEl) {
+            try {
+                roastAudioEl.pause();
+                roastAudioEl.src = '';
+            } catch(e) {}
+        }
         modal.style.display = 'none';
         resetState();
     }
 
     function showStep(stepEl) {
-        [stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepInviteSetup, stepInviteReady, stepInviteDemo].forEach(s => {
+        [stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepInviteSetup, stepInviteReady, stepInviteDemo, stepRoastResult].forEach(s => {
             if (s) s.style.display = 'none';
         });
         if (stepEl) stepEl.style.display = 'block';
@@ -1153,8 +1206,86 @@ document.addEventListener('DOMContentLoaded', () => {
         capturedPhotoData = canvasEl.toDataURL('image/jpeg', 0.95);
     }
 
-    // 4. СТУДИЙНАЯ ОБРАБОТКА И СОЗДАНИЕ ПОРТРЕТА (БЕЗ УПОМИНАНИЙ ИИ И МОДЕЛЕЙ)
+    // 4. СТУДИЙНАЯ ОБРАБОТКА И СОЗДАНИЕ ПОРТРЕТА / ПРОЖАРКА
     async function runAIGeneration() {
+        // Проверка: режим Стендап-Прожарки
+        const isRoast = selectedStyleModel === 'roast-standup' || (selectedStyle && selectedStyle.toUpperCase().includes('ПРОЖАР'));
+
+        if (isRoast) {
+            const roastStatuses = [
+                `Анализ лука и позы перед камерой...`,
+                `Сканирование брендов с Дордоя и ЦУМа...`,
+                `Сверка харизмы с базами MBank и Kaspi...`,
+                `Генерация карикатуры в GPT Image 2.5...`,
+                `Стендапер разминает связки в ElevenLabs...`
+            ];
+            let rIdx = 0;
+            if (aiStatusText) aiStatusText.textContent = roastStatuses[0];
+            const rInterval = setInterval(() => {
+                rIdx++;
+                if (rIdx < roastStatuses.length && aiStatusText) {
+                    aiStatusText.textContent = roastStatuses[rIdx];
+                }
+            }, 1400);
+
+            try {
+                const aggregatorKey = localStorage.getItem('kiosk_aggregator_key') || '';
+                const elevenlabsKey = localStorage.getItem('kiosk_elevenlabs_key') || '';
+                const elevenlabsVoiceId = localStorage.getItem('kiosk_elevenlabs_voice_id') || 'ErXwobaYiN019PkySvjV';
+                const openaiKey = localStorage.getItem('kiosk_openai_key') || '';
+
+                const resp = await fetch('/api/ai/roast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        photoData: capturedPhotoData,
+                        orderId: currentOrderId,
+                        aggregatorKey,
+                        elevenlabsKey,
+                        elevenlabsVoiceId,
+                        openaiKey
+                    })
+                });
+
+                clearInterval(rInterval);
+
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.success) {
+                        if (roastCaricatureImg) roastCaricatureImg.src = data.imageUrl || data.originalPhotoUrl || selectedStylePhoto;
+                        if (roastPunchTitle) roastPunchTitle.textContent = data.title || 'ПРОЖАРКА В ТЦ';
+                        const cleanSpeech = (data.text || '').replace(/\[\w+\]/g, '').replace(/\.\.\./g, '…');
+                        if (roastSpeechBody) roastSpeechBody.textContent = `«${cleanSpeech}»`;
+
+                        const charisma = Number(data.charisma) || 16;
+                        if (roastCharismaVal) roastCharismaVal.textContent = charisma + '%';
+                        if (roastCharismaBar) roastCharismaBar.style.width = charisma + '%';
+
+                        if (roastFlawVal) roastFlawVal.textContent = data.flaw || 'Аура рассрочки MBank';
+                        if (roastMallVal) roastMallVal.textContent = data.mallStatus || 'Эксперт по фудкорту';
+
+                        // QR код на скачивание
+                        if (roastQrImg) {
+                            const dlUrl = data.imageUrl || data.originalPhotoUrl || window.location.href;
+                            roastQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(dlUrl)}`;
+                        }
+
+                        // Запуск озвучки ElevenLabs
+                        if (data.audioUrl && roastAudioEl) {
+                            roastAudioEl.src = data.audioUrl;
+                            roastAudioEl.play().catch(() => {});
+                        }
+
+                        showStep(stepRoastResult);
+                        return;
+                    }
+                }
+            } catch(err) {
+                console.warn('[Roast Pipeline Error]', err);
+                clearInterval(rInterval);
+            }
+        }
+
         const statuses = [
             `Анализ кадра и ракурса...`,
             `Стилизация портрета...`,
@@ -1234,6 +1365,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 5. FINISH & TEMPLATE SELECTION
     finishBtn.addEventListener('click', closeKioskFlow);
+
+    if (roastFinishBtn) {
+        roastFinishBtn.addEventListener('click', closeKioskFlow);
+    }
+    if (roastReplayBtn && roastAudioEl) {
+        roastReplayBtn.addEventListener('click', () => {
+            roastAudioEl.currentTime = 0;
+            roastAudioEl.play().catch(() => {});
+        });
+    }
+    if (roastAudioTrigger && roastAudioEl) {
+        roastAudioTrigger.addEventListener('click', () => {
+            if (roastAudioEl.paused) {
+                roastAudioEl.play().catch(() => {});
+            } else {
+                roastAudioEl.pause();
+            }
+        });
+        roastAudioEl.addEventListener('play', () => {
+            if (roastAudioIcon) roastAudioIcon.textContent = '🔊';
+            document.querySelectorAll('.wave-col').forEach(w => w.style.animationPlayState = 'running');
+        });
+        roastAudioEl.addEventListener('pause', () => {
+            if (roastAudioIcon) roastAudioIcon.textContent = '🔈';
+            document.querySelectorAll('.wave-col').forEach(w => w.style.animationPlayState = 'paused');
+        });
+    }
 
     // 3D Cover Flow Gallery Controls & Touch Swiping
     const templateBackBtn = document.getElementById('template-back-btn');

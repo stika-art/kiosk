@@ -1050,6 +1050,130 @@
         }
 
         /* =====================================================
+           STANDUP ROAST STEP & CARICATURE POSTER STYLES
+        ===================================================== */
+        .roast-poster-box {
+            position: relative;
+            width: min(92vw, 380px);
+            height: min(68vh, 600px);
+            border-radius: 28px;
+            border: 3.5px solid #ff453a;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 45px rgba(255, 69, 58, 0.4);
+            background: #121212;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .roast-poster-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .roast-stamp {
+            position: absolute;
+            top: 24px;
+            right: 20px;
+            background: rgba(255, 59, 48, 0.18);
+            border: 3.5px dashed #ff3b30;
+            color: #ff453a;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            padding: 8px 18px;
+            border-radius: 12px;
+            transform: rotate(12deg);
+            box-shadow: 0 8px 25px rgba(255, 59, 48, 0.45);
+            text-shadow: 0 0 15px rgba(255, 59, 48, 0.8);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .roast-info-card {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-width: 440px;
+            text-align: left;
+        }
+        .roast-bubble {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1.5px solid rgba(255, 69, 58, 0.35);
+            border-radius: 22px;
+            padding: 20px 24px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+            position: relative;
+        }
+        .roast-title-text {
+            font-size: 22px;
+            font-weight: 900;
+            color: #ff453a;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(255, 69, 58, 0.4);
+        }
+        .roast-speech-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #ffffff;
+            font-style: italic;
+        }
+        .voice-wave-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            height: 36px;
+            margin-top: 14px;
+            padding: 8px 16px;
+            background: rgba(255, 69, 58, 0.12);
+            border: 1px solid rgba(255, 69, 58, 0.35);
+            border-radius: 30px;
+            width: fit-content;
+            cursor: pointer;
+        }
+        .wave-col {
+            width: 4px;
+            height: 8px;
+            background: #ff453a;
+            border-radius: 3px;
+            animation: waveAnim 1s ease-in-out infinite alternate;
+        }
+        .wave-col:nth-child(2) { animation-delay: 0.15s; }
+        .wave-col:nth-child(3) { animation-delay: 0.3s; }
+        .wave-col:nth-child(4) { animation-delay: 0.45s; }
+        .wave-col:nth-child(5) { animation-delay: 0.6s; }
+        @keyframes waveAnim {
+            0% { height: 6px; }
+            100% { height: 26px; }
+        }
+        .vibe-meter-box {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid var(--border-subtle);
+            border-radius: 18px;
+            padding: 16px 20px;
+        }
+        .charisma-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .charisma-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff453a, #ff9f0a);
+            border-radius: 10px;
+            width: 20%;
+            transition: width 1s ease-out;
+        }
+
+        /* =====================================================
            ATTRACT MODE SCREEN SAVER
         ===================================================== */
         .attract-overlay {
@@ -1583,6 +1707,84 @@
             </div>
         </div>
 
+        <!-- STEP ROAST: СТЕНДАП-ПРОЖАРКА & КАРИКАТУРА -->
+        <div id="step-roast-result" class="step-view" style="display:none;">
+            <h2 class="modal-title" style="color: #ff453a;">🔥 ВЫ БЫЛИ ПРОЖАРЕНЫ!</h2>
+            <p class="modal-subtitle">Слушайте вердикт стендапера и забирайте постер в Instagram Stories</p>
+
+            <div class="result-content" style="gap: 36px; align-items: center; justify-content: center;">
+                <!-- Постер карикатуры GPT Image 2.5 со штампом "ПРОЖАРЕН" -->
+                <div class="roast-poster-box">
+                    <img id="roast-caricature-img" src="" alt="Карикатура" class="roast-poster-img">
+                    <div class="roast-stamp">ПРОЖАРЕН</div>
+                </div>
+
+                <!-- Блок вердикта комика, озвучка ElevenLabs и вайб-метр -->
+                <div class="roast-info-card">
+                    <div class="roast-bubble">
+                        <div id="roast-punch-title" class="roast-title-text">ОХРАННИК ПАКЕТОВ ИЗ ZARA</div>
+                        <div id="roast-speech-body" class="roast-speech-text">
+                            «Так... взгляд человека, который пришел в молл ради бесплатного вайфая. Пафоса на миллион!»
+                        </div>
+                        
+                        <!-- Плеер озвучки ElevenLabs со звуковыми волнами -->
+                        <div class="voice-wave-bar" id="roast-audio-trigger" title="Нажмите, чтобы включить/выключить звук">
+                            <span id="roast-audio-icon" style="font-size: 16px;">🔊</span>
+                            <div class="wave-col"></div>
+                            <div class="wave-col"></div>
+                            <div class="wave-col"></div>
+                            <div class="wave-col"></div>
+                            <div class="wave-col"></div>
+                            <span style="font-size: 12px; font-weight: 800; color: #ff453a; letter-spacing: 1px; margin-left: 6px;">ГОЛОС КОМИКА</span>
+                        </div>
+                        <audio id="roast-audio-el" preload="auto" style="display: none;"></audio>
+                    </div>
+
+                    <!-- Вайб-метр: харизма и статусы -->
+                    <div class="vibe-meter-box">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                            <span style="font-size: 11px; font-weight: 800; color: var(--text-dim); letter-spacing: 1px;">⚡ УРОВЕНЬ ХАРИЗМЫ:</span>
+                            <span id="roast-charisma-val" style="font-size: 18px; font-weight: 900; color: #ff453a;">18%</span>
+                        </div>
+                        <div class="charisma-bar-bg">
+                            <div id="roast-charisma-bar" class="charisma-bar-fill" style="width: 18%;"></div>
+                        </div>
+
+                        <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px;">
+                            <div style="font-size: 13px; color: var(--text-muted);">
+                                ⚠️ <strong style="color: #fff;">Главный грех:</strong> <span id="roast-flaw-val">Аура рассрочки MBank</span>
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-muted);">
+                                🏬 <strong style="color: #fff;">Статус в ТЦ:</strong> <span id="roast-mall-val">Эксперт по фудкорту</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QR-код скачивания на телефон -->
+                    <div style="display: flex; align-items: center; gap: 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--primary-border); border-radius: 18px; padding: 12px 18px;">
+                        <div style="width: 100px; height: 100px; background: #fff; padding: 6px; border-radius: 12px; flex-shrink: 0;">
+                            <img id="roast-qr-img" src="" alt="QR" style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; font-weight: 800; color: var(--primary); letter-spacing: 1px;">📱 СКАЧАТЬ В СТОРИС</div>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+                                Сканируйте камерой, чтобы забрать карикатуру и аудиозапись стендапера.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 24px; display: flex; gap: 14px; justify-content: center;">
+                <button id="roast-replay-btn" class="action-btn cancel-btn" style="min-width: 200px; padding: 16px;">
+                    🔊 СЛУШАТЬ СНОВА
+                </button>
+                <button id="roast-finish-btn" class="action-btn primary-btn" style="min-width: 200px; padding: 16px;">
+                    В НАЧАЛО
+                </button>
+            </div>
+        </div>
+
         <!-- STEP 5: НАСТРОЙКА ПРИГЛАСИТЕЛЬНОГО ПОСЛЕ ОПЛАТЫ (КРУПНЫЙ QR НА ТЕЛЕФОН) -->
         <div id="step-invite-setup" class="step-view" style="display:none;">
             <h2 class="modal-title">ОПЛАТА УСПЕШНА!</h2>
@@ -1648,6 +1850,6 @@
     </div>
 </div>
 
-<script src="script.js?v=large_results_v1"></script>
+<script src="script.js?v=roast_eleven_v1"></script>
 </body>
 </html>
