@@ -7,6 +7,8 @@ let selectedStylePhoto = 'images/photo1.jpg';
 let selectedStylePrice = 290;
 let selectedStyleModel = 'face-swap';
 let selectedStylePrompt = 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere';
+let selectedTemplateId = null;
+let selectedTemplateHtml = '';
 let isSelectingCard = false;
 let isAttractClosing = false;
 let currentCategory = 'ФОТО';
@@ -455,6 +457,8 @@ function renderGridTemplates() {
             selectedStylePrice = itemPrice;
             selectedStyleModel = item.model || 'face-swap';
             selectedStylePrompt = item.prompt || '';
+            selectedTemplateId = item.id;
+            selectedTemplateHtml = item.htmlCode || '';
             closeTemplateGallery();
             openKioskFlow();
         });
@@ -826,7 +830,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function startInviteFlow() {
         currentInviteId = 'inv-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
         const origin = window.location.origin || 'https://kiosk394.vercel.app';
-        const editUrl = `${origin}/kiosk-ui/invite-edit.html?id=${currentInviteId}`;
+        let editUrl = `${origin}/kiosk-ui/invite-edit.html?id=${currentInviteId}`;
+        if (selectedTemplateId) {
+            editUrl += `&templateId=${encodeURIComponent(selectedTemplateId)}`;
+        }
 
         if (inviteEditQr) {
             inviteEditQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(editUrl)}`;
@@ -902,7 +909,10 @@ document.addEventListener('DOMContentLoaded', () => {
         inviteReEditBtn.addEventListener('click', () => {
             if (currentInviteId) {
                 const origin = window.location.origin || 'https://kiosk394.vercel.app';
-                const editUrl = `${origin}/kiosk-ui/invite-edit.html?id=${currentInviteId}`;
+                let editUrl = `${origin}/kiosk-ui/invite-edit.html?id=${currentInviteId}`;
+                if (selectedTemplateId) {
+                    editUrl += `&templateId=${encodeURIComponent(selectedTemplateId)}`;
+                }
                 if (inviteEditQr) {
                     inviteEditQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(editUrl)}`;
                 }
@@ -1162,8 +1172,14 @@ document.addEventListener('DOMContentLoaded', () => {
         selectTemplateBtn.addEventListener('click', () => {
             const list = templateCatalog[currentCategory] || templateCatalog['ФОТО'];
             if (list[activeTemplateIndex]) {
-                selectedStyle = list[activeTemplateIndex].title;
-                selectedStylePhoto = list[activeTemplateIndex].img;
+                const cur = list[activeTemplateIndex];
+                selectedStyle = cur.title;
+                selectedStylePhoto = cur.img;
+                selectedStylePrice = cur.price || 290;
+                selectedStyleModel = cur.model || 'face-swap';
+                selectedStylePrompt = cur.prompt || '';
+                selectedTemplateId = cur.id;
+                selectedTemplateHtml = cur.htmlCode || '';
             }
             closeTemplateGallery();
             openKioskFlow();

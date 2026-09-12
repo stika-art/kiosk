@@ -193,6 +193,38 @@
             cursor: not-allowed;
         }
 
+        /* Выбор шаблона дизайна */
+        .tpl-chip {
+            flex-shrink: 0;
+            width: 105px;
+            background: var(--input-bg);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        .tpl-chip.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 16px rgba(212,160,67,0.45);
+        }
+        .tpl-chip-img {
+            width: 100%;
+            height: 75px;
+            object-fit: cover;
+            display: block;
+        }
+        .tpl-chip-title {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 4px;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         /* Экран успеха */
         #success-modal {
             display: none;
@@ -251,6 +283,16 @@
         <p class="header-sub" id="page-sub">Заполните данные вашего торжества</p>
         <div id="edit-mode-badge" style="display:none; margin: 10px auto 0; padding: 5px 14px; border-radius: 20px; background: rgba(212,160,67,0.18); border: 1px solid var(--primary); color: var(--primary); font-size: 11px; font-weight: 700; width: fit-content; letter-spacing: 0.8px;">
             ✏️ РЕЖИМ РЕДАКТИРОВАНИЯ (БЕЗ ОПЛАТЫ)
+        </div>
+    </div>
+
+    <!-- 0. ВЫБОР ДИЗАЙНА / ШАБЛОНА -->
+    <div class="form-card" id="template-picker-card" style="display: none;">
+        <div class="card-title">
+            <span>🎨</span> Стиль оформления пригласительного
+        </div>
+        <div id="template-chips-container" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch;">
+            <!-- JS dynamic templates -->
         </div>
     </div>
 
@@ -422,6 +464,9 @@
     const urlParams = new URLSearchParams(window.location.search);
     let inviteId = urlParams.get('id') || ('inv-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6));
     let isEditMode = false;
+    let currentTemplateId = urlParams.get('templateId') || null;
+    let currentCustomHtml = '';
+    let availableTemplates = [];
 
     let uploadedPhotoUrl = 'assets/hero_portrait.jpg';
     let selectedPhotoFile = null;
@@ -579,6 +624,81 @@
     }
 
     // ==========================================
+    // ЗАГРУЗКА И ВЫБОР ШАБЛОНА ДИЗАЙНА
+    // ==========================================
+    async function loadInviteTemplates() {
+        try {
+            const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?t=${Date.now()}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data.templates)) {
+                    availableTemplates = data.templates.filter(t => 
+                        Number(t.sectionId) === 4 || 
+                        (t.sectionTitle && t.sectionTitle.toUpperCase().includes('ПРИГЛАС')) || 
+                        t.model === 'invite-web' ||
+                        (t.category && ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'ТУШОО ТОЙ'].includes(t.category.toUpperCase()))
+                    );
+                }
+            }
+        } catch (err) {
+            console.warn('Не удалось загрузить шаблоны из облака:', err);
+        }
+
+        // Если шаблоны есть в облаке — рендерим выбор
+        if (availableTemplates.length > 0) {
+            renderTemplatePicker();
+        }
+    }
+
+    function renderTemplatePicker() {
+        const card = document.getElementById('template-picker-card');
+        const container = document.getElementById('template-chips-container');
+        if (!card || !container) return;
+
+        container.innerHTML = '';
+        card.style.display = 'block';
+
+        // Если шаблон еще не выбран, выбираем первый или соответствующий templateId
+        if (!currentTemplateId && availableTemplates.length > 0) {
+            currentTemplateId = String(availableTemplates[0].id);
+            currentCustomHtml = availableTemplates[0].htmlCode || '';
+        }
+
+        availableTemplates.forEach(tpl => {
+            const isSelected = String(tpl.id) === String(currentTemplateId);
+            if (isSelected && tpl.htmlCode && !currentCustomHtml) {
+                currentCustomHtml = tpl.htmlCode;
+            }
+
+            const chip = document.createElement('div');
+            chip.className = `tpl-chip ${isSelected ? 'active' : ''}`;
+            chip.setAttribute('data-id', tpl.id);
+            chip.innerHTML = `
+                <img src="${tpl.img || 'assets/hero_portrait.jpg'}" class="tpl-chip-img" onerror="this.src='images/photo1.jpg'">
+                <div class="tpl-chip-title">${tpl.title}</div>
+            `;
+            chip.addEventListener('click', () => {
+                currentTemplateId = String(tpl.id);
+                currentCustomHtml = tpl.htmlCode || '';
+                document.querySelectorAll('.tpl-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+            });
+            container.appendChild(chip);
+        });
+    }
+
+    function updateTemplatePickerActiveState() {
+        if (!currentTemplateId) return;
+        document.querySelectorAll('.tpl-chip').forEach(chip => {
+            if (chip.getAttribute('data-id') === String(currentTemplateId)) {
+                chip.classList.add('active');
+            } else {
+                chip.classList.remove('active');
+            }
+        });
+    }
+
+    // ==========================================
     // ПРОВЕРКА И ЗАГРУЗКА СУЩЕСТВУЮЩЕГО ПРИГЛАШЕНИЯ
     // ==========================================
     async function checkExistingInvite() {
@@ -602,6 +722,14 @@
         document.getElementById('page-sub').textContent = 'Внесите исправления и сохраните (повторная оплата не нужна)';
         document.getElementById('edit-mode-badge').style.display = 'block';
         document.querySelector('#submit-btn span').textContent = 'Сохранить изменения';
+
+        if (data.templateId) {
+            currentTemplateId = String(data.templateId);
+        }
+        if (data.customHtml) {
+            currentCustomHtml = data.customHtml;
+        }
+        updateTemplatePickerActiveState();
 
         if (data.type) document.getElementById('event-type').value = data.type;
         if (data.name1) document.getElementById('name1').value = data.name1;
@@ -660,6 +788,8 @@
             // 2. Сборка объекта данных
             const invitePayload = {
                 id: inviteId,
+                templateId: currentTemplateId,
+                customHtml: currentCustomHtml,
                 type: document.getElementById('event-type').value,
                 name1: name1,
                 name2: document.getElementById('name2').value.trim(),
@@ -720,8 +850,11 @@
         }
     });
 
-    // Инициализация при открытии
-    checkExistingInvite();
+    // Инициализация при открытии: сначала подтягиваем шаблоны, затем существующие данные
+    (async function init() {
+        await loadInviteTemplates();
+        await checkExistingInvite();
+    })();
 </script>
 </body>
 </html>

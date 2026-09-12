@@ -640,7 +640,33 @@
                 console.warn('Не удалось загрузить данные из облака, используем шаблон:', err);
             }
         }
-        applyDataToDOM();
+
+        // Рендеринг: если есть кастомный HTML-дизайн шаблона
+        if (inviteData.customHtml) {
+            renderCustomInviteHtml(inviteData.customHtml);
+        } else if (inviteData.templateId) {
+            // Если сохранен id шаблона, пытаемся подтянуть его HTML из settings.json
+            try {
+                const settingsRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?t=${Date.now()}`);
+                if (settingsRes.ok) {
+                    const settingsData = await settingsRes.json();
+                    const matchedTpl = (settingsData.templates || []).find(t => String(t.id) === String(inviteData.templateId));
+                    if (matchedTpl && matchedTpl.htmlCode) {
+                        inviteData.customHtml = matchedTpl.htmlCode;
+                        renderCustomInviteHtml(inviteData.customHtml);
+                    } else {
+                        applyDataToDOM();
+                    }
+                } else {
+                    applyDataToDOM();
+                }
+            } catch(e) {
+                applyDataToDOM();
+            }
+        } else {
+            applyDataToDOM();
+        }
+
         initCountdown();
         initAudioPlayer();
         
@@ -651,6 +677,77 @@
                 setupYouTubeAudio(vId);
             }
         }
+    }
+
+    function renderCustomInviteHtml(rawHtml) {
+        if (!rawHtml || !rawHtml.trim()) return;
+
+        // 1. Вычисляем значения переменных
+        const names = inviteData.name2 ? `${inviteData.name1} & ${inviteData.name2}` : (inviteData.name1 || '');
+        const cleanQuote = (inviteData.quote || '').replace(/«|»/g, '');
+        const rsvpMsg = encodeURIComponent(`Здравствуйте, ${names}! Мы с радостью подтверждаем наше присутствие на вашем торжестве!`);
+        const rsvpLink = inviteData.whatsappPhone 
+            ? `https://wa.me/${inviteData.whatsappPhone.replace(/\D/g, '')}?text=${rsvpMsg}`
+            : '#';
+
+        // 2. Производим подстановку всех тегов
+        let html = rawHtml
+            .replace(/\{\{NAMES\}\}/g, names)
+            .replace(/\{\{NAME1\}\}/g, inviteData.name1 || '')
+            .replace(/\{\{NAME2\}\}/g, inviteData.name2 || '')
+            .replace(/\{\{EVENT_TYPE\}\}/g, inviteData.type || 'ПРИГЛАШЕНИЕ НА ТОРЖЕСТВО')
+            .replace(/\{\{DATE_DISPLAY\}\}/g, inviteData.dateDisplay || '')
+            .replace(/\{\{DATE\}\}/g, inviteData.date || '')
+            .replace(/\{\{PHOTO\}\}/g, inviteData.photo || 'assets/hero_portrait.jpg')
+            .replace(/\{\{QUOTE\}\}/g, cleanQuote)
+            .replace(/\{\{VENUE_NAME\}\}/g, inviteData.venueName || '')
+            .replace(/\{\{VENUE_ADDRESS\}\}/g, inviteData.venueAddress || '')
+            .replace(/\{\{MAP_URL\}\}/g, inviteData.mapUrl || '#')
+            .replace(/\{\{RSVP_LINK\}\}/g, rsvpLink)
+            .replace(/\{\{WHATSAPP_PHONE\}\}/g, inviteData.whatsappPhone || '');
+
+        // 3. Парсим HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        // Переносим все стили и линки шрифтов в head текущего документа
+        const headElements = doc.head.querySelectorAll('style, link[rel="stylesheet"], link[rel="preconnect"]');
+        headElements.forEach(el => {
+            document.head.appendChild(el.cloneNode(true));
+        });
+
+        // Скрываем стандартный мобильный wrapper
+        const defaultWrapper = document.querySelector('.mobile-wrapper');
+        if (defaultWrapper) {
+            defaultWrapper.style.display = 'none';
+        }
+
+        // Создаем или очищаем контейнер кастомного дизайна
+        let customRoot = document.getElementById('custom-invite-root');
+        if (!customRoot) {
+            customRoot = document.createElement('div');
+            customRoot.id = 'custom-invite-root';
+            customRoot.style.cssText = 'width:100%; min-height:100vh; display:flex; flex-direction:column; align-items:center;';
+            document.body.prepend(customRoot);
+        }
+        customRoot.innerHTML = doc.body.innerHTML || html;
+
+        // Добавляем панель редактирования для владельца внизу кастомного дизайна
+        const editUrl = inviteId ? `invite-edit.html?id=${encodeURIComponent(inviteId)}` : 'invite-edit.html';
+        const ownerPanel = document.createElement('div');
+        ownerPanel.className = 'owner-edit-panel';
+        ownerPanel.style.cssText = 'margin: 30px auto 40px; text-align: center; width: 100%; max-width: 480px; padding: 20px;';
+        ownerPanel.innerHTML = `
+            <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 10px;">Нужно изменить имена, дату, фото или музыку?</p>
+            <a href="${editUrl}" class="owner-edit-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(212,160,67,0.4); color: #D4A043; text-decoration: none; font-size: 13px; font-weight: 600;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>Редактировать пригласительное</span>
+            </a>
+        `;
+        customRoot.appendChild(ownerPanel);
     }
 
     function applyDataToDOM() {
@@ -703,11 +800,16 @@
             const now = new Date().getTime();
             const diff = targetDate - now;
 
+            const daysEl = document.getElementById('days') || document.getElementById('timer-days');
+            const hoursEl = document.getElementById('hours') || document.getElementById('timer-hours');
+            const minsEl = document.getElementById('mins') || document.getElementById('timer-minutes');
+            const secsEl = document.getElementById('secs') || document.getElementById('timer-seconds');
+
             if (diff <= 0) {
-                document.getElementById('days').textContent = '00';
-                document.getElementById('hours').textContent = '00';
-                document.getElementById('mins').textContent = '00';
-                document.getElementById('secs').textContent = '00';
+                if (daysEl) daysEl.textContent = '00';
+                if (hoursEl) hoursEl.textContent = '00';
+                if (minsEl) minsEl.textContent = '00';
+                if (secsEl) secsEl.textContent = '00';
                 return;
             }
 
@@ -716,10 +818,10 @@
             const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             const s = Math.floor((diff % (1000 * 60)) / 1000);
 
-            document.getElementById('days').textContent = String(d).padStart(2, '0');
-            document.getElementById('hours').textContent = String(h).padStart(2, '0');
-            document.getElementById('mins').textContent = String(m).padStart(2, '0');
-            document.getElementById('secs').textContent = String(s).padStart(2, '0');
+            if (daysEl) daysEl.textContent = String(d).padStart(2, '0');
+            if (hoursEl) hoursEl.textContent = String(h).padStart(2, '0');
+            if (minsEl) minsEl.textContent = String(m).padStart(2, '0');
+            if (secsEl) secsEl.textContent = String(s).padStart(2, '0');
         }
 
         updateTimer();

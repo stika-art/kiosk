@@ -529,6 +529,25 @@
             color: var(--text-dim);
         }
 
+        .tag-insert-btn {
+            background: rgba(212, 160, 67, 0.12);
+            border: 1px solid rgba(212, 160, 67, 0.35);
+            color: #F3D289;
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .tag-insert-btn:hover {
+            background: var(--primary);
+            color: #000000;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
         /* MODAL CROPPER (TRENDUM LUXURY THEME) */
         .crop-modal-overlay {
             position: fixed;
@@ -938,6 +957,42 @@
                     </div>
                 </div>
 
+                <!-- БЛОК ВВОДА HTML-КОДА ДЛЯ ПРИГЛАСИТЕЛЬНЫХ (ПОКАЗЫВАЕТСЯ ДЛЯ РАЗДЕЛА ПРИГЛАСИТЕЛЬНЫХ) -->
+                <div id="tpl-html-code-group" style="display: none; margin-top: 14px; background: rgba(212, 160, 67, 0.05); border: 1px dashed var(--primary-border); border-radius: 14px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <label style="font-size: 13px; color: var(--primary); font-weight: 700;">🌐 HTML-код шаблона пригласительного:</label>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                                Вставьте сюда чистый HTML/CSS дизайн пригласительного. Гости смогут заполнить и редактировать данные на телефоне.
+                            </div>
+                        </div>
+                        <button type="button" class="btn-upload" style="font-size: 12px; padding: 6px 14px;" onclick="insertDefaultInviteHtmlTemplate()">📋 Вставить готовый образец HTML</button>
+                    </div>
+
+                    <!-- Быстрые теги для вставки кликом -->
+                    <div style="margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                        <span style="font-size: 11px; color: var(--text-dim);">Кликните переменную для вставки:</span>
+                        <button type="button" class="tag-insert-btn" onclick="insertTagIntoHtml('{{NAME1}}')">{{NAME1}}</button>
+                        <button type="button" class="tag-insert-btn" onclick="insertTagIntoHtml('{{NAME2}}')">{{NAME2}}</button>
+                        <button type="button" class="tag-insert-btn" onclick="insertTagIntoHtml('{{NAMES}}')">{{NAMES}}</button>
+                        <button type="button" class="tag-insert-btn" onclick="insertTagIntoHtml('{{EVENT_TYPE}}')">{{EVENT_TYPE}}</button>
+                        <button type="button" class="tag-insert-btn" onclick="insertTagIntoHtml('{{DATE_DISPLAY}}')">{{DATE_DISPLAY}}</button>
+                        <button type="button" class="tag-insert-btn" onclick="insertTagIntoHtml('{{PHOTO}}')">{{PHOTO}}</button>
+                        <button type="button" class="tag-insert-btn" onclick="insertTagIntoHtml('{{QUOTE}}')">{{QUOTE}}</button>
+                        <button type="button" class="tag-insert-btn" onclick="insertTagIntoHtml('{{VENUE_NAME}}')">{{VENUE_NAME}}</button>
+                        <button type="button" class="tag-insert-btn" onclick="insertTagIntoHtml('{{VENUE_ADDRESS}}')">{{VENUE_ADDRESS}}</button>
+                        <button type="button" class="tag-insert-btn" onclick="insertTagIntoHtml('{{MAP_URL}}')">{{MAP_URL}}</button>
+                        <button type="button" class="tag-insert-btn" onclick="insertTagIntoHtml('{{RSVP_LINK}}')">{{RSVP_LINK}}</button>
+                        <button type="button" class="tag-insert-btn" onclick="insertTagIntoHtml('{{WHATSAPP_PHONE}}')">{{WHATSAPP_PHONE}}</button>
+                    </div>
+
+                    <textarea id="tpl-html-input" class="admin-input" style="width: 100%; height: 260px; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.5; white-space: pre; tab-size: 2;" placeholder="Вставьте HTML код сайта-пригласительного сюда... Используйте {{NAMES}}, {{DATE_DISPLAY}}, {{PHOTO}}, {{VENUE_NAME}}, {{MAP_URL}}, {{RSVP_LINK}} и т.д."></textarea>
+                    
+                    <div style="font-size: 11px; color: var(--text-dim); margin-top: 6px;">
+                        💡 Музыка YouTube из формы, таймер обратного отсчёта и кнопка «Редактировать» для гостей автоматически работают в дизайне.
+                    </div>
+                </div>
+
                 <div class="form-row" style="margin-top: 14px; align-items: center;">
                     <button class="btn-primary" id="tpl-submit-btn" onclick="addOrUpdateTemplate()">+ Добавить шаблон</button>
                     <button type="button" id="tpl-cancel-edit-btn" class="btn-del" style="display: none; margin-left: 10px; background: rgba(255,255,255,0.06); border-color: var(--border-subtle); color: #ccc;" onclick="cancelTemplateEdit()">✕ Отмена</button>
@@ -1283,7 +1338,10 @@
                 { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'seedance-2.5', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
                 { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'seedance-2.5', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
                 { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'nano-banana-2', prompt: 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere' },
-                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'nano-banana-2', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' }
+                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'nano-banana-2', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
+                { id: 11, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'СВАДЬБА', title: 'ROYAL WEDDING', img: 'assets/hero_portrait.jpg', price: 490, model: 'invite-web', prompt: 'Свадебное интерактивное пригласительное' },
+                { id: 12, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'КЫЗ УЗАТУУ', title: 'КЫЗ УЗАТУУ GOLD', img: 'assets/child.png', price: 490, model: 'invite-web', prompt: 'Интерактивное приглашение на Кыз Узатуу' },
+                { id: 13, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'ЮБИЛЕЙ', title: 'JUBILEE LUXURY', img: 'assets/man.jpg', price: 490, model: 'invite-web', prompt: 'Интерактивное приглашение на Юбилей' }
             ];
         }
 
@@ -1330,7 +1388,8 @@
                 return [
                     { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
                     { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
-                    { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'INSTA VIBE'] }
+                    { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'INSTA VIBE'] },
+                    { id: 4, title: 'ПРИГЛАСИТЕЛЬНЫЕ', badge: 'СВАДЬБЫ • ТОЙ • ЮБИЛЕИ', subtitle: 'ИНТЕРАКТИВНЫЕ САЙТЫ С МУЗЫКОЙ', filter: 'INVITE', category: 'ПРИГЛАСИТЕЛЬНЫЕ', img: 'images/photo5.jpg', categories: ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'ТУШОО ТОЙ', 'ДЕТСКИЙ ПРАЗДНИК'] }
                 ];
             }
             return cards.map(c => {
@@ -1343,6 +1402,8 @@
                         cats = ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'];
                     } else if (c.id === 3 || titleUp === 'ТРЕНДЫ') {
                         cats = ['TIKTOK', 'REELS', 'INSTA VIBE'];
+                    } else if (c.id === 4 || titleUp.includes('ПРИГЛАС')) {
+                        cats = ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'ТУШОО ТОЙ', 'ДЕТСКИЙ ПРАЗДНИК'];
                     } else {
                         cats = [c.title || 'ОБЩЕЕ'];
                     }
@@ -1367,7 +1428,10 @@
                     const catUp = (cat || '').toUpperCase();
                     const modelUp = (t.model || '').toLowerCase();
                     const titleUp = (t.title || '').toUpperCase();
-                    if (catUp === 'ВИДЕО' || modelUp.includes('seedance') || modelUp.includes('omni') || modelUp.includes('kling') || modelUp.includes('video')) {
+                    if (catUp.includes('ПРИГЛАС') || catUp === 'СВАДЬБА' || catUp === 'КЫЗ УЗАТУУ' || catUp === 'ЮБИЛЕЙ' || modelUp === 'invite-web') {
+                        sid = 4;
+                        stitle = 'ПРИГЛАСИТЕЛЬНЫЕ';
+                    } else if (catUp === 'ВИДЕО' || modelUp.includes('seedance') || modelUp.includes('omni') || modelUp.includes('kling') || modelUp.includes('video')) {
                         sid = 2;
                         stitle = 'ВИДЕО';
                         if (catUp === 'ВИДЕО') cat = 'НЕОН';
@@ -1391,7 +1455,8 @@
                     id: Number(t.id) || Date.now(),
                     sectionId: Number(sid),
                     sectionTitle: stitle || 'ФОТО',
-                    category: cat
+                    category: cat,
+                    htmlCode: t.htmlCode || ''
                 };
             });
         }
@@ -1495,6 +1560,7 @@
                 } else {
                     renderTplSectionTabs();
                     renderTemplates();
+                    updateHtmlCodeVisibility();
                 }
             } else {
                 if (subMenu) subMenu.style.display = 'none';
@@ -1695,6 +1761,266 @@
                 customInput.style.display = 'none';
                 customInput.value = '';
             }
+            updateHtmlCodeVisibility();
+        }
+
+        // Вставка тега переменной в текущую позицию курсора в поле HTML
+        function insertTagIntoHtml(tag) {
+            const textarea = document.getElementById('tpl-html-input');
+            if (!textarea) return;
+            const start = textarea.selectionStart || 0;
+            const end = textarea.selectionEnd || 0;
+            const val = textarea.value;
+            textarea.value = val.substring(0, start) + tag + val.substring(end);
+            textarea.selectionStart = textarea.selectionEnd = start + tag.length;
+            textarea.focus();
+        }
+
+        // Вставка образца красивого адаптивного HTML шаблона
+        function insertDefaultInviteHtmlTemplate() {
+            const textarea = document.getElementById('tpl-html-input');
+            if (!textarea) return;
+            if (textarea.value.trim() && !confirm('Заменить текущий HTML код в поле на базовый образец?')) {
+                return;
+            }
+            textarea.value = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{{NAMES}} — Приглашение на торжество</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d0d0d;
+      color: #ffffff;
+      font-family: 'Montserrat', sans-serif;
+      line-height: 1.6;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .invite-container {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      background: #141414;
+      box-shadow: 0 0 50px rgba(0,0,0,0.8);
+      position: relative;
+      padding-bottom: 70px;
+    }
+    .hero-section {
+      padding: 50px 24px 30px;
+      text-align: center;
+      background: radial-gradient(circle at 50% 10%, rgba(212,160,67,0.18) 0%, transparent 70%);
+      border-bottom: 1px solid rgba(212,160,67,0.25);
+    }
+    .event-badge {
+      display: inline-block;
+      font-size: 12px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #D4A043;
+      border: 1px solid rgba(212,160,67,0.4);
+      padding: 6px 18px;
+      border-radius: 30px;
+      margin-bottom: 20px;
+      background: rgba(212,160,67,0.08);
+    }
+    .names-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 38px;
+      font-weight: 700;
+      line-height: 1.15;
+      background: linear-gradient(135deg, #F3D289 0%, #D4A043 50%, #9C7026 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+    .date-hero {
+      font-size: 15px;
+      letter-spacing: 3px;
+      color: rgba(255,255,255,0.7);
+      text-transform: uppercase;
+    }
+    .photo-card {
+      margin: 24px 20px;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 2px solid rgba(212,160,67,0.35);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      background: #000;
+      height: 380px;
+    }
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .quote-box {
+      margin: 0 24px 28px;
+      padding: 20px;
+      text-align: center;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-style: italic;
+      color: rgba(255,255,255,0.85);
+      border-left: 2px solid #D4A043;
+      border-right: 2px solid #D4A043;
+      background: rgba(255,255,255,0.02);
+      border-radius: 12px;
+    }
+    .countdown-section {
+      margin: 0 20px 30px;
+      background: #1a1a1a;
+      border: 1px solid rgba(212,160,67,0.25);
+      border-radius: 20px;
+      padding: 22px 16px;
+      text-align: center;
+    }
+    .countdown-title {
+      font-size: 12px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: #D4A043;
+      margin-bottom: 16px;
+    }
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .countdown-item {
+      background: rgba(0,0,0,0.4);
+      border-radius: 12px;
+      padding: 10px 4px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .countdown-val {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #F3D289;
+      line-height: 1;
+    }
+    .countdown-label {
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+    .venue-card {
+      margin: 0 20px 24px;
+      background: #1a1a1a;
+      border: 1px solid rgba(212,160,67,0.25);
+      border-radius: 20px;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    .venue-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+    .venue-address {
+      font-size: 14px;
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 18px;
+    }
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, #D4A043 0%, #B88328 100%);
+      color: #000000;
+      font-weight: 700;
+      box-shadow: 0 4px 20px rgba(212,160,67,0.3);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid #D4A043;
+      color: #F3D289;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="invite-container">
+    <div class="hero-section">
+      <div class="event-badge">{{EVENT_TYPE}}</div>
+      <h1 class="names-title">{{NAMES}}</h1>
+      <div class="date-hero">{{DATE_DISPLAY}}</div>
+    </div>
+
+    <div class="photo-card">
+      <img src="{{PHOTO}}" alt="{{NAMES}}">
+    </div>
+
+    <div class="quote-box">
+      «{{QUOTE}}»
+    </div>
+
+    <div class="countdown-section">
+      <div class="countdown-title">До торжества осталось</div>
+      <div class="countdown-grid">
+        <div class="countdown-item"><div class="countdown-val" id="timer-days">0</div><div class="countdown-label">Дней</div></div>
+        <div class="countdown-item"><div class="countdown-val" id="timer-hours">0</div><div class="countdown-label">Часов</div></div>
+        <div class="countdown-item"><div class="countdown-val" id="timer-minutes">0</div><div class="countdown-label">Минут</div></div>
+        <div class="countdown-item"><div class="countdown-val" id="timer-seconds">0</div><div class="countdown-label">Секунд</div></div>
+      </div>
+    </div>
+
+    <div class="venue-card">
+      <div class="venue-name">{{VENUE_NAME}}</div>
+      <div class="venue-address">{{VENUE_ADDRESS}}</div>
+      <a href="{{MAP_URL}}" target="_blank" class="action-btn btn-gold">📍 Открыть на карте (2GIS)</a>
+      <a href="{{RSVP_LINK}}" target="_blank" class="action-btn btn-outline">💬 Подтвердить присутствие в WhatsApp</a>
+    </div>
+  </div>
+</body>
+</html>`;
+        }
+
+        // Показ/скрытие поля ввода HTML в зависимости от выбранного раздела или модели
+        function updateHtmlCodeVisibility(forcedSectionId, forcedModel) {
+            const secSelect = document.getElementById('tpl-section-select');
+            const modelSelect = document.getElementById('tpl-model-select');
+            const htmlGroup = document.getElementById('tpl-html-code-group');
+            if (!htmlGroup) return;
+
+            const sectionId = forcedSectionId !== undefined ? Number(forcedSectionId) : (secSelect ? Number(secSelect.value) : 1);
+            const model = forcedModel !== undefined ? forcedModel : (modelSelect ? modelSelect.value : '');
+
+            const card = mainCards.find(c => c.id === sectionId);
+            const isInviteSection = sectionId === 4 || (card && card.title.toUpperCase().includes('ПРИГЛАС'));
+            const isInviteModel = model === 'invite-web';
+
+            if (isInviteSection || isInviteModel) {
+                htmlGroup.style.display = 'block';
+                if (modelSelect && !isInviteModel && modelSelect.value === 'nano-banana-2') {
+                    modelSelect.value = 'invite-web';
+                }
+            } else {
+                htmlGroup.style.display = 'none';
+            }
         }
 
         function getModelBadge(model) {
@@ -1797,6 +2123,7 @@
                 if (secSelect && card) {
                     secSelect.value = card.id;
                     renderTplCategoryDropdown(card.id);
+                    updateHtmlCodeVisibility(card.id);
                 }
                 if (submitBtn && !editingTemplateId && card) {
                     submitBtn.textContent = `+ Добавить шаблон в «${card.title}»`;
@@ -1805,6 +2132,7 @@
                 if (submitBtn && !editingTemplateId) {
                     submitBtn.textContent = '+ Добавить шаблон';
                 }
+                updateHtmlCodeVisibility();
             }
 
             renderTemplates();
@@ -1821,6 +2149,7 @@
 
         function handleTplSectionChange(val) {
             renderTplCategoryDropdown(Number(val));
+            updateHtmlCodeVisibility(Number(val));
             const submitBtn = document.getElementById('tpl-submit-btn');
             const card = mainCards.find(c => c.id === Number(val));
             if (submitBtn && !editingTemplateId && card) {
@@ -2029,7 +2358,10 @@
                             ${tpl.category || 'ОБЩЕЕ'}
                         </span>
                     </td>
-                    <td>${modelBadge}</td>
+                    <td>
+                        ${modelBadge}
+                        ${tpl.htmlCode ? ' <span style="background: rgba(52,199,89,0.15); border: 1px solid #34c759; color: #34c759; font-size: 11px; padding: 2px 6px; border-radius: 6px; font-weight: 700; margin-left: 4px;" title="Шаблон содержит интерактивный HTML-дизайн">🌐 HTML</span>' : ''}
+                    </td>
                     <td><div class="prompt-preview-cell" title="${promptEscaped}">${promptText}</div></td>
                     <td><span class="price-badge">${priceVal} сом</span></td>
                     <td style="text-align: right; white-space: nowrap;">
@@ -2110,6 +2442,12 @@
 
             document.getElementById('tpl-prompt-input').value = tpl.prompt || '';
             document.getElementById('tpl-img-input').value = tpl.img || '';
+            
+            const htmlInput = document.getElementById('tpl-html-input');
+            if (htmlInput) {
+                htmlInput.value = tpl.htmlCode || '';
+            }
+            updateHtmlCodeVisibility(tpl.sectionId, tpl.model);
 
             handleTemplateImgInput(tpl.img || '');
 
@@ -2131,7 +2469,13 @@
             document.getElementById('tpl-custom-model-input').style.display = 'none';
             document.getElementById('tpl-custom-model-input').value = '';
             document.getElementById('tpl-file-input').value = '';
+            
+            const htmlInput = document.getElementById('tpl-html-input');
+            if (htmlInput) {
+                htmlInput.value = '';
+            }
             handleTemplateImgInput('');
+            updateHtmlCodeVisibility();
 
             const submitBtn = document.getElementById('tpl-submit-btn');
             const cancelBtn = document.getElementById('tpl-cancel-edit-btn');
@@ -2148,6 +2492,7 @@
             const customModelInput = document.getElementById('tpl-custom-model-input');
             const promptInput = document.getElementById('tpl-prompt-input');
             const imgInput = document.getElementById('tpl-img-input');
+            const htmlInput = document.getElementById('tpl-html-input');
             const status = document.getElementById('tpl-status');
 
             const sectionId = secSelect ? Number(secSelect.value) : 1;
@@ -2165,6 +2510,9 @@
 
             const prompt = promptInput ? promptInput.value.trim() : '';
             const img = imgInput ? imgInput.value.trim() : '';
+            let htmlCode = htmlInput ? htmlInput.value.trim() : '';
+
+            const isInvite = sectionId === 4 || sectionTitle.toUpperCase().includes('ПРИГЛАС') || model === 'invite-web';
 
             if (!title) {
                 status.textContent = '❌ Введите название шаблона (например: CYBER SAMURAI)';
@@ -2177,6 +2525,12 @@
                 status.textContent = '❌ Загрузите обложку для шаблона через кнопку «📁 Загрузить файл»';
                 status.className = 'status-msg error';
                 return;
+            }
+
+            // Для пригласительных, если HTML-код пуст, подставляем базовый образец
+            if (isInvite && !htmlCode) {
+                insertDefaultInviteHtmlTemplate();
+                htmlCode = htmlInput ? htmlInput.value.trim() : '';
             }
 
             if (editingTemplateId) {
@@ -2192,7 +2546,8 @@
                         price,
                         model,
                         prompt,
-                        img
+                        img,
+                        htmlCode
                     };
                     status.textContent = `✅ Шаблон "${title}" успешно обновлён в разделе «${sectionTitle}»`;
                     status.className = 'status-msg success';
@@ -2210,13 +2565,15 @@
                     price,
                     model,
                     prompt,
-                    img
+                    img,
+                    htmlCode
                 });
 
                 titleInput.value = '';
                 priceInput.value = '';
                 promptInput.value = '';
                 imgInput.value = '';
+                if (htmlInput) htmlInput.value = '';
                 document.getElementById('tpl-file-input').value = '';
                 handleTemplateImgInput('');
 
