@@ -84,7 +84,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
     }
 
     try {
-        // Создание задачи
+        // Создание задачи с указанием Webhook Callback URL
         const createRes = await fetch(DEFAULT_KIE_URL, {
             method: 'POST',
             headers: {
@@ -93,6 +93,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
             },
             body: JSON.stringify({
                 model: kieModel,
+                callBackUrl: 'https://kiosk394.vercel.app/api/ai/kie-callback',
                 input: inputPayload
             })
         });
@@ -111,15 +112,28 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
             return null;
         }
 
-        console.log(`[Kie.ai] Задача создана, taskId: ${taskId}. Ожидание завершения...`);
+        console.log(`[Kie.ai] Задача создана, taskId: ${taskId}. Webhook: https://kiosk394.vercel.app/api/ai/kie-callback. Ожидание...`);
 
-        // Опрос статуса (polling) до 45 секунд
-        const maxWaitMs = 45000;
+        // Опрос статуса и вебхука до 50 секунд
+        const maxWaitMs = 50000;
         const startTime = Date.now();
 
         while (Date.now() - startTime < maxWaitMs) {
-            await new Promise(r => setTimeout(r, 2000));
+            await new Promise(r => setTimeout(r, 2500));
 
+            // 1. Проверяем, пришел ли уже Webhook от Kie.ai в Supabase Storage
+            try {
+                const webhookFileRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/tasks/${taskId}.json?t=${Date.now()}`);
+                if (webhookFileRes.ok) {
+                    const webhookData = await webhookFileRes.json();
+                    if (webhookData && webhookData.mediaUrl) {
+                        console.log(`[Kie.ai Webhook] Задача ${taskId} выполнена и получена через Webhook!`);
+                        return webhookData.mediaUrl;
+                    }
+                }
+            } catch (_) {}
+
+            // 2. Резервный прямой опрос Kie.ai recordInfo
             const recordRes = await fetch(`${KIE_RECORD_URL}?taskId=${encodeURIComponent(taskId)}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}` }
             });

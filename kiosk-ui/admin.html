@@ -808,11 +808,24 @@
                         </label>
                         <input type="text" id="aggregator-url-input" class="admin-input" style="width: 100%;" placeholder="https://api.kie.ai/api/v1/jobs/createTask">
                     </div>
-                    <div style="margin-bottom: 16px;">
+                    <div style="margin-bottom: 14px;">
                         <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
                             🔑 API Ключ (Bearer Token):
                         </label>
                         <input type="password" id="aggregator-key-input" class="admin-input" style="width: 100%;" placeholder="fde11cd9...">
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--primary); margin-bottom: 6px; font-weight: 700;">
+                            ⚡ Webhook Callback URL (эндпоинт киоска для Kie.ai):
+                        </label>
+                        <input type="text" id="aggregator-webhook-url" class="admin-input" style="width: 100%; color: var(--primary); font-family: monospace; font-size: 12px;" value="https://kiosk394.vercel.app/api/ai/kie-callback" readonly>
+                        <span style="font-size: 11px; color: var(--text-dim); display: block; margin-top: 4px;">Киоск автоматически передает этот адрес в Kie.ai (callBackUrl) для мгновенного получения готовых фото и видео.</span>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🛡️ Webhook HMAC Key (Ключ подписи из настроек Kie.ai):
+                        </label>
+                        <input type="password" id="aggregator-webhook-hmac-input" class="admin-input" style="width: 100%;" placeholder="Вставьте ключ после нажатия «Create Webhook Key» в Kie.ai...">
                     </div>
                     <button class="btn-primary" onclick="saveAggregatorSettings()">Сохранить параметры агрегатора</button>
                     <div id="aggregator-status" class="status-msg" style="margin-top: 10px;"></div>
@@ -1599,23 +1612,29 @@
             try {
                 const url = localStorage.getItem('kiosk_aggregator_url') || 'https://api.kie.ai/api/v1/jobs/createTask';
                 const key = localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd';
+                const hmac = localStorage.getItem('kiosk_kie_webhook_hmac') || '';
                 const urlInput = document.getElementById('aggregator-url-input');
                 const keyInput = document.getElementById('aggregator-key-input');
+                const hmacInput = document.getElementById('aggregator-webhook-hmac-input');
                 if (urlInput) urlInput.value = url;
                 if (keyInput) keyInput.value = key;
+                if (hmacInput) hmacInput.value = hmac;
             } catch(e) {}
         }
 
         function saveAggregatorSettings() {
             const urlInput = document.getElementById('aggregator-url-input');
             const keyInput = document.getElementById('aggregator-key-input');
+            const hmacInput = document.getElementById('aggregator-webhook-hmac-input');
             const status = document.getElementById('aggregator-status');
 
             const url = urlInput ? urlInput.value.trim() : '';
             const key = keyInput ? keyInput.value.trim() : '';
+            const hmac = hmacInput ? hmacInput.value.trim() : '';
 
             localStorage.setItem('kiosk_aggregator_url', url);
             localStorage.setItem('kiosk_aggregator_key', key);
+            localStorage.setItem('kiosk_kie_webhook_hmac', hmac);
 
             status.textContent = '✅ Параметры агрегатора успешно сохранены!';
             status.className = 'status-msg success';
