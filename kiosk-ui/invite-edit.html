@@ -1,0 +1,534 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Конструктор пригласительного — TRENDUM</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg: #141414;
+            --card: #1E1E1E;
+            --input-bg: #272727;
+            --primary: #D4A043;
+            --primary-hover: #b88328;
+            --border: rgba(212, 160, 67, 0.25);
+            --text: #FFFFFF;
+            --text-muted: rgba(255, 255, 255, 0.65);
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            padding: 20px 16px 60px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 460px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .header-logo {
+            font-size: 14px;
+            letter-spacing: 4px;
+            color: var(--primary);
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .header-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-top: 6px;
+            letter-spacing: 1px;
+        }
+        .header-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Карточка формы */
+        .form-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+        .input-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        input[type="text"],
+        input[type="datetime-local"],
+        textarea,
+        select {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #FFFFFF;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--primary);
+        }
+
+        /* Загрузка фото */
+        .photo-upload-zone {
+            width: 100%;
+            aspect-ratio: 3 / 2;
+            background: var(--input-bg);
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+        }
+        .photo-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        .upload-icon-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-size: 12px;
+            text-align: center;
+            padding: 10px;
+        }
+
+        /* YouTube Music Helper */
+        .yt-preview-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        /* Кнопка отправки */
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            border: none;
+            border-radius: 16px;
+            color: #141414;
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(212,160,67,0.35);
+            transition: transform 0.15s, opacity 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Экран успеха */
+        #success-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center;
+        }
+        .success-box {
+            background: var(--card);
+            border: 1.5px solid var(--primary);
+            border-radius: 24px;
+            padding: 30px 20px;
+            max-width: 380px;
+            width: 100%;
+        }
+        .success-qr-wrap {
+            width: 180px;
+            height: 180px;
+            background: #fff;
+            padding: 8px;
+            border-radius: 16px;
+            margin: 20px auto;
+        }
+        .success-qr-wrap img {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .view-btn {
+            display: inline-block;
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: #141414;
+            text-decoration: none;
+            font-weight: 700;
+            border-radius: 12px;
+            margin-top: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="header-logo">TRENDUM INVITE</div>
+        <h1 class="header-title">Настройка пригласительного</h1>
+        <p class="header-sub">Заполните данные вашего торжества</p>
+    </div>
+
+    <!-- 1. ИМЕНА И ТИП СОБЫТИЯ -->
+    <div class="form-card">
+        <div class="card-title">
+            <span>✨</span> Основные данные
+        </div>
+
+        <div class="input-group">
+            <label>Тип события</label>
+            <select id="event-type">
+                <option value="ПРИГЛАШЕНИЕ НА СВАДЬБУ">Свадьба (Үйлөнүү той)</option>
+                <option value="ПРИГЛАШЕНИЕ НА КЫЗ УЗАТУУ">Кыз Узатуу</option>
+                <option value="ПРИГЛАШЕНИЕ НА ЮБИЛЕЙ">Юбилей</option>
+                <option value="ПРИГЛАШЕНИЕ НА СУННОТ ТОЙ">Сүннөт той</option>
+                <option value="ПРИГЛАШЕНИЕ НА ДЕНЬ РОЖДЕНИЯ">День Рождения</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Имя жениха / первое имя</label>
+            <input type="text" id="name1" placeholder="Например: Константин" required>
+        </div>
+
+        <div class="input-group">
+            <label>Имя невесты / второе имя (опционально)</label>
+            <input type="text" id="name2" placeholder="Например: Камила">
+        </div>
+    </div>
+
+    <!-- 2. ДАТА И ВРЕМЯ -->
+    <div class="form-card">
+        <div class="card-title">
+            <span>📅</span> Дата и время
+        </div>
+
+        <div class="input-group">
+            <label>Дата и время начала</label>
+            <input type="datetime-local" id="event-date" required>
+        </div>
+
+        <div class="input-group">
+            <label>Текст даты (как будет написано)</label>
+            <input type="text" id="date-display" placeholder="Например: 15 ИЮНЯ 2025 В 16:30">
+        </div>
+    </div>
+
+    <!-- 3. ФОТОГРАФИЯ -->
+    <div class="form-card">
+        <div class="card-title">
+            <span>📸</span> Фотография пары
+        </div>
+
+        <div class="photo-upload-zone" id="photo-drop-zone">
+            <input type="file" id="photo-input" accept="image/*" style="display:none;">
+            <img id="photo-preview" class="photo-preview" src="" alt="Превью фото">
+            <div id="upload-hint" class="upload-icon-label">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#D4A043" stroke-width="1.8">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <span>Нажмите, чтобы загрузить фото из галереи</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. МУЗЫКА ИЗ YOUTUBE -->
+    <div class="form-card">
+        <div class="card-title">
+            <span>🎵</span> Фоновая музыка
+        </div>
+
+        <div class="input-group">
+            <label>Ссылка на песню из YouTube</label>
+            <input type="text" id="youtube-url" placeholder="https://youtu.be/... или https://youtube.com/watch?v=...">
+            <div class="yt-preview-hint">
+                Вставьте любую ссылку на трек из YouTube. Музыка будет тихо и романтично играть на фоне сайта приглашения.
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. ЛОКАЦИЯ И РЕСТОРАН -->
+    <div class="form-card">
+        <div class="card-title">
+            <span>📍</span> Место проведения
+        </div>
+
+        <div class="input-group">
+            <label>Название банкетного зала / ресторана</label>
+            <input type="text" id="venue-name" placeholder="Например: Ресторан «Grand Palace»">
+        </div>
+
+        <div class="input-group">
+            <label>Адрес</label>
+            <input type="text" id="venue-address" placeholder="Например: г. Бишкек, ул. Аалы Токомбаева, 12/2">
+        </div>
+
+        <div class="input-group">
+            <label>Ссылка на карту (2GIS / Яндекс Карты)</label>
+            <input type="text" id="map-url" placeholder="https://2gis.kg/bishkek/...">
+        </div>
+    </div>
+
+    <!-- 6. RSVP И КОНТАКТЫ -->
+    <div class="form-card">
+        <div class="card-title">
+            <span>💬</span> Подтверждение присутствия
+        </div>
+
+        <div class="input-group">
+            <label>Номер WhatsApp для подтверждения</label>
+            <input type="text" id="whatsapp-phone" placeholder="996 555 123 456">
+        </div>
+
+        <div class="input-group">
+            <label>Крайний срок подтверждения</label>
+            <input type="text" id="rsvp-deadline" placeholder="Например: до 1 июня">
+        </div>
+
+        <div class="input-group">
+            <label>Слова от молодоженов / цитата</label>
+            <textarea id="quote-text" rows="3" placeholder="Мы будем очень счастливы разделить этот день с вами..."></textarea>
+        </div>
+    </div>
+
+    <!-- КНОПКА ОПУБЛИКОВАТЬ -->
+    <button type="button" class="submit-btn" id="submit-btn">
+        <span>Опубликовать пригласительное</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+    </button>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО УСПЕХА -->
+<div id="success-modal">
+    <div class="success-box">
+        <div style="font-size: 32px; margin-bottom: 8px;">🎉</div>
+        <h2 style="font-size: 20px; color: var(--primary); margin-bottom: 8px;">Пригласительное готово!</h2>
+        <p style="font-size: 13px; color: var(--text-muted);">
+            Отсканируйте QR-код или нажмите кнопку ниже, чтобы открыть сайт-приглашение и отправить его гостям в WhatsApp:
+        </p>
+
+        <div class="success-qr-wrap">
+            <img id="final-qr-img" src="" alt="QR-код">
+        </div>
+
+        <a href="#" target="_blank" class="view-btn" id="view-invite-link">Открыть пригласительное</a>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
+    const SUPABASE_BUCKET = 'kiosk-media';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let inviteId = urlParams.get('id') || ('inv-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6));
+
+    let uploadedPhotoUrl = 'assets/hero_portrait.jpg';
+    let selectedPhotoFile = null;
+
+    // Фото загрузка
+    const dropZone = document.getElementById('photo-drop-zone');
+    const photoInput = document.getElementById('photo-input');
+    const photoPreview = document.getElementById('photo-preview');
+    const uploadHint = document.getElementById('upload-hint');
+
+    dropZone.addEventListener('click', () => photoInput.click());
+
+    photoInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            selectedPhotoFile = file;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                photoPreview.src = event.target.result;
+                photoPreview.style.display = 'block';
+                uploadHint.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Дата авто-заполнение
+    const eventDateInput = document.getElementById('event-date');
+    const dateDisplayInput = document.getElementById('date-display');
+    eventDateInput.addEventListener('change', () => {
+        if (eventDateInput.value) {
+            const d = new Date(eventDateInput.value);
+            const months = ['ЯНВАРЯ','ФЕВРАЛЯ','МАРТА','АПРЕЛЯ','МАЯ','ИЮНЯ','ИЮЛЯ','АВГУСТА','СЕНТЯБРЯ','ОКТЯБРЯ','НОЯБРЯ','ДЕКАБРЯ'];
+            const hours = String(d.getHours()).padStart(2, '0');
+            const mins = String(d.getMinutes()).padStart(2, '0');
+            dateDisplayInput.value = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} В ${hours}:${mins}`;
+        }
+    });
+
+    // Отправка формы
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.addEventListener('click', async () => {
+        const name1 = document.getElementById('name1').value.trim();
+        if (!name1) {
+            alert('Пожалуйста, введите имя');
+            document.getElementById('name1').focus();
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Сохранение и публикация...</span>';
+
+        try {
+            // 1. Загрузка фото в Supabase Storage (если выбрано новое)
+            if (selectedPhotoFile) {
+                const photoPath = `invites/photos/${inviteId}_${Date.now()}.jpg`;
+                const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${photoPath}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON}`,
+                        'Content-Type': selectedPhotoFile.type || 'image/jpeg',
+                        'x-upsert': 'true'
+                    },
+                    body: selectedPhotoFile
+                });
+                if (uploadRes.ok) {
+                    uploadedPhotoUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${photoPath}`;
+                }
+            }
+
+            // 2. Сборка объекта данных
+            const invitePayload = {
+                id: inviteId,
+                type: document.getElementById('event-type').value,
+                name1: name1,
+                name2: document.getElementById('name2').value.trim(),
+                date: document.getElementById('event-date').value || '2025-06-15T16:30:00',
+                dateDisplay: document.getElementById('date-display').value.trim() || '15 ИЮНЯ 2025',
+                photo: uploadedPhotoUrl,
+                youtubeUrl: document.getElementById('youtube-url').value.trim() || 'https://www.youtube.com/watch?v=kJQP7kiw5Fk',
+                venueName: document.getElementById('venue-name').value.trim() || 'Банкетный зал «Grand Palace»',
+                venueAddress: document.getElementById('venue-address').value.trim() || 'г. Бишкек',
+                mapUrl: document.getElementById('map-url').value.trim() || 'https://2gis.kg/bishkek',
+                whatsappPhone: document.getElementById('whatsapp-phone').value.trim() || '',
+                rsvpDeadline: document.getElementById('rsvp-deadline').value.trim() || '',
+                quote: document.getElementById('quote-text').value.trim() || 'Один день в этом году будет для нас особенным, и мы хотим разделить его с вами.',
+                updatedAt: new Date().toISOString()
+            };
+
+            // 3. Сохранение JSON в Supabase
+            const jsonPath = `invites/${inviteId}.json`;
+            const jsonRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${jsonPath}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_ANON}`,
+                    'Content-Type': 'application/json',
+                    'x-upsert': 'true'
+                },
+                body: JSON.stringify(invitePayload)
+            });
+
+            if (!jsonRes.ok) {
+                console.warn('Ошибка сохранения JSON в Supabase, используем локальный fallback');
+            }
+
+            // 4. Показ финального окна
+            const origin = window.location.origin || 'https://kiosk394.vercel.app';
+            const finalInviteUrl = `${origin}/kiosk-ui/invite.html?id=${inviteId}`;
+
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(finalInviteUrl)}`;
+            document.getElementById('final-qr-img').src = qrUrl;
+            document.getElementById('view-invite-link').href = finalInviteUrl;
+            document.getElementById('success-modal').style.display = 'flex';
+
+        } catch (err) {
+            console.error('Ошибка сохранения:', err);
+            alert('Произошла ошибка при публикации. Попробуйте еще раз.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Опубликовать пригласительное</span>';
+        }
+    });
+</script>
+</body>
+</html>

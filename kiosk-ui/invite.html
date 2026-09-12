@@ -1,0 +1,768 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Приглашение на торжество</title>
+    
+    <!-- Google Fonts: Cormorant Garamond & Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Montserrat:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-color: #0d0d0d;
+            --card-bg: #141414;
+            --card-surface: #1a1a1a;
+            --gold-main: #D4A043;
+            --gold-gradient: linear-gradient(135deg, #F3D289 0%, #D4A043 50%, #9C7026 100%);
+            --gold-border: rgba(212, 160, 67, 0.35);
+            --text-main: #FFFFFF;
+            --text-muted: rgba(255, 255, 255, 0.75);
+            --text-dim: rgba(255, 255, 255, 0.45);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Montserrat', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+        }
+
+        .mobile-wrapper {
+            width: 100%;
+            max-width: 480px;
+            min-height: 100vh;
+            background-color: var(--card-bg);
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            position: relative;
+            padding-bottom: 60px;
+        }
+
+        /* Фоновая музыка: плавающая кнопка */
+        .music-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 999;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(20, 20, 20, 0.85);
+            border: 1.5px solid var(--gold-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 15px rgba(212,160,67,0.3);
+            transition: transform 0.2s ease;
+        }
+        .music-btn:active {
+            transform: scale(0.92);
+        }
+        .music-btn.playing svg {
+            animation: pulse-music 1.8s infinite ease-in-out;
+            color: var(--gold-main);
+        }
+        @keyframes pulse-music {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        /* Скрытый контейнер плеера YouTube */
+        #yt-player-container {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0.01;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        /* Верхняя обложка / Главный экран */
+        .hero-section {
+            position: relative;
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 24px;
+            background: radial-gradient(circle at center, rgba(212,160,67,0.12) 0%, rgba(13,13,13,0.95) 75%);
+            border-bottom: 1px solid var(--gold-border);
+        }
+
+        .ornament-top {
+            width: 120px;
+            margin-bottom: 24px;
+            opacity: 0.85;
+        }
+
+        .event-type-badge {
+            font-size: 11px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--gold-main);
+            font-weight: 600;
+            margin-bottom: 12px;
+            border: 1px solid var(--gold-border);
+            padding: 6px 18px;
+            border-radius: 30px;
+            background: rgba(212,160,67,0.06);
+        }
+
+        .names-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 46px;
+            font-weight: 600;
+            line-height: 1.15;
+            color: #FFFFFF;
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+        }
+        .names-title span {
+            display: block;
+            font-size: 26px;
+            font-style: italic;
+            color: var(--gold-main);
+            margin: 4px 0;
+            font-weight: 400;
+        }
+
+        .event-date-hero {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 24px;
+            letter-spacing: 3px;
+            color: var(--text-muted);
+            margin-bottom: 28px;
+            font-weight: 500;
+        }
+
+        /* Фото пары */
+        .photo-card-wrap {
+            width: 100%;
+            max-width: 320px;
+            aspect-ratio: 3 / 4;
+            border-radius: 160px 160px 20px 20px;
+            border: 2px solid var(--gold-main);
+            overflow: hidden;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.8), 0 0 25px rgba(212,160,67,0.2);
+            margin: 0 auto 30px;
+            position: relative;
+        }
+        .photo-card-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .scroll-down-hint {
+            margin-top: 15px;
+            font-size: 12px;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Секции контента */
+        .section-box {
+            padding: 50px 24px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            position: relative;
+        }
+
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--gold-main);
+            margin-bottom: 14px;
+            letter-spacing: 1.5px;
+        }
+
+        .quote-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-style: italic;
+            color: var(--text-muted);
+            max-width: 360px;
+            margin: 0 auto 20px;
+            line-height: 1.5;
+        }
+
+        /* Таймер обратного отсчета */
+        .countdown-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-width: 360px;
+            margin: 24px auto 0;
+        }
+        .countdown-item {
+            background: var(--card-surface);
+            border: 1px solid var(--gold-border);
+            border-radius: 14px;
+            padding: 14px 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .countdown-val {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 30px;
+            font-weight: 700;
+            color: #FFFFFF;
+            line-height: 1;
+        }
+        .countdown-lbl {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gold-main);
+            margin-top: 4px;
+        }
+
+        /* Тайминг дня */
+        .timeline {
+            position: relative;
+            max-width: 340px;
+            margin: 30px auto 0;
+            padding-left: 20px;
+            text-align: left;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 10px;
+            bottom: 10px;
+            width: 2px;
+            background: var(--gold-border);
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 28px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -19px;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--gold-main);
+            box-shadow: 0 0 10px var(--gold-main);
+        }
+        .timeline-time {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--gold-main);
+            line-height: 1;
+        }
+        .timeline-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #FFFFFF;
+            margin-top: 4px;
+        }
+        .timeline-desc {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        /* Локация */
+        .location-card {
+            background: var(--card-surface);
+            border: 1px solid var(--gold-border);
+            border-radius: 18px;
+            padding: 24px 20px;
+            margin-top: 20px;
+        }
+        .venue-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 6px;
+        }
+        .venue-address {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+        .map-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            background: var(--gold-gradient);
+            color: #141414;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-decoration: none;
+            box-shadow: 0 4px 20px rgba(212,160,67,0.35);
+        }
+
+        /* Дресс-код */
+        .dresscode-palette {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .palette-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        /* RSVP Форма (Подтверждение) */
+        .rsvp-btn-wa {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 320px;
+            padding: 16px;
+            border-radius: 50px;
+            background: #25D366;
+            color: #FFFFFF;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-decoration: none;
+            box-shadow: 0 6px 25px rgba(37, 211, 102, 0.35);
+            margin-top: 20px;
+        }
+
+        /* Нижний колонтитул */
+        .footer-credits {
+            text-align: center;
+            padding: 30px 20px 10px;
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+        .footer-credits span {
+            color: var(--gold-main);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+<div class="mobile-wrapper">
+    <!-- Кнопка музыки -->
+    <button class="music-btn" id="music-btn" title="Включить / выключить музыку">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #D4A043;">
+            <path d="M9 18V5l12-2v13"></path>
+            <circle cx="6" cy="18" r="3"></circle>
+            <circle cx="18" cy="16" r="3"></circle>
+        </svg>
+    </button>
+
+    <!-- Скрытый аудиоплеер / YouTube IFrame -->
+    <div id="yt-player-container"></div>
+    <audio id="local-audio" loop></audio>
+
+    <!-- 1. ГЛАВНЫЙ ЭКРАН -->
+    <header class="hero-section">
+        <svg class="ornament-top" viewBox="0 0 100 20" fill="none" stroke="#D4A043" stroke-width="1.2">
+            <path d="M0 10 Q 25 0, 50 10 T 100 10"/>
+            <circle cx="50" cy="10" r="3" fill="#D4A043"/>
+        </svg>
+
+        <div class="event-type-badge" id="event-type-badge">ПРИГЛАШЕНИЕ НА СВАДЬБУ</div>
+
+        <h1 class="names-title" id="names-title">
+            Константин
+            <span>&</span>
+            Камила
+        </h1>
+
+        <div class="event-date-hero" id="event-date-hero">15 ИЮНЯ 2025</div>
+
+        <div class="photo-card-wrap">
+            <img id="couple-photo" src="assets/hero_portrait.jpg" alt="Молодожены">
+        </div>
+
+        <div class="scroll-down-hint">
+            <span>Прокрутите вниз</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </div>
+    </header>
+
+    <!-- 2. СЛОВА ПРИГЛАШЕНИЯ -->
+    <section class="section-box">
+        <h2 class="section-title">Дорогие гости!</h2>
+        <p class="quote-text" id="quote-text">
+            «Один день в этом году будет для нас особенным, и мы хотим разделить его с самыми близкими и дорогими людьми.»
+        </p>
+        <p style="font-size: 14px; color: var(--text-muted); max-width: 360px; margin: 0 auto;">
+            Приглашаем вас стать свидетелями рождения нашей семьи и разделить с нами атмосферу любви и радости!
+        </p>
+    </section>
+
+    <!-- 3. ТАЙМЕР ДО СОБЫТИЯ -->
+    <section class="section-box">
+        <h2 class="section-title">До торжества осталось</h2>
+        <div class="countdown-grid">
+            <div class="countdown-item">
+                <div class="countdown-val" id="days">00</div>
+                <div class="countdown-lbl">Дней</div>
+            </div>
+            <div class="countdown-item">
+                <div class="countdown-val" id="hours">00</div>
+                <div class="countdown-lbl">Часов</div>
+            </div>
+            <div class="countdown-item">
+                <div class="countdown-val" id="mins">00</div>
+                <div class="countdown-lbl">Минут</div>
+            </div>
+            <div class="countdown-item">
+                <div class="countdown-val" id="secs">00</div>
+                <div class="countdown-lbl">Секунд</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. ПРОГРАММА ДНЯ -->
+    <section class="section-box">
+        <h2 class="section-title">Программа дня</h2>
+        <div class="timeline" id="timeline-box">
+            <div class="timeline-item">
+                <div class="timeline-time">16:30</div>
+                <div class="timeline-title">Сбор гостей & Welcome</div>
+                <div class="timeline-desc">Шампанское, лёгкие закуски и фотосессия</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-time">17:30</div>
+                <div class="timeline-title">Торжественная церемония</div>
+                <div class="timeline-desc">Обмен клятвами и кольцами</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-time">18:30</div>
+                <div class="timeline-title">Свадебный банкет</div>
+                <div class="timeline-desc">Праздничный ужин, танцы и поздравления</div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-time">22:30</div>
+                <div class="timeline-title">Свадебный торт & Финал</div>
+                <div class="timeline-desc">Сладкое завершение вечера</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. МЕСТО ПРОВЕДЕНИЯ / ЛОКАЦИЯ -->
+    <section class="section-box">
+        <h2 class="section-title">Место торжества</h2>
+        <div class="location-card">
+            <div class="venue-name" id="venue-name">Банкетный зал «Grand Palace»</div>
+            <div class="venue-address" id="venue-address">г. Бишкек, ул. Аалы Токомбаева, 12/2</div>
+            <a href="https://2gis.kg/bishkek" target="_blank" class="map-btn" id="map-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                    <line x1="8" y1="2" x2="8" y2="18"></line>
+                    <line x1="16" y1="6" x2="16" y2="22"></line>
+                </svg>
+                Открыть на карте 2GIS
+            </a>
+        </div>
+    </section>
+
+    <!-- 6. ДРЕСС-КОД -->
+    <section class="section-box">
+        <h2 class="section-title">Дресс-код</h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+            Мы будем очень признательны, если вы поддержите цветовую гамму нашей свадьбы:
+        </p>
+        <div class="dresscode-palette" id="dresscode-palette">
+            <div class="palette-circle" style="background-color: #1a1a1a;"></div>
+            <div class="palette-circle" style="background-color: #3b3024;"></div>
+            <div class="palette-circle" style="background-color: #8C7355;"></div>
+            <div class="palette-circle" style="background-color: #D4A043;"></div>
+            <div class="palette-circle" style="background-color: #EFE6DD;"></div>
+        </div>
+    </section>
+
+    <!-- 7. ПОДТВЕРЖДЕНИЕ ПРИСУТСТВИЯ (RSVP) -->
+    <section class="section-box">
+        <h2 class="section-title">Подтверждение</h2>
+        <p style="font-size: 14px; color: var(--text-muted); max-width: 320px; margin: 0 auto;">
+            Пожалуйста, подтвердите своё присутствие до <strong style="color: var(--gold-main);" id="rsvp-deadline">01.06.2025</strong>
+        </p>
+        <a href="https://wa.me/?text=Здравствуйте!%20Мы%20с%20радостью%20придем%20на%20вашу%20свадьбу!" target="_blank" class="rsvp-btn-wa" id="rsvp-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766 0-3.18-2.587-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.694.067-1.121-.067-.291-.092-.662-.224-1.144-.432-2.006-.867-3.327-2.895-3.428-3.028-.101-.133-.821-1.091-.821-2.081s.517-1.477.701-1.68c.184-.203.402-.254.536-.254.133 0 .267.002.384.008.123.006.288-.046.45.344.167.404.57 1.391.619 1.492.051.101.084.22.016.355-.067.135-.101.22-.201.339-.101.118-.212.264-.303.355-.102.101-.208.211-.089.415.119.203.529.873 1.134 1.411.78.694 1.438.909 1.642.998.203.088.322.077.441-.059.12-.136.516-.601.654-.808.137-.206.276-.172.464-.102.189.069 1.2.566 1.407.669.207.103.345.154.396.241.052.086.052.5-.092.905z"/>
+            </svg>
+            Подтвердить в WhatsApp
+        </a>
+    </section>
+
+    <div class="footer-credits">
+        Создано с любовью на <span>TRENDUM</span>
+    </div>
+</div>
+
+<!-- YouTube IFrame API -->
+<script src="https://www.youtube.com/iframe_api"></script>
+
+<script>
+    // ==========================================
+    // ДАННЫЕ ПРИГЛАСИТЕЛЬНОГО
+    // ==========================================
+    const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
+    const SUPABASE_BUCKET = 'kiosk-media';
+
+    // Параметры по умолчанию
+    let inviteData = {
+        type: 'ПРИГЛАШЕНИЕ НА СВАДЬБУ',
+        name1: 'Константин',
+        name2: 'Камила',
+        date: '2025-06-15T16:30:00',
+        dateDisplay: '15 ИЮНЯ 2025',
+        photo: 'assets/hero_portrait.jpg',
+        quote: '«Один день в этом году будет для нас особенным, и мы хотим разделить его с самыми близкими людьми.»',
+        venueName: 'Банкетный зал «Grand Palace»',
+        venueAddress: 'г. Бишкек, ул. Аалы Токомбаева, 12/2',
+        mapUrl: 'https://2gis.kg/bishkek',
+        whatsappPhone: '996555123456',
+        rsvpDeadline: '01.06.2025',
+        youtubeUrl: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk', // Дефолтная романтическая мелодия
+        audioFile: ''
+    };
+
+    // Чтение id пригласительного из URL (?id=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const inviteId = urlParams.get('id');
+
+    async function loadInviteData() {
+        if (inviteId) {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/invites/${inviteId}.json?t=${Date.now()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    inviteData = { ...inviteData, ...data };
+                }
+            } catch (err) {
+                console.warn('Не удалось загрузить данные из облака, используем шаблон:', err);
+            }
+        }
+        applyDataToDOM();
+        initCountdown();
+        initAudioPlayer();
+    }
+
+    function applyDataToDOM() {
+        if (inviteData.type) document.getElementById('event-type-badge').textContent = inviteData.type;
+        
+        const titleEl = document.getElementById('names-title');
+        if (inviteData.name2) {
+            titleEl.innerHTML = `${inviteData.name1} <span>&</span> ${inviteData.name2}`;
+        } else {
+            titleEl.textContent = inviteData.name1;
+        }
+
+        if (inviteData.dateDisplay) document.getElementById('event-date-hero').textContent = inviteData.dateDisplay;
+        if (inviteData.photo) document.getElementById('couple-photo').src = inviteData.photo;
+        if (inviteData.quote) document.getElementById('quote-text').textContent = `«${inviteData.quote.replace(/«|»/g, '')}»`;
+        if (inviteData.venueName) document.getElementById('venue-name').textContent = inviteData.venueName;
+        if (inviteData.venueAddress) document.getElementById('venue-address').textContent = inviteData.venueAddress;
+        if (inviteData.mapUrl) document.getElementById('map-btn').href = inviteData.mapUrl;
+        if (inviteData.rsvpDeadline) document.getElementById('rsvp-deadline').textContent = inviteData.rsvpDeadline;
+
+        if (inviteData.whatsappPhone) {
+            const text = encodeURIComponent(`Здравствуйте, ${inviteData.name1}${inviteData.name2 ? ' и ' + inviteData.name2 : ''}! Мы с радостью подтверждаем наше присутствие на вашем торжестве!`);
+            document.getElementById('rsvp-btn').href = `https://wa.me/${inviteData.whatsappPhone.replace(/\D/g, '')}?text=${text}`;
+        }
+
+        // Обновление программы если есть в данных
+        if (Array.isArray(inviteData.timeline) && inviteData.timeline.length > 0) {
+            const timelineBox = document.getElementById('timeline-box');
+            timelineBox.innerHTML = '';
+            inviteData.timeline.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'timeline-item';
+                el.innerHTML = `
+                    <div class="timeline-time">${item.time}</div>
+                    <div class="timeline-title">${item.title}</div>
+                    <div class="timeline-desc">${item.desc || ''}</div>
+                `;
+                timelineBox.appendChild(el);
+            });
+        }
+    }
+
+    // ==========================================
+    // ТАЙМЕР ОБРАТНОГО ОТСЧЕТА
+    // ==========================================
+    function initCountdown() {
+        const targetDate = new Date(inviteData.date || '2025-06-15T16:30:00').getTime();
+
+        function updateTimer() {
+            const now = new Date().getTime();
+            const diff = targetDate - now;
+
+            if (diff <= 0) {
+                document.getElementById('days').textContent = '00';
+                document.getElementById('hours').textContent = '00';
+                document.getElementById('mins').textContent = '00';
+                document.getElementById('secs').textContent = '00';
+                return;
+            }
+
+            const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+            document.getElementById('days').textContent = String(d).padStart(2, '0');
+            document.getElementById('hours').textContent = String(h).padStart(2, '0');
+            document.getElementById('mins').textContent = String(m).padStart(2, '0');
+            document.getElementById('secs').textContent = String(s).padStart(2, '0');
+        }
+
+        updateTimer();
+        setInterval(updateTimer, 1000);
+    }
+
+    // ==========================================
+    // ФОНОВАЯ МУЗЫКА (YOUTUBE & MP3)
+    // ==========================================
+    let ytPlayer = null;
+    let isPlaying = false;
+    const musicBtn = document.getElementById('music-btn');
+    const localAudio = document.getElementById('local-audio');
+
+    // Извлечение YouTube ID
+    function extractYouTubeId(url) {
+        if (!url) return null;
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    // YouTube API Callback
+    window.onYouTubeIframeAPIReady = function() {
+        const videoId = extractYouTubeId(inviteData.youtubeUrl);
+        if (videoId) {
+            ytPlayer = new YT.Player('yt-player-container', {
+                height: '100',
+                width: '100',
+                videoId: videoId,
+                playerVars: {
+                    'playsinline': 1,
+                    'controls': 0,
+                    'loop': 1,
+                    'playlist': videoId,
+                    'modestbranding': 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+    };
+
+    function onPlayerReady(event) {
+        // На мобильных устройствах автовоспроизведение со звуком часто заблокировано браузером до первого клика
+        // Поэтому мы вешаем запуск на первое касание экрана
+        document.body.addEventListener('click', autoStartMusicOnce, { once: true });
+        document.body.addEventListener('touchstart', autoStartMusicOnce, { once: true });
+    }
+
+    function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.PLAYING) {
+            isPlaying = true;
+            musicBtn.classList.add('playing');
+        } else {
+            isPlaying = false;
+            musicBtn.classList.remove('playing');
+        }
+    }
+
+    function autoStartMusicOnce() {
+        if (!isPlaying) {
+            toggleMusic();
+        }
+    }
+
+    function initAudioPlayer() {
+        if (inviteData.audioFile) {
+            localAudio.src = inviteData.audioFile;
+        }
+    }
+
+    function toggleMusic() {
+        if (inviteData.audioFile) {
+            if (localAudio.paused) {
+                localAudio.play();
+                isPlaying = true;
+                musicBtn.classList.add('playing');
+            } else {
+                localAudio.pause();
+                isPlaying = false;
+                musicBtn.classList.remove('playing');
+            }
+            return;
+        }
+
+        if (ytPlayer && ytPlayer.playVideo) {
+            if (isPlaying) {
+                ytPlayer.pauseVideo();
+                isPlaying = false;
+                musicBtn.classList.remove('playing');
+            } else {
+                ytPlayer.playVideo();
+                isPlaying = true;
+                musicBtn.classList.add('playing');
+            }
+        }
+    }
+
+    musicBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMusic();
+    });
+
+    // Старт
+    loadInviteData();
+</script>
+</body>
+</html>

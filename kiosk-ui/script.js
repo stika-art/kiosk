@@ -30,7 +30,8 @@ function normalizeMainCards(cards) {
         return [
             { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
             { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
-            { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'INSTA VIBE'] }
+            { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'INSTA VIBE'] },
+            { id: 4, title: 'ПРИГЛАСИТЕЛЬНЫЕ', badge: 'СВАДЬБЫ • ТОЙ • ЮБИЛЕИ', subtitle: 'ИНТЕРАКТИВНЫЕ САЙТЫ С МУЗЫКОЙ И ТАЙМЕРОМ', filter: 'INVITES', category: 'ПРИГЛАСИТЕЛЬНЫЕ', img: 'assets/hero_portrait.jpg', categories: ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'СУННОТ ТОЙ'] }
         ];
     }
     return cards.map(c => {
@@ -156,7 +157,10 @@ if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.ge
         { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'kling-video', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
         { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'kling-video', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
         { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'face-swap', prompt: 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere' },
-        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'face-swap', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' }
+        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'face-swap', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
+        { id: 11, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'СВАДЬБА', title: 'ROYAL WEDDING', img: 'assets/hero_portrait.jpg', price: 490, model: 'invite-web', prompt: 'Свадебное интерактивное пригласительное с таймером и музыкой' },
+        { id: 12, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'КЫЗ УЗАТУУ', title: 'КЫЗ УЗАТУУ GOLD', img: 'assets/child.png', price: 490, model: 'invite-web', prompt: 'Интерактивное приглашение на Кыз Узатуу' },
+        { id: 13, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'ЮБИЛЕЙ', title: 'JUBILEE LUXURY', img: 'assets/man.jpg', price: 490, model: 'invite-web', prompt: 'Интерактивное приглашение на Юбилей' }
     ];
 }
 
@@ -182,6 +186,10 @@ function normalizeTemplates(tplList, cardsList) {
                 sid = 3;
                 stitle = 'ТРЕНДЫ';
                 if (catUp === 'ТРЕНДЫ') cat = 'TIKTOK';
+            } else if (catUp.includes('ПРИГЛАС') || modelUp.includes('invite') || titleUp.includes('WEDDING') || titleUp.includes('ТОЙ') || titleUp.includes('УЗАТУУ')) {
+                sid = 4;
+                stitle = 'ПРИГЛАСИТЕЛЬНЫЕ';
+                if (!cat || cat === 'ОБЩЕЕ') cat = 'СВАДЬБА';
             } else {
                 sid = 1;
                 stitle = 'ФОТО';
@@ -233,6 +241,22 @@ function isTrendsTemplate(tpl) {
     const c = (tpl.category || '').toUpperCase();
     const t = (tpl.title || '').toUpperCase();
     return c === 'ТРЕНДЫ' || t.includes('TREND');
+}
+
+function isInviteTemplate(tpl) {
+    if (!tpl) return false;
+    const m = (tpl.model || '').toLowerCase();
+    const c = (tpl.category || '').toUpperCase();
+    const t = (tpl.title || '').toUpperCase();
+    const st = (tpl.sectionTitle || '').toUpperCase();
+    return tpl.sectionId === 4 || 
+           st.includes('ПРИГЛАС') || 
+           m.includes('invite') || 
+           c.includes('СВАДЬБА') || 
+           c.includes('УЗАТУУ') || 
+           c.includes('ЮБИЛЕЙ') || 
+           c.includes('ТОЙ') ||
+           t.includes('WEDDING');
 }
 
 let activeGridTab = 'ВСЕ';
@@ -372,7 +396,8 @@ function renderGridTemplates() {
         // Обратная совместимость для старых шаблонов без sectionId
         if (targetSecId === 2 || targetTitle.includes('ВИДЕО')) return isVideoTemplate(t);
         if (targetSecId === 3 || targetTitle.includes('ТРЕНД')) return isTrendsTemplate(t);
-        return !isVideoTemplate(t) && !isTrendsTemplate(t);
+        if (targetSecId === 4 || targetTitle.includes('ПРИГЛАС')) return isInviteTemplate(t);
+        return !isVideoTemplate(t) && !isTrendsTemplate(t) && !isInviteTemplate(t);
     });
 
     // 2. Внутри раздела фильтруем по выбранной подкатегории кнопки
@@ -450,6 +475,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const stepPayment = document.getElementById('step-payment');
     const stepProcessing = document.getElementById('step-processing');
     const stepResult = document.getElementById('step-result');
+    const stepInviteSetup = document.getElementById('step-invite-setup');
+    const stepInviteReady = document.getElementById('step-invite-ready');
+
+    // Invite Elements
+    const inviteEditQr = document.getElementById('invite-edit-qr');
+    const inviteSetupStatus = document.getElementById('invite-setup-status');
+    const skipToViewInviteBtn = document.getElementById('skip-to-view-invite-btn');
+    const invitePreviewFrame = document.getElementById('invite-preview-frame');
+    const inviteFinalShareQr = document.getElementById('invite-final-share-qr');
+    const inviteFinishBtn = document.getElementById('invite-finish-btn');
+    let currentInviteId = null;
+    let invitePollingTimer = null;
 
     // Camera & Confirm Elements
     const webcamEl = document.getElementById('webcam');
@@ -528,6 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
         stopPaymentPolling();
         stopWebcam();
         stopPhoneCamPolling();
+        stopInvitePolling();
         // Удаляем файл телефонной сессии из Supabase при выходе
         if (phoneCamSessionId) {
             fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/phone-cam/${phoneCamSessionId}.jpg`, {
@@ -537,6 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         phoneCamMode = false;
         phoneCamSessionId = null;
+        currentInviteId = null;
         if (photoPreviewConfirm) photoPreviewConfirm.src = '';
         if (resultVideo) {
             try {
@@ -549,7 +588,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showStep(stepEl) {
-        [stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult].forEach(s => {
+        [stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepInviteSetup, stepInviteReady].forEach(s => {
             if (s) s.style.display = 'none';
         });
         if (stepEl) stepEl.style.display = 'block';
@@ -682,6 +721,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (payStyleTitle) payStyleTitle.textContent = selectedStyle;
         if (paySelectedThumb) paySelectedThumb.src = selectedStylePhoto;
         if (payAmountVal) payAmountVal.textContent = selectedStylePrice || 290;
+        
+        const paySubtext = document.querySelector('.pay-subtext');
+        if (paySubtext) {
+            if (isInviteTemplate({ title: selectedStyle, model: selectedStyleModel, category: currentCategory })) {
+                paySubtext.textContent = 'Интерактивный сайт-приглашение с музыкой';
+            } else {
+                paySubtext.textContent = 'Финальное фото в студийном качестве';
+            }
+        }
+
         if (paymentStatusText) paymentStatusText.textContent = 'Подготовка QR-кода оплаты...';
 
         try {
@@ -737,8 +786,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ОПЛАТА УСПЕШНО ПОЛУЧЕНА — ПЕРЕХОД К КАМЕРЕ ДЛЯ СЪЕМКИ!
+    // ОПЛАТА УСПЕШНО ПОЛУЧЕНА
     function handlePaymentSuccess() {
+        const isInvite = isInviteTemplate({ 
+            sectionTitle: activeSectionCard ? activeSectionCard.title : '',
+            category: currentCategory,
+            title: selectedStyle,
+            model: selectedStyleModel
+        });
+
+        if (isInvite) {
+            if (paymentStatusText) {
+                paymentStatusText.textContent = '✅ Оплата получена! Переходим к настройке...';
+            }
+            setTimeout(() => {
+                startInviteFlow();
+            }, 1000);
+            return;
+        }
+
         if (paymentStatusText) {
             paymentStatusText.textContent = '✅ Оплата получена! Включаем камеру...';
         }
@@ -748,6 +814,73 @@ document.addEventListener('DOMContentLoaded', () => {
             startWebcam();
         }, 1000);
     }
+
+    // ============================================================
+    //  ЛОГИКА ПРИГЛАСИТЕЛЬНЫХ (INVITE FLOW)
+    // ============================================================
+    function startInviteFlow() {
+        currentInviteId = 'inv-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+        const origin = window.location.origin || 'https://kiosk394.vercel.app';
+        const editUrl = `${origin}/kiosk-ui/invite-edit.html?id=${currentInviteId}`;
+
+        if (inviteEditQr) {
+            inviteEditQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(editUrl)}`;
+        }
+        if (inviteSetupStatus) {
+            inviteSetupStatus.textContent = 'Ожидание заполнения и публикации со смартфона...';
+        }
+
+        showStep(stepInviteSetup);
+        startInvitePolling(currentInviteId);
+    }
+
+    function startInvitePolling(invId) {
+        stopInvitePolling();
+        invitePollingTimer = setInterval(async () => {
+            if (!invId || invId !== currentInviteId) return;
+            try {
+                const checkUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/invites/${invId}.json?t=${Date.now()}`;
+                const res = await fetch(checkUrl, { method: 'HEAD' });
+                if (res.ok) {
+                    stopInvitePolling();
+                    handleInviteReady(invId);
+                }
+            } catch (e) {}
+        }, 2000);
+    }
+
+    function stopInvitePolling() {
+        if (invitePollingTimer) {
+            clearInterval(invitePollingTimer);
+            invitePollingTimer = null;
+        }
+    }
+
+    function handleInviteReady(invId) {
+        const origin = window.location.origin || 'https://kiosk394.vercel.app';
+        const finalUrl = `${origin}/kiosk-ui/invite.html?id=${invId}`;
+
+        if (invitePreviewFrame) {
+            invitePreviewFrame.src = finalUrl;
+        }
+        if (inviteFinalShareQr) {
+            inviteFinalShareQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(finalUrl)}`;
+        }
+
+        showStep(stepInviteReady);
+    }
+
+    if (skipToViewInviteBtn) {
+        skipToViewInviteBtn.addEventListener('click', () => {
+            stopInvitePolling();
+            handleInviteReady(currentInviteId || 'demo');
+        });
+    }
+
+    if (inviteFinishBtn) {
+        inviteFinishBtn.addEventListener('click', closeKioskFlow);
+    }
+
 
 
     // ТЕСТОВАЯ КНОПКА СИМУЛЯЦИИ ОПЛАТЫ
