@@ -614,8 +614,10 @@
                     <input type="text" id="tpl-title-input" class="admin-input" placeholder="Название шаблона (напр: CYBER SAMURAI)...">
                     <input type="number" id="tpl-price-input" class="admin-input" style="max-width: 140px;" placeholder="Цена (сом)" min="10" step="10">
                     <select id="tpl-model-select" class="admin-select" style="max-width: 250px;" title="Модель обработки" onchange="toggleCustomModelInput(this.value)">
-                        <option value="nano-banana-2">🍌 Nano Banana 2</option>
-                        <option value="chatgpt-2.5">🤖 ChatGPT 2.5</option>
+                        <option value="nano-banana-2">🍌 Nano Banana 2 (Фото)</option>
+                        <option value="chatgpt-2.5">🤖 ChatGPT 2.5 (Фото)</option>
+                        <option value="seedance-2.5">🎬 Seedance 2.5 (Видеоролик)</option>
+                        <option value="kling-video">🎥 Kling AI (Видеоролик)</option>
                         <option value="custom">✏️ Другая модель из агрегатора...</option>
                     </select>
                     <input type="text" id="tpl-custom-model-input" class="admin-input" style="max-width: 220px; display: none;" placeholder="ID модели из агрегатора...">
@@ -1089,6 +1091,8 @@
             const m = model || 'nano-banana-2';
             if (m === 'nano-banana-2') return '<span class="model-badge">🍌 Nano Banana 2</span>';
             if (m === 'chatgpt-2.5') return '<span class="model-badge">🤖 ChatGPT 2.5</span>';
+            if (m === 'seedance-2.5') return '<span class="model-badge" style="background: rgba(255,0,128,0.15); border-color: #ff0080; color: #ff0080;">🎬 Seedance 2.5</span>';
+            if (m === 'kling-video') return '<span class="model-badge" style="background: rgba(0,240,255,0.15); border-color: #00f0ff; color: #00f0ff;">🎥 Kling AI</span>';
             return `<span class="model-badge">${m}</span>`;
         }
 
@@ -1169,7 +1173,7 @@
             const modelVal = tpl.model || 'nano-banana-2';
             const modelSelect = document.getElementById('tpl-model-select');
             const customModelInput = document.getElementById('tpl-custom-model-input');
-            if (modelVal === 'nano-banana-2' || modelVal === 'chatgpt-2.5') {
+            if (['nano-banana-2', 'chatgpt-2.5', 'seedance-2.5', 'kling-video'].includes(modelVal)) {
                 modelSelect.value = modelVal;
                 customModelInput.style.display = 'none';
                 customModelInput.value = '';

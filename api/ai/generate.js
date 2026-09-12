@@ -43,8 +43,11 @@ async function callAIAggregator({ photoData, templateImg, prompt, model, title, 
         }
 
         const data = await response.json();
-        // Поддержка распространенных форматов ответов агрегаторов
-        const resultUrl = data.image_url 
+        // Поддержка распространенных форматов ответов агрегаторов (фото и видео)
+        const resultUrl = data.video_url
+            || data.video
+            || (data.output && typeof data.output === 'string' ? data.output : (Array.isArray(data.output) ? data.output[0] : null))
+            || data.image_url 
             || data.url 
             || (data.data && data.data[0] && (data.data[0].url || data.data[0].b64_json ? (data.data[0].url || `data:image/jpeg;base64,${data.data[0].b64_json}`) : null))
             || data.result;

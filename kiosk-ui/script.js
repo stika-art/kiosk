@@ -241,6 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Result Elements
     const resultImg = document.getElementById('result-img');
+    const resultVideo = document.getElementById('result-video');
     const finishBtn = document.getElementById('finish-btn');
     const aiStatusText = document.getElementById('ai-status-text');
 
@@ -267,6 +268,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeKioskFlow() {
         stopPaymentPolling();
         stopWebcam();
+        if (resultVideo) {
+            try {
+                resultVideo.pause();
+                resultVideo.src = '';
+            } catch(e) {}
+        }
         modal.style.display = 'none';
         resetState();
     }
@@ -552,8 +559,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         clearInterval(interval);
-        if (resultImg) {
+        const isVideo = finalResultUrl.endsWith('.mp4') || finalResultUrl.endsWith('.webm') || finalResultUrl.includes('/video/') || selectedStyleModel === 'seedance-2.5' || selectedStyleModel === 'kling-video';
+        if (isVideo && resultVideo) {
+            resultVideo.src = finalResultUrl;
+            resultVideo.style.display = 'block';
+            resultVideo.play().catch(() => {});
+            if (resultImg) resultImg.style.display = 'none';
+        } else if (resultImg) {
             resultImg.src = finalResultUrl;
+            resultImg.style.display = 'block';
+            if (resultVideo) {
+                resultVideo.pause();
+                resultVideo.style.display = 'none';
+            }
         }
         showStep(stepResult);
     }
