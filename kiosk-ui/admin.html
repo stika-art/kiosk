@@ -613,13 +613,12 @@
                     <select id="tpl-cat-select" class="admin-select" style="max-width: 170px;" title="Категория"></select>
                     <input type="text" id="tpl-title-input" class="admin-input" placeholder="Название шаблона (напр: CYBER SAMURAI)...">
                     <input type="number" id="tpl-price-input" class="admin-input" style="max-width: 140px;" placeholder="Цена (сом)" min="10" step="10">
-                    <select id="tpl-model-select" class="admin-select" style="max-width: 250px;" title="Модель нейросети">
-                        <option value="face-swap">👤 Face Swap (100% лицо, InsightFace)</option>
-                        <option value="flux-pulid">⚡ FLUX.1 + PuLID (Сцена + лицо)</option>
-                        <option value="gemini-imagen">🎨 Google Gemini / Imagen 3</option>
-                        <option value="kling-video">🎬 Kling AI (Видео ролик 5 сек)</option>
-                        <option value="chatgpt-dalle">🤖 ChatGPT / DALL-E 3</option>
+                    <select id="tpl-model-select" class="admin-select" style="max-width: 250px;" title="Модель обработки" onchange="toggleCustomModelInput(this.value)">
+                        <option value="nano-banana-2">🍌 Nano Banana 2</option>
+                        <option value="chatgpt-2.5">🤖 ChatGPT 2.5</option>
+                        <option value="custom">✏️ Другая модель из агрегатора...</option>
                     </select>
+                    <input type="text" id="tpl-custom-model-input" class="admin-input" style="max-width: 220px; display: none;" placeholder="ID модели из агрегатора...">
                 </div>
 
                 <div class="form-row" style="align-items: flex-start; gap: 16px; margin-top: 10px;">
@@ -800,6 +799,31 @@
                             <span id="supabase-status-badge" style="background: rgba(199,255,0,0.15); border: 1px solid #C7FF00; color: #C7FF00; padding: 4px 14px; border-radius: 12px; font-size: 13px; font-weight: bold;">✅ Подключено (Облако активно)</span>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- AI AGGREGATOR SETTINGS CARD -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">🤖 Настройки агрегатора генерации</h2>
+                    <p class="card-subtitle">Подключение внешнего шлюза/агрегатора (Nano Banana 2, ChatGPT 2.5 и др.)</p>
+                </div>
+
+                <div style="max-width: 580px;">
+                    <div style="margin-bottom: 12px;">
+                        <label style="display:block; font-size: 13px; color: rgba(255,255,255,0.8); margin-bottom: 6px; font-weight: 600;">
+                            🌐 URL эндпоинта агрегатора:
+                        </label>
+                        <input type="text" id="aggregator-url-input" class="admin-input" style="width: 100%;" placeholder="Например: https://api.aggregator.com/v1/generate">
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: rgba(255,255,255,0.8); margin-bottom: 6px; font-weight: 600;">
+                            🔑 API Ключ (Bearer Token):
+                        </label>
+                        <input type="password" id="aggregator-key-input" class="admin-input" style="width: 100%;" placeholder="sk-...">
+                    </div>
+                    <button class="btn-primary" onclick="saveAggregatorSettings()">Сохранить параметры агрегатора</button>
+                    <div id="aggregator-status" class="status-msg" style="margin-top: 10px;"></div>
                 </div>
             </div>
         </section>
@@ -1050,13 +1074,21 @@
         // TEMPLATES LOGIC (WITH PROMPT, MODEL, BASE64 PREVIEW, AND EDITING)
         let editingTemplateId = null;
 
+        function toggleCustomModelInput(val) {
+            const customInput = document.getElementById('tpl-custom-model-input');
+            if (val === 'custom') {
+                customInput.style.display = 'inline-block';
+                customInput.focus();
+            } else {
+                customInput.style.display = 'none';
+                customInput.value = '';
+            }
+        }
+
         function getModelBadge(model) {
-            const m = model || 'face-swap';
-            if (m === 'face-swap') return '<span class="model-badge">👤 Face Swap</span>';
-            if (m === 'flux-pulid') return '<span class="model-badge pulid">⚡ FLUX + PuLID</span>';
-            if (m === 'kling-video') return '<span class="model-badge kling">🎬 Kling AI</span>';
-            if (m === 'gemini-imagen') return '<span class="model-badge">🎨 Gemini</span>';
-            if (m === 'chatgpt-dalle') return '<span class="model-badge">🤖 DALL-E</span>';
+            const m = model || 'nano-banana-2';
+            if (m === 'nano-banana-2') return '<span class="model-badge">🍌 Nano Banana 2</span>';
+            if (m === 'chatgpt-2.5') return '<span class="model-badge">🤖 ChatGPT 2.5</span>';
             return `<span class="model-badge">${m}</span>`;
         }
 
@@ -1133,7 +1165,20 @@
             document.getElementById('tpl-cat-select').value = tpl.category || 'ФОТО';
             document.getElementById('tpl-title-input').value = tpl.title || '';
             document.getElementById('tpl-price-input').value = tpl.price || 290;
-            document.getElementById('tpl-model-select').value = tpl.model || 'face-swap';
+
+            const modelVal = tpl.model || 'nano-banana-2';
+            const modelSelect = document.getElementById('tpl-model-select');
+            const customModelInput = document.getElementById('tpl-custom-model-input');
+            if (modelVal === 'nano-banana-2' || modelVal === 'chatgpt-2.5') {
+                modelSelect.value = modelVal;
+                customModelInput.style.display = 'none';
+                customModelInput.value = '';
+            } else {
+                modelSelect.value = 'custom';
+                customModelInput.style.display = 'inline-block';
+                customModelInput.value = modelVal;
+            }
+
             document.getElementById('tpl-prompt-input').value = tpl.prompt || '';
             document.getElementById('tpl-img-input').value = tpl.img || '';
 
@@ -1156,7 +1201,9 @@
             document.getElementById('tpl-price-input').value = '';
             document.getElementById('tpl-prompt-input').value = '';
             document.getElementById('tpl-img-input').value = '';
-            document.getElementById('tpl-model-select').value = 'face-swap';
+            document.getElementById('tpl-model-select').value = 'nano-banana-2';
+            document.getElementById('tpl-custom-model-input').style.display = 'none';
+            document.getElementById('tpl-custom-model-input').value = '';
             document.getElementById('tpl-file-input').value = '';
             handleTemplateImgInput('');
 
@@ -1173,6 +1220,7 @@
             const titleInput = document.getElementById('tpl-title-input');
             const priceInput = document.getElementById('tpl-price-input');
             const modelSelect = document.getElementById('tpl-model-select');
+            const customModelInput = document.getElementById('tpl-custom-model-input');
             const promptInput = document.getElementById('tpl-prompt-input');
             const imgInput = document.getElementById('tpl-img-input');
             const status = document.getElementById('tpl-status');
@@ -1180,7 +1228,12 @@
             const category = catSelect.value;
             const title = titleInput.value.trim();
             const price = Number(priceInput.value) || 290;
-            const model = modelSelect.value || 'face-swap';
+            
+            let model = modelSelect.value || 'nano-banana-2';
+            if (model === 'custom') {
+                model = customModelInput.value.trim() || 'nano-banana-2';
+            }
+
             const prompt = promptInput.value.trim();
             const img = imgInput.value.trim();
 
@@ -1586,6 +1639,35 @@
             setTimeout(() => { status.textContent = ''; }, 3000);
         }
 
+        // AGGREGATOR SETTINGS LOGIC
+        function loadAggregatorSettings() {
+            try {
+                const url = localStorage.getItem('kiosk_aggregator_url') || '';
+                const key = localStorage.getItem('kiosk_aggregator_key') || '';
+                const urlInput = document.getElementById('aggregator-url-input');
+                const keyInput = document.getElementById('aggregator-key-input');
+                if (urlInput) urlInput.value = url;
+                if (keyInput) keyInput.value = key;
+            } catch(e) {}
+        }
+
+        function saveAggregatorSettings() {
+            const urlInput = document.getElementById('aggregator-url-input');
+            const keyInput = document.getElementById('aggregator-key-input');
+            const status = document.getElementById('aggregator-status');
+
+            const url = urlInput ? urlInput.value.trim() : '';
+            const key = keyInput ? keyInput.value.trim() : '';
+
+            localStorage.setItem('kiosk_aggregator_url', url);
+            localStorage.setItem('kiosk_aggregator_key', key);
+
+            status.textContent = '✅ Параметры агрегатора успешно сохранены!';
+            status.className = 'status-msg success';
+
+            setTimeout(() => { status.textContent = ''; }, 3000);
+        }
+
         // ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ НАСТРОЕК И ПЛЕЙЛИСТОВ (SUPABASE STORAGE)
         async function syncAllToCloud() {
             if (!supabaseClient) return;
@@ -1725,6 +1807,7 @@
         // Init on load
         checkAuth();
         loadKioskSettings();
+        loadAggregatorSettings();
         checkSupabaseStatus();
         fetchCloudConfig();
     </script>

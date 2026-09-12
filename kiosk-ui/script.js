@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (payStyleTitle) payStyleTitle.textContent = selectedStyle;
         if (paySelectedThumb) paySelectedThumb.src = selectedStylePhoto;
         if (payAmountVal) payAmountVal.textContent = selectedStylePrice || 290;
-        if (paymentStatusText) paymentStatusText.textContent = 'Генерация Finik ELQR...';
+        if (paymentStatusText) paymentStatusText.textContent = 'Подготовка QR-кода оплаты...';
 
         try {
             const resp = await fetch('/api/payment/create', {
@@ -500,23 +500,14 @@ document.addEventListener('DOMContentLoaded', () => {
         capturedPhotoData = canvasEl.toDataURL('image/jpeg', 0.95);
     }
 
-    // 4. ОБРАБОТКА И СОЗДАНИЕ ПОРТРЕТА ЧЕРЕЗ ИИ ШЛЮЗ
+    // 4. СТУДИЙНАЯ ОБРАБОТКА И СОЗДАНИЕ ПОРТРЕТА (БЕЗ УПОМИНАНИЙ ИИ И МОДЕЛЕЙ)
     async function runAIGeneration() {
-        const modelNames = {
-            'face-swap': 'Face Swap',
-            'flux-pulid': 'FLUX.1',
-            'kling-video': 'Kling AI',
-            'gemini-imagen': 'Gemini',
-            'chatgpt-dalle': 'DALL-E'
-        };
-        const currentModelName = modelNames[selectedStyleModel] || 'AI';
-
         const statuses = [
-            `Анализ ракурса и геометрии лица...`,
-            `Подготовка модели ${currentModelName}...`,
-            `Генерация портрета в стиле "${selectedStyle}"...`,
-            `Применение кинематографичного освещения...`,
-            `Создание финального изображения в высоком разрешении...`
+            `Анализ кадра и ракурса...`,
+            `Стилизация портрета...`,
+            `Применение художественного освещения...`,
+            `Цветокоррекция и ретушь...`,
+            `Подготовка финального фото...`
         ];
 
         let idx = 0;
@@ -532,6 +523,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let finalResultUrl = selectedStylePhoto;
 
         try {
+            const aggregatorUrl = localStorage.getItem('kiosk_aggregator_url') || '';
+            const aggregatorKey = localStorage.getItem('kiosk_aggregator_key') || '';
+
             const resp = await fetch('/api/ai/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -541,7 +535,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     prompt: selectedStylePrompt,
                     model: selectedStyleModel,
                     title: selectedStyle,
-                    orderId: currentOrderId
+                    orderId: currentOrderId,
+                    aggregatorUrl,
+                    aggregatorKey
                 })
             });
 
