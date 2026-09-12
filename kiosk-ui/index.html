@@ -1063,41 +1063,38 @@
          TOP CENTER LUXURY BRAND HEADER
     ========================================== -->
     <header class="top-brand-center">
-        <div class="brand-badge-pill">PREMIUM PHOTO KIOSK</div>
-        <h1 class="top-brand-title">TREN<span>DUM</span></h1>
-        <div class="top-brand-subtitle">ФОТОСТУДИЯ ПРЕМИУМ КЛАССА</div>
+        <div class="brand-badge-pill" id="main-brand-badge">PREMIUM PHOTO KIOSK</div>
+        <h1 class="top-brand-title" id="main-brand-title">TREN<span>DUM</span></h1>
+        <div class="top-brand-subtitle" id="main-brand-subtitle">ФОТОСТУДИЯ ПРЕМИУМ КЛАССА</div>
         <div class="top-brand-line"></div>
     </header>
 
-    <!-- =========================================
-         CARD 1 — ФОТО
-    ========================================== -->
-    <section class="card card-1" onclick="selectCard(this, 'ФОТО')">
-        <div class="card-image" style="background-image: url('images/photo1.jpg');"></div>
-        <div class="point">ОБЛОЖКИ • ПОРТРЕТЫ • АРТ</div>
-        <div class="title">ФОТО</div>
-        <div class="subtitle">БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ</div>
-    </section>
+    <!-- CONTAINER FOR DYNAMIC MAIN SCREEN CARDS -->
+    <div id="main-cards-container" style="display: contents;">
+        <!-- CARD 1 — ФОТО -->
+        <section class="card card-1" onclick="selectCard(this, 'ФОТО')">
+            <div class="card-image" style="background-image: url('images/photo1.jpg');"></div>
+            <div class="point">ОБЛОЖКИ • ПОРТРЕТЫ • АРТ</div>
+            <div class="title">ФОТО</div>
+            <div class="subtitle">БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ</div>
+        </section>
 
-    <!-- =========================================
-         CARD 2 — ВИДЕО
-    ========================================== -->
-    <section class="card card-2" onclick="selectCard(this, 'ВИДЕО')">
-        <div class="card-image" style="background-image: url('images/photo3.jpg');"></div>
-        <div class="point">КИНЕМАТОГРАФИЧНОЕ ВИДЕО</div>
-        <div class="title">ВИДЕО</div>
-        <div class="subtitle">ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ</div>
-    </section>
+        <!-- CARD 2 — ВИДЕО -->
+        <section class="card card-2" onclick="selectCard(this, 'ВИДЕО')">
+            <div class="card-image" style="background-image: url('images/photo3.jpg');"></div>
+            <div class="point">КИНЕМАТОГРАФИЧНОЕ ВИДЕО</div>
+            <div class="title">ВИДЕО</div>
+            <div class="subtitle">ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ</div>
+        </section>
 
-    <!-- =========================================
-         CARD 3 — ТРЕНДЫ
-    ========================================== -->
-    <section class="card card-3" onclick="selectCard(this, 'ТРЕНДЫ')">
-        <div class="card-image" style="background-image: url('assets/hero_robot.jpg');"></div>
-        <div class="point">ПОПУЛЯРНЫЕ ОБРАЗЫ</div>
-        <div class="title">ТРЕНДЫ</div>
-        <div class="subtitle">СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ</div>
-    </section>
+        <!-- CARD 3 — ТРЕНДЫ -->
+        <section class="card card-3" onclick="selectCard(this, 'ТРЕНДЫ')">
+            <div class="card-image" style="background-image: url('assets/hero_robot.jpg');"></div>
+            <div class="point">ПОПУЛЯРНЫЕ ОБРАЗЫ</div>
+            <div class="title">ТРЕНДЫ</div>
+            <div class="subtitle">СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ</div>
+        </section>
+    </div>
 
 </div>
 
@@ -1278,6 +1275,6 @@
     </div>
 </div>
 
-<script src="script.js?v=altynkazyk1"></script>
+<script src="script.js?v=maincards2"></script>
 </body>
 </html>

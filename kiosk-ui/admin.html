@@ -560,6 +560,10 @@
                 <span class="nav-item-icon">🖼️</span>
                 <span>Шаблоны</span>
             </button>
+            <button class="nav-item" id="tab-btn-main" onclick="switchAdminTab('main')">
+                <span class="nav-item-icon">🎴</span>
+                <span>Главный экран</span>
+            </button>
             <button class="nav-item" id="tab-btn-ads" onclick="switchAdminTab('ads')">
                 <span class="nav-item-icon">📺</span>
                 <span>Реклама и Баннеры</span>
@@ -680,6 +684,91 @@
                         </tr>
                     </thead>
                     <tbody id="templates-table-body">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB: MAIN SCREEN (ГЛАВНЫЙ ЭКРАН) -->
+        <section id="tab-content-main" class="admin-tab-content hidden">
+            <!-- БЛОК 1: ШАПКА ГЛАВНОГО ЭКРАНА -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">✨ Шапка главного экрана</h2>
+                    <p class="card-subtitle">Настройка верхнего бейджика, логотипа/заголовка бренда и слогана</p>
+                </div>
+
+                <div class="form-row">
+                    <div style="flex: 1; min-width: 220px;">
+                        <label style="display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 600;">ВЕРХНИЙ БЕЙДЖ</label>
+                        <input type="text" id="main-header-badge-input" class="admin-input" placeholder="напр: PREMIUM PHOTO KIOSK" style="width: 100%;">
+                    </div>
+                    <div style="flex: 1; min-width: 220px;">
+                        <label style="display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 600;">ГЛАВНЫЙ ЗАГОЛОВОК</label>
+                        <input type="text" id="main-header-title-input" class="admin-input" placeholder="напр: TRENDUM" style="width: 100%;">
+                    </div>
+                    <div style="flex: 1.5; min-width: 280px;">
+                        <label style="display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 600;">ПОДЗАГОЛОВОК / СЛОГАН</label>
+                        <input type="text" id="main-header-sub-input" class="admin-input" placeholder="напр: ФОТОСТУДИЯ ПРЕМИУМ КЛАССА" style="width: 100%;">
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top: 10px; align-items: center;">
+                    <button class="btn-primary" onclick="saveMainHeader()">💾 Сохранить шапку</button>
+                    <div id="main-header-status" class="status-msg"></div>
+                </div>
+            </div>
+
+            <!-- БЛОК 2: КАРТОЧКИ / КНОПКИ ВЫБОРА -->
+            <div class="admin-card" style="margin-top: 24px;">
+                <div class="card-header">
+                    <h2 class="card-title">🎴 Карточки разделов на главном экране</h2>
+                    <p class="card-subtitle">Редактируйте тексты, бейджи, подзаголовки, категории и фоновые изображения на кнопках</p>
+                </div>
+
+                <!-- ФОРМА ДОБАВЛЕНИЯ / РЕДАКТИРОВАНИЯ КАРТОЧКИ -->
+                <div class="form-row">
+                    <input type="text" id="main-card-title-input" class="admin-input" placeholder="Заголовок кнопки (напр: ФОТО, ВИДЕО, ТРЕНДЫ)..." style="flex: 1.2;">
+                    <input type="text" id="main-card-badge-input" class="admin-input" placeholder="Верхний бейдж (напр: ОБЛОЖКИ • ПОРТРЕТЫ • АРТ)..." style="flex: 1.5;">
+                    <select id="main-card-cat-select" class="admin-select" style="flex: 1;" title="Привязанная категория в каталоге"></select>
+                </div>
+
+                <div class="form-row">
+                    <input type="text" id="main-card-sub-input" class="admin-input" placeholder="Нижний подзаголовок (напр: БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ)..." style="flex: 2;">
+                </div>
+
+                <div class="form-row" style="align-items: center; gap: 14px;">
+                    <input type="file" id="main-card-file-input" accept="image/*" style="display: none;" onchange="handleMainCardFileSelect(event)">
+                    <button type="button" class="btn-upload" onclick="document.getElementById('main-card-file-input').click()">📁 Загрузить фото</button>
+                    <input type="text" id="main-card-img-input" class="admin-input" placeholder="Путь к фото или base64 / ссылка..." oninput="handleMainCardImgInput(this.value)" style="flex: 1; font-size: 12px;">
+                    <div id="main-card-preview-box" style="width: 54px; height: 54px; border: 1px solid var(--border-subtle); border-radius: 12px; overflow: hidden; background: #000; flex-shrink: 0; display: none;">
+                        <img id="main-card-preview-img" src="" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                </div>
+                <span class="cloud-tip" style="margin-top: -6px; margin-bottom: 12px; display: block;">Загружаемое фото автоматически сжимается до оптимального размера для киоска.</span>
+
+                <div class="form-row" style="margin-top: 14px; align-items: center;">
+                    <button class="btn-primary" id="main-card-submit-btn" onclick="addOrUpdateMainCard()">+ Добавить карточку</button>
+                    <button type="button" id="main-card-cancel-btn" class="btn-del" style="display: none; margin-left: 10px; background: rgba(255,255,255,0.06); border-color: var(--border-subtle); color: #ccc;" onclick="cancelMainCardEdit()">✕ Отмена</button>
+                    <button type="button" class="btn-upload" onclick="syncAllToCloudManual('main-card-status')" style="margin-left: auto;" title="Сохранить и отправить в киоск">☁️ Синхронизировать с киоском</button>
+                </div>
+                <div id="main-card-status" class="status-msg"></div>
+
+                <!-- СПИСОК КАРТОЧЕК -->
+                <table class="items-table" style="margin-top: 20px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">#</th>
+                            <th style="width: 70px;">Фоновое фото</th>
+                            <th style="width: 130px;">Заголовок</th>
+                            <th>Бейдж</th>
+                            <th>Подзаголовок</th>
+                            <th style="width: 120px;">Категория</th>
+                            <th style="width: 180px; text-align: right;">Порядок / Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="main-cards-table-body">
                         <!-- Rendered by JS -->
                     </tbody>
                 </table>
@@ -951,10 +1040,40 @@
             ];
         }
 
+        function getStoredMainHeader() {
+            try {
+                const data = localStorage.getItem('kiosk_main_header_v1');
+                if (data) return JSON.parse(data);
+            } catch(e) {}
+            return {
+                badge: 'PREMIUM PHOTO KIOSK',
+                title: 'TRENDUM',
+                subtitle: 'ФОТОСТУДИЯ ПРЕМИУМ КЛАССА'
+            };
+        }
+
+        function getStoredMainCards() {
+            try {
+                const data = localStorage.getItem('kiosk_main_cards_v1');
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                }
+            } catch(e) {}
+            return [
+                { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', category: 'ФОТО', img: 'images/photo1.jpg' },
+                { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', category: 'ВИДЕО', img: 'images/photo3.jpg' },
+                { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg' }
+            ];
+        }
+
         let categories = getStoredCategories();
         let templates = getStoredTemplates();
         let topAds = getStoredTopAds();
         let bottomAds = getStoredBottomAds();
+        let mainHeader = getStoredMainHeader();
+        let mainCards = getStoredMainCards();
+        let editingMainCardId = null;
 
         // Check Session Authentication
         function checkAuth() {
@@ -966,6 +1085,9 @@
                 renderTemplates();
                 renderCategoryDropdown();
                 renderAds();
+                renderMainHeaderInputs();
+                renderMainCardsAdmin();
+                renderMainCardCategoryDropdown();
             } else {
                 authScreen.classList.remove('hidden');
             }
@@ -1083,13 +1205,16 @@
 
         function renderCategoryDropdown() {
             const select = document.getElementById('tpl-cat-select');
-            select.innerHTML = '';
-            categories.filter(c => c !== 'ВСЕ').forEach(cat => {
-                const opt = document.createElement('option');
-                opt.value = cat;
-                opt.textContent = cat;
-                select.appendChild(opt);
-            });
+            if (select) {
+                select.innerHTML = '';
+                categories.filter(c => c !== 'ВСЕ').forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat;
+                    select.appendChild(opt);
+                });
+            }
+            renderMainCardCategoryDropdown();
         }
 
         // TEMPLATES LOGIC (WITH PROMPT, MODEL, IMAGE COMPRESSION, AND EDITING)
@@ -1384,6 +1509,235 @@
             renderTemplates();
         }
 
+        // =============================================
+        // MAIN SCREEN LOGIC (ШАПКА И КАРТОЧКИ КИОСКА)
+        // =============================================
+        function renderMainHeaderInputs() {
+            const badgeInput = document.getElementById('main-header-badge-input');
+            const titleInput = document.getElementById('main-header-title-input');
+            const subInput = document.getElementById('main-header-sub-input');
+            if (badgeInput) badgeInput.value = mainHeader.badge || '';
+            if (titleInput) titleInput.value = mainHeader.title || '';
+            if (subInput) subInput.value = mainHeader.subtitle || '';
+        }
+
+        function saveMainHeader() {
+            const badgeInput = document.getElementById('main-header-badge-input');
+            const titleInput = document.getElementById('main-header-title-input');
+            const subInput = document.getElementById('main-header-sub-input');
+            const status = document.getElementById('main-header-status');
+
+            mainHeader = {
+                badge: badgeInput ? badgeInput.value.trim() : '',
+                title: titleInput ? titleInput.value.trim() : '',
+                subtitle: subInput ? subInput.value.trim() : ''
+            };
+
+            localStorage.setItem('kiosk_main_header_v1', JSON.stringify(mainHeader));
+            syncAllToCloud();
+
+            if (status) {
+                status.textContent = '✅ Шапка главного экрана сохранена и синхронизирована!';
+                status.className = 'status-msg success';
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+            }
+        }
+
+        function renderMainCardCategoryDropdown() {
+            const select = document.getElementById('main-card-cat-select');
+            if (!select) return;
+            select.innerHTML = '';
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = `Категория: ${cat}`;
+                select.appendChild(opt);
+            });
+        }
+
+        function handleMainCardImgInput(val) {
+            const previewBox = document.getElementById('main-card-preview-box');
+            const previewImg = document.getElementById('main-card-preview-img');
+            if (val && val.trim().length > 5) {
+                previewImg.src = val.trim();
+                previewBox.style.display = 'block';
+            } else {
+                previewBox.style.display = 'none';
+            }
+        }
+
+        function handleMainCardFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const status = document.getElementById('main-card-status');
+            if (status) {
+                status.textContent = '⏳ Сжатие и оптимизация изображения...';
+                status.className = 'status-msg';
+            }
+
+            compressImage(file, 900, 600, 0.85, function(compressedBase64) {
+                document.getElementById('main-card-img-input').value = compressedBase64;
+                handleMainCardImgInput(compressedBase64);
+                if (status) {
+                    status.textContent = '✅ Картинка успешно оптимизирована';
+                    status.className = 'status-msg success';
+                    setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 2500);
+                }
+            });
+        }
+
+        function renderMainCardsAdmin() {
+            const tbody = document.getElementById('main-cards-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            mainCards.forEach((c, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: var(--text-dim);">${idx + 1}</td>
+                    <td>
+                        <img src="${c.img || ''}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'" style="width: 58px; height: 38px; border-radius: 8px;">
+                    </td>
+                    <td><strong style="color: var(--primary); font-size: 15px;">${c.title}</strong></td>
+                    <td style="font-size: 12px; color: rgba(255,255,255,0.85);">${c.badge || '—'}</td>
+                    <td style="font-size: 12px; color: var(--text-muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.subtitle || '—'}</td>
+                    <td><span class="cat-tag">${c.category || 'ВСЕ'}</span></td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button class="btn-move" onclick="moveMainCard(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
+                        <button class="btn-move" onclick="moveMainCard(${idx}, 1)" ${idx === mainCards.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
+                        <button class="btn-edit" onclick="editMainCard(${c.id})" title="Редактировать" style="background: rgba(212, 160, 67, 0.15); border: 1px solid var(--primary-border); color: var(--primary); padding: 5px 10px; border-radius: 8px; font-weight: 600; cursor: pointer;">✏️</button>
+                        <button class="btn-del" onclick="deleteMainCard(${c.id})" title="Удалить">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addOrUpdateMainCard() {
+            const titleInput = document.getElementById('main-card-title-input');
+            const badgeInput = document.getElementById('main-card-badge-input');
+            const subInput = document.getElementById('main-card-sub-input');
+            const catSelect = document.getElementById('main-card-cat-select');
+            const imgInput = document.getElementById('main-card-img-input');
+            const status = document.getElementById('main-card-status');
+
+            const title = titleInput.value.trim().toUpperCase();
+            const badge = badgeInput.value.trim().toUpperCase();
+            const subtitle = subInput.value.trim().toUpperCase();
+            const category = catSelect.value;
+            const img = imgInput.value.trim();
+
+            if (!title) {
+                status.textContent = '❌ Укажите заголовок карточки';
+                status.className = 'status-msg error';
+                titleInput.focus();
+                return;
+            }
+
+            if (!img) {
+                status.textContent = '❌ Загрузите или укажите фоновое изображение карточки';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            if (editingMainCardId) {
+                const targetIdx = mainCards.findIndex(c => c.id === editingMainCardId);
+                if (targetIdx !== -1) {
+                    mainCards[targetIdx] = {
+                        ...mainCards[targetIdx],
+                        title,
+                        badge,
+                        subtitle,
+                        category,
+                        img
+                    };
+                    status.textContent = `✅ Карточка "${title}" обновлена`;
+                    status.className = 'status-msg success';
+                }
+                cancelMainCardEdit();
+            } else {
+                mainCards.push({
+                    id: Date.now(),
+                    title,
+                    badge,
+                    subtitle,
+                    category,
+                    img
+                });
+
+                titleInput.value = '';
+                badgeInput.value = '';
+                subInput.value = '';
+                imgInput.value = '';
+                document.getElementById('main-card-file-input').value = '';
+                handleMainCardImgInput('');
+
+                status.textContent = `✅ Карточка "${title}" добавлена на главный экран`;
+                status.className = 'status-msg success';
+            }
+
+            localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
+            syncAllToCloud();
+            renderMainCardsAdmin();
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3500);
+        }
+
+        function editMainCard(id) {
+            const card = mainCards.find(c => c.id === id);
+            if (!card) return;
+
+            editingMainCardId = id;
+            document.getElementById('main-card-title-input').value = card.title || '';
+            document.getElementById('main-card-badge-input').value = card.badge || '';
+            document.getElementById('main-card-sub-input').value = card.subtitle || '';
+            document.getElementById('main-card-cat-select').value = card.category || 'ВСЕ';
+            document.getElementById('main-card-img-input').value = card.img || '';
+            handleMainCardImgInput(card.img || '');
+
+            document.getElementById('main-card-submit-btn').textContent = '💾 Сохранить изменения';
+            document.getElementById('main-card-cancel-btn').style.display = 'inline-block';
+
+            document.getElementById('main-card-title-input').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function cancelMainCardEdit() {
+            editingMainCardId = null;
+            document.getElementById('main-card-title-input').value = '';
+            document.getElementById('main-card-badge-input').value = '';
+            document.getElementById('main-card-sub-input').value = '';
+            document.getElementById('main-card-img-input').value = '';
+            document.getElementById('main-card-file-input').value = '';
+            handleMainCardImgInput('');
+
+            document.getElementById('main-card-submit-btn').textContent = '+ Добавить карточку';
+            document.getElementById('main-card-cancel-btn').style.display = 'none';
+        }
+
+        function deleteMainCard(id) {
+            if (mainCards.length <= 1) {
+                alert('На главном экране должна оставаться хотя бы 1 карточка!');
+                return;
+            }
+            if (!confirm('Удалить эту карточку с главного экрана?')) return;
+            if (editingMainCardId === id) cancelMainCardEdit();
+            mainCards = mainCards.filter(c => c.id !== id);
+            localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
+            syncAllToCloud();
+            renderMainCardsAdmin();
+        }
+
+        function moveMainCard(idx, dir) {
+            const newIdx = idx + dir;
+            if (newIdx < 0 || newIdx >= mainCards.length) return;
+            const temp = mainCards[idx];
+            mainCards[idx] = mainCards[newIdx];
+            mainCards[newIdx] = temp;
+            localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
+            syncAllToCloud();
+            renderMainCardsAdmin();
+        }
+
         // ADS & BANNERS LOGIC
         function renderAds() {
             renderTopAds();
@@ -1673,6 +2027,8 @@
             if (!supabaseClient) return;
             try {
                 const payload = {
+                    main_header: mainHeader,
+                    main_cards: mainCards,
                     ads_top: topAds,
                     ads_bottom: bottomAds,
                     templates: templates,
@@ -1704,6 +2060,18 @@
                 if (res.ok) {
                     const data = await res.json();
                     let changed = false;
+                    if (data.main_header) {
+                        mainHeader = data.main_header;
+                        localStorage.setItem('kiosk_main_header_v1', JSON.stringify(mainHeader));
+                        renderMainHeaderInputs();
+                        changed = true;
+                    }
+                    if (Array.isArray(data.main_cards) && data.main_cards.length > 0) {
+                        mainCards = data.main_cards;
+                        localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
+                        renderMainCardsAdmin();
+                        changed = true;
+                    }
                     if (Array.isArray(data.ads_top) && data.ads_top.length > 0) {
                         topAds = data.ads_top;
                         localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));

@@ -12,6 +12,74 @@ let isAttractClosing = false;
 let currentCategory = 'ФОТО';
 let activeTemplateIndex = 0;
 
+// КОНФИГУРАЦИЯ ГЛАВНОГО ЭКРАНА (ШАПКА И КАРТОЧКИ РАЗДЕЛОВ)
+function getStoredMainHeader() {
+    try {
+        const saved = localStorage.getItem('kiosk_main_header_v1');
+        if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return {
+        badge: 'PREMIUM PHOTO KIOSK',
+        title: 'TRENDUM',
+        subtitle: 'ФОТОСТУДИЯ ПРЕМИУМ КЛАССА'
+    };
+}
+
+function getStoredMainCards() {
+    try {
+        const saved = localStorage.getItem('kiosk_main_cards_v1');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+    } catch(e) {}
+    return [
+        { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', category: 'ФОТО', img: 'images/photo1.jpg' },
+        { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', category: 'ВИДЕО', img: 'images/photo3.jpg' },
+        { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg' }
+    ];
+}
+
+let mainHeaderConfig = getStoredMainHeader();
+let mainCardsConfig = getStoredMainCards();
+
+function renderMainCards() {
+    const badgeEl = document.getElementById('main-brand-badge');
+    const titleEl = document.getElementById('main-brand-title');
+    const subEl = document.getElementById('main-brand-subtitle');
+    const container = document.getElementById('main-cards-container');
+
+    if (badgeEl && mainHeaderConfig.badge) badgeEl.textContent = mainHeaderConfig.badge;
+    if (titleEl && mainHeaderConfig.title) {
+        if (mainHeaderConfig.title.toUpperCase() === 'TRENDUM') {
+            titleEl.innerHTML = 'TREN<span>DUM</span>';
+        } else {
+            titleEl.textContent = mainHeaderConfig.title;
+        }
+    }
+    if (subEl && mainHeaderConfig.subtitle) subEl.textContent = mainHeaderConfig.subtitle;
+
+    if (!container) return;
+    container.innerHTML = '';
+
+    mainCardsConfig.forEach((c, idx) => {
+        const section = document.createElement('section');
+        section.className = `card card-${idx + 1}`;
+        section.onclick = function() {
+            window.selectCard(this, c.category || c.title);
+        };
+
+        const bgImg = c.img ? `background-image: url('${c.img}');` : '';
+        section.innerHTML = `
+            <div class="card-image" style="${bgImg}"></div>
+            <div class="point">${c.badge || ''}</div>
+            <div class="title">${c.title || ''}</div>
+            <div class="subtitle">${c.subtitle || ''}</div>
+        `;
+        container.appendChild(section);
+    });
+}
+
 // ТРЕКОВЫЕ ШАБЛОНЫ ДЛЯ 3D COVERFLOW ГАЛЕРЕИ (STYLE DRIBBLE)
 const templateCatalog = {
     'ФОТО': [
@@ -99,7 +167,12 @@ window.selectCard = function(cardEl, styleName) {
         }
     });
 
-    // 3. Мгновенно открываем галерею шаблонов
+    // 3. Устанавливаем категорию при переходе, если передана
+    if (styleName) {
+        activeGridTab = styleName;
+    }
+
+    // 4. Мгновенно открываем галерею шаблонов
     openTemplateGallery();
 
     setTimeout(() => {
@@ -663,6 +736,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(CLOUD_CONFIG_URL + '?_t=' + Date.now(), { cache: 'no-store' });
             if (res.ok) {
                 const data = await res.json();
+                if (data.main_header) {
+                    mainHeaderConfig = data.main_header;
+                    localStorage.setItem('kiosk_main_header_v1', JSON.stringify(data.main_header));
+                }
+                if (Array.isArray(data.main_cards) && data.main_cards.length > 0) {
+                    mainCardsConfig = data.main_cards;
+                    localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(data.main_cards));
+                }
+                renderMainCards();
+
                 if (Array.isArray(data.ads_top) && data.ads_top.length > 0) {
                     topPlaylist = data.ads_top;
                     localStorage.setItem('kiosk_ads_top', JSON.stringify(data.ads_top));
@@ -916,7 +999,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, { passive: true });
 
-    // Синхронизация с облаком и запуск таймера простоя при загрузке
+    // Инициализация главного экрана, синхронизация с облаком и запуск таймера
+    renderMainCards();
     syncCloudConfig();
     resetInactivityTimer();
 });
