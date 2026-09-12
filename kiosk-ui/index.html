@@ -1030,47 +1030,6 @@
             object-fit: cover !important;
         }
 
-        .attract-tap-prompt {
-            position: absolute;
-            inset: 0;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(10, 10, 10, 0.45);
-            backdrop-filter: blur(4px);
-        }
-
-        .tap-content {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            background: #1E1E1E;
-            border: 2px solid var(--primary);
-            padding: 18px 38px;
-            border-radius: 40px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(212, 160, 67, 0.45);
-            animation: tapBounce 1.8s infinite ease-in-out;
-        }
-
-        @keyframes tapBounce {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.04); }
-        }
-
-        .tap-icon {
-            font-size: 28px;
-        }
-
-        .tap-text {
-            font-family: 'Outfit', sans-serif;
-            font-size: 18px;
-            font-weight: 800;
-            color: var(--primary);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
         /* Responsive Tweaks */
         @media (max-width: 600px) {
             .kiosk {
@@ -1165,13 +1124,6 @@
         <div id="attract-bottom-blur" class="attract-blur-backdrop"></div>
         <video id="attract-card-video" autoplay muted playsinline defaultMuted preload="auto" class="media-layer active"></video>
         <img id="attract-card-img" class="media-layer" alt="Card Slide">
-
-        <div class="attract-tap-prompt">
-            <div class="tap-content">
-                <span class="tap-icon">✨</span>
-                <span class="tap-text">КОСНИТЕСЬ ЭКРАНА</span>
-            </div>
-        </div>
     </div>
 </div>
 
