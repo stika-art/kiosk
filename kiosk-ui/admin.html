@@ -963,17 +963,21 @@
                         <div>
                             <label style="font-size: 13px; color: var(--primary); font-weight: 700;">🌐 HTML-код сайта-пригласительного:</label>
                             <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                                Загрузите .html файл или вставьте готовый код. Гость сможет посмотреть демо на киоске и отредактировать под себя на телефоне.
+                                Загрузите .html файл или выберите готовый образец. Гость сможет посмотреть демо на киоске и отредактировать под себя на телефоне.
                             </div>
                         </div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                             <input type="file" id="tpl-html-file-input" accept=".html,.htm" style="display: none;" onchange="handleHtmlFileSelect(event)">
                             <button type="button" class="btn-upload" style="font-size: 12px; padding: 6px 14px;" onclick="document.getElementById('tpl-html-file-input').click()">📁 Загрузить файл .html</button>
-                            <button type="button" class="btn-upload" style="font-size: 12px; padding: 6px 14px;" onclick="insertDefaultInviteHtmlTemplate()">📋 Вставить образец</button>
+                            <button type="button" class="btn-upload" style="font-size: 12px; padding: 6px 14px;" onclick="insertDefaultInviteHtmlTemplate('nezhnost')">🌸 Стиль «Нежность»</button>
+                            <button type="button" class="btn-upload" style="font-size: 12px; padding: 6px 14px;" onclick="insertDefaultInviteHtmlTemplate('royal')">👑 Стиль «Royal»</button>
                         </div>
                     </div>
 
-                    <textarea id="tpl-html-input" class="admin-input" style="width: 100%; height: 260px; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.5; white-space: pre; tab-size: 2;" placeholder="Вставьте сюда HTML код пригласительного..."></textarea>
+                    <div id="tpl-html-warning" style="display: none; margin-bottom: 10px; background: rgba(239, 68, 68, 0.15); border: 1.5px solid #ef4444; border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #fecaca; line-height: 1.5;">
+                    </div>
+
+                    <textarea id="tpl-html-input" class="admin-input" oninput="validateHtmlInput()" style="width: 100%; height: 260px; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.5; white-space: pre; tab-size: 2;" placeholder="Вставьте сюда HTML код пригласительного..."></textarea>
                 </div>
 
                 <div class="form-row" style="margin-top: 14px; align-items: center;">
@@ -1747,6 +1751,21 @@
             updateHtmlCodeVisibility();
         }
 
+        // Валидация HTML на пустые оболочки React/SPA
+        function validateHtmlInput() {
+            const textarea = document.getElementById('tpl-html-input');
+            const warnEl = document.getElementById('tpl-html-warning');
+            if (!textarea || !warnEl) return;
+            const val = textarea.value.trim();
+
+            if (val.includes('id="root"') && !val.includes('<main') && !val.includes('class="page') && !val.includes('class="hero') && !val.includes('class="invite') && (val.includes('index-') || val.includes('loadVendors') || val.includes('metaPixelId') || val.includes('/assets/'))) {
+                warnEl.style.display = 'block';
+                warnEl.innerHTML = `⚠️ <b>Внимание: белый экран!</b> Вы вставили пустую заготовку React (<code>&lt;div id="root"&gt;&lt;/div&gt;</code>) из браузера. На сайтах вроде toi.com.kz браузер через «Сохранить как» скачивает пустой каркас без контента. Нажмите кнопку <b>«🌸 Стиль «Нежность»»</b> или <b>«👑 Стиль «Royal»»</b> выше, чтобы вставить настоящий готовый дизайн!`;
+            } else {
+                warnEl.style.display = 'none';
+            }
+        }
+
         // Загрузка .html файла с компьютера напрямую в поле ввода
         function handleHtmlFileSelect(event) {
             const file = event.target.files[0];
@@ -1756,18 +1775,43 @@
                 const textarea = document.getElementById('tpl-html-input');
                 if (textarea) {
                     textarea.value = e.target.result;
+                    validateHtmlInput();
                 }
             };
             reader.readAsText(file);
         }
 
         // Вставка образца красивого адаптивного HTML шаблона
-        function insertDefaultInviteHtmlTemplate() {
+        function insertDefaultInviteHtmlTemplate(style) {
             const textarea = document.getElementById('tpl-html-input');
             if (!textarea) return;
-            if (textarea.value.trim() && !confirm('Заменить текущий HTML код в поле на базовый образец?')) {
+            if (textarea.value.trim() && !confirm('Заменить текущий HTML код в поле на выбранный стиль?')) {
                 return;
             }
+            if (document.getElementById('tpl-html-warning')) {
+                document.getElementById('tpl-html-warning').style.display = 'none';
+            }
+
+            if (style === 'nezhnost') {
+                const found = templates.find(t => t.title && t.title.includes('Нежность') && t.htmlCode && t.htmlCode.length > 2000);
+                if (found) {
+                    textarea.value = found.htmlCode;
+                    validateHtmlInput();
+                    return;
+                }
+                textarea.value = '⏳ Загрузка стиля Нежность...';
+                fetch('https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/config/settings.json?t=' + Date.now())
+                    .then(r => r.json())
+                    .then(data => {
+                        const t = (data.templates || []).find(item => item.title && item.title.includes('Нежность'));
+                        if (t && t.htmlCode) {
+                            textarea.value = t.htmlCode;
+                            validateHtmlInput();
+                        }
+                    }).catch(() => {});
+                return;
+            }
+
             textarea.value = `<!DOCTYPE html>
 <html lang="ru">
 <head>

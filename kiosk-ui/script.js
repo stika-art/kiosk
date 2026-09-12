@@ -575,9 +575,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Загрузка демо шаблона во фрейм
         if (inviteDemoFrame) {
-            if (selectedTemplateHtml) {
+            const isBrokenSpa = selectedTemplateHtml && 
+                selectedTemplateHtml.includes('id="root"') && 
+                !selectedTemplateHtml.includes('class="page') && 
+                !selectedTemplateHtml.includes('<main') && 
+                !selectedTemplateHtml.includes('hero');
+
+            if (selectedTemplateHtml && selectedTemplateHtml.trim().length > 100 && !isBrokenSpa) {
+                inviteDemoFrame.removeAttribute('src');
                 inviteDemoFrame.srcdoc = selectedTemplateHtml;
             } else {
+                inviteDemoFrame.removeAttribute('srcdoc');
                 const origin = window.location.origin || 'https://kiosk394.vercel.app';
                 inviteDemoFrame.src = `${origin}/kiosk-ui/invite.html?preview=1${selectedTemplateId ? '&templateId=' + selectedTemplateId : ''}`;
             }
