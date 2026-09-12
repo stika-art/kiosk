@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -37,22 +37,79 @@
         .error-title { font-size: 18px; font-weight: 700; color: #FF6B6B; letter-spacing: 1.5px; }
         .error-sub { font-size: 14px; color: var(--muted); }
         #upload-progress { font-size: 14px; color: var(--muted); }
+
+        /* ========== ВСПЫШКА ========== */
+        #flash-overlay {
+            position: fixed;
+            inset: 0;
+            background: #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 999;
+            transition: opacity 0s;
+        }
+        #flash-overlay.firing {
+            animation: flash-anim 0.45s ease-out forwards;
+        }
+        @keyframes flash-anim {
+            0%   { opacity: 0.95; }
+            100% { opacity: 0; }
+        }
+
+        /* Кнопка режима вспышки */
+        #flash-mode-btn {
+            background: rgba(255,255,255,0.12);
+            border: none;
+            color: #fff;
+            border-radius: 50%;
+            width: 42px; height: 42px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.2s;
+            position: relative;
+        }
+        #flash-mode-btn.flash-on  { background: rgba(212,160,67,0.35); color: var(--primary); }
+        #flash-mode-btn.flash-off { opacity: 0.4; }
+        .flash-label {
+            position: absolute;
+            bottom: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            color: rgba(255,255,255,0.6);
+        }
+        #flash-mode-btn.flash-on .flash-label { color: var(--primary); }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
+<!-- ВСПЫШКА — белый оверлей поверх всего -->
+<div id="flash-overlay"></div>
+
 <div id="screen-cam" class="active">
     <video id="video-preview" autoplay playsinline muted></video>
     <div class="cam-header">
         <span class="cam-logo">TRENDUM</span>
+        <!-- Кнопка режима вспышки (авто / вкл / выкл) -->
+        <button id="flash-mode-btn" class="flash-auto" title="Режим вспышки">
+            <!-- Иконка молнии -->
+            <svg id="flash-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <path d="M13 2L4.5 13.5H11L10 22L19.5 10.5H13L13 2Z"/>
+            </svg>
+            <span class="flash-label" id="flash-label">АВТО</span>
+        </button>
         <button class="cam-flip-btn" id="flip-btn">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
         </button>
     </div>
     <div class="cam-bottom-bar">
-        <div class="cam-hint">Нажмите кнопку, чтобы сделать снимок</div>
+        <div class="cam-hint" id="cam-hint">Нажмите кнопку, чтобы сделать снимок</div>
         <button id="snap-phone-btn">
             <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#141414" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="10" stroke-opacity="0.5"/></svg>
         </button>
@@ -170,11 +227,91 @@
         }
     }
 
-    document.getElementById('snap-phone-btn').addEventListener('click', takeSnapshot);
     document.getElementById('flip-btn').addEventListener('click', () => startCamera(facingMode === 'user' ? 'environment' : 'user'));
     document.getElementById('btn-retake').addEventListener('click', () => { capturedBlob = null; showScreen('screen-cam'); });
     document.getElementById('btn-send').addEventListener('click', uploadPhoto);
     document.getElementById('btn-retry').addEventListener('click', () => { capturedBlob = null; showScreen('screen-cam'); });
+
+    // ────────────── ВСПЫШКА ──────────────
+    // Режимы: 'auto' (только для основной камеры), 'on' (всегда), 'off' (никогда)
+    const FLASH_MODES   = ['auto', 'on', 'off'];
+    const FLASH_LABELS  = { auto: 'АВТО', on: 'ВКЛ', off: 'ВЫКЛ' };
+    let flashModeIdx    = 0; // начинаем с 'auto'
+
+    const flashOverlay  = document.getElementById('flash-overlay');
+    const flashModeBtn  = document.getElementById('flash-mode-btn');
+    const flashLabel    = document.getElementById('flash-label');
+
+    function updateFlashBtnUI() {
+        const mode = FLASH_MODES[flashModeIdx];
+        flashModeBtn.className = 'flash-' + mode;
+        flashLabel.textContent  = FLASH_LABELS[mode];
+    }
+
+    flashModeBtn.addEventListener('click', () => {
+        flashModeIdx = (flashModeIdx + 1) % FLASH_MODES.length;
+        updateFlashBtnUI();
+    });
+
+    // Запускаем CSS-вспышку (белый оверлей)
+    function fireFlash() {
+        flashOverlay.classList.remove('firing');
+        // Форсируем reflow чтобы анимация запустилась снова
+        void flashOverlay.offsetWidth;
+        flashOverlay.classList.add('firing');
+        // Убираем класс после анимации
+        setTimeout(() => flashOverlay.classList.remove('firing'), 500);
+    }
+
+    // Пробуем включить torch (фонарик) через MediaStreamTrack API
+    async function tryTorch(enable) {
+        if (!stream) return;
+        const videoTrack = stream.getVideoTracks()[0];
+        if (!videoTrack) return;
+        try {
+            const caps = videoTrack.getCapabilities ? videoTrack.getCapabilities() : {};
+            if (caps.torch) {
+                await videoTrack.applyConstraints({ advanced: [{ torch: enable }] });
+            }
+        } catch(e) { /* torch не поддерживается — не страшно */ }
+    }
+
+    // Проверяем нужна ли вспышка перед снимком
+    function shouldFlash() {
+        const mode = FLASH_MODES[flashModeIdx];
+        if (mode === 'off') return false;
+        if (mode === 'on')  return true;
+        // 'auto' — только для тыльной камеры (основная камера без своей вспышки на экране)
+        return facingMode === 'environment';
+    }
+
+    // Перехватываем takeSnapshot чтобы добавить вспышку
+    const _origTakeSnapshot = takeSnapshot;
+    takeSnapshot = async function() {
+        if (shouldFlash()) {
+            fireFlash();
+            // Небольшая задержка — даём экрану засветиться перед захватом кадра
+            await new Promise(r => setTimeout(r, 60));
+        }
+        _origTakeSnapshot();
+    };
+
+    // Torch-вспышка (если устройство поддерживает)
+    const _origSnap = document.getElementById('snap-phone-btn').onclick;
+    document.getElementById('snap-phone-btn').removeEventListener('click', _origSnap);
+    document.getElementById('snap-phone-btn').addEventListener('click', async () => {
+        if (shouldFlash()) {
+            await tryTorch(true);
+            fireFlash();
+            await new Promise(r => setTimeout(r, 80));
+        }
+        _origTakeSnapshot();
+        if (shouldFlash()) {
+            setTimeout(() => tryTorch(false), 500);
+        }
+    });
+
+    updateFlashBtnUI();
 
     // Скрываем адресную строку (fullscreen) при первом касании пользователя
     let fullscreenRequested = false;
@@ -189,6 +326,7 @@
     document.addEventListener('click', tryFullscreen, { once: true });
 
     if (sessionId) startCamera('user');
+
 </script>
 </body>
 </html>
