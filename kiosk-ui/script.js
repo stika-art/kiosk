@@ -25,19 +25,45 @@ function getStoredMainHeader() {
     };
 }
 
+function normalizeMainCards(cards) {
+    if (!Array.isArray(cards) || cards.length === 0) {
+        return [
+            { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
+            { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
+            { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'INSTA VIBE'] }
+        ];
+    }
+    return cards.map(c => {
+        const titleUp = (c.title || '').toUpperCase();
+        let cats = Array.isArray(c.categories) && c.categories.length > 0 ? c.categories : null;
+        if (!cats) {
+            if (c.id === 1 || titleUp === 'ФОТО') {
+                cats = ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'];
+            } else if (c.id === 2 || titleUp === 'ВИДЕО') {
+                cats = ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'];
+            } else if (c.id === 3 || titleUp === 'ТРЕНДЫ') {
+                cats = ['TIKTOK', 'REELS', 'INSTA VIBE'];
+            } else {
+                cats = [c.title || 'ОБЩЕЕ'];
+            }
+        }
+        return {
+            ...c,
+            id: Number(c.id) || Date.now(),
+            categories: cats
+        };
+    });
+}
+
 function getStoredMainCards() {
     try {
         const saved = localStorage.getItem('kiosk_main_cards_v1');
         if (saved) {
             const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            if (Array.isArray(parsed) && parsed.length > 0) return normalizeMainCards(parsed);
         }
     } catch(e) {}
-    return [
-        { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg' },
-        { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg' },
-        { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg' }
-    ];
+    return normalizeMainCards([]);
 }
 
 let mainHeaderConfig = getStoredMainHeader();
@@ -66,7 +92,7 @@ function renderMainCards() {
         const section = document.createElement('section');
         section.className = `card card-${idx + 1}`;
         section.onclick = function() {
-            window.selectCard(this, c.filter || c.category || c.title);
+            window.selectCard(this, c.id);
         };
 
         const bgImg = c.img ? `background-image: url('${c.img}');` : '';
@@ -134,6 +160,51 @@ if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.ge
     ];
 }
 
+let activeSectionCard = mainCardsConfig.length > 0 ? mainCardsConfig[0] : null;
+
+function normalizeTemplates(tplList, cardsList) {
+    if (!Array.isArray(tplList)) return [];
+    const cards = cardsList || mainCardsConfig;
+    return tplList.map(t => {
+        let sid = t.sectionId;
+        let stitle = t.sectionTitle;
+        let cat = t.category || 'ОБЩЕЕ';
+
+        if (!sid) {
+            const catUp = (cat || '').toUpperCase();
+            const modelUp = (t.model || '').toLowerCase();
+            const titleUp = (t.title || '').toUpperCase();
+            if (catUp === 'ВИДЕО' || modelUp.includes('seedance') || modelUp.includes('omni') || modelUp.includes('kling') || modelUp.includes('video')) {
+                sid = 2;
+                stitle = 'ВИДЕО';
+                if (catUp === 'ВИДЕО') cat = 'НЕОН';
+            } else if (catUp === 'ТРЕНДЫ' || titleUp.includes('TREND')) {
+                sid = 3;
+                stitle = 'ТРЕНДЫ';
+                if (catUp === 'ТРЕНДЫ') cat = 'TIKTOK';
+            } else {
+                sid = 1;
+                stitle = 'ФОТО';
+            }
+        }
+
+        const matchedCard = cards.find(c => c.id === Number(sid));
+        if (matchedCard) {
+            stitle = matchedCard.title;
+        }
+
+        return {
+            ...t,
+            id: Number(t.id) || Date.now(),
+            sectionId: Number(sid),
+            sectionTitle: stitle || 'ФОТО',
+            category: cat
+        };
+    });
+}
+
+masterTemplates = normalizeTemplates(masterTemplates, mainCardsConfig);
+
 // Preload all template images into memory for instant rendering
 function preloadMasterImages() {
     masterTemplates.forEach(item => {
@@ -165,10 +236,9 @@ function isTrendsTemplate(tpl) {
 }
 
 let activeGridTab = 'ВСЕ';
-let currentCatalogMode = 'PHOTO'; // 'PHOTO', 'VIDEO', 'TRENDS', 'ALL'
 
 // 1. ВЫБОР КАРТОЧКИ — МГНОВЕННОЕ ОТКРЫТИЕ 2-КОЛОНОЧНОЙ СЕТКИ ШАБЛОНОВ
-window.selectCard = function(cardEl, filterMode) {
+window.selectCard = function(cardEl, cardIdOrMode) {
     if (isSelectingCard || isAttractClosing) return;
     isSelectingCard = true;
 
@@ -187,8 +257,8 @@ window.selectCard = function(cardEl, filterMode) {
         }
     });
 
-    // 3. Открываем галерею в соответствующем режиме (ФОТО, ВИДЕО или ТРЕНДЫ)
-    openTemplateGallery(filterMode);
+    // 3. Открываем галерею для конкретной кнопки
+    openTemplateGallery(cardIdOrMode);
 
     setTimeout(() => {
         allCards.forEach(c => c.classList.remove('fly-left', 'fly-right', 'card-selected'));
@@ -196,24 +266,30 @@ window.selectCard = function(cardEl, filterMode) {
     }, 400);
 };
 
-// 2. GRID ROUTER & RENDERER (СТРОГОЕ РАЗДЕЛЕНИЕ: ФОТО, ВИДЕО, ТРЕНДЫ)
-function openTemplateGallery(mode) {
-    if (mode) {
-        const m = mode.toString().toUpperCase();
-        if (m === 'PHOTO' || m === 'ФОТО') currentCatalogMode = 'PHOTO';
-        else if (m === 'VIDEO' || m === 'ВИДЕО') currentCatalogMode = 'VIDEO';
-        else if (m === 'TRENDS' || m === 'ТРЕНДЫ') currentCatalogMode = 'TRENDS';
-        else currentCatalogMode = 'ALL';
+// 2. GRID ROUTER & RENDERER (ДЛЯ КАЖДОЙ КНОПКИ — СВОИ КАТЕГОРИИ И СВОИ ШАБЛОНЫ)
+function openTemplateGallery(cardIdOrMode) {
+    // Находим активную кнопку главного экрана
+    let activeCard = null;
+    if (typeof cardIdOrMode === 'number' || (!isNaN(Number(cardIdOrMode)) && String(Number(cardIdOrMode)) === String(cardIdOrMode).trim())) {
+        activeCard = mainCardsConfig.find(c => c.id === Number(cardIdOrMode));
     }
+    if (!activeCard && cardIdOrMode) {
+        const modeStr = String(cardIdOrMode).trim().toUpperCase();
+        activeCard = mainCardsConfig.find(c => 
+            (c.filter && c.filter.toUpperCase() === modeStr) || 
+            (c.title && c.title.toUpperCase() === modeStr) ||
+            (c.category && c.category.toUpperCase() === modeStr)
+        );
+    }
+    if (!activeCard) {
+        activeCard = mainCardsConfig[0];
+    }
+    activeSectionCard = activeCard;
 
     try {
         const saved = localStorage.getItem('kiosk_templates_v2');
         if (saved !== null) {
-            masterTemplates = JSON.parse(saved);
-        }
-        const savedCats = localStorage.getItem('kiosk_categories_v2');
-        if (savedCats !== null) {
-            kioskCategories = JSON.parse(savedCats);
+            masterTemplates = normalizeTemplates(JSON.parse(saved), mainCardsConfig);
         }
     } catch(e) {}
 
@@ -229,49 +305,22 @@ function closeTemplateGallery() {
     if (modal) modal.classList.add('hidden');
 }
 
-// РЕНДЕРИНГ ДИНАМИЧЕСКИХ ПЛАШЕК КАТЕГОРИЙ ПО РАЗДЕЛАМ
+// РЕНДЕРИНГ ДИНАМИЧЕСКИХ ПЛАШЕК КАТЕГОРИЙ ДЛЯ ТЕКУЩЕЙ ВЫБРАННОЙ КНОПКИ
 function renderCategoryPillsBar() {
     const bar = document.getElementById('category-pills-bar');
     if (!bar) return;
     bar.innerHTML = '';
 
-    let visibleCategories = [];
+    const card = activeSectionCard || mainCardsConfig[0];
+    const cats = (card && Array.isArray(card.categories) && card.categories.length > 0) 
+        ? card.categories 
+        : ['ОБЩЕЕ'];
 
-    if (currentCatalogMode === 'PHOTO') {
-        // ДЛЯ РАЗДЕЛА "ФОТО" — ТОЛЬКО ФОТО-КАТЕГОРИИ (ВИДЕО ИСКЛЮЧЕНО)
-        const photoTpls = masterTemplates.filter(t => !isVideoTemplate(t));
-        const catsSet = new Set(photoTpls.map(t => (t.category || '').toUpperCase()).filter(c => c && c !== 'ВИДЕО'));
-
-        visibleCategories = ['ВСЕ'];
-        kioskCategories.forEach(cat => {
-            const up = cat.toUpperCase();
-            if (up !== 'ВСЕ' && up !== 'ВИДЕО' && catsSet.has(up) && !visibleCategories.includes(up)) {
-                visibleCategories.push(up);
-            }
-        });
-        catsSet.forEach(c => {
-            if (!visibleCategories.includes(c)) visibleCategories.push(c);
-        });
-    } else if (currentCatalogMode === 'VIDEO') {
-        // ДЛЯ РАЗДЕЛА "ВИДЕО" — ТОЛЬКО ВИДЕОРОЛИКИ
-        visibleCategories = ['ВСЕ ВИДЕО'];
-        const videoTpls = masterTemplates.filter(t => isVideoTemplate(t));
-        const catsSet = new Set(videoTpls.map(t => (t.category || '').toUpperCase()).filter(c => c && c !== 'ВИДЕО'));
-        catsSet.forEach(c => {
-            if (!visibleCategories.includes(c)) visibleCategories.push(c);
-        });
-    } else if (currentCatalogMode === 'TRENDS') {
-        // ДЛЯ РАЗДЕЛА "ТРЕНДЫ" — ТОЛЬКО ТРЕНДЫ
-        visibleCategories = ['ТРЕНДЫ'];
-    } else {
-        visibleCategories = kioskCategories;
-    }
+    const visibleCategories = ['ВСЕ', ...cats];
 
     visibleCategories.forEach(cat => {
         const btn = document.createElement('button');
-        const isActive = (cat === 'ВСЕ' && activeGridTab === 'ВСЕ') || 
-                         (cat === 'ВСЕ ВИДЕО' && (activeGridTab === 'ВСЕ' || activeGridTab === 'ВСЕ ВИДЕО')) ||
-                         (cat.toUpperCase() === activeGridTab.toUpperCase());
+        const isActive = (cat.toUpperCase() === activeGridTab.toUpperCase());
 
         btn.className = `cat-pill ${isActive ? 'active' : ''}`;
         btn.textContent = cat.toUpperCase();
@@ -280,26 +329,24 @@ function renderCategoryPillsBar() {
     });
 }
 
-// ПЕРЕКЛЮЧЕНИЕ КАТЕГОРИИ ВНУТРИ РАЗДЕЛА
+// ПЕРЕКЛЮЧЕНИЕ КАТЕГОРИИ ВНУТРИ ВЫБРАННОЙ КНОПКИ
 window.switchGridCategory = function(catName) {
     activeGridTab = catName;
 
+    const card = activeSectionCard || mainCardsConfig[0];
+    const cardTitle = card ? (card.title || 'ШАБЛОНЫ') : 'ШАБЛОНЫ';
     const titleEl = document.getElementById('grid-modal-title');
     if (titleEl) {
-        if (currentCatalogMode === 'PHOTO') {
-            titleEl.textContent = (catName.toUpperCase() === 'ВСЕ') ? 'ФОТОСТУДИЯ' : `ФОТО: ${catName.toUpperCase()}`;
-        } else if (currentCatalogMode === 'VIDEO') {
-            titleEl.textContent = 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО';
-        } else if (currentCatalogMode === 'TRENDS') {
-            titleEl.textContent = 'ТРЕНДЫ И ПОПУЛЯРНЫЕ ОБРАЗЫ';
+        if (catName.toUpperCase() === 'ВСЕ') {
+            titleEl.textContent = cardTitle;
         } else {
-            titleEl.textContent = (catName.toUpperCase() === 'ВСЕ') ? 'ВСЕ ШАБЛОНЫ' : catName.toUpperCase();
+            titleEl.textContent = `${cardTitle} • ${catName.toUpperCase()}`;
         }
     }
 
     document.querySelectorAll('.cat-pill').forEach(pill => {
         const pText = pill.textContent.trim().toUpperCase();
-        if (pText === catName.toUpperCase() || ((catName === 'ВСЕ' || catName === 'ВСЕ ВИДЕО') && (pText === 'ВСЕ' || pText === 'ВСЕ ВИДЕО'))) {
+        if (pText === catName.toUpperCase()) {
             pill.classList.add('active');
         } else {
             pill.classList.remove('active');
@@ -310,19 +357,27 @@ window.switchGridCategory = function(catName) {
 };
 
 function renderGridTemplates() {
-    // 1. Фильтруем базовый пул шаблонов по активному разделу карточки
-    let scoped = masterTemplates;
-    if (currentCatalogMode === 'PHOTO') {
-        scoped = masterTemplates.filter(t => !isVideoTemplate(t));
-    } else if (currentCatalogMode === 'VIDEO') {
-        scoped = masterTemplates.filter(t => isVideoTemplate(t));
-    } else if (currentCatalogMode === 'TRENDS') {
-        scoped = masterTemplates.filter(t => isTrendsTemplate(t));
-    }
+    const card = activeSectionCard || mainCardsConfig[0];
+    const targetSecId = card ? card.id : 1;
+    const targetTitle = card ? (card.title || '').toUpperCase() : '';
 
-    // 2. Внутри раздела фильтруем по выбранной подкатегории
+    // 1. Фильтруем пул шаблонов СТРОГО по выбранной кнопке
+    let scoped = masterTemplates.filter(t => {
+        if (t.sectionId !== undefined && t.sectionId !== null) {
+            return Number(t.sectionId) === targetSecId;
+        }
+        if (t.sectionTitle && targetTitle && t.sectionTitle.toUpperCase() === targetTitle) {
+            return true;
+        }
+        // Обратная совместимость для старых шаблонов без sectionId
+        if (targetSecId === 2 || targetTitle.includes('ВИДЕО')) return isVideoTemplate(t);
+        if (targetSecId === 3 || targetTitle.includes('ТРЕНД')) return isTrendsTemplate(t);
+        return !isVideoTemplate(t) && !isTrendsTemplate(t);
+    });
+
+    // 2. Внутри раздела фильтруем по выбранной подкатегории кнопки
     let list = scoped;
-    if (activeGridTab !== 'ВСЕ' && activeGridTab !== 'ВСЕ ВИДЕО') {
+    if (activeGridTab.toUpperCase() !== 'ВСЕ') {
         list = scoped.filter(item => (item.category || '').toUpperCase() === activeGridTab.toUpperCase());
     }
 
@@ -834,8 +889,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('kiosk_main_header_v1', JSON.stringify(data.main_header));
                 }
                 if (Array.isArray(data.main_cards) && data.main_cards.length > 0) {
-                    mainCardsConfig = data.main_cards;
-                    localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(data.main_cards));
+                    mainCardsConfig = normalizeMainCards(data.main_cards);
+                    localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCardsConfig));
                 }
                 renderMainCards();
 
@@ -851,8 +906,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('kiosk_attract_timeout', data.attract_timeout);
                 }
                 if (Array.isArray(data.templates)) {
-                    masterTemplates = data.templates;
-                    localStorage.setItem('kiosk_templates_v2', JSON.stringify(data.templates));
+                    masterTemplates = normalizeTemplates(data.templates, mainCardsConfig);
+                    localStorage.setItem('kiosk_templates_v2', JSON.stringify(masterTemplates));
                     renderGridTemplates();
                 }
                 if (Array.isArray(data.categories)) {

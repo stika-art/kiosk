@@ -712,13 +712,22 @@
         <section id="tab-content-cats" class="admin-tab-content">
             <div class="admin-card">
                 <div class="card-header">
-                    <h2 class="card-title">📁 Управление категориями</h2>
-                    <p class="card-subtitle">Создавайте новые тематические разделы для каталога шаблонов киоска</p>
+                    <h2 class="card-title">📁 Управление категориями кнопок</h2>
+                    <p class="card-subtitle">У каждой кнопки на главном экране киоска — свой собственный независимый список категорий</p>
+                </div>
+
+                <!-- ВЫБОР КНОПКИ ГЛАВНОГО ЭКРАНА -->
+                <div class="form-row" style="align-items: center; gap: 14px; background: rgba(255,255,255,0.02); padding: 14px 18px; border-radius: 14px; border: 1px solid var(--border-subtle); margin-bottom: 18px;">
+                    <label style="font-size: 14px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+                        <span>🎴</span> Кнопка главного экрана:
+                    </label>
+                    <select id="cat-section-select" class="admin-select" style="max-width: 280px; font-weight: 700;" onchange="handleCatSectionChange(this.value)"></select>
+                    <span class="cloud-tip">Выберите кнопку, для которой настраиваются категории</span>
                 </div>
 
                 <div class="form-row">
-                    <input type="text" id="new-cat-name" class="admin-input" placeholder="Название новой категории (напр: РЕТРО, ФАНТАЗИЯ, КИНО)...">
-                    <button class="btn-primary" onclick="addCategory()">+ Добавить категорию</button>
+                    <input type="text" id="new-cat-name" class="admin-input" placeholder="Название новой категории (напр: КИБЕРПАНК, КИНЕМАТОГРАФ, АРТ)...">
+                    <button class="btn-primary" id="add-cat-btn" onclick="addCategory()">+ Добавить категорию</button>
                 </div>
                 <div id="cat-status" class="status-msg"></div>
 
@@ -727,7 +736,7 @@
                         <tr>
                             <th style="width: 60px;">#</th>
                             <th>Название категории</th>
-                            <th>Статус</th>
+                            <th style="width: 160px;">Кнопка киоска</th>
                             <th style="width: 170px; text-align: right;">Порядок / Действие</th>
                         </tr>
                     </thead>
@@ -743,14 +752,15 @@
             <div class="admin-card">
                 <div class="card-header">
                     <h2 class="card-title">🖼️ Управление шаблонами</h2>
-                    <p class="card-subtitle">Добавляйте стили и шаблоны с привязкой к категориям</p>
+                    <p class="card-subtitle">Добавляйте стили и шаблоны с привязкой к кнопке и категории</p>
                 </div>
 
                 <div class="form-row">
-                    <select id="tpl-cat-select" class="admin-select" style="max-width: 170px;" title="Категория"></select>
+                    <select id="tpl-section-select" class="admin-select" style="max-width: 190px; font-weight: 700;" title="Кнопка / Раздел" onchange="handleTplSectionChange(this.value)"></select>
+                    <select id="tpl-cat-select" class="admin-select" style="max-width: 180px;" title="Категория внутри кнопки"></select>
                     <input type="text" id="tpl-title-input" class="admin-input" placeholder="Название шаблона (напр: CYBER SAMURAI)...">
-                    <input type="number" id="tpl-price-input" class="admin-input" style="max-width: 140px;" placeholder="Цена (сом)" min="10" step="10">
-                    <select id="tpl-model-select" class="admin-select" style="max-width: 250px;" title="Модель обработки" onchange="toggleCustomModelInput(this.value)">
+                    <input type="number" id="tpl-price-input" class="admin-input" style="max-width: 130px;" placeholder="Цена (сом)" min="10" step="10">
+                    <select id="tpl-model-select" class="admin-select" style="max-width: 240px;" title="Модель обработки" onchange="toggleCustomModelInput(this.value)">
                         <option value="nano-banana-2">🍌 Nano Banana 2 (Фото)</option>
                         <option value="chatgpt-2.5">🤖 ChatGPT 2.5 (Фото)</option>
                         <option value="seedance-2.5">🎬 Seedance 2.5 (Видеоролик)</option>
@@ -758,7 +768,7 @@
                         <option value="kling-video">🎥 Kling AI (Видеоролик)</option>
                         <option value="custom">✏️ Другая модель из агрегатора...</option>
                     </select>
-                    <input type="text" id="tpl-custom-model-input" class="admin-input" style="max-width: 220px; display: none;" placeholder="ID модели из агрегатора...">
+                    <input type="text" id="tpl-custom-model-input" class="admin-input" style="max-width: 200px; display: none;" placeholder="ID модели...">
                 </div>
 
                 <div class="form-row" style="align-items: flex-start; gap: 16px; margin-top: 10px;">
@@ -787,17 +797,27 @@
                 </div>
                 <div id="tpl-status" class="status-msg"></div>
 
-                <table class="items-table" style="margin-top: 20px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 24px; margin-bottom: 12px; gap: 12px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 13px; color: var(--text-dim); font-weight: 600;">Фильтр шаблонов:</span>
+                        <select id="tpl-filter-section-select" class="admin-select" style="padding: 6px 14px; font-size: 13px; min-width: 180px;" onchange="handleTplFilterSectionChange(this.value)">
+                            <option value="ALL">🌟 Все разделы</option>
+                        </select>
+                    </div>
+                    <span id="tpl-count-badge" style="font-size: 12px; color: var(--text-dim);"></span>
+                </div>
+
+                <table class="items-table" style="margin-top: 6px;">
                     <thead>
                         <tr>
                             <th style="width: 40px;">#</th>
                             <th style="width: 65px;">Превью</th>
                             <th>Название шаблона</th>
-                            <th style="width: 110px;">Категория</th>
-                            <th style="width: 150px;">Модель ИИ</th>
+                            <th style="width: 160px;">Кнопка / Категория</th>
+                            <th style="width: 140px;">Модель ИИ</th>
                             <th>Промпт</th>
-                            <th style="width: 100px;">Цена</th>
-                            <th style="width: 190px; text-align: right;">Действия</th>
+                            <th style="width: 90px;">Цена</th>
+                            <th style="width: 170px; text-align: right;">Действия</th>
                         </tr>
                     </thead>
                     <tbody id="templates-table-body">
@@ -1175,28 +1195,109 @@
             };
         }
 
+        function normalizeMainCards(cards) {
+            if (!Array.isArray(cards) || cards.length === 0) {
+                return [
+                    { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
+                    { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
+                    { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'INSTA VIBE'] }
+                ];
+            }
+            return cards.map(c => {
+                const titleUp = (c.title || '').toUpperCase();
+                let cats = Array.isArray(c.categories) && c.categories.length > 0 ? c.categories : null;
+                if (!cats) {
+                    if (c.id === 1 || titleUp === 'ФОТО') {
+                        cats = ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'];
+                    } else if (c.id === 2 || titleUp === 'ВИДЕО') {
+                        cats = ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'];
+                    } else if (c.id === 3 || titleUp === 'ТРЕНДЫ') {
+                        cats = ['TIKTOK', 'REELS', 'INSTA VIBE'];
+                    } else {
+                        cats = [c.title || 'ОБЩЕЕ'];
+                    }
+                }
+                return {
+                    ...c,
+                    id: Number(c.id) || Date.now(),
+                    categories: cats
+                };
+            });
+        }
+
+        function normalizeTemplates(tplList, cardsList) {
+            if (!Array.isArray(tplList)) return [];
+            const cards = cardsList || mainCards;
+            return tplList.map(t => {
+                let sid = t.sectionId;
+                let stitle = t.sectionTitle;
+                let cat = t.category || 'ОБЩЕЕ';
+
+                if (!sid) {
+                    const catUp = (cat || '').toUpperCase();
+                    const modelUp = (t.model || '').toLowerCase();
+                    const titleUp = (t.title || '').toUpperCase();
+                    if (catUp === 'ВИДЕО' || modelUp.includes('seedance') || modelUp.includes('omni') || modelUp.includes('kling') || modelUp.includes('video')) {
+                        sid = 2;
+                        stitle = 'ВИДЕО';
+                        if (catUp === 'ВИДЕО') cat = 'НЕОН';
+                    } else if (catUp === 'ТРЕНДЫ' || titleUp.includes('TREND')) {
+                        sid = 3;
+                        stitle = 'ТРЕНДЫ';
+                        if (catUp === 'ТРЕНДЫ') cat = 'TIKTOK';
+                    } else {
+                        sid = 1;
+                        stitle = 'ФОТО';
+                    }
+                }
+
+                const matchedCard = cards.find(c => c.id === Number(sid));
+                if (matchedCard) {
+                    stitle = matchedCard.title;
+                }
+
+                return {
+                    ...t,
+                    id: Number(t.id) || Date.now(),
+                    sectionId: Number(sid),
+                    sectionTitle: stitle || 'ФОТО',
+                    category: cat
+                };
+            });
+        }
+
         function getStoredMainCards() {
             try {
                 const data = localStorage.getItem('kiosk_main_cards_v1');
                 if (data) {
                     const parsed = JSON.parse(data);
-                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        return normalizeMainCards(parsed);
+                    }
                 }
             } catch(e) {}
-            return [
-                { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg' },
-                { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg' },
-                { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg' }
-            ];
+            return normalizeMainCards([]);
         }
 
+        function getStoredCategories() {
+            // Для совместимости берем категории из карточек
+            const cards = getStoredMainCards();
+            const allCats = new Set(['ВСЕ']);
+            cards.forEach(c => (c.categories || []).forEach(cat => allCats.add(cat)));
+            return Array.from(allCats);
+        }
+
+        let mainCards = getStoredMainCards();
+        let templates = normalizeTemplates(getStoredTemplates(), mainCards);
         let categories = getStoredCategories();
-        let templates = getStoredTemplates();
         let topAds = getStoredTopAds();
         let bottomAds = getStoredBottomAds();
         let mainHeader = getStoredMainHeader();
-        let mainCards = getStoredMainCards();
         let editingMainCardId = null;
+
+        // Состояние активного раздела для категорий и фильтра шаблонов
+        let activeCatSectionId = mainCards.length > 0 ? mainCards[0].id : 1;
+        let activeTplFilterSectionId = 'ALL';
 
         // Check Session Authentication
         function checkAuth() {
@@ -1204,13 +1305,14 @@
             const authScreen = document.getElementById('auth-screen');
             if (isAuth) {
                 authScreen.classList.add('hidden');
+                renderCatSectionSelect();
                 renderCategories();
+                renderTplSectionSelect();
+                renderTplCategoryDropdown();
                 renderTemplates();
-                renderCategoryDropdown();
                 renderAds();
                 renderMainHeaderInputs();
                 renderMainCardsAdmin();
-                renderMainCardCategoryDropdown();
             } else {
                 authScreen.classList.remove('hidden');
             }
@@ -1253,22 +1355,105 @@
             if (targetBtn) targetBtn.classList.add('active');
         }
 
-        // CATEGORIES LOGIC
+        // =============================================
+        // КАТЕГОРИИ ПО КНОПКАМ ГЛАВНОГО ЭКРАНА
+        // =============================================
+        function getCardIcon(card) {
+            const title = (card.title || '').toUpperCase();
+            if (title.includes('ФОТО')) return '📸';
+            if (title.includes('ВИДЕО')) return '🎬';
+            if (title.includes('ТРЕНД')) return '🔥';
+            return '🎴';
+        }
+
+        function renderCatSectionSelect() {
+            const select = document.getElementById('cat-section-select');
+            if (!select) return;
+
+            select.innerHTML = '';
+            mainCards.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = `${getCardIcon(c)} ${c.title} (${(c.categories || []).length} категорий)`;
+                select.appendChild(opt);
+            });
+
+            // Проверяем, существует ли еще выбранная карточка
+            if (!mainCards.some(c => c.id === activeCatSectionId) && mainCards.length > 0) {
+                activeCatSectionId = mainCards[0].id;
+            }
+            select.value = activeCatSectionId;
+            updateCatAddButtonText();
+        }
+
+        function handleCatSectionChange(val) {
+            activeCatSectionId = Number(val);
+            updateCatAddButtonText();
+            renderCategories();
+        }
+
+        function updateCatAddButtonText() {
+            const btn = document.getElementById('add-cat-btn');
+            const input = document.getElementById('new-cat-name');
+            const card = getActiveCatCard();
+            if (btn && card) {
+                btn.textContent = `+ Добавить в «${card.title}»`;
+            }
+            if (input && card) {
+                input.placeholder = `Название категории для кнопки «${card.title}» (напр: КИБЕРПАНК, АРТ)...`;
+            }
+        }
+
+        function getActiveCatCard() {
+            let card = mainCards.find(c => c.id === activeCatSectionId);
+            if (!card && mainCards.length > 0) {
+                card = mainCards[0];
+                activeCatSectionId = card.id;
+            }
+            if (card && !Array.isArray(card.categories)) {
+                card.categories = [card.title || 'ОБЩЕЕ'];
+            }
+            return card;
+        }
+
         function renderCategories() {
             const tbody = document.getElementById('categories-table-body');
+            if (!tbody) return;
             tbody.innerHTML = '';
 
-            categories.forEach((cat, idx) => {
+            const card = getActiveCatCard();
+            if (!card) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-dim); padding: 24px;">Создайте хотя бы одну кнопку на главном экране</td></tr>';
+                return;
+            }
+
+            const cats = card.categories || [];
+
+            if (cats.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-dim); padding: 30px;">
+                            У кнопки <strong>«${card.title}»</strong> пока нет категорий. Добавьте первую выше!
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            cats.forEach((cat, idx) => {
                 const tr = document.createElement('tr');
-                const isAll = cat === 'ВСЕ';
                 tr.innerHTML = `
                     <td style="color: var(--text-dim);">${idx + 1}</td>
-                    <td><strong>${cat}</strong></td>
-                    <td><span class="cat-tag">${isAll ? 'Системная' : 'Активна'}</span></td>
+                    <td><strong style="color: #ffffff; font-size: 14px;">${cat}</strong></td>
+                    <td>
+                        <span class="cat-tag" style="background: rgba(212,160,67,0.12); border-color: var(--primary-border); color: var(--primary);">
+                            ${getCardIcon(card)} ${card.title}
+                        </span>
+                    </td>
                     <td style="text-align: right; white-space: nowrap;">
-                        <button class="btn-move" onclick="moveCategory(${idx}, -1)" ${idx <= 1 ? 'disabled' : ''} title="Переместить выше">▲</button>
-                        <button class="btn-move" onclick="moveCategory(${idx}, 1)" ${idx === 0 || idx === categories.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
-                        ${!isAll ? `<button class="btn-del" onclick="deleteCategory('${cat}')">Удалить</button>` : ''}
+                        <button class="btn-move" onclick="moveCategory(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
+                        <button class="btn-move" onclick="moveCategory(${idx}, 1)" ${idx === cats.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
+                        <button class="btn-del" onclick="deleteCategory('${cat.replace(/'/g, "\\'")}')">Удалить</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1276,15 +1461,20 @@
         }
 
         function moveCategory(idx, dir) {
+            const card = getActiveCatCard();
+            if (!card || !Array.isArray(card.categories)) return;
+
             const newIdx = idx + dir;
-            if (newIdx <= 0 || newIdx >= categories.length) return;
-            const temp = categories[idx];
-            categories[idx] = categories[newIdx];
-            categories[newIdx] = temp;
-            localStorage.setItem('kiosk_categories_v2', JSON.stringify(categories));
-            syncAllToCloud();
+            if (newIdx < 0 || newIdx >= card.categories.length) return;
+
+            const temp = card.categories[idx];
+            card.categories[idx] = card.categories[newIdx];
+            card.categories[newIdx] = temp;
+
+            saveCategoriesState();
             renderCategories();
-            renderCategoryDropdown();
+            renderCatSectionSelect();
+            renderTplCategoryDropdown();
         }
 
         function addCategory() {
@@ -1298,49 +1488,55 @@
                 return;
             }
 
-            if (categories.includes(name)) {
-                status.textContent = '❌ Такая категория уже существует';
+            const card = getActiveCatCard();
+            if (!card) return;
+
+            if (!Array.isArray(card.categories)) card.categories = [];
+
+            if (card.categories.some(c => c.toUpperCase() === name)) {
+                status.textContent = `❌ В кнопке «${card.title}» уже есть категория "${name}"`;
                 status.className = 'status-msg error';
                 return;
             }
 
-            categories.push(name);
-            localStorage.setItem('kiosk_categories_v2', JSON.stringify(categories));
-            syncAllToCloud();
-            renderCategories();
-            renderCategoryDropdown();
+            card.categories.push(name);
+            saveCategoriesState();
 
             input.value = '';
-            status.textContent = `✅ Категория "${name}" добавлена`;
+            status.textContent = `✅ Категория "${name}" добавлена в раздел «${card.title}»`;
             status.className = 'status-msg success';
+
+            renderCategories();
+            renderCatSectionSelect();
+            renderTplCategoryDropdown();
+
             setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
         }
 
         function deleteCategory(name) {
-            if (!confirm(`Удалить категорию "${name}"?`)) return;
+            const card = getActiveCatCard();
+            if (!card || !Array.isArray(card.categories)) return;
 
-            categories = categories.filter(c => c.toUpperCase() !== name.toUpperCase());
+            if (!confirm(`Удалить категорию "${name}" из кнопки «${card.title}»?`)) return;
+
+            card.categories = card.categories.filter(c => c.toUpperCase() !== name.toUpperCase());
+            saveCategoriesState();
+
+            renderCategories();
+            renderCatSectionSelect();
+            renderTplCategoryDropdown();
+        }
+
+        function saveCategoriesState() {
+            localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
+            categories = getStoredCategories();
             localStorage.setItem('kiosk_categories_v2', JSON.stringify(categories));
             syncAllToCloud();
-            renderCategories();
-            renderCategoryDropdown();
         }
 
-        function renderCategoryDropdown() {
-            const select = document.getElementById('tpl-cat-select');
-            if (select) {
-                select.innerHTML = '';
-                categories.filter(c => c !== 'ВСЕ').forEach(cat => {
-                    const opt = document.createElement('option');
-                    opt.value = cat;
-                    opt.textContent = cat;
-                    select.appendChild(opt);
-                });
-            }
-            renderMainCardCategoryDropdown();
-        }
-
-        // TEMPLATES LOGIC (WITH PROMPT, MODEL, IMAGE COMPRESSION, AND EDITING)
+        // =============================================
+        // ШАБЛОНЫ С ПРИВЯЗКОЙ К КНОПКЕ И КАТЕГОРИИ
+        // =============================================
         let editingTemplateId = null;
 
         function toggleCustomModelInput(val) {
@@ -1362,6 +1558,74 @@
             if (m === 'omni-flash' || m === 'google-omni-flash' || m === 'google/gemini-omni-flash-1-1') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">⚡ Omni Flash</span>';
             if (m === 'kling-video') return '<span class="model-badge">🎥 Kling AI</span>';
             return `<span class="model-badge">${m}</span>`;
+        }
+
+        function renderTplSectionSelect() {
+            const secSelect = document.getElementById('tpl-section-select');
+            const filterSelect = document.getElementById('tpl-filter-section-select');
+
+            if (secSelect) {
+                secSelect.innerHTML = '';
+                mainCards.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = `${getCardIcon(c)} ${c.title}`;
+                    secSelect.appendChild(opt);
+                });
+            }
+
+            if (filterSelect) {
+                const currentVal = filterSelect.value || 'ALL';
+                filterSelect.innerHTML = '<option value="ALL">🌟 Все разделы</option>';
+                mainCards.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = `${getCardIcon(c)} ${c.title}`;
+                    filterSelect.appendChild(opt);
+                });
+                filterSelect.value = currentVal;
+            }
+        }
+
+        function handleTplSectionChange(val) {
+            renderTplCategoryDropdown(Number(val));
+        }
+
+        function renderTplCategoryDropdown(targetSectionId, preferredCategory) {
+            const catSelect = document.getElementById('tpl-cat-select');
+            const secSelect = document.getElementById('tpl-section-select');
+            if (!catSelect) return;
+
+            let sectionId = targetSectionId;
+            if (!sectionId && secSelect) {
+                sectionId = Number(secSelect.value);
+            }
+
+            const card = mainCards.find(c => c.id === sectionId) || mainCards[0];
+            catSelect.innerHTML = '';
+
+            if (card && Array.isArray(card.categories) && card.categories.length > 0) {
+                card.categories.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat;
+                    catSelect.appendChild(opt);
+                });
+            } else {
+                const opt = document.createElement('option');
+                opt.value = card ? card.title : 'ОБЩЕЕ';
+                opt.textContent = card ? card.title : 'ОБЩЕЕ';
+                catSelect.appendChild(opt);
+            }
+
+            if (preferredCategory) {
+                catSelect.value = preferredCategory;
+            }
+        }
+
+        function handleTplFilterSectionChange(val) {
+            activeTplFilterSectionId = val;
+            renderTemplates();
         }
 
         function compressImage(file, maxWidth, maxHeight, quality, callback) {
@@ -1438,27 +1702,63 @@
 
         function renderTemplates() {
             const tbody = document.getElementById('templates-table-body');
+            const countBadge = document.getElementById('tpl-count-badge');
+            if (!tbody) return;
             tbody.innerHTML = '';
 
-            templates.forEach((tpl, idx) => {
+            let filtered = templates;
+            if (activeTplFilterSectionId !== 'ALL') {
+                const secIdNum = Number(activeTplFilterSectionId);
+                filtered = templates.filter(t => t.sectionId === secIdNum);
+            }
+
+            if (countBadge) {
+                countBadge.textContent = `Показано: ${filtered.length} из ${templates.length} шаблонов`;
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: var(--text-dim); padding: 36px;">
+                            В этом разделе нет шаблонов. Добавьте первый шаблон через форму выше!
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            filtered.forEach((tpl, idx) => {
                 const tr = document.createElement('tr');
                 const priceVal = tpl.price || 290;
                 const modelBadge = getModelBadge(tpl.model);
                 const promptText = tpl.prompt ? tpl.prompt.trim() : '—';
                 const promptEscaped = promptText.replace(/"/g, '&quot;');
+                
+                const card = mainCards.find(c => c.id === tpl.sectionId);
+                const cardTitle = card ? card.title : (tpl.sectionTitle || 'ФОТО');
+                const cardIcon = card ? getCardIcon(card) : '🎴';
 
                 tr.innerHTML = `
                     <td style="color: var(--text-dim);">${idx + 1}</td>
                     <td><img src="${tpl.img}" alt="${tpl.title}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'"></td>
-                    <td><strong>${tpl.title}</strong></td>
-                    <td><span class="cat-tag">${tpl.category}</span></td>
+                    <td><strong style="color: #ffffff; font-size: 14px;">${tpl.title}</strong></td>
+                    <td>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <span class="cat-tag" style="background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: #ffffff; font-size: 10px; padding: 2px 8px;">
+                                ${cardIcon} ${cardTitle}
+                            </span>
+                            <span class="cat-tag" style="font-size: 11px; padding: 2px 8px;">
+                                ${tpl.category}
+                            </span>
+                        </div>
+                    </td>
                     <td>${modelBadge}</td>
                     <td><div class="prompt-preview-cell" title="${promptEscaped}">${promptText}</div></td>
                     <td><span class="price-badge">${priceVal} сом</span></td>
                     <td style="text-align: right; white-space: nowrap;">
                         <button class="btn-move" onclick="moveTemplate(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
-                        <button class="btn-move" onclick="moveTemplate(${idx}, 1)" ${idx === templates.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
-                        <button class="btn-edit" onclick="editTemplate(${tpl.id})" title="Редактировать промпт, модель, цену и обложку">✏️ Ред.</button>
+                        <button class="btn-move" onclick="moveTemplate(${idx}, 1)" ${idx === filtered.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
+                        <button class="btn-edit" onclick="editTemplate(${tpl.id})" title="Редактировать">✏️ Ред.</button>
                         <button class="btn-del" onclick="deleteTemplate(${tpl.id})">Удалить</button>
                     </td>
                 `;
@@ -1467,11 +1767,22 @@
         }
 
         function moveTemplate(idx, dir) {
-            const newIdx = idx + dir;
-            if (newIdx < 0 || newIdx >= templates.length) return;
-            const temp = templates[idx];
-            templates[idx] = templates[newIdx];
-            templates[newIdx] = temp;
+            let filtered = templates;
+            if (activeTplFilterSectionId !== 'ALL') {
+                filtered = templates.filter(t => t.sectionId === Number(activeTplFilterSectionId));
+            }
+
+            const currentTpl = filtered[idx];
+            const targetTpl = filtered[idx + dir];
+            if (!currentTpl || !targetTpl) return;
+
+            const realIdx = templates.findIndex(t => t.id === currentTpl.id);
+            const targetRealIdx = templates.findIndex(t => t.id === targetTpl.id);
+
+            const temp = templates[realIdx];
+            templates[realIdx] = templates[targetRealIdx];
+            templates[targetRealIdx] = temp;
+
             localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
             syncAllToCloud();
             renderTemplates();
@@ -1482,7 +1793,13 @@
             if (!tpl) return;
 
             editingTemplateId = id;
-            document.getElementById('tpl-cat-select').value = tpl.category || 'ФОТО';
+
+            const secSelect = document.getElementById('tpl-section-select');
+            if (secSelect && tpl.sectionId) {
+                secSelect.value = tpl.sectionId;
+            }
+            renderTplCategoryDropdown(tpl.sectionId, tpl.category);
+
             document.getElementById('tpl-title-input').value = tpl.title || '';
             document.getElementById('tpl-price-input').value = tpl.price || 290;
 
@@ -1531,6 +1848,7 @@
         }
 
         function addOrUpdateTemplate() {
+            const secSelect = document.getElementById('tpl-section-select');
             const catSelect = document.getElementById('tpl-cat-select');
             const titleInput = document.getElementById('tpl-title-input');
             const priceInput = document.getElementById('tpl-price-input');
@@ -1540,7 +1858,11 @@
             const imgInput = document.getElementById('tpl-img-input');
             const status = document.getElementById('tpl-status');
 
-            const category = catSelect ? catSelect.value : 'ОБЛОЖКИ';
+            const sectionId = secSelect ? Number(secSelect.value) : 1;
+            const targetCard = mainCards.find(c => c.id === sectionId) || mainCards[0];
+            const sectionTitle = targetCard ? targetCard.title : 'ФОТО';
+            const category = catSelect ? catSelect.value : (targetCard && targetCard.categories ? targetCard.categories[0] : 'ОБЩЕЕ');
+
             const title = titleInput ? titleInput.value.trim() : '';
             const price = priceInput ? (Number(priceInput.value) || 290) : 290;
             
@@ -1571,6 +1893,8 @@
                 if (targetIdx !== -1) {
                     templates[targetIdx] = {
                         ...templates[targetIdx],
+                        sectionId,
+                        sectionTitle,
                         category,
                         title,
                         price,
@@ -1578,7 +1902,7 @@
                         prompt,
                         img
                     };
-                    status.textContent = `✅ Шаблон "${title}" успешно обновлён`;
+                    status.textContent = `✅ Шаблон "${title}" успешно обновлён в разделе «${sectionTitle}»`;
                     status.className = 'status-msg success';
                 }
                 cancelTemplateEdit();
@@ -1587,6 +1911,8 @@
                 const newId = Date.now();
                 templates.push({
                     id: newId,
+                    sectionId,
+                    sectionTitle,
                     category,
                     title,
                     price,
@@ -1602,7 +1928,7 @@
                 document.getElementById('tpl-file-input').value = '';
                 handleTemplateImgInput('');
 
-                status.textContent = `✅ Шаблон "${title}" (${price} сом) успешно добавлен`;
+                status.textContent = `✅ Шаблон "${title}" добавлен в раздел «${sectionTitle}» (${price} сом)`;
                 status.className = 'status-msg success';
             }
 
@@ -1619,7 +1945,6 @@
             }
 
             renderTemplates();
-
             setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
         }
 
@@ -1953,6 +2278,7 @@
             if (editingMainCardId) {
                 const targetIdx = mainCards.findIndex(c => c.id === editingMainCardId);
                 if (targetIdx !== -1) {
+                    const existingCats = mainCards[targetIdx].categories || [title];
                     mainCards[targetIdx] = {
                         ...mainCards[targetIdx],
                         title,
@@ -1960,7 +2286,8 @@
                         subtitle,
                         filter,
                         category: filter,
-                        img
+                        img,
+                        categories: existingCats
                     };
                     status.textContent = `✅ Карточка "${title}" обновлена`;
                     status.className = 'status-msg success';
@@ -1974,7 +2301,8 @@
                     subtitle,
                     filter,
                     category: filter,
-                    img
+                    img,
+                    categories: [title]
                 });
 
                 titleInput.value = '';
@@ -1991,6 +2319,10 @@
             localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
             syncAllToCloud();
             renderMainCardsAdmin();
+            renderCatSectionSelect();
+            renderCategories();
+            renderTplSectionSelect();
+            renderTplCategoryDropdown();
             setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3500);
         }
 
@@ -2039,6 +2371,10 @@
             localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
             syncAllToCloud();
             renderMainCardsAdmin();
+            renderCatSectionSelect();
+            renderCategories();
+            renderTplSectionSelect();
+            renderTplCategoryDropdown();
         }
 
         function moveMainCard(idx, dir) {
@@ -2381,9 +2717,13 @@
                         changed = true;
                     }
                     if (Array.isArray(data.main_cards) && data.main_cards.length > 0) {
-                        mainCards = data.main_cards;
+                        mainCards = normalizeMainCards(data.main_cards);
                         localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
                         renderMainCardsAdmin();
+                        renderCatSectionSelect();
+                        renderCategories();
+                        renderTplSectionSelect();
+                        renderTplCategoryDropdown();
                         changed = true;
                     }
                     if (Array.isArray(data.ads_top) && data.ads_top.length > 0) {
@@ -2399,7 +2739,7 @@
                         changed = true;
                     }
                     if (Array.isArray(data.templates)) {
-                        templates = data.templates;
+                        templates = normalizeTemplates(data.templates, mainCards);
                         localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
                         renderTemplates();
                         changed = true;
@@ -2409,8 +2749,6 @@
                     if (Array.isArray(data.categories)) {
                         categories = data.categories;
                         localStorage.setItem('kiosk_categories_v2', JSON.stringify(categories));
-                        renderCategories();
-                        renderCategoryDropdown();
                         changed = true;
                     }
                     if (data.attract_timeout) {
