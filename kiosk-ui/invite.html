@@ -423,7 +423,12 @@
 </head>
 <body>
 
-<div class="mobile-wrapper">
+    <div id="invite-loading-screen" style="position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #faf4ee; z-index: 999999;">
+        <div style="width: 36px; height: 36px; border: 3px solid rgba(196,139,139,0.25); border-top-color: #c48b8b; border-radius: 50%; animation: spin-ldr 0.8s linear infinite;"></div>
+        <style>@keyframes spin-ldr { to { transform: rotate(360deg); } }</style>
+    </div>
+
+    <div class="mobile-wrapper" style="display: none;">
     <!-- Кнопка музыки -->
     <button class="music-btn" id="music-btn" title="Включить / выключить музыку">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #D4A043;">
@@ -621,6 +626,7 @@
     // Чтение id пригласительного из URL (?id=...)
     const urlParams = new URLSearchParams(window.location.search);
     const inviteId = urlParams.get('id');
+    const isPreview = urlParams.get('preview') === '1';
 
     // Настройка ссылки на редактирование
     const ownerEditBtn = document.getElementById('owner-edit-btn');
@@ -629,7 +635,6 @@
     }
 
     async function loadInviteData() {
-        const isPreview = urlParams.get('preview') === '1';
         const tplParam = urlParams.get('templateId') || urlParams.get('tpl');
         if (tplParam && !inviteData.templateId) {
             inviteData.templateId = tplParam;
@@ -689,12 +694,24 @@
                         inviteData.customHtml = matchedTpl.htmlCode;
                         renderCustomInviteHtml(inviteData.customHtml);
                     } else {
+                        const loader = document.getElementById('invite-loading-screen');
+                        if (loader) loader.remove();
+                        const defWrap = document.querySelector('.mobile-wrapper');
+                        if (defWrap) defWrap.style.display = 'block';
                         applyDataToDOM();
                     }
                 } else {
+                    const loader = document.getElementById('invite-loading-screen');
+                    if (loader) loader.remove();
+                    const defWrap = document.querySelector('.mobile-wrapper');
+                    if (defWrap) defWrap.style.display = 'block';
                     applyDataToDOM();
                 }
             } catch(e) {
+                const loader = document.getElementById('invite-loading-screen');
+                if (loader) loader.remove();
+                const defWrap = document.querySelector('.mobile-wrapper');
+                if (defWrap) defWrap.style.display = 'block';
                 applyDataToDOM();
             }
         }
@@ -738,50 +755,32 @@
             .replace(/\{\{RSVP_LINK\}\}/g, rsvpLink)
             .replace(/\{\{WHATSAPP_PHONE\}\}/g, inviteData.whatsappPhone || '');
 
-        // 3. Парсим HTML
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-
-        // Переносим все стили и линки шрифтов в head текущего документа
-        const headElements = doc.head.querySelectorAll('style, link[rel="stylesheet"], link[rel="preconnect"]');
-        headElements.forEach(el => {
-            document.head.appendChild(el.cloneNode(true));
-        });
-
-        // Скрываем стандартный мобильный wrapper
-        const defaultWrapper = document.querySelector('.mobile-wrapper');
-        if (defaultWrapper) {
-            defaultWrapper.style.display = 'none';
-        }
-
-        // Создаем или очищаем контейнер кастомного дизайна
-        let customRoot = document.getElementById('custom-invite-root');
-        if (!customRoot) {
-            customRoot = document.createElement('div');
-            customRoot.id = 'custom-invite-root';
-            customRoot.style.cssText = 'width:100%; min-height:100vh; display:flex; flex-direction:column; align-items:center;';
-            document.body.prepend(customRoot);
-        }
-        customRoot.innerHTML = doc.body.innerHTML || html;
-
-        // Добавляем панель редактирования для владельца внизу кастомного дизайна (только не в режиме превью)
+        // 3. Добавляем панель владельца внизу (только не в режиме превью)
         if (!isPreview) {
             const editUrl = inviteId ? `invite-edit.html?id=${encodeURIComponent(inviteId)}` : 'invite-edit.html';
-            const ownerPanel = document.createElement('div');
-            ownerPanel.className = 'owner-edit-panel';
-            ownerPanel.style.cssText = 'margin: 30px auto 40px; text-align: center; width: 100%; max-width: 480px; padding: 20px;';
-            ownerPanel.innerHTML = `
-                <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 10px;">Нужно изменить имена, дату, фото или музыку?</p>
-                <a href="${editUrl}" class="owner-edit-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(212,160,67,0.4); color: #D4A043; text-decoration: none; font-size: 13px; font-weight: 600;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                    <span>Редактировать пригласительное</span>
-                </a>
+            const ownerPanelHtml = `
+                <div class="owner-edit-panel" style="margin: 40px auto 30px; text-align: center; width: 100%; max-width: 480px; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                    <p style="font-size: 13px; color: rgba(120,100,95,0.7); margin-bottom: 12px;">Нужно изменить имена, дату, фото или музыку?</p>
+                    <a href="${editUrl}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border-radius: 12px; background: rgba(0,0,0,0.05); border: 1px solid rgba(196,139,139,0.5); color: #c48b8b; text-decoration: none; font-size: 13px; font-weight: 600;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        <span>Редактировать пригласительное</span>
+                    </a>
+                </div>
             `;
-            customRoot.appendChild(ownerPanel);
+            if (html.includes('</body>')) {
+                html = html.replace('</body>', ownerPanelHtml + '</body>');
+            } else {
+                html += ownerPanelHtml;
+            }
         }
+
+        // 4. Полная замена документа — исключает любые конфликты стилей и черные фоны
+        document.open();
+        document.write(html);
+        document.close();
     }
 
     function applyDataToDOM() {

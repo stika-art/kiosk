@@ -1077,14 +1077,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (data.isPublished || data.userSaved || (data.updatedAt && !data.isInitial)) {
                             stopInvitePolling();
                             lastKnownInviteTime = data.updatedAt || new Date().toISOString();
-                            handleInviteReady(invId);
+                            handleInviteReady(invId, data.customHtml);
                         }
                     } else {
                         // Режим редактирования: ждем обновления updatedAt
                         if (data.updatedAt && data.updatedAt !== lastKnownInviteTime) {
                             stopInvitePolling();
                             lastKnownInviteTime = data.updatedAt;
-                            handleInviteReady(invId);
+                            handleInviteReady(invId, data.customHtml);
                         }
                     }
                 }
@@ -1099,7 +1099,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function handleInviteReady(invId) {
+    function handleInviteReady(invId, updatedHtml) {
         const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes('file:'))
             ? window.location.origin 
             : 'https://kiosk394.vercel.app';
@@ -1108,8 +1108,17 @@ document.addEventListener('DOMContentLoaded', () => {
             finalUrl += `&templateId=${encodeURIComponent(selectedTemplateId)}`;
         }
 
+        // Если у нас в памяти есть HTML выбранного шаблона — сразу рендерим через srcdoc
+        // Это обеспечивает 0мс задержки, абсолютную чистоту стилей и отсутствие мигания других шаблонов
+        const htmlToPreview = updatedHtml || selectedTemplateHtml;
         if (invitePreviewFrame) {
-            invitePreviewFrame.src = `${finalUrl}&preview_t=${Date.now()}`;
+            if (htmlToPreview && htmlToPreview.trim().length > 50) {
+                invitePreviewFrame.removeAttribute('src');
+                invitePreviewFrame.srcdoc = htmlToPreview;
+            } else {
+                invitePreviewFrame.removeAttribute('srcdoc');
+                invitePreviewFrame.src = `${finalUrl}&preview_t=${Date.now()}`;
+            }
         }
         if (inviteFinalShareQr) {
             renderInstantQR(inviteFinalShareQr, finalUrl, 250);
@@ -1121,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (skipToViewInviteBtn) {
         skipToViewInviteBtn.addEventListener('click', () => {
             stopInvitePolling();
-            handleInviteReady(currentInviteId || 'demo');
+            handleInviteReady(currentInviteId || 'demo', selectedTemplateHtml);
         });
     }
 
@@ -1161,7 +1170,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectedTemplateId) {
                     finalUrl += `&templateId=${encodeURIComponent(selectedTemplateId)}`;
                 }
-                invitePreviewFrame.src = `${finalUrl}&preview_t=${Date.now()}`;
+                if (selectedTemplateHtml && selectedTemplateHtml.length > 50) {
+                    invitePreviewFrame.removeAttribute('src');
+                    invitePreviewFrame.srcdoc = selectedTemplateHtml;
+                } else {
+                    invitePreviewFrame.removeAttribute('srcdoc');
+                    invitePreviewFrame.src = `${finalUrl}&preview_t=${Date.now()}`;
+                }
             }
         });
     }
