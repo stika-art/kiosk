@@ -5,6 +5,8 @@
 let selectedStyle = 'ROBLOX HERO';
 let selectedStylePhoto = 'images/photo1.jpg';
 let selectedStylePrice = 290;
+let selectedStyleLocation = '';
+let isTryOnMode = false;
 let selectedStyleModel = 'face-swap';
 let selectedStylePrompt = 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere';
 let selectedTemplateId = null;
@@ -28,15 +30,28 @@ function getStoredMainHeader() {
 }
 
 function normalizeMainCards(cards) {
-    if (!Array.isArray(cards) || cards.length === 0) {
-        return [
+    let list = Array.isArray(cards) ? [...cards] : [];
+    if (list.length === 0) {
+        list = [
             { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
             { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
             { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'] },
-            { id: 4, title: 'ПРИГЛАСИТЕЛЬНЫЕ', badge: 'СВАДЬБЫ • ТОЙ • ЮБИЛЕИ', subtitle: 'ИНТЕРАКТИВНЫЕ САЙТЫ С МУЗЫКОЙ И ТАЙМЕРОМ', filter: 'INVITES', category: 'ПРИГЛАСИТЕЛЬНЫЕ', img: 'assets/hero_portrait.jpg', categories: ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'СУННОТ ТОЙ'] }
+            { id: 4, title: 'ПРИГЛАСИТЕЛЬНЫЕ', badge: 'СВАДЬБЫ • ТОЙ • ЮБИЛЕИ', subtitle: 'ИНТЕРАКТИВНЫЕ САЙТЫ С МУЗЫКОЙ И ТАЙМЕРОМ', filter: 'INVITES', category: 'ПРИГЛАСИТЕЛЬНЫЕ', img: 'assets/hero_portrait.jpg', categories: ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'СУННОТ ТОЙ'] },
+            { id: 5, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] }
         ];
+    } else if (!list.some(c => c.id === 5 || (c.title && c.title.toUpperCase().includes('ПРИМЕР')))) {
+        list.push({
+            id: 5,
+            title: 'ПРИМЕРКА',
+            badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ',
+            subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК',
+            filter: 'TRYON',
+            category: 'ПРИМЕРКА',
+            img: 'assets/1489.jpg',
+            categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ']
+        });
     }
-    return cards.map(c => {
+    return list.map(c => {
         const titleUp = (c.title || '').toUpperCase();
         let cats = Array.isArray(c.categories) && c.categories.length > 0 ? [...c.categories] : null;
         if (!cats) {
@@ -48,6 +63,8 @@ function normalizeMainCards(cards) {
                 cats = ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'];
             } else if (c.id === 4 || titleUp.includes('ПРИГЛАС')) {
                 cats = ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'СУННОТ ТОЙ', 'ТУШОО ТОЙ', 'ДЕНЬ РОЖДЕНИЯ', 'БЕШИК ТОЙ', 'СЫРҒА САЛУ'];
+            } else if (c.id === 5 || titleUp.includes('ПРИМЕР') || titleUp.includes('ОДЕЖД')) {
+                cats = ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'];
             } else {
                 cats = [c.title || 'ОБЩЕЕ'];
             }
@@ -167,7 +184,11 @@ if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.ge
         { id: 11, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'СВАДЬБА', title: 'ROYAL WEDDING', img: 'assets/hero_portrait.jpg', price: 490, model: 'invite-web', prompt: 'Свадебное интерактивное пригласительное с таймером и музыкой' },
         { id: 12, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'КЫЗ УЗАТУУ', title: 'КЫЗ УЗАТУУ GOLD', img: 'assets/child.png', price: 490, model: 'invite-web', prompt: 'Интерактивное приглашение на Кыз Узатуу' },
         { id: 13, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'ЮБИЛЕЙ', title: 'JUBILEE LUXURY', img: 'assets/man.jpg', price: 490, model: 'invite-web', prompt: 'Интерактивное приглашение на Юбилей' },
-        { id: 99, sectionId: 3, sectionTitle: 'ТРЕНДЫ', category: 'ПРОЖАРКА', title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)', img: 'assets/hero_portrait.jpg', price: 190, model: 'roast-standup', prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice' }
+        { id: 99, sectionId: 3, sectionTitle: 'ТРЕНДЫ', category: 'ПРОЖАРКА', title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)', img: 'assets/hero_portrait.jpg', price: 190, model: 'roast-standup', prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice' },
+        { id: 101, sectionId: 5, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
+        { id: 102, sectionId: 5, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'nano-banana-2', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
+        { id: 103, sectionId: 5, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'nano-banana-2', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
+        { id: 104, sectionId: 5, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
     ];
 }
 
@@ -176,7 +197,7 @@ let activeSectionCard = mainCardsConfig.length > 0 ? mainCardsConfig[0] : null;
 function normalizeTemplates(tplList, cardsList) {
     if (!Array.isArray(tplList)) return [];
     const cards = cardsList || mainCardsConfig;
-    return tplList.map(t => {
+    const normalized = tplList.map(t => {
         let sid = t.sectionId;
         let stitle = t.sectionTitle;
         let cat = t.category || 'ОБЩЕЕ';
@@ -185,7 +206,10 @@ function normalizeTemplates(tplList, cardsList) {
             const catUp = (cat || '').toUpperCase();
             const modelUp = (t.model || '').toLowerCase();
             const titleUp = (t.title || '').toUpperCase();
-            if (catUp === 'ВИДЕО' || modelUp.includes('seedance') || modelUp.includes('omni') || modelUp.includes('kling') || modelUp.includes('video')) {
+            if (catUp.includes('ПРИМЕР') || catUp.includes('ТОЛСТОВ') || catUp.includes('ХУДИ') || catUp.includes('ФУТБОЛ') || catUp.includes('КУРТК') || catUp.includes('МЕРЧ') || titleUp.includes('ТОЛСТОВ') || titleUp.includes('ХУДИ')) {
+                sid = 5;
+                stitle = 'ПРИМЕРКА';
+            } else if (catUp === 'ВИДЕО' || modelUp.includes('seedance') || modelUp.includes('omni') || modelUp.includes('kling') || modelUp.includes('video')) {
                 sid = 2;
                 stitle = 'ВИДЕО';
                 if (catUp === 'ВИДЕО') cat = 'НЕОН';
@@ -213,9 +237,68 @@ function normalizeTemplates(tplList, cardsList) {
             id: Number(t.id) || Date.now(),
             sectionId: Number(sid),
             sectionTitle: stitle || 'ФОТО',
-            category: cat
+            category: cat,
+            location: t.location || '',
+            htmlCode: t.htmlCode || ''
         };
     });
+
+    if (!normalized.some(t => t.sectionId === 5 || (t.sectionTitle && t.sectionTitle.includes('ПРИМЕР')))) {
+        normalized.push({
+            id: 101,
+            sectionId: 5,
+            sectionTitle: 'ПРИМЕРКА',
+            category: 'ТОЛСТОВКИ',
+            title: 'Толстовка TRENDUM Black Oversize',
+            img: 'assets/hero_avatar.jpg',
+            price: 450,
+            location: 'Рынок Дордой, ряд 5, контейнер 142',
+            model: 'chatgpt-2.5',
+            prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.',
+            htmlCode: ''
+        });
+        normalized.push({
+            id: 102,
+            sectionId: 5,
+            sectionTitle: 'ПРИМЕРКА',
+            category: 'ТОЛСТОВКИ',
+            title: 'Толстовка ALTYN White Classic',
+            img: 'assets/hero_portrait.jpg',
+            price: 450,
+            location: 'Рынок Дордой, проход 3, контейнер 88',
+            model: 'nano-banana-2',
+            prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.',
+            htmlCode: ''
+        });
+        normalized.push({
+            id: 103,
+            sectionId: 5,
+            sectionTitle: 'ПРИМЕРКА',
+            category: 'ХУДИ',
+            title: 'Худи Streetwear Cyberpunk',
+            img: 'assets/hero_robot.jpg',
+            price: 490,
+            location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum',
+            model: 'nano-banana-2',
+            prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.',
+            htmlCode: ''
+        });
+        normalized.push({
+            id: 104,
+            sectionId: 5,
+            sectionTitle: 'ПРИМЕРКА',
+            category: 'ФУТБОЛКИ',
+            title: 'Футболка Trendum Minimalist',
+            img: 'assets/man.jpg',
+            price: 350,
+            location: 'Рынок Дордой, контейнер 205',
+            model: 'chatgpt-2.5',
+            prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.',
+            htmlCode: ''
+        });
+    }
+
+    return normalized;
 }
 
 masterTemplates = normalizeTemplates(masterTemplates, mainCardsConfig);
@@ -278,6 +361,25 @@ function isInviteTemplate(tpl) {
            c.includes('ЮБИЛЕЙ') || 
            c.includes('ТОЙ') ||
            t.includes('WEDDING');
+}
+
+function isTryOnTemplate(tpl) {
+    if (!tpl) return false;
+    const m = (tpl.model || '').toLowerCase();
+    const c = (tpl.category || '').toUpperCase();
+    const t = (tpl.title || '').toUpperCase();
+    const st = (tpl.sectionTitle || '').toUpperCase();
+    return tpl.sectionId === 5 || 
+           st.includes('ПРИМЕР') || 
+           st.includes('ОДЕЖД') ||
+           c.includes('ТОЛСТОВ') || 
+           c.includes('ХУДИ') || 
+           c.includes('ФУТБОЛ') || 
+           c.includes('КУРТК') || 
+           c.includes('МЕРЧ') ||
+           t.includes('ТОЛСТОВ') ||
+           t.includes('ХУДИ') ||
+           Boolean(tpl.location);
 }
 
 let activeGridTab = 'ВСЕ';
@@ -432,7 +534,8 @@ function renderGridTemplates() {
         if (targetSecId === 2 || targetTitle.includes('ВИДЕО')) return isVideoTemplate(t);
         if (targetSecId === 3 || targetTitle.includes('ТРЕНД')) return isTrendsTemplate(t);
         if (targetSecId === 4 || targetTitle.includes('ПРИГЛАС')) return isInviteTemplate(t);
-        return !isVideoTemplate(t) && !isTrendsTemplate(t) && !isInviteTemplate(t);
+        if (targetSecId === 5 || targetTitle.includes('ПРИМЕР') || targetTitle.includes('ОДЕЖД')) return isTryOnTemplate(t);
+        return !isVideoTemplate(t) && !isTrendsTemplate(t) && !isInviteTemplate(t) && !isTryOnTemplate(t);
     });
 
     // 2. Внутри раздела фильтруем по выбранной подкатегории кнопки
@@ -480,13 +583,24 @@ function renderGridTemplates() {
         card.appendChild(img);
         card.appendChild(priceBadge);
 
+        // Если у товара указано место продажи (контейнер/бутик), отображаем бейдж
+        if (item.location) {
+            const locBadge = document.createElement('div');
+            locBadge.className = 'tile-loc-badge';
+            locBadge.style.cssText = 'position: absolute; bottom: 8px; left: 8px; right: 8px; font-size: 11px; font-weight: 700; color: #F3D289; background: rgba(0,0,0,0.82); backdrop-filter: blur(6px); padding: 5px 8px; border-radius: 8px; border: 1px solid rgba(212,160,67,0.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; text-shadow: 0 1px 3px rgba(0,0,0,0.9); z-index: 2;';
+            locBadge.innerHTML = `📍 ${item.location}`;
+            card.appendChild(locBadge);
+        }
+
         // При клике на карточку — сразу переходим к экрану оплаты Finik ELQR!
         card.addEventListener('click', () => {
             if (isAttractClosing) return; // поглощаем клик закрытия заставки
             selectedStyle = item.title;
             selectedStylePhoto = item.img;
             selectedStylePrice = itemPrice;
-            selectedStyleModel = item.model || 'face-swap';
+            selectedStyleLocation = item.location || '';
+            isTryOnMode = isTryOnTemplate(item);
+            selectedStyleModel = item.model || (isTryOnMode ? 'nano-banana-2' : 'face-swap');
             selectedStylePrompt = item.prompt || '';
             selectedTemplateId = item.id;
             selectedTemplateHtml = item.htmlCode || '';
@@ -576,6 +690,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultVideo = document.getElementById('result-video');
     const finishBtn = document.getElementById('finish-btn');
     const aiStatusText = document.getElementById('ai-status-text');
+
+    // Try-On Location Info Card Elements
+    const tryonLocationInfoCard = document.getElementById('tryon-location-info-card');
+    const tryonLocPriceVal = document.getElementById('tryon-loc-price-val');
+    const tryonLocTitleVal = document.getElementById('tryon-loc-title-val');
+    const tryonLocPlaceVal = document.getElementById('tryon-loc-place-val');
 
     let mediaStream = null;
     let capturedPhotoData = null;
@@ -748,6 +868,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 roastAudioEl.src = '';
             } catch(e) {}
         }
+        if (tryonLocationInfoCard) tryonLocationInfoCard.style.display = 'none';
         modal.style.display = 'none';
         resetState();
     }
@@ -876,7 +997,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (phoneCamPanel) phoneCamPanel.classList.remove('visible');
         if (timerSelectWrap) timerSelectWrap.style.display = '';
         if (snapBtnEl) snapBtnEl.style.display = '';
-        if (camSubtitle) camSubtitle.textContent = 'Встаньте по центру и смотрите в камеру';
+        if (camSubtitle) {
+            if (isTryOnMode) {
+                camSubtitle.textContent = 'Встаньте по центру в полный рост или по пояс, чтобы примерить вещь';
+            } else {
+                camSubtitle.textContent = 'Встаньте по центру и смотрите в камеру';
+            }
+        }
     }
 
 
@@ -891,6 +1018,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (paySubtext) {
             if (isInviteTemplate({ title: selectedStyle, model: selectedStyleModel, category: currentCategory })) {
                 paySubtext.textContent = 'Интерактивный сайт-приглашение с музыкой';
+            } else if (isTryOnMode) {
+                paySubtext.textContent = selectedStyleLocation ? `Примерка одежды • Место: ${selectedStyleLocation}` : 'Виртуальная примерка одежды';
             } else {
                 paySubtext.textContent = 'Финальное фото в студийном качестве';
             }
@@ -1415,7 +1544,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const statuses = [
+        const statuses = isTryOnMode ? [
+            `Анализ силуэта и позы гостя...`,
+            `Подбор размера и примерка одежды...`,
+            `Сохранение черт лица и индивидуальности...`,
+            `Генерация реалистичных складок и текстуры...`,
+            `Финальный рендеринг примерки...`
+        ] : [
             `Анализ кадра и ракурса...`,
             `Стилизация портрета...`,
             `Применение художественного освещения...`,
@@ -1449,6 +1584,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     model: selectedStyleModel,
                     title: selectedStyle,
                     orderId: currentOrderId,
+                    location: selectedStyleLocation,
+                    isTryOn: isTryOnMode,
                     aggregatorUrl,
                     aggregatorKey
                 })
@@ -1487,6 +1624,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? finalResultUrl 
                 : (window.location.origin + (finalResultUrl.startsWith('/') ? '' : '/') + finalResultUrl);
             renderInstantQR(resultQrEl, absoluteDownloadUrl, 260);
+        }
+
+        // Отображение карточки локации примерки одежды (где купить вещь)
+        if (tryonLocationInfoCard) {
+            if (isTryOnMode || selectedStyleLocation) {
+                if (tryonLocPriceVal) tryonLocPriceVal.textContent = `${selectedStylePrice || 450} СОМ`;
+                if (tryonLocTitleVal) tryonLocTitleVal.textContent = selectedStyle || 'Товар из каталога';
+                if (tryonLocPlaceVal) tryonLocPlaceVal.textContent = selectedStyleLocation || 'Уточняйте у продавца';
+                tryonLocationInfoCard.style.display = 'flex';
+            } else {
+                tryonLocationInfoCard.style.display = 'none';
+            }
         }
 
         showStep(stepResult);
@@ -1538,7 +1687,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedStyle = cur.title;
                 selectedStylePhoto = cur.img;
                 selectedStylePrice = cur.price || 290;
-                selectedStyleModel = cur.model || 'face-swap';
+                selectedStyleLocation = cur.location || '';
+                isTryOnMode = isTryOnTemplate(cur);
+                selectedStyleModel = cur.model || (isTryOnMode ? 'nano-banana-2' : 'face-swap');
                 selectedStylePrompt = cur.prompt || '';
                 selectedTemplateId = cur.id;
                 selectedTemplateHtml = cur.htmlCode || '';

@@ -1,10 +1,11 @@
 // ============================================================
 // TRENDUM KIOSK — UNIVERSAL AI GATEWAY (KIE.AI & CUSTOM AGGREGATORS)
 // Models supported:
-// 1. 'nano-banana-2'  -> google/nano-banana-edit (Фото с сохранением лица/композиции)
-// 2. 'seedance-2.5'   -> bytedance/seedance-2-5 (Кинематографичное видео из фото)
-// 3. 'chatgpt-2.5'    -> openai/gpt-4o-image
-// 4. 'kling-video'    -> kwaivgi/kling-v1-6
+// 1. 'nano-banana-2'  -> google/nano-banana-edit (Фото с сохранением лица / Примерка одежды)
+// 2. 'chatgpt-2.5'    -> openai/gpt-4o-image (GPT Image 2.5 с фоллбэком на nano-banana-edit)
+// 3. 'seedance-2.5'   -> bytedance/seedance-2-5 (Кинематографичное видео из фото)
+// 4. 'omni-flash'     -> google/gemini-omni-flash-1-1 (Анимация лица и видео)
+// 5. 'kling-video'    -> kwaivgi/kling-v1-6
 // ============================================================
 
 const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
@@ -14,16 +15,26 @@ const SUPABASE_BUCKET = 'kiosk-media';
 const DEFAULT_KIE_URL = 'https://api.kie.ai/api/v1/jobs/createTask';
 const KIE_RECORD_URL = 'https://api.kie.ai/api/v1/jobs/recordInfo';
 
-// 1. Загрузка фото гостя в CDN Supabase для получения публичного URL (требуется Kie.ai)
-async function uploadGuestPhotoToCDN(photoBase64OrUrl, orderId) {
-    if (!photoBase64OrUrl || photoBase64OrUrl.startsWith('http://') || photoBase64OrUrl.startsWith('https://')) {
+// 1. Загрузка фото гостя или одежды в CDN Supabase для получения публичного URL
+async function uploadImageToCDN(photoBase64OrUrl, prefix = 'guests', orderId) {
+    if (!photoBase64OrUrl) return null;
+
+    if (photoBase64OrUrl.startsWith('http://') || photoBase64OrUrl.startsWith('https://')) {
         return photoBase64OrUrl;
     }
 
+    // Если передан относительный путь к ассету киоска (assets/... или images/...)
+    if (photoBase64OrUrl.startsWith('assets/') || photoBase64OrUrl.startsWith('/assets/') ||
+        photoBase64OrUrl.startsWith('images/') || photoBase64OrUrl.startsWith('/images/')) {
+        const cleanPath = photoBase64OrUrl.startsWith('/') ? photoBase64OrUrl.slice(1) : photoBase64OrUrl;
+        return `https://kiosk394.vercel.app/kiosk-ui/${cleanPath}`;
+    }
+
+    // Загрузка Base64 данных в Supabase Storage
     try {
         const cleanBase64 = photoBase64OrUrl.replace(/^data:image\/\w+;base64,/, '');
         const buffer = Buffer.from(cleanBase64, 'base64');
-        const filename = `guests/guest_${orderId || Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+        const filename = `${prefix}/${prefix}_${orderId || Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
 
         const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`, {
             method: 'POST',
@@ -37,17 +48,17 @@ async function uploadGuestPhotoToCDN(photoBase64OrUrl, orderId) {
 
         if (res.ok) {
             const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${filename}`;
-            console.log('[CDN] Фото гостя успешно сохранено:', publicUrl);
+            console.log(`[CDN] ${prefix} успешно сохранено:`, publicUrl);
             return publicUrl;
         }
     } catch (e) {
-        console.warn('[CDN Upload Error]', e.message);
+        console.warn(`[CDN Upload Error (${prefix})]`, e.message);
     }
     return photoBase64OrUrl;
 }
 
 // 2. Вызов Kie.ai API и ожидание результата задачи
-async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateImgUrl }) {
+async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateImgUrl, isTryOn }) {
     if (!apiKey) return null;
 
     // Сопоставление внутренних имен с официальными идентификаторами моделей Kie.ai
@@ -55,10 +66,11 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
     if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') kieModel = 'bytedance/seedance-2-5';
     else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'google/gemini-omni-flash-1-1' || model === 'gemini-omni-video') kieModel = 'google/gemini-omni-flash-1-1';
     else if (model === 'nano-banana-2' || model === 'google/nano-banana-edit') kieModel = 'google/nano-banana-edit';
+    else if (model === 'chatgpt-2.5' || model === 'openai/gpt-4o-image' || model === 'gpt-image-2.5' || model === 'openai/chatgpt-2.5') kieModel = 'openai/gpt-4o-image';
     else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6') kieModel = 'kwaivgi/kling-v1-6';
     else if (model && model.includes('/')) kieModel = model;
 
-    console.log(`[Kie.ai] Запуск задачи для модели "${kieModel}"...`);
+    console.log(`[Kie.ai] Запуск задачи для модели "${kieModel}" (isTryOn=${Boolean(isTryOn)})...`);
 
     // Формирование входных данных под выбранный тип модели
     let inputPayload = {};
@@ -66,13 +78,30 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         inputPayload = {
             prompt: prompt || 'Cinematic video portrait, smooth natural motion, 4k high quality',
             image_url: publicPhotoUrl,
-            duration: '6' // Официально поддерживаемые опции Kie.ai: "4", "6", "8", "10"
+            duration: '6' // "4", "6", "8", "10"
         };
     } else if (kieModel.includes('seedance') || kieModel.includes('kling')) {
         inputPayload = {
             prompt: prompt || 'Cinematic movement, 4k resolution, seamless motion',
             image_url: publicPhotoUrl,
             duration: 5
+        };
+    } else if (isTryOn || (templateImgUrl && (kieModel.includes('nano-banana') || kieModel.includes('gpt-4o-image')))) {
+        // Виртуальная примерка одежды / товаров на гостя
+        const tryOnPrompt = prompt && prompt.trim().length > 10
+            ? prompt
+            : 'Virtual clothing try-on: Fit the clothing item realistically onto the person in the photo. Seamlessly drape the garment with natural folds, lighting, and texture, keeping the person exact face, expression and hair.';
+        
+        const imageUrls = [publicPhotoUrl];
+        if (templateImgUrl && templateImgUrl.startsWith('http')) {
+            imageUrls.push(templateImgUrl);
+        }
+
+        inputPayload = {
+            prompt: tryOnPrompt,
+            image_urls: imageUrls,
+            output_format: 'png',
+            aspect_ratio: '3:4'
         };
     } else {
         inputPayload = {
@@ -85,7 +114,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
 
     try {
         // Создание задачи с указанием Webhook Callback URL
-        const createRes = await fetch(DEFAULT_KIE_URL, {
+        let createRes = await fetch(DEFAULT_KIE_URL, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
@@ -97,6 +126,24 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
                 input: inputPayload
             })
         });
+
+        // Если специфическая модель вернула ошибку, автоматически пробуем надежный google/nano-banana-edit
+        if (!createRes.ok && kieModel !== 'google/nano-banana-edit') {
+            const errStatus = createRes.status;
+            console.warn(`[Kie.ai] Модель ${kieModel} вернула ${errStatus}, выполняем резервный вызов google/nano-banana-edit...`);
+            createRes = await fetch(DEFAULT_KIE_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'google/nano-banana-edit',
+                    callBackUrl: 'https://kiosk394.vercel.app/api/ai/kie-callback',
+                    input: inputPayload
+                })
+            });
+        }
 
         if (!createRes.ok) {
             const errText = await createRes.text();
@@ -184,14 +231,15 @@ module.exports = async (req, res) => {
 
     try {
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-        const { photoData, templateImg, prompt, model, title, orderId, aggregatorUrl, aggregatorKey } = body;
+        const { photoData, templateImg, prompt, model, title, orderId, location, isTryOn, aggregatorUrl, aggregatorKey } = body;
 
         const effectiveKey = aggregatorKey || process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || 'fde11cd9f361b989eb19b8ef8530bfbd';
 
-        console.log(`[AI Hub] Новый запрос: "${title}", модель="${model}", заказ="${orderId}"`);
+        console.log(`[AI Hub] Новый запрос: "${title}", модель="${model}", заказ="${orderId}", isTryOn=${Boolean(isTryOn)}, location="${location || ''}"`);
 
-        // 1. Получаем публичный URL фото гостя через Supabase
-        const publicPhotoUrl = await uploadGuestPhotoToCDN(photoData, orderId);
+        // 1. Получаем публичный URL фото гостя и шаблона одежды через CDN Supabase
+        const publicPhotoUrl = await uploadImageToCDN(photoData, 'guests', orderId);
+        const publicTemplateUrl = await uploadImageToCDN(templateImg, 'clothes', orderId);
 
         // 2. Запуск генерации через Kie.ai (если ключ указан)
         let resultUrl = null;
@@ -201,7 +249,8 @@ module.exports = async (req, res) => {
                 model: model || 'nano-banana-2',
                 prompt,
                 publicPhotoUrl,
-                templateImgUrl: templateImg
+                templateImgUrl: publicTemplateUrl,
+                isTryOn: Boolean(isTryOn)
             });
         }
 
@@ -216,6 +265,8 @@ module.exports = async (req, res) => {
             model: model || 'nano-banana-2',
             title: title || 'Портрет',
             prompt: prompt || '',
+            location: location || '',
+            isTryOn: Boolean(isTryOn),
             resultUrl,
             mode: effectiveKey ? 'live' : 'preview',
             message: effectiveKey ? 'Успешно обработано через Kie.ai' : 'Тестовый режим (ключ не задан)'
