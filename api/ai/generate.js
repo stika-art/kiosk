@@ -6,6 +6,7 @@
 // 3. 'seedance-2.5'   -> bytedance/seedance-2-5 (Кинематографичное видео из фото)
 // 4. 'omni-flash'     -> google/gemini-omni-flash-1-1 (Анимация лица и видео)
 // 5. 'kling-video'    -> kwaivgi/kling-v1-6
+// 6. 'elevenlabs'     -> голосовая озвучка бутика/контейнера при выдаче результата
 // ============================================================
 
 const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
@@ -57,7 +58,140 @@ async function uploadImageToCDN(photoBase64OrUrl, prefix = 'guests', orderId) {
     return photoBase64OrUrl;
 }
 
-// 2. Вызов Kie.ai API и ожидание результата задачи
+// 2. Сохранение аудио озвучки бутика в Supabase CDN
+async function uploadAudioToCDN(audioBuffer, orderId) {
+    try {
+        const filename = `tryon/voice_${orderId || Date.now()}_${Math.random().toString(36).substring(7)}.mp3`;
+        const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'audio/mpeg',
+                'x-upsert': 'true'
+            },
+            body: audioBuffer
+        });
+        if (res.ok) {
+            return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${filename}`;
+        }
+    } catch (e) {
+        console.warn('[Try-On Audio Upload Error]', e.message);
+    }
+    return null;
+}
+
+// 3. Генерация озвучки через Kie.ai (ElevenLabs Multilingual V2)
+async function generateElevenLabsViaKie({ text, apiKey, voiceId, orderId }) {
+    if (!apiKey) return null;
+    const targetVoiceId = (voiceId && voiceId.length > 3) ? voiceId : 'XNrB7jz2HCkpU5yK08kP';
+
+    try {
+        console.log(`[Kie.ai ElevenLabs Try-On] Создание задачи озвучки (голос: ${targetVoiceId})...`);
+        const createRes = await fetch(DEFAULT_KIE_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'elevenlabs/text-to-speech-multilingual-v2',
+                input: {
+                    text: text,
+                    voice: targetVoiceId
+                }
+            })
+        });
+
+        if (!createRes.ok) return null;
+        const createData = await createRes.json();
+        const taskId = createData.data?.taskId || createData.taskId || createData.id;
+        if (!taskId) return null;
+
+        const startTime = Date.now();
+        while (Date.now() - startTime < 20000) {
+            await new Promise(r => setTimeout(r, 1500));
+            const recordRes = await fetch(`${KIE_RECORD_URL}?taskId=${taskId}`, {
+                headers: { 'Authorization': `Bearer ${apiKey}` }
+            });
+            if (recordRes.ok) {
+                const recordData = await recordRes.json();
+                const taskInfo = recordData.data || recordData;
+                const state = taskInfo.state || taskInfo.status;
+                if (state === 'success' || state === 'SUCCESS' || state === 'completed') {
+                    let audioUrl = null;
+                    if (taskInfo.resultJson) {
+                        try {
+                            const parsed = typeof taskInfo.resultJson === 'string' ? JSON.parse(taskInfo.resultJson) : taskInfo.resultJson;
+                            const urls = parsed.resultUrls || parsed.urls || [parsed.url || parsed.audio_url];
+                            audioUrl = urls && urls[0];
+                        } catch(e) {}
+                    }
+                    if (!audioUrl) audioUrl = taskInfo.audio_url || taskInfo.url;
+                    if (audioUrl) {
+                        try {
+                            const aResp = await fetch(audioUrl);
+                            if (aResp.ok) {
+                                const arrBuf = await aResp.arrayBuffer();
+                                const cdnUrl = await uploadAudioToCDN(Buffer.from(arrBuf), orderId);
+                                if (cdnUrl) return cdnUrl;
+                            }
+                        } catch(e) {}
+                        return audioUrl;
+                    }
+                } else if (state === 'failed' || state === 'FAILED') {
+                    break;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('[Kie.ai ElevenLabs Try-On Exception]', e.message);
+    }
+    return null;
+}
+
+// 4. Универсальная озвучка: прямой ElevenLabs или через Kie.ai
+async function generateElevenLabsAudio({ text, elevenlabsKey, apiKey, voiceId, orderId }) {
+    const targetVoiceId = (voiceId && voiceId.length > 3) ? voiceId : 'XNrB7jz2HCkpU5yK08kP';
+
+    if (elevenlabsKey) {
+        try {
+            const url = `https://api.elevenlabs.io/v1/text-to-speech/${targetVoiceId}?output_format=mp3_44100_128`;
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'xi-api-key': elevenlabsKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    text: text,
+                    model_id: 'eleven_multilingual_v2',
+                    voice_settings: {
+                        stability: 0.5,
+                        similarity_boost: 0.85,
+                        style: 0.35,
+                        use_speaker_boost: true
+                    }
+                })
+            });
+
+            if (resp.ok) {
+                const arrayBuffer = await resp.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+                const audioUrl = await uploadAudioToCDN(buffer, orderId);
+                if (audioUrl) return audioUrl;
+            }
+        } catch(e) {
+            console.warn('[ElevenLabs Direct Exception]', e.message);
+        }
+    }
+
+    if (apiKey) {
+        return await generateElevenLabsViaKie({ text, apiKey, voiceId: targetVoiceId, orderId });
+    }
+    return null;
+}
+
+// 5. Вызов Kie.ai API и ожидание результата задачи генерации изображения
 async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateImgUrl, isTryOn }) {
     if (!apiKey) return null;
 
@@ -231,7 +365,7 @@ module.exports = async (req, res) => {
 
     try {
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-        const { photoData, templateImg, prompt, model, title, orderId, location, isTryOn, aggregatorUrl, aggregatorKey } = body;
+        const { photoData, templateImg, prompt, model, title, price, orderId, location, isTryOn, aggregatorUrl, aggregatorKey, elevenlabsKey, elevenlabsVoiceId } = body;
 
         const effectiveKey = aggregatorKey || process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || 'fde11cd9f361b989eb19b8ef8530bfbd';
 
@@ -241,23 +375,34 @@ module.exports = async (req, res) => {
         const publicPhotoUrl = await uploadImageToCDN(photoData, 'guests', orderId);
         const publicTemplateUrl = await uploadImageToCDN(templateImg, 'clothes', orderId);
 
-        // 2. Запуск генерации через Kie.ai (если ключ указан)
-        let resultUrl = null;
-        if (effectiveKey) {
-            resultUrl = await generateViaKie({
-                apiKey: effectiveKey,
-                model: model || 'nano-banana-2',
-                prompt,
-                publicPhotoUrl,
-                templateImgUrl: publicTemplateUrl,
-                isTryOn: Boolean(isTryOn)
-            });
+        // 2. Формируем текст голосовой озвучки (в каком бутике продается)
+        let speechText = '';
+        if (location) {
+            speechText = `Вам очень идёт ${title || 'эта одежда'}! Её можно приобрести: ${location}. Стоимость — ${price || 450} сом. Покажите это фото продавцу!`;
         }
 
-        // 3. Fallback: если ключ еще не введен или генерация не удалась, возвращаем эталонный шаблон
-        if (!resultUrl) {
-            resultUrl = templateImg;
-        }
+        // 3. Параллельный запуск генерации изображения и озвучки ElevenLabs (0 задержки!)
+        const imagePromise = effectiveKey ? generateViaKie({
+            apiKey: effectiveKey,
+            model: model || 'nano-banana-2',
+            prompt,
+            publicPhotoUrl,
+            templateImgUrl: publicTemplateUrl,
+            isTryOn: Boolean(isTryOn)
+        }) : Promise.resolve(null);
+
+        const audioPromise = (speechText && (effectiveKey || elevenlabsKey)) ? generateElevenLabsAudio({
+            text: speechText,
+            elevenlabsKey,
+            apiKey: effectiveKey,
+            voiceId: elevenlabsVoiceId || 'XNrB7jz2HCkpU5yK08kP',
+            orderId: `tryon_voice_${orderId || Date.now()}`
+        }).catch(e => null) : Promise.resolve(null);
+
+        const [generatedImageUrl, audioUrl] = await Promise.all([imagePromise, audioPromise]);
+
+        // Fallback: если генерация не удалась, возвращаем эталонный шаблон
+        const resultUrl = generatedImageUrl || templateImg;
 
         return res.status(200).json({
             success: true,
@@ -268,6 +413,8 @@ module.exports = async (req, res) => {
             location: location || '',
             isTryOn: Boolean(isTryOn),
             resultUrl,
+            audioUrl: audioUrl || null,
+            speechText: speechText || '',
             mode: effectiveKey ? 'live' : 'preview',
             message: effectiveKey ? 'Успешно обработано через Kie.ai' : 'Тестовый режим (ключ не задан)'
         });

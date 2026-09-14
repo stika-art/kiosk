@@ -31,26 +31,40 @@ function getStoredMainHeader() {
 
 function normalizeMainCards(cards) {
     let list = Array.isArray(cards) ? [...cards] : [];
+    // Полностью удаляем любые карточки пригласительных
+    list = list.filter(c => {
+        const t = (c.title || '').toUpperCase();
+        const f = (c.filter || '').toUpperCase();
+        return !t.includes('ПРИГЛАС') && f !== 'INVITE' && f !== 'INVITES';
+    });
+
     if (list.length === 0) {
         list = [
             { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
             { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
             { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'] },
-            { id: 4, title: 'ПРИГЛАСИТЕЛЬНЫЕ', badge: 'СВАДЬБЫ • ТОЙ • ЮБИЛЕИ', subtitle: 'ИНТЕРАКТИВНЫЕ САЙТЫ С МУЗЫКОЙ И ТАЙМЕРОМ', filter: 'INVITES', category: 'ПРИГЛАСИТЕЛЬНЫЕ', img: 'assets/hero_portrait.jpg', categories: ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'СУННОТ ТОЙ'] },
-            { id: 5, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] }
+            { id: 4, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] }
         ];
-    } else if (!list.some(c => c.id === 5 || (c.title && c.title.toUpperCase().includes('ПРИМЕР')))) {
-        list.push({
-            id: 5,
-            title: 'ПРИМЕРКА',
-            badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ',
-            subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК',
-            filter: 'TRYON',
-            category: 'ПРИМЕРКА',
-            img: 'assets/1489.jpg',
-            categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ']
-        });
+    } else {
+        let tryOnCard = list.find(c => c.id === 4 || c.id === 5 || (c.title && c.title.toUpperCase().includes('ПРИМЕР')));
+        if (!tryOnCard) {
+            list.push({
+                id: 4,
+                title: 'ПРИМЕРКА',
+                badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ',
+                subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК',
+                filter: 'TRYON',
+                category: 'ПРИМЕРКА',
+                img: 'assets/1489.jpg',
+                categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ']
+            });
+        } else {
+            tryOnCard.id = 4;
+            tryOnCard.title = 'ПРИМЕРКА';
+            tryOnCard.filter = 'TRYON';
+        }
     }
+
     return list.map(c => {
         const titleUp = (c.title || '').toUpperCase();
         let cats = Array.isArray(c.categories) && c.categories.length > 0 ? [...c.categories] : null;
@@ -61,9 +75,7 @@ function normalizeMainCards(cards) {
                 cats = ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'];
             } else if (c.id === 3 || titleUp === 'ТРЕНДЫ') {
                 cats = ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'];
-            } else if (c.id === 4 || titleUp.includes('ПРИГЛАС')) {
-                cats = ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'СУННОТ ТОЙ', 'ТУШОО ТОЙ', 'ДЕНЬ РОЖДЕНИЯ', 'БЕШИК ТОЙ', 'СЫРҒА САЛУ'];
-            } else if (c.id === 5 || titleUp.includes('ПРИМЕР') || titleUp.includes('ОДЕЖД')) {
+            } else if (c.id === 4 || c.id === 5 || titleUp.includes('ПРИМЕР') || titleUp.includes('ОДЕЖД')) {
                 cats = ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'];
             } else {
                 cats = [c.title || 'ОБЩЕЕ'];
@@ -181,14 +193,11 @@ if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.ge
         { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'kling-video', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
         { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'face-swap', prompt: 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere' },
         { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'face-swap', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
-        { id: 11, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'СВАДЬБА', title: 'ROYAL WEDDING', img: 'assets/hero_portrait.jpg', price: 490, model: 'invite-web', prompt: 'Свадебное интерактивное пригласительное с таймером и музыкой' },
-        { id: 12, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'КЫЗ УЗАТУУ', title: 'КЫЗ УЗАТУУ GOLD', img: 'assets/child.png', price: 490, model: 'invite-web', prompt: 'Интерактивное приглашение на Кыз Узатуу' },
-        { id: 13, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'ЮБИЛЕЙ', title: 'JUBILEE LUXURY', img: 'assets/man.jpg', price: 490, model: 'invite-web', prompt: 'Интерактивное приглашение на Юбилей' },
         { id: 99, sectionId: 3, sectionTitle: 'ТРЕНДЫ', category: 'ПРОЖАРКА', title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)', img: 'assets/hero_portrait.jpg', price: 190, model: 'roast-standup', prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice' },
-        { id: 101, sectionId: 5, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
-        { id: 102, sectionId: 5, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'nano-banana-2', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
-        { id: 103, sectionId: 5, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'nano-banana-2', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
-        { id: 104, sectionId: 5, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
+        { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
+        { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'nano-banana-2', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
+        { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'nano-banana-2', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
+        { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
     ];
 }
 
@@ -197,19 +206,35 @@ let activeSectionCard = mainCardsConfig.length > 0 ? mainCardsConfig[0] : null;
 function normalizeTemplates(tplList, cardsList) {
     if (!Array.isArray(tplList)) return [];
     const cards = cardsList || mainCardsConfig;
-    const normalized = tplList.map(t => {
-        let sid = t.sectionId;
+
+    // Полностью удаляем любые шаблоны пригласительных
+    const cleanList = tplList.filter(t => {
+        const m = (t.model || '').toLowerCase();
+        const c = (t.category || '').toUpperCase();
+        const title = (t.title || '').toUpperCase();
+        const st = (t.sectionTitle || '').toUpperCase();
+        if (m === 'invite-web') return false;
+        if (st.includes('ПРИГЛАС')) return false;
+        if (c.includes('ПРИГЛАС') || c === 'СВАДЬБА' || c === 'КЫЗ УЗАТУУ' || c === 'ЮБИЛЕЙ' || c === 'СУННОТ ТОЙ') return false;
+        if (title.includes('WEDDING') || title.includes('КЫЗ УЗАТУУ') || title.includes('JUBILEE LUXURY')) return false;
+        return true;
+    });
+
+    const normalized = cleanList.map(t => {
+        let sid = Number(t.sectionId);
         let stitle = t.sectionTitle;
         let cat = t.category || 'ОБЩЕЕ';
 
-        if (!sid) {
-            const catUp = (cat || '').toUpperCase();
-            const modelUp = (t.model || '').toLowerCase();
-            const titleUp = (t.title || '').toUpperCase();
-            if (catUp.includes('ПРИМЕР') || catUp.includes('ТОЛСТОВ') || catUp.includes('ХУДИ') || catUp.includes('ФУТБОЛ') || catUp.includes('КУРТК') || catUp.includes('МЕРЧ') || titleUp.includes('ТОЛСТОВ') || titleUp.includes('ХУДИ')) {
-                sid = 5;
-                stitle = 'ПРИМЕРКА';
-            } else if (catUp === 'ВИДЕО' || modelUp.includes('seedance') || modelUp.includes('omni') || modelUp.includes('kling') || modelUp.includes('video')) {
+        const catUp = (cat || '').toUpperCase();
+        const modelUp = (t.model || '').toLowerCase();
+        const titleUp = (t.title || '').toUpperCase();
+        const stUp = (stitle || '').toUpperCase();
+
+        if (sid === 5 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || catUp.includes('ТОЛСТОВ') || catUp.includes('ХУДИ') || catUp.includes('ФУТБОЛ') || catUp.includes('КУРТК') || catUp.includes('МЕРЧ') || titleUp.includes('ТОЛСТОВ') || titleUp.includes('ХУДИ') || Boolean(t.location)) {
+            sid = 4;
+            stitle = 'ПРИМЕРКА';
+        } else if (!sid) {
+            if (catUp === 'ВИДЕО' || modelUp.includes('seedance') || modelUp.includes('omni') || modelUp.includes('kling') || modelUp.includes('video')) {
                 sid = 2;
                 stitle = 'ВИДЕО';
                 if (catUp === 'ВИДЕО') cat = 'НЕОН';
@@ -217,10 +242,6 @@ function normalizeTemplates(tplList, cardsList) {
                 sid = 3;
                 stitle = 'ТРЕНДЫ';
                 if (!cat || cat === 'ОБЩЕЕ' || catUp === 'ТРЕНДЫ') cat = modelUp.includes('roast') ? 'ПРОЖАРКА' : 'TIKTOK';
-            } else if (catUp.includes('ПРИГЛАС') || modelUp.includes('invite') || titleUp.includes('WEDDING') || titleUp.includes('ТОЙ') || titleUp.includes('УЗАТУУ')) {
-                sid = 4;
-                stitle = 'ПРИГЛАСИТЕЛЬНЫЕ';
-                if (!cat || cat === 'ОБЩЕЕ') cat = 'СВАДЬБА';
             } else {
                 sid = 1;
                 stitle = 'ФОТО';
@@ -243,10 +264,10 @@ function normalizeTemplates(tplList, cardsList) {
         };
     });
 
-    if (!normalized.some(t => t.sectionId === 5 || (t.sectionTitle && t.sectionTitle.includes('ПРИМЕР')))) {
+    if (!normalized.some(t => t.sectionId === 4 || (t.sectionTitle && t.sectionTitle.includes('ПРИМЕР')))) {
         normalized.push({
             id: 101,
-            sectionId: 5,
+            sectionId: 4,
             sectionTitle: 'ПРИМЕРКА',
             category: 'ТОЛСТОВКИ',
             title: 'Толстовка TRENDUM Black Oversize',
@@ -259,7 +280,7 @@ function normalizeTemplates(tplList, cardsList) {
         });
         normalized.push({
             id: 102,
-            sectionId: 5,
+            sectionId: 4,
             sectionTitle: 'ПРИМЕРКА',
             category: 'ТОЛСТОВКИ',
             title: 'Толстовка ALTYN White Classic',
@@ -272,7 +293,7 @@ function normalizeTemplates(tplList, cardsList) {
         });
         normalized.push({
             id: 103,
-            sectionId: 5,
+            sectionId: 4,
             sectionTitle: 'ПРИМЕРКА',
             category: 'ХУДИ',
             title: 'Худи Streetwear Cyberpunk',
@@ -285,7 +306,7 @@ function normalizeTemplates(tplList, cardsList) {
         });
         normalized.push({
             id: 104,
-            sectionId: 5,
+            sectionId: 4,
             sectionTitle: 'ПРИМЕРКА',
             category: 'ФУТБОЛКИ',
             title: 'Футболка Trendum Minimalist',
@@ -348,19 +369,7 @@ function isTrendsTemplate(tpl) {
 }
 
 function isInviteTemplate(tpl) {
-    if (!tpl) return false;
-    const m = (tpl.model || '').toLowerCase();
-    const c = (tpl.category || '').toUpperCase();
-    const t = (tpl.title || '').toUpperCase();
-    const st = (tpl.sectionTitle || '').toUpperCase();
-    return tpl.sectionId === 4 || 
-           st.includes('ПРИГЛАС') || 
-           m.includes('invite') || 
-           c.includes('СВАДЬБА') || 
-           c.includes('УЗАТУУ') || 
-           c.includes('ЮБИЛЕЙ') || 
-           c.includes('ТОЙ') ||
-           t.includes('WEDDING');
+    return false;
 }
 
 function isTryOnTemplate(tpl) {
@@ -369,7 +378,8 @@ function isTryOnTemplate(tpl) {
     const c = (tpl.category || '').toUpperCase();
     const t = (tpl.title || '').toUpperCase();
     const st = (tpl.sectionTitle || '').toUpperCase();
-    return tpl.sectionId === 5 || 
+    return tpl.sectionId === 4 || 
+           tpl.sectionId === 5 ||
            st.includes('ПРИМЕР') || 
            st.includes('ОДЕЖД') ||
            c.includes('ТОЛСТОВ') || 
@@ -533,9 +543,8 @@ function renderGridTemplates() {
         // Обратная совместимость для старых шаблонов без sectionId
         if (targetSecId === 2 || targetTitle.includes('ВИДЕО')) return isVideoTemplate(t);
         if (targetSecId === 3 || targetTitle.includes('ТРЕНД')) return isTrendsTemplate(t);
-        if (targetSecId === 4 || targetTitle.includes('ПРИГЛАС')) return isInviteTemplate(t);
-        if (targetSecId === 5 || targetTitle.includes('ПРИМЕР') || targetTitle.includes('ОДЕЖД')) return isTryOnTemplate(t);
-        return !isVideoTemplate(t) && !isTrendsTemplate(t) && !isInviteTemplate(t) && !isTryOnTemplate(t);
+        if (targetSecId === 4 || targetSecId === 5 || targetTitle.includes('ПРИМЕР') || targetTitle.includes('ОДЕЖД')) return isTryOnTemplate(t);
+        return !isVideoTemplate(t) && !isTrendsTemplate(t) && !isTryOnTemplate(t);
     });
 
     // 2. Внутри раздела фильтруем по выбранной подкатегории кнопки
@@ -583,15 +592,6 @@ function renderGridTemplates() {
         card.appendChild(img);
         card.appendChild(priceBadge);
 
-        // Если у товара указано место продажи (контейнер/бутик), отображаем бейдж
-        if (item.location) {
-            const locBadge = document.createElement('div');
-            locBadge.className = 'tile-loc-badge';
-            locBadge.style.cssText = 'position: absolute; bottom: 8px; left: 8px; right: 8px; font-size: 11px; font-weight: 700; color: #F3D289; background: rgba(0,0,0,0.82); backdrop-filter: blur(6px); padding: 5px 8px; border-radius: 8px; border: 1px solid rgba(212,160,67,0.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; text-shadow: 0 1px 3px rgba(0,0,0,0.9); z-index: 2;';
-            locBadge.innerHTML = `📍 ${item.location}`;
-            card.appendChild(locBadge);
-        }
-
         // При клике на карточку — сразу переходим к экрану оплаты Finik ELQR!
         card.addEventListener('click', () => {
             if (isAttractClosing) return; // поглощаем клик закрытия заставки
@@ -626,9 +626,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const stepPayment = document.getElementById('step-payment');
     const stepProcessing = document.getElementById('step-processing');
     const stepResult = document.getElementById('step-result');
-    const stepInviteSetup = document.getElementById('step-invite-setup');
-    const stepInviteReady = document.getElementById('step-invite-ready');
-    const stepInviteDemo = document.getElementById('step-invite-demo');
     const stepRoastResult = document.getElementById('step-roast-result');
 
     // Roast Elements
@@ -645,26 +642,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const roastQrImg = document.getElementById('roast-qr-img');
     const roastReplayBtn = document.getElementById('roast-replay-btn');
     const roastFinishBtn = document.getElementById('roast-finish-btn');
-
-    // Invite Elements
-    const inviteDemoFrame = document.getElementById('invite-demo-frame');
-    const inviteDemoTitle = document.getElementById('invite-demo-title');
-    const inviteDemoName = document.getElementById('invite-demo-name');
-    const inviteDemoPrice = document.getElementById('invite-demo-price');
-    const inviteDemoChooseBtn = document.getElementById('invite-demo-choose-btn');
-    const inviteDemoBackBtn = document.getElementById('invite-demo-back-btn');
-
-    const inviteEditQr = document.getElementById('invite-edit-qr');
-    const inviteSetupStatus = document.getElementById('invite-setup-status');
-    const skipToViewInviteBtn = document.getElementById('skip-to-view-invite-btn');
-    const invitePreviewFrame = document.getElementById('invite-preview-frame');
-    const inviteFinalShareQr = document.getElementById('invite-final-share-qr');
-    const inviteFinishBtn = document.getElementById('invite-finish-btn');
-    const inviteReEditBtn = document.getElementById('invite-re-edit-btn');
-    const inviteRefreshBtn = document.getElementById('invite-refresh-btn');
-    let currentInviteId = null;
-    let invitePollingTimer = null;
-    let lastKnownInviteTime = null;
 
     // Camera & Confirm Elements
     const webcamEl = document.getElementById('webcam');
@@ -691,11 +668,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const finishBtn = document.getElementById('finish-btn');
     const aiStatusText = document.getElementById('ai-status-text');
 
-    // Try-On Location Info Card Elements
+    // Try-On Location Info Card Elements & Voice Audio
     const tryonLocationInfoCard = document.getElementById('tryon-location-info-card');
     const tryonLocPriceVal = document.getElementById('tryon-loc-price-val');
     const tryonLocTitleVal = document.getElementById('tryon-loc-title-val');
     const tryonLocPlaceVal = document.getElementById('tryon-loc-place-val');
+    const tryonVoiceReplayBtn = document.getElementById('tryon-voice-replay-btn');
+    const tryonVoiceAnimIcon = document.getElementById('tryon-voice-anim-icon');
+    const tryonVoiceBtnText = document.getElementById('tryon-voice-btn-text');
+    const tryonAudioElement = document.getElementById('tryon-audio-element');
+    let currentTryOnAudioUrl = null;
+    let currentTryOnVoiceText = '';
 
     let mediaStream = null;
     let capturedPhotoData = null;
@@ -749,69 +732,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // ШАГ 1: ОТКРЫТИЕ ПОТОКА — ДЛЯ ПРИГЛАСИТЕЛЬНЫХ СНАЧАЛА ДЕМО, ДЛЯ ОСТАЛЬНЫХ ОПЛАТА
+    // ШАГ 1: ОТКРЫТИЕ ПОТОКА — ЭКРАН ОПЛАТЫ
     window.openKioskFlow = function() {
-        const isInvite = isInviteTemplate({ 
-            sectionTitle: activeSectionCard ? activeSectionCard.title : '',
-            category: currentCategory,
-            title: selectedStyle,
-            model: selectedStyleModel
-        });
-
         if (modal) modal.style.display = 'flex';
-
-        if (isInvite) {
-            showInviteDemoStep();
-        } else {
-            showStep(stepPayment);
-            initiatePaymentOrder();
-        }
+        showStep(stepPayment);
+        initiatePaymentOrder();
     };
-
-    function showInviteDemoStep() {
-        if (!stepInviteDemo) {
-            showStep(stepPayment);
-            initiatePaymentOrder();
-            return;
-        }
-
-        if (inviteDemoName) inviteDemoName.textContent = selectedStyle;
-        if (inviteDemoPrice) inviteDemoPrice.textContent = selectedStylePrice || 490;
-
-        // Загрузка демо шаблона во фрейм
-        if (inviteDemoFrame) {
-            const isBrokenSpa = selectedTemplateHtml && 
-                selectedTemplateHtml.includes('id="root"') && 
-                !selectedTemplateHtml.includes('class="page') && 
-                !selectedTemplateHtml.includes('<main') && 
-                !selectedTemplateHtml.includes('hero');
-
-            if (selectedTemplateHtml && selectedTemplateHtml.trim().length > 100 && !isBrokenSpa) {
-                inviteDemoFrame.removeAttribute('src');
-                inviteDemoFrame.srcdoc = selectedTemplateHtml;
-            } else {
-                inviteDemoFrame.removeAttribute('srcdoc');
-                const origin = window.location.origin || 'https://kiosk394.vercel.app';
-                inviteDemoFrame.src = `${origin}/kiosk-ui/invite.html?preview=1${selectedTemplateId ? '&templateId=' + selectedTemplateId : ''}`;
-            }
-        }
-
-        showStep(stepInviteDemo);
-    }
-
-    if (inviteDemoChooseBtn) {
-        inviteDemoChooseBtn.addEventListener('click', () => {
-            showStep(stepPayment);
-            initiatePaymentOrder();
-        });
-    }
-
-    if (inviteDemoBackBtn) {
-        inviteDemoBackBtn.addEventListener('click', () => {
-            closeKioskFlow();
-            openTemplateGallery();
-        });
-    }
 
     modalClose.addEventListener('click', closeKioskFlow);
     if (cancelPayBtn) {
@@ -844,7 +770,6 @@ document.addEventListener('DOMContentLoaded', () => {
         stopPaymentPolling();
         stopWebcam();
         stopPhoneCamPolling();
-        stopInvitePolling();
         // Удаляем файл телефонной сессии из Supabase при выходе
         if (phoneCamSessionId) {
             fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/phone-cam/${phoneCamSessionId}.jpg`, {
@@ -854,7 +779,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         phoneCamMode = false;
         phoneCamSessionId = null;
-        currentInviteId = null;
         if (photoPreviewConfirm) photoPreviewConfirm.src = '';
         if (resultVideo) {
             try {
@@ -868,13 +792,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 roastAudioEl.src = '';
             } catch(e) {}
         }
+        if (tryonAudioElement) {
+            try {
+                tryonAudioElement.pause();
+                tryonAudioElement.currentTime = 0;
+                tryonAudioElement.src = '';
+            } catch(e) {}
+        }
+        if ('speechSynthesis' in window) {
+            try { window.speechSynthesis.cancel(); } catch(e) {}
+        }
+        if (tryonVoiceReplayBtn) tryonVoiceReplayBtn.classList.remove('speaking');
+        if (tryonVoiceBtnText) tryonVoiceBtnText.textContent = 'Послушать где купить';
         if (tryonLocationInfoCard) tryonLocationInfoCard.style.display = 'none';
         modal.style.display = 'none';
         resetState();
     }
 
     function showStep(stepEl) {
-        [stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepInviteSetup, stepInviteReady, stepInviteDemo, stepRoastResult].forEach(s => {
+        [stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepRoastResult].forEach(s => {
             if (s) s.style.display = 'none';
         });
         if (stepEl) stepEl.style.display = 'block';
@@ -1016,10 +952,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const paySubtext = document.querySelector('.pay-subtext');
         if (paySubtext) {
-            if (isInviteTemplate({ title: selectedStyle, model: selectedStyleModel, category: currentCategory })) {
-                paySubtext.textContent = 'Интерактивный сайт-приглашение с музыкой';
-            } else if (isTryOnMode) {
-                paySubtext.textContent = selectedStyleLocation ? `Примерка одежды • Место: ${selectedStyleLocation}` : 'Виртуальная примерка одежды';
+            if (isTryOnMode) {
+                paySubtext.textContent = 'Виртуальная примерка одежды в студийном качестве';
             } else {
                 paySubtext.textContent = 'Финальное фото в студийном качестве';
             }
@@ -1086,23 +1020,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ОПЛАТА УСПЕШНО ПОЛУЧЕНА
     function handlePaymentSuccess() {
-        const isInvite = isInviteTemplate({ 
-            sectionTitle: activeSectionCard ? activeSectionCard.title : '',
-            category: currentCategory,
-            title: selectedStyle,
-            model: selectedStyleModel
-        });
-
-        if (isInvite) {
-            if (paymentStatusText) {
-                paymentStatusText.textContent = '✅ Оплата получена! Переходим к настройке...';
-            }
-            setTimeout(() => {
-                startInviteFlow();
-            }, 1000);
-            return;
-        }
-
         if (paymentStatusText) {
             paymentStatusText.textContent = '✅ Оплата получена! Включаем камеру...';
         }
@@ -1111,203 +1028,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showStep(stepCamera);
             startWebcam();
         }, 1000);
-    }
-
-    // ============================================================
-    //  ЛОГИКА ПРИГЛАСИТЕЛЬНЫХ (INVITE FLOW)
-    // ============================================================
-    function startInviteFlow() {
-        currentInviteId = 'inv-' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
-        const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes('file:'))
-            ? window.location.origin 
-            : 'https://kiosk394.vercel.app';
-        let editUrl = `${origin}/kiosk-ui/invite-edit.html?id=${currentInviteId}`;
-        if (selectedTemplateId) {
-            editUrl += `&templateId=${encodeURIComponent(selectedTemplateId)}`;
-        }
-
-        // Пре-сохраняем выбранный пользователем шаблон в облако Supabase сразу же!
-        // Благодаря этому и телефон, и киоск сразу загрузят именно ВЫБРАННЫЙ шаблон, а не старый образец
-        initInviteInCloud(currentInviteId, selectedTemplateId, selectedTemplateHtml, selectedStyle);
-
-        if (inviteEditQr) {
-            renderInstantQR(inviteEditQr, editUrl, 250);
-        }
-        if (inviteSetupStatus) {
-            inviteSetupStatus.textContent = 'Ожидание заполнения и публикации со смартфона...';
-        }
-
-        showStep(stepInviteSetup);
-        startInvitePolling(currentInviteId, false);
-    }
-
-    async function initInviteInCloud(invId, tplId, tplHtml, tplTitle) {
-        if (!invId) return;
-        try {
-            let html = tplHtml;
-            if ((!html || html.length < 50) && tplId) {
-                const t = masterTemplates.find(item => String(item.id) === String(tplId));
-                if (t && t.htmlCode) html = t.htmlCode;
-            }
-
-            const payload = {
-                id: invId,
-                templateId: tplId,
-                templateTitle: tplTitle || '',
-                customHtml: html || '',
-                isInitial: true,
-                isPublished: false,
-                userSaved: false,
-                type: 'ПРИГЛАШЕНИЕ НА ТОРЖЕСТВО',
-                updatedAt: new Date().toISOString()
-            };
-
-            // 1. Начальный .json
-            fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/invites/${invId}.json`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Content-Type': 'application/json',
-                    'x-upsert': 'true'
-                },
-                body: JSON.stringify(payload)
-            }).catch(() => {});
-
-            // 2. Если есть готовый HTML-код выбранного шаблона — сразу сохраняем .html
-            if (html && html.trim().length > 50) {
-                fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/invites/${invId}.html`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Content-Type': 'text/html; charset=utf-8',
-                        'x-upsert': 'true'
-                    },
-                    body: html
-                }).catch(() => {});
-            }
-        } catch (e) {
-            console.warn('initInviteInCloud error:', e);
-        }
-    }
-
-    function startInvitePolling(invId, isEdit = false) {
-        stopInvitePolling();
-        invitePollingTimer = setInterval(async () => {
-            if (!invId || invId !== currentInviteId) return;
-            try {
-                const checkUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/invites/${invId}.json?t=${Date.now()}`;
-                const res = await fetch(checkUrl);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (!isEdit) {
-                        // Завершаем только когда пользователь реально сохранил со смартфона
-                        if (data.isPublished || data.userSaved || (data.updatedAt && !data.isInitial)) {
-                            stopInvitePolling();
-                            lastKnownInviteTime = data.updatedAt || new Date().toISOString();
-                            handleInviteReady(invId, data.customHtml);
-                        }
-                    } else {
-                        // Режим редактирования: ждем обновления updatedAt
-                        if (data.updatedAt && data.updatedAt !== lastKnownInviteTime) {
-                            stopInvitePolling();
-                            lastKnownInviteTime = data.updatedAt;
-                            handleInviteReady(invId, data.customHtml);
-                        }
-                    }
-                }
-            } catch (e) {}
-        }, 2000);
-    }
-
-    function stopInvitePolling() {
-        if (invitePollingTimer) {
-            clearInterval(invitePollingTimer);
-            invitePollingTimer = null;
-        }
-    }
-
-    function handleInviteReady(invId, updatedHtml) {
-        const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes('file:'))
-            ? window.location.origin 
-            : 'https://kiosk394.vercel.app';
-        let finalUrl = `${origin}/kiosk-ui/invite.html?id=${invId}`;
-        if (selectedTemplateId) {
-            finalUrl += `&templateId=${encodeURIComponent(selectedTemplateId)}`;
-        }
-
-        // Если у нас в памяти есть HTML выбранного шаблона — сразу рендерим через srcdoc
-        // Это обеспечивает 0мс задержки, абсолютную чистоту стилей и отсутствие мигания других шаблонов
-        const htmlToPreview = updatedHtml || selectedTemplateHtml;
-        if (invitePreviewFrame) {
-            if (htmlToPreview && htmlToPreview.trim().length > 50) {
-                invitePreviewFrame.removeAttribute('src');
-                invitePreviewFrame.srcdoc = htmlToPreview;
-            } else {
-                invitePreviewFrame.removeAttribute('srcdoc');
-                invitePreviewFrame.src = `${finalUrl}&preview_t=${Date.now()}`;
-            }
-        }
-        if (inviteFinalShareQr) {
-            renderInstantQR(inviteFinalShareQr, finalUrl, 250);
-        }
-
-        showStep(stepInviteReady);
-    }
-
-    if (skipToViewInviteBtn) {
-        skipToViewInviteBtn.addEventListener('click', () => {
-            stopInvitePolling();
-            handleInviteReady(currentInviteId || 'demo', selectedTemplateHtml);
-        });
-    }
-
-    if (inviteFinishBtn) {
-        inviteFinishBtn.addEventListener('click', closeKioskFlow);
-    }
-
-    if (inviteReEditBtn) {
-        inviteReEditBtn.addEventListener('click', () => {
-            if (currentInviteId) {
-                const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes('file:'))
-                    ? window.location.origin 
-                    : 'https://kiosk394.vercel.app';
-                let editUrl = `${origin}/kiosk-ui/invite-edit.html?id=${currentInviteId}`;
-                if (selectedTemplateId) {
-                    editUrl += `&templateId=${encodeURIComponent(selectedTemplateId)}`;
-                }
-                if (inviteEditQr) {
-                    renderInstantQR(inviteEditQr, editUrl, 250);
-                }
-                if (inviteSetupStatus) {
-                    inviteSetupStatus.textContent = 'Ожидание сохранения правок со смартфона...';
-                }
-                showStep(stepInviteSetup);
-                startInvitePolling(currentInviteId, true);
-            }
-        });
-    }
-
-    if (inviteRefreshBtn) {
-        inviteRefreshBtn.addEventListener('click', () => {
-            if (invitePreviewFrame && currentInviteId) {
-                const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes('file:'))
-                    ? window.location.origin 
-                    : 'https://kiosk394.vercel.app';
-                let finalUrl = `${origin}/kiosk-ui/invite.html?id=${currentInviteId}`;
-                if (selectedTemplateId) {
-                    finalUrl += `&templateId=${encodeURIComponent(selectedTemplateId)}`;
-                }
-                if (selectedTemplateHtml && selectedTemplateHtml.length > 50) {
-                    invitePreviewFrame.removeAttribute('src');
-                    invitePreviewFrame.srcdoc = selectedTemplateHtml;
-                } else {
-                    invitePreviewFrame.removeAttribute('srcdoc');
-                    invitePreviewFrame.src = `${finalUrl}&preview_t=${Date.now()}`;
-                }
-            }
-        });
     }
 
 
@@ -1569,10 +1289,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1300);
 
         let finalResultUrl = selectedStylePhoto;
+        let tryonAudioUrl = null;
+        let tryonSpeechText = null;
 
         try {
             const aggregatorUrl = localStorage.getItem('kiosk_aggregator_url') || '';
             const aggregatorKey = localStorage.getItem('kiosk_aggregator_key') || '';
+            const elevenlabsKey = localStorage.getItem('kiosk_elevenlabs_key') || '';
+            const elevenlabsVoiceId = localStorage.getItem('kiosk_elevenlabs_voice_id') || 'XNrB7jz2HCkpU5yK08kP';
 
             const resp = await fetch('/api/ai/generate', {
                 method: 'POST',
@@ -1583,18 +1307,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     prompt: selectedStylePrompt,
                     model: selectedStyleModel,
                     title: selectedStyle,
+                    price: selectedStylePrice,
                     orderId: currentOrderId,
                     location: selectedStyleLocation,
                     isTryOn: isTryOnMode,
                     aggregatorUrl,
-                    aggregatorKey
+                    aggregatorKey,
+                    elevenlabsKey,
+                    elevenlabsVoiceId
                 })
             });
 
             if (resp.ok) {
                 const data = await resp.json();
-                if (data.success && data.resultUrl) {
-                    finalResultUrl = data.resultUrl;
+                if (data.success) {
+                    if (data.resultUrl) finalResultUrl = data.resultUrl;
+                    if (data.audioUrl) tryonAudioUrl = data.audioUrl;
+                    if (data.speechText) tryonSpeechText = data.speechText;
                 }
             }
         } catch (err) {
@@ -1639,6 +1368,85 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         showStep(stepResult);
+
+        // КОГДА ИИ НАДЕЛ ОДЕЖДУ И ВЫДАЛ РЕЗУЛЬТАТ — ГОЛОСОМ ГОВОРИМ В КАКОМ БУТИКЕ ПРОДАЕТСЯ!
+        if (isTryOnMode && selectedStyleLocation) {
+            const phrase = tryonSpeechText || `Вам очень идёт ${selectedStyle || 'эта одежда'}! Её можно приобрести: ${selectedStyleLocation}. Стоимость — ${selectedStylePrice || 450} сом. Покажите это фото продавцу!`;
+            setTimeout(() => {
+                playTryOnVoice(tryonAudioUrl, phrase);
+            }, 350);
+        }
+    }
+
+    // ГОЛОСОВОЕ ОЗВУЧИВАНИЕ МЕСТА ПРОДАЖИ (ELEVENLABS + ВСТРОЕННЫЙ WEB SPEECH API FALLBACK)
+    function playTryOnVoice(audioUrl, text) {
+        currentTryOnAudioUrl = audioUrl;
+        currentTryOnVoiceText = text;
+
+        if (tryonAudioElement) {
+            tryonAudioElement.pause();
+            tryonAudioElement.currentTime = 0;
+        }
+        if ('speechSynthesis' in window) {
+            try { window.speechSynthesis.cancel(); } catch(e) {}
+        }
+
+        if (audioUrl) {
+            tryonAudioElement.src = audioUrl;
+            if (tryonVoiceReplayBtn) tryonVoiceReplayBtn.classList.add('speaking');
+            if (tryonVoiceBtnText) tryonVoiceBtnText.textContent = 'Озвучивание адреса...';
+
+            const playPromise = tryonAudioElement.play();
+            if (playPromise) {
+                playPromise.catch(() => {
+                    // Если автоплей заблокирован политикой браузера — произносим через SpeechSynthesis
+                    speakWithBrowserTts(text);
+                });
+            }
+
+            tryonAudioElement.onended = () => {
+                if (tryonVoiceReplayBtn) tryonVoiceReplayBtn.classList.remove('speaking');
+                if (tryonVoiceBtnText) tryonVoiceBtnText.textContent = 'Послушать где купить';
+            };
+            tryonAudioElement.onerror = () => {
+                speakWithBrowserTts(text);
+            };
+        } else {
+            speakWithBrowserTts(text);
+        }
+    }
+
+    function speakWithBrowserTts(text) {
+        if (!('speechSynthesis' in window) || !text) return;
+        try { window.speechSynthesis.cancel(); } catch(e) {}
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ru-RU';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+
+        const voices = window.speechSynthesis.getVoices();
+        const ruVoice = voices.find(v => v.lang && (v.lang.includes('ru') || v.lang.includes('RU')));
+        if (ruVoice) utterance.voice = ruVoice;
+
+        if (tryonVoiceReplayBtn) tryonVoiceReplayBtn.classList.add('speaking');
+        if (tryonVoiceBtnText) tryonVoiceBtnText.textContent = 'Озвучивание адреса...';
+
+        utterance.onend = () => {
+            if (tryonVoiceReplayBtn) tryonVoiceReplayBtn.classList.remove('speaking');
+            if (tryonVoiceBtnText) tryonVoiceBtnText.textContent = 'Послушать где купить';
+        };
+        utterance.onerror = () => {
+            if (tryonVoiceReplayBtn) tryonVoiceReplayBtn.classList.remove('speaking');
+            if (tryonVoiceBtnText) tryonVoiceBtnText.textContent = 'Послушать где купить';
+        };
+        window.speechSynthesis.speak(utterance);
+    }
+
+    if (tryonVoiceReplayBtn) {
+        tryonVoiceReplayBtn.addEventListener('click', () => {
+            playTryOnVoice(currentTryOnAudioUrl, currentTryOnVoiceText);
+        });
     }
 
     // 5. FINISH & TEMPLATE SELECTION

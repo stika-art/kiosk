@@ -841,7 +841,7 @@
                 <span>Шаблоны</span>
             </button>
             <div id="sidebar-tpl-sub-menu" class="sidebar-sub-menu" style="display: none;">
-                <!-- Заполняется динамически JS: Все, Фото, Видео, Тренды, Пригласительные -->
+                <!-- Заполняется динамически JS: Все, Фото, Видео, Тренды, Примерка -->
             </div>
             <button class="nav-item" id="tab-btn-main" onclick="switchAdminTab('main')">
                 <span class="nav-item-icon">🎴</span>
@@ -934,7 +934,6 @@
                         <option value="seedance-2.5">🎬 Seedance 2.5 (Видеоролик)</option>
                         <option value="omni-flash">⚡ Google Omni Flash (Видеоролик)</option>
                         <option value="kling-video">🎥 Kling AI (Видеоролик)</option>
-                        <option value="invite-web">💌 Интерактивное пригласительное (Web)</option>
                         <option value="custom">✏️ Другая модель из агрегатора...</option>
                     </select>
                     <input type="text" id="tpl-custom-model-input" class="admin-input" style="max-width: 200px; display: none;" placeholder="ID модели...">
@@ -959,29 +958,6 @@
                     </div>
                 </div>
 
-                <!-- БЛОК ВВОДА HTML-КОДА ДЛЯ ПРИГЛАСИТЕЛЬНЫХ -->
-                <div id="tpl-html-code-group" style="display: none; margin-top: 14px; background: rgba(212, 160, 67, 0.05); border: 1px dashed var(--primary-border); border-radius: 14px; padding: 16px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-                        <div>
-                            <label style="font-size: 13px; color: var(--primary); font-weight: 700;">🌐 HTML-код сайта-пригласительного:</label>
-                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                                Загрузите .html файл или выберите готовый образец. Гость сможет посмотреть демо на киоске и отредактировать под себя на телефоне.
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                            <input type="file" id="tpl-html-file-input" accept=".html,.htm" style="display: none;" onchange="handleHtmlFileSelect(event)">
-                            <button type="button" class="btn-upload" style="font-size: 12px; padding: 6px 14px;" onclick="document.getElementById('tpl-html-file-input').click()">📁 Загрузить файл .html</button>
-                            <button type="button" class="btn-upload" style="font-size: 12px; padding: 6px 14px;" onclick="insertDefaultInviteHtmlTemplate('nezhnost')">🌸 Стиль «Нежность»</button>
-                            <button type="button" class="btn-upload" style="font-size: 12px; padding: 6px 14px;" onclick="insertDefaultInviteHtmlTemplate('royal')">👑 Стиль «Royal»</button>
-                        </div>
-                    </div>
-
-                    <div id="tpl-html-warning" style="display: none; margin-bottom: 10px; background: rgba(239, 68, 68, 0.15); border: 1.5px solid #ef4444; border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #fecaca; line-height: 1.5;">
-                    </div>
-
-                    <textarea id="tpl-html-input" class="admin-input" oninput="validateHtmlInput()" style="width: 100%; height: 260px; font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; line-height: 1.5; white-space: pre; tab-size: 2;" placeholder="Вставьте сюда HTML код пригласительного..."></textarea>
-                </div>
-
                 <div class="form-row" style="margin-top: 14px; align-items: center;">
                     <button class="btn-primary" id="tpl-submit-btn" onclick="addOrUpdateTemplate()">+ Добавить шаблон</button>
                     <button type="button" id="tpl-cancel-edit-btn" class="btn-del" style="display: none; margin-left: 10px; background: rgba(255,255,255,0.06); border-color: var(--border-subtle); color: #ccc;" onclick="cancelTemplateEdit()">✕ Отмена</button>
@@ -989,7 +965,7 @@
                 </div>
                 <div id="tpl-status" class="status-msg"></div>
 
-                <!-- ТАБЫ РАЗДЕЛОВ ШАБЛОНОВ: ВСЕ, ФОТО, ВИДЕО, ТРЕНДЫ, ПРИГЛАСИТЕЛЬНЫЕ -->
+                <!-- ТАБЫ РАЗДЕЛОВ ШАБЛОНОВ: ВСЕ, ФОТО, ВИДЕО, ТРЕНДЫ, ПРИМЕРКА -->
                 <div class="section-tabs-bar" id="tpl-section-tabs-bar">
                     <!-- Заполняется динамически JS -->
                 </div>
@@ -1047,7 +1023,6 @@
                         <option value="VIDEO">🎬 Только ВИДЕО (клипы и анимация)</option>
                         <option value="TRENDS">🔥 Только ТРЕНДЫ (популярное)</option>
                         <option value="TRYON">👕 Примерка одежды и товаров</option>
-                        <option value="INVITE">💌 Пригласительные (Web)</option>
                         <option value="ALL">🌟 Все шаблоны подряд</option>
                     </select>
                 </div>
@@ -1380,13 +1355,10 @@
                 { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'seedance-2.5', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
                 { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'nano-banana-2', prompt: 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere' },
                 { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'nano-banana-2', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
-                { id: 11, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'СВАДЬБА', title: 'ROYAL WEDDING', img: 'assets/hero_portrait.jpg', price: 490, model: 'invite-web', prompt: 'Свадебное интерактивное пригласительное' },
-                { id: 12, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'КЫЗ УЗАТУУ', title: 'КЫЗ УЗАТУУ GOLD', img: 'assets/child.png', price: 490, model: 'invite-web', prompt: 'Интерактивное приглашение на Кыз Узатуу' },
-                { id: 13, sectionId: 4, sectionTitle: 'ПРИГЛАСИТЕЛЬНЫЕ', category: 'ЮБИЛЕЙ', title: 'JUBILEE LUXURY', img: 'assets/man.jpg', price: 490, model: 'invite-web', prompt: 'Интерактивное приглашение на Юбилей' },
-                { id: 101, sectionId: 5, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
-                { id: 102, sectionId: 5, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'nano-banana-2', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
-                { id: 103, sectionId: 5, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'nano-banana-2', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
-                { id: 104, sectionId: 5, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
+                { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
+                { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'nano-banana-2', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
+                { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'nano-banana-2', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
+                { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
             ];
         }
 
@@ -1430,25 +1402,38 @@
 
         function normalizeMainCards(cards) {
             let list = Array.isArray(cards) ? [...cards] : [];
+            // Полностью удаляем любые карточки пригласительных
+            list = list.filter(c => {
+                const t = (c.title || '').toUpperCase();
+                const f = (c.filter || '').toUpperCase();
+                return !t.includes('ПРИГЛАС') && f !== 'INVITE' && f !== 'INVITES';
+            });
+
             if (list.length === 0) {
                 list = [
                     { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
                     { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
                     { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'INSTA VIBE'] },
-                    { id: 4, title: 'ПРИГЛАСИТЕЛЬНЫЕ', badge: 'СВАДЬБЫ • ТОЙ • ЮБИЛЕИ', subtitle: 'ИНТЕРАКТИВНЫЕ САЙТЫ С МУЗЫКОЙ', filter: 'INVITE', category: 'ПРИГЛАСИТЕЛЬНЫЕ', img: 'images/photo5.jpg', categories: ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'ТУШОО ТОЙ', 'ДЕТСКИЙ ПРАЗДНИК'] },
-                    { id: 5, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] }
+                    { id: 4, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] }
                 ];
-            } else if (!list.some(c => c.id === 5 || (c.title && c.title.toUpperCase().includes('ПРИМЕР')))) {
-                list.push({
-                    id: 5,
-                    title: 'ПРИМЕРКА',
-                    badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ',
-                    subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК',
-                    filter: 'TRYON',
-                    category: 'ПРИМЕРКА',
-                    img: 'assets/1489.jpg',
-                    categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ']
-                });
+            } else {
+                let tryOnCard = list.find(c => c.id === 4 || c.id === 5 || (c.title && c.title.toUpperCase().includes('ПРИМЕР')));
+                if (!tryOnCard) {
+                    list.push({
+                        id: 4,
+                        title: 'ПРИМЕРКА',
+                        badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ',
+                        subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК',
+                        filter: 'TRYON',
+                        category: 'ПРИМЕРКА',
+                        img: 'assets/1489.jpg',
+                        categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ']
+                    });
+                } else {
+                    tryOnCard.id = 4;
+                    tryOnCard.title = 'ПРИМЕРКА';
+                    tryOnCard.filter = 'TRYON';
+                }
             }
 
             return list.map(c => {
@@ -1461,9 +1446,7 @@
                         cats = ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'];
                     } else if (c.id === 3 || titleUp === 'ТРЕНДЫ') {
                         cats = ['TIKTOK', 'REELS', 'INSTA VIBE'];
-                    } else if (c.id === 4 || titleUp.includes('ПРИГЛАС')) {
-                        cats = ['СВАДЬБА', 'КЫЗ УЗАТУУ', 'ЮБИЛЕЙ', 'ТУШОО ТОЙ', 'ДЕТСКИЙ ПРАЗДНИК'];
-                    } else if (c.id === 5 || titleUp.includes('ПРИМЕР') || titleUp.includes('ОДЕЖД')) {
+                    } else if (c.id === 4 || c.id === 5 || titleUp.includes('ПРИМЕР') || titleUp.includes('ОДЕЖД')) {
                         cats = ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'];
                     } else {
                         cats = [c.title || 'ОБЩЕЕ'];
@@ -1480,22 +1463,35 @@
         function normalizeTemplates(tplList, cardsList) {
             if (!Array.isArray(tplList)) return [];
             const cards = cardsList || mainCards;
-            const normalized = tplList.map(t => {
-                let sid = t.sectionId;
+
+            // Полностью удаляем любые шаблоны пригласительных
+            const cleanList = tplList.filter(t => {
+                const m = (t.model || '').toLowerCase();
+                const c = (t.category || '').toUpperCase();
+                const title = (t.title || '').toUpperCase();
+                const st = (t.sectionTitle || '').toUpperCase();
+                if (m === 'invite-web') return false;
+                if (st.includes('ПРИГЛАС')) return false;
+                if (c.includes('ПРИГЛАС') || c === 'СВАДЬБА' || c === 'КЫЗ УЗАТУУ' || c === 'ЮБИЛЕЙ' || c === 'СУННОТ ТОЙ') return false;
+                if (title.includes('WEDDING') || title.includes('КЫЗ УЗАТУУ') || title.includes('JUBILEE LUXURY')) return false;
+                return true;
+            });
+
+            const normalized = cleanList.map(t => {
+                let sid = Number(t.sectionId);
                 let stitle = t.sectionTitle;
                 let cat = t.category || 'ОБЩЕЕ';
 
-                if (!sid) {
-                    const catUp = (cat || '').toUpperCase();
-                    const modelUp = (t.model || '').toLowerCase();
-                    const titleUp = (t.title || '').toUpperCase();
-                    if (catUp.includes('ПРИМЕР') || catUp.includes('ТОЛСТОВ') || catUp.includes('ХУДИ') || catUp.includes('ФУТБОЛ') || catUp.includes('КУРТК') || catUp.includes('МЕРЧ') || titleUp.includes('ТОЛСТОВ') || titleUp.includes('ХУДИ')) {
-                        sid = 5;
-                        stitle = 'ПРИМЕРКА';
-                    } else if (catUp.includes('ПРИГЛАС') || catUp === 'СВАДЬБА' || catUp === 'КЫЗ УЗАТУУ' || catUp === 'ЮБИЛЕЙ' || modelUp === 'invite-web') {
-                        sid = 4;
-                        stitle = 'ПРИГЛАСИТЕЛЬНЫЕ';
-                    } else if (catUp === 'ВИДЕО' || modelUp.includes('seedance') || modelUp.includes('omni') || modelUp.includes('kling') || modelUp.includes('video')) {
+                const catUp = (cat || '').toUpperCase();
+                const modelUp = (t.model || '').toLowerCase();
+                const titleUp = (t.title || '').toUpperCase();
+                const stUp = (stitle || '').toUpperCase();
+
+                if (sid === 5 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || catUp.includes('ТОЛСТОВ') || catUp.includes('ХУДИ') || catUp.includes('ФУТБОЛ') || catUp.includes('КУРТК') || catUp.includes('МЕРЧ') || titleUp.includes('ТОЛСТОВ') || titleUp.includes('ХУДИ') || Boolean(t.location)) {
+                    sid = 4;
+                    stitle = 'ПРИМЕРКА';
+                } else if (!sid) {
+                    if (catUp === 'ВИДЕО' || modelUp.includes('seedance') || modelUp.includes('omni') || modelUp.includes('kling') || modelUp.includes('video')) {
                         sid = 2;
                         stitle = 'ВИДЕО';
                         if (catUp === 'ВИДЕО') cat = 'НЕОН';
@@ -1526,10 +1522,10 @@
             });
 
             // Если в шаблонах нет товаров примерки — добавляем образцы толстовок
-            if (!normalized.some(t => t.sectionId === 5 || (t.sectionTitle && t.sectionTitle.includes('ПРИМЕР')))) {
+            if (!normalized.some(t => t.sectionId === 4 || (t.sectionTitle && t.sectionTitle.includes('ПРИМЕР')))) {
                 normalized.push({
                     id: 101,
-                    sectionId: 5,
+                    sectionId: 4,
                     sectionTitle: 'ПРИМЕРКА',
                     category: 'ТОЛСТОВКИ',
                     title: 'Толстовка TRENDUM Black Oversize',
@@ -1542,7 +1538,7 @@
                 });
                 normalized.push({
                     id: 102,
-                    sectionId: 5,
+                    sectionId: 4,
                     sectionTitle: 'ПРИМЕРКА',
                     category: 'ТОЛСТОВКИ',
                     title: 'Толстовка ALTYN White Classic',
@@ -1555,7 +1551,7 @@
                 });
                 normalized.push({
                     id: 103,
-                    sectionId: 5,
+                    sectionId: 4,
                     sectionTitle: 'ПРИМЕРКА',
                     category: 'ХУДИ',
                     title: 'Худи Streetwear Cyberpunk',
@@ -1568,7 +1564,7 @@
                 });
                 normalized.push({
                     id: 104,
-                    sectionId: 5,
+                    sectionId: 4,
                     sectionTitle: 'ПРИМЕРКА',
                     category: 'ФУТБОЛКИ',
                     title: 'Футболка Trendum Minimalist',
@@ -1698,8 +1694,7 @@
             if (title.includes('ФОТО')) return '📸';
             if (title.includes('ВИДЕО')) return '🎬';
             if (title.includes('ТРЕНД')) return '🔥';
-            if (title.includes('ПРИГЛАС') || card.id === 4) return '💌';
-            if (title.includes('ПРИМЕР') || title.includes('ОДЕЖД') || card.id === 5 || card.filter === 'TRYON') return '👕';
+            if (title.includes('ПРИМЕР') || title.includes('ОДЕЖД') || card.id === 4 || card.id === 5 || card.filter === 'TRYON') return '👕';
             return '🎴';
         }
 
@@ -1885,308 +1880,6 @@
                 customInput.style.display = 'none';
                 customInput.value = '';
             }
-            updateHtmlCodeVisibility();
-        }
-
-        // Валидация HTML на пустые оболочки React/SPA
-        function validateHtmlInput() {
-            const textarea = document.getElementById('tpl-html-input');
-            const warnEl = document.getElementById('tpl-html-warning');
-            if (!textarea || !warnEl) return;
-            const val = textarea.value.trim();
-
-            if (val.includes('id="root"') && !val.includes('<main') && !val.includes('class="page') && !val.includes('class="hero') && !val.includes('class="invite') && (val.includes('index-') || val.includes('loadVendors') || val.includes('metaPixelId') || val.includes('/assets/'))) {
-                warnEl.style.display = 'block';
-                warnEl.innerHTML = `⚠️ <b>Внимание: белый экран!</b> Вы вставили пустую заготовку React (<code>&lt;div id="root"&gt;&lt;/div&gt;</code>) из браузера. На сайтах вроде toi.com.kz браузер через «Сохранить как» скачивает пустой каркас без контента. Нажмите кнопку <b>«🌸 Стиль «Нежность»»</b> или <b>«👑 Стиль «Royal»»</b> выше, чтобы вставить настоящий готовый дизайн!`;
-            } else {
-                warnEl.style.display = 'none';
-            }
-        }
-
-        // Загрузка .html файла с компьютера напрямую в поле ввода
-        function handleHtmlFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const textarea = document.getElementById('tpl-html-input');
-                if (textarea) {
-                    textarea.value = e.target.result;
-                    validateHtmlInput();
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        // Вставка образца красивого адаптивного HTML шаблона
-        function insertDefaultInviteHtmlTemplate(style) {
-            const textarea = document.getElementById('tpl-html-input');
-            if (!textarea) return;
-            if (textarea.value.trim() && !confirm('Заменить текущий HTML код в поле на выбранный стиль?')) {
-                return;
-            }
-            if (document.getElementById('tpl-html-warning')) {
-                document.getElementById('tpl-html-warning').style.display = 'none';
-            }
-
-            if (style === 'nezhnost') {
-                const found = templates.find(t => t.title && t.title.includes('Нежность') && t.htmlCode && t.htmlCode.length > 2000);
-                if (found) {
-                    textarea.value = found.htmlCode;
-                    validateHtmlInput();
-                    return;
-                }
-                textarea.value = '⏳ Загрузка стиля Нежность...';
-                fetch('https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/config/settings.json?t=' + Date.now())
-                    .then(r => r.json())
-                    .then(data => {
-                        const t = (data.templates || []).find(item => item.title && item.title.includes('Нежность'));
-                        if (t && t.htmlCode) {
-                            textarea.value = t.htmlCode;
-                            validateHtmlInput();
-                        }
-                    }).catch(() => {});
-                return;
-            }
-
-            textarea.value = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>{{NAMES}} — Приглашение на торжество</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: #0d0d0d;
-      color: #ffffff;
-      font-family: 'Montserrat', sans-serif;
-      line-height: 1.6;
-      display: flex;
-      justify-content: center;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-    .invite-container {
-      width: 100%;
-      max-width: 480px;
-      min-height: 100vh;
-      background: #141414;
-      box-shadow: 0 0 50px rgba(0,0,0,0.8);
-      position: relative;
-      padding-bottom: 70px;
-    }
-    .hero-section {
-      padding: 50px 24px 30px;
-      text-align: center;
-      background: radial-gradient(circle at 50% 10%, rgba(212,160,67,0.18) 0%, transparent 70%);
-      border-bottom: 1px solid rgba(212,160,67,0.25);
-    }
-    .event-badge {
-      display: inline-block;
-      font-size: 12px;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: #D4A043;
-      border: 1px solid rgba(212,160,67,0.4);
-      padding: 6px 18px;
-      border-radius: 30px;
-      margin-bottom: 20px;
-      background: rgba(212,160,67,0.08);
-    }
-    .names-title {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 38px;
-      font-weight: 700;
-      line-height: 1.15;
-      background: linear-gradient(135deg, #F3D289 0%, #D4A043 50%, #9C7026 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 12px;
-    }
-    .date-hero {
-      font-size: 15px;
-      letter-spacing: 3px;
-      color: rgba(255,255,255,0.7);
-      text-transform: uppercase;
-    }
-    .photo-card {
-      margin: 24px 20px;
-      border-radius: 24px;
-      overflow: hidden;
-      border: 2px solid rgba(212,160,67,0.35);
-      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-      background: #000;
-      height: 380px;
-    }
-    .photo-card img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .quote-box {
-      margin: 0 24px 28px;
-      padding: 20px;
-      text-align: center;
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 20px;
-      font-style: italic;
-      color: rgba(255,255,255,0.85);
-      border-left: 2px solid #D4A043;
-      border-right: 2px solid #D4A043;
-      background: rgba(255,255,255,0.02);
-      border-radius: 12px;
-    }
-    .countdown-section {
-      margin: 0 20px 30px;
-      background: #1a1a1a;
-      border: 1px solid rgba(212,160,67,0.25);
-      border-radius: 20px;
-      padding: 22px 16px;
-      text-align: center;
-    }
-    .countdown-title {
-      font-size: 12px;
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-      color: #D4A043;
-      margin-bottom: 16px;
-    }
-    .countdown-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-    .countdown-item {
-      background: rgba(0,0,0,0.4);
-      border-radius: 12px;
-      padding: 10px 4px;
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-    .countdown-val {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 28px;
-      font-weight: 700;
-      color: #F3D289;
-      line-height: 1;
-    }
-    .countdown-label {
-      font-size: 10px;
-      letter-spacing: 1px;
-      color: rgba(255,255,255,0.5);
-      margin-top: 4px;
-      text-transform: uppercase;
-    }
-    .venue-card {
-      margin: 0 20px 24px;
-      background: #1a1a1a;
-      border: 1px solid rgba(212,160,67,0.25);
-      border-radius: 20px;
-      padding: 24px 20px;
-      text-align: center;
-    }
-    .venue-name {
-      font-size: 20px;
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 6px;
-    }
-    .venue-address {
-      font-size: 14px;
-      color: rgba(255,255,255,0.65);
-      margin-bottom: 18px;
-    }
-    .action-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      padding: 14px 20px;
-      border-radius: 14px;
-      font-size: 14px;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .btn-gold {
-      background: linear-gradient(135deg, #D4A043 0%, #B88328 100%);
-      color: #000000;
-      font-weight: 700;
-      box-shadow: 0 4px 20px rgba(212,160,67,0.3);
-    }
-    .btn-outline {
-      background: transparent;
-      border: 1.5px solid #D4A043;
-      color: #F3D289;
-      margin-top: 10px;
-    }
-  </style>
-</head>
-<body>
-  <div class="invite-container">
-    <div class="hero-section">
-      <div class="event-badge">{{EVENT_TYPE}}</div>
-      <h1 class="names-title">{{NAMES}}</h1>
-      <div class="date-hero">{{DATE_DISPLAY}}</div>
-    </div>
-
-    <div class="photo-card">
-      <img src="{{PHOTO}}" alt="{{NAMES}}">
-    </div>
-
-    <div class="quote-box">
-      «{{QUOTE}}»
-    </div>
-
-    <div class="countdown-section">
-      <div class="countdown-title">До торжества осталось</div>
-      <div class="countdown-grid">
-        <div class="countdown-item"><div class="countdown-val" id="timer-days">0</div><div class="countdown-label">Дней</div></div>
-        <div class="countdown-item"><div class="countdown-val" id="timer-hours">0</div><div class="countdown-label">Часов</div></div>
-        <div class="countdown-item"><div class="countdown-val" id="timer-minutes">0</div><div class="countdown-label">Минут</div></div>
-        <div class="countdown-item"><div class="countdown-val" id="timer-seconds">0</div><div class="countdown-label">Секунд</div></div>
-      </div>
-    </div>
-
-    <div class="venue-card">
-      <div class="venue-name">{{VENUE_NAME}}</div>
-      <div class="venue-address">{{VENUE_ADDRESS}}</div>
-      <a href="{{MAP_URL}}" target="_blank" class="action-btn btn-gold">📍 Открыть на карте (2GIS)</a>
-      <a href="{{RSVP_LINK}}" target="_blank" class="action-btn btn-outline">💬 Подтвердить присутствие в WhatsApp</a>
-    </div>
-  </div>
-</body>
-</html>`;
-        }
-
-        // Показ/скрытие поля ввода HTML в зависимости от выбранного раздела или модели
-        function updateHtmlCodeVisibility(forcedSectionId, forcedModel) {
-            const secSelect = document.getElementById('tpl-section-select');
-            const modelSelect = document.getElementById('tpl-model-select');
-            const htmlGroup = document.getElementById('tpl-html-code-group');
-            if (!htmlGroup) return;
-
-            const sectionId = forcedSectionId !== undefined ? Number(forcedSectionId) : (secSelect ? Number(secSelect.value) : 1);
-            const model = forcedModel !== undefined ? forcedModel : (modelSelect ? modelSelect.value : '');
-
-            const card = mainCards.find(c => c.id === sectionId);
-            const isInviteSection = sectionId === 4 || (card && card.title.toUpperCase().includes('ПРИГЛАС'));
-            const isInviteModel = model === 'invite-web';
-
-            if (isInviteSection || isInviteModel) {
-                htmlGroup.style.display = 'block';
-                if (modelSelect && !isInviteModel && modelSelect.value === 'nano-banana-2') {
-                    modelSelect.value = 'invite-web';
-                }
-            } else {
-                htmlGroup.style.display = 'none';
-            }
         }
 
         function getModelBadge(model) {
@@ -2197,7 +1890,6 @@
             if (m === 'seedance-2.5') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">🎬 Seedance 2.5</span>';
             if (m === 'omni-flash' || m === 'google-omni-flash' || m === 'google/gemini-omni-flash-1-1') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">⚡ Omni Flash</span>';
             if (m === 'kling-video') return '<span class="model-badge">🎥 Kling AI</span>';
-            if (m === 'invite-web') return '<span class="model-badge" style="background: rgba(212,160,67,0.2); border-color: #D4A043; color: #D4A043;">💌 Пригласительное</span>';
             return `<span class="model-badge">${m}</span>`;
         }
 
@@ -2263,7 +1955,7 @@
             `;
             container.appendChild(allChip);
 
-            // 2. Кнопки для каждого раздела (Фото, Видео, Тренды, Пригласительные)
+            // 2. Кнопки для каждого раздела (Фото, Видео, Тренды, Примерка)
             mainCards.forEach(c => {
                 const count = templates.filter(t => t.sectionId === c.id).length;
                 const chip = document.createElement('div');
@@ -2316,7 +2008,6 @@
 
         function handleTplSectionChange(val) {
             renderTplCategoryDropdown(Number(val));
-            updateHtmlCodeVisibility(Number(val));
             updateTryOnVisibility(Number(val));
             const submitBtn = document.getElementById('tpl-submit-btn');
             const card = mainCards.find(c => c.id === Number(val));
@@ -2327,7 +2018,7 @@
 
         function updateTryOnVisibility(sectionId) {
             const card = mainCards.find(c => c.id === Number(sectionId));
-            const isTryOn = Number(sectionId) === 5 || (card && (card.title.toUpperCase().includes('ПРИМЕР') || card.filter === 'TRYON'));
+            const isTryOn = Number(sectionId) === 4 || Number(sectionId) === 5 || (card && (card.title.toUpperCase().includes('ПРИМЕР') || card.filter === 'TRYON'));
             const promptInput = document.getElementById('tpl-prompt-input');
             const locInput = document.getElementById('tpl-location-input');
             const titleInput = document.getElementById('tpl-title-input');
@@ -2454,7 +2145,7 @@
             container.innerHTML = '';
 
             if (activeTplFilterSectionId !== 'ALL') {
-                // Показываем конкретный выбранный раздел (Фото, Видео, Тренды, Пригласительные)
+                // Показываем конкретный выбранный раздел (Фото, Видео, Тренды, Примерка)
                 const card = mainCards.find(c => c.id === Number(activeTplFilterSectionId)) || mainCards[0];
                 const sectionItems = templates.filter(t => t.sectionId === card.id);
                 const cardEl = buildSectionGroupCard(card, sectionItems, true);
@@ -2618,7 +2309,7 @@
             const modelVal = tpl.model || 'nano-banana-2';
             const modelSelect = document.getElementById('tpl-model-select');
             const customModelInput = document.getElementById('tpl-custom-model-input');
-            if (['nano-banana-2', 'chatgpt-2.5', 'seedance-2.5', 'omni-flash', 'kling-video', 'invite-web'].includes(modelVal)) {
+            if (['nano-banana-2', 'chatgpt-2.5', 'seedance-2.5', 'omni-flash', 'kling-video'].includes(modelVal)) {
                 modelSelect.value = modelVal;
                 customModelInput.style.display = 'none';
                 customModelInput.value = '';
@@ -2635,7 +2326,6 @@
             if (htmlInput) {
                 htmlInput.value = tpl.htmlCode || '';
             }
-            updateHtmlCodeVisibility(tpl.sectionId, tpl.model);
             updateTryOnVisibility(tpl.sectionId);
 
             handleTemplateImgInput(tpl.img || '');
@@ -2666,7 +2356,6 @@
                 htmlInput.value = '';
             }
             handleTemplateImgInput('');
-            updateHtmlCodeVisibility();
 
             const submitBtn = document.getElementById('tpl-submit-btn');
             const cancelBtn = document.getElementById('tpl-cancel-edit-btn');
@@ -2705,8 +2394,6 @@
             const img = imgInput ? imgInput.value.trim() : '';
             let htmlCode = htmlInput ? htmlInput.value.trim() : '';
 
-            const isInvite = sectionId === 4 || sectionTitle.toUpperCase().includes('ПРИГЛАС') || model === 'invite-web';
-
             if (!title) {
                 status.textContent = '❌ Введите название шаблона или товара';
                 status.className = 'status-msg error';
@@ -2718,12 +2405,6 @@
                 status.textContent = '❌ Загрузите обложку или фото одежды через кнопку «📁 Загрузить файл»';
                 status.className = 'status-msg error';
                 return;
-            }
-
-            // Для пригласительных, если HTML-код пуст, подставляем базовый образец
-            if (isInvite && !htmlCode) {
-                insertDefaultInviteHtmlTemplate();
-                htmlCode = htmlInput ? htmlInput.value.trim() : '';
             }
 
             if (editingTemplateId) {
