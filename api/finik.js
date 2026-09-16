@@ -4,7 +4,7 @@ const path = require('path');
 
 const FINIK_HOST = process.env.FINIK_HOST || 'api.acquiring.averspay.kg';
 const FINIK_API_KEY = process.env.FINIK_API_KEY || 'zDN9eKsniY6urxK2FAMxW1iy7CUhIARA3tpCkdf3';
-const FINIK_ACCOUNT_ID = process.env.FINIK_ACCOUNT_ID || 'aa01a640-66ec-417f-895d-ba9d988fab18';
+const FINIK_ACCOUNT_ID = process.env.FINIK_ACCOUNT_ID || 'cd47050e-1ea8-4bc8-86fd-acd1b1f0e746';
 const FINIK_REDIRECT_URL = process.env.FINIK_REDIRECT_URL || 'https://kiosk394.vercel.app/kiosk-ui/';
 
 // Публичный ключ Finik для валидации входящих вебхуков
