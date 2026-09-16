@@ -927,7 +927,7 @@
                     <input type="text" id="tpl-title-input" class="admin-input" placeholder="Название товара / шаблона (напр: Толстовка Oversize)..." style="flex: 1.3;">
                     <input type="number" id="tpl-price-input" class="admin-input" style="max-width: 140px;" placeholder="Цена (сом)" min="10" step="10" title="Цена товара в сомах">
                     <input type="text" id="tpl-location-input" class="admin-input" placeholder="📍 Где продается (напр: Рынок Дордой, проход 4, контейнер 142)..." style="flex: 1.5;" title="Место продажи или номер контейнера/бутика">
-                    <select id="tpl-model-select" class="admin-select" style="max-width: 260px;" title="Модель обработки" onchange="toggleCustomModelInput(this.value)">
+                    <select id="tpl-model-select" class="admin-select" style="max-width: 250px;" title="Модель обработки" onchange="toggleCustomModelInput(this.value)">
                         <option value="chatgpt-2.5" selected>🎨 ChatGPT 2.5 (OpenAI / Sunburst)</option>
                         <option value="nano-banana-2">🍌 Nano Banana 2 (Резервная)</option>
                         <option value="roast-standup">🔥 Стендап-Прожарка (ChatGPT + ElevenLabs)</option>
@@ -935,6 +935,11 @@
                         <option value="omni-flash">⚡ Google Omni Flash (Видеоролик)</option>
                         <option value="kling-video">🎥 Kling AI (Видеоролик)</option>
                         <option value="custom">✏️ Другая модель из агрегатора...</option>
+                    </select>
+                    <select id="tpl-resolution-select" class="admin-select" style="max-width: 175px; font-weight: 700;" title="Разрешение ChatGPT для этого шаблона">
+                        <option value="1K">⚡ 1K (6 кр — $0.03)</option>
+                        <option value="2K" selected>🌟 2K HD (10 кр — $0.05)</option>
+                        <option value="4K">💎 4K Ultra (16 кр — $0.08)</option>
                     </select>
                     <input type="text" id="tpl-custom-model-input" class="admin-input" style="max-width: 200px; display: none;" placeholder="ID модели...">
                 </div>
@@ -1423,20 +1428,20 @@
                 if (tpls) return JSON.parse(tpls);
             } catch(e) {}
             return [
-                { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'chatgpt-2.5', prompt: 'Cute 3D animated character portrait, soft studio lighting, vibrant colors, retain facial likeness' },
-                { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'chatgpt-2.5', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
-                { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'chatgpt-2.5', prompt: 'Trending aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
-                { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'chatgpt-2.5', prompt: 'Prestigious business magazine cover, elegant business suit, powerful charismatic gaze, studio lighting' },
-                { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'chatgpt-2.5', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
-                { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'seedance-2.5', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
-                { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'seedance-2.5', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
-                { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'seedance-2.5', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
-                { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'chatgpt-2.5', prompt: 'Blocky voxel gaming character hero style, bright game world colors, playful gaming atmosphere' },
-                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'chatgpt-2.5', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
-                { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
-                { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
-                { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
-                { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
+                { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Cute 3D animated character portrait, soft studio lighting, vibrant colors, retain facial likeness' },
+                { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
+                { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Trending aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
+                { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Prestigious business magazine cover, elegant business suit, powerful charismatic gaze, studio lighting' },
+                { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
+                { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'seedance-2.5', resolution: '2K', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
+                { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'seedance-2.5', resolution: '2K', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
+                { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'seedance-2.5', resolution: '2K', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
+                { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Blocky voxel gaming character hero style, bright game world colors, playful gaming atmosphere' },
+                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
+                { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
+                { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
+                { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
+                { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
             ];
         }
 
@@ -1971,6 +1976,13 @@
             return `<span class="model-badge">${m}</span>`;
         }
 
+        function getResolutionBadge(resolution) {
+            const res = (resolution || '2K').toUpperCase();
+            if (res === '1K') return '<span class="model-badge" style="background: rgba(59,130,246,0.18); border-color: #3b82f6; color: #60a5fa; font-weight: 800;">⚡ 1K</span>';
+            if (res === '4K') return '<span class="model-badge" style="background: rgba(168,85,247,0.18); border-color: #a855f7; color: #c084fc; font-weight: 800;">💎 4K Ultra</span>';
+            return '<span class="model-badge" style="background: rgba(212,160,67,0.18); border-color: #d4a043; color: #d4a043; font-weight: 800;">🌟 2K HD</span>';
+        }
+
         function renderTplSectionSelect() {
             const secSelect = document.getElementById('tpl-section-select');
             if (secSelect) {
@@ -2282,8 +2294,9 @@
                         <th style="width: 40px;">#</th>
                         <th style="width: 65px;">Превью</th>
                         <th>Название шаблона</th>
-                        <th style="width: 160px;">Категория</th>
+                        <th style="width: 150px;">Категория</th>
                         <th style="width: 140px;">Модель ИИ</th>
+                        <th style="width: 110px;">Разрешение</th>
                         <th>Промпт</th>
                         <th style="width: 90px;">Цена</th>
                         <th style="width: 180px; text-align: right;">Действия</th>
@@ -2298,6 +2311,7 @@
                 const tr = document.createElement('tr');
                 const priceVal = tpl.price || 290;
                 const modelBadge = getModelBadge(tpl.model);
+                const resBadge = getResolutionBadge(tpl.resolution);
                 const promptText = tpl.prompt ? tpl.prompt.trim() : '—';
                 const promptEscaped = promptText.replace(/"/g, '&quot;');
 
@@ -2316,6 +2330,9 @@
                     <td>
                         ${modelBadge}
                         ${tpl.htmlCode ? ' <span style="background: rgba(52,199,89,0.15); border: 1px solid #34c759; color: #34c759; font-size: 11px; padding: 2px 6px; border-radius: 6px; font-weight: 700; margin-left: 4px;" title="Шаблон содержит интерактивный HTML-дизайн">🌐 HTML</span>' : ''}
+                    </td>
+                    <td>
+                        ${resBadge}
                     </td>
                     <td><div class="prompt-preview-cell" title="${promptEscaped}">${promptText}</div></td>
                     <td><span class="price-badge">${priceVal} сом</span></td>
@@ -2397,6 +2414,11 @@
                 customModelInput.value = modelVal;
             }
 
+            const resSelect = document.getElementById('tpl-resolution-select');
+            if (resSelect) {
+                resSelect.value = tpl.resolution || '2K';
+            }
+
             document.getElementById('tpl-prompt-input').value = tpl.prompt || '';
             document.getElementById('tpl-img-input').value = tpl.img || '';
             
@@ -2425,6 +2447,8 @@
             document.getElementById('tpl-prompt-input').value = '';
             document.getElementById('tpl-img-input').value = '';
             document.getElementById('tpl-model-select').value = 'chatgpt-2.5';
+            const resSelect = document.getElementById('tpl-resolution-select');
+            if (resSelect) resSelect.value = '2K';
             document.getElementById('tpl-custom-model-input').style.display = 'none';
             document.getElementById('tpl-custom-model-input').value = '';
             document.getElementById('tpl-file-input').value = '';
@@ -2448,6 +2472,7 @@
             const priceInput = document.getElementById('tpl-price-input');
             const locationInput = document.getElementById('tpl-location-input');
             const modelSelect = document.getElementById('tpl-model-select');
+            const resSelect = document.getElementById('tpl-resolution-select');
             const customModelInput = document.getElementById('tpl-custom-model-input');
             const promptInput = document.getElementById('tpl-prompt-input');
             const imgInput = document.getElementById('tpl-img-input');
@@ -2467,6 +2492,7 @@
             if (model === 'custom' && customModelInput) {
                 model = customModelInput.value.trim() || 'chatgpt-2.5';
             }
+            const resolution = resSelect ? resSelect.value : '2K';
 
             const prompt = promptInput ? promptInput.value.trim() : '';
             const img = imgInput ? imgInput.value.trim() : '';
@@ -2498,6 +2524,7 @@
                         price,
                         location,
                         model,
+                        resolution,
                         prompt,
                         img,
                         htmlCode
@@ -2518,6 +2545,7 @@
                     price,
                     location,
                     model,
+                    resolution,
                     prompt,
                     img,
                     htmlCode

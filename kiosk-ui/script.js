@@ -7,14 +7,39 @@ let selectedStylePhoto = 'images/photo1.jpg';
 let selectedStylePrice = 290;
 let selectedStyleLocation = '';
 let isTryOnMode = false;
-let selectedStyleModel = 'nano-banana-2';
+let selectedStyleModel = 'chatgpt-2.5';
 let selectedStylePrompt = 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere';
+let selectedStyleResolution = '2K';
 let selectedTemplateId = null;
 let selectedTemplateHtml = '';
 let isSelectingCard = false;
 let isAttractClosing = false;
 let currentCategory = 'ФОТО';
 let activeTemplateIndex = 0;
+
+// УПРАВЛЕНИЕ РАЗРЕШЕНИЕМ ГЕНЕРАЦИИ (1K, 2K HD, 4K ULTRA)
+let currentAiResolution = localStorage.getItem('kiosk_ai_resolution') || '2K';
+
+function setAiResolution(res) {
+    let cleanRes = (res || '2K').toUpperCase();
+    if (!['1K', '2K', '4K'].includes(cleanRes)) cleanRes = '2K';
+    currentAiResolution = cleanRes;
+    localStorage.setItem('kiosk_ai_resolution', currentAiResolution);
+    
+    document.querySelectorAll('.ai-res-pill').forEach(btn => {
+        if (btn.dataset.res === currentAiResolution) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    const badge = document.getElementById('pay-res-indicator');
+    if (badge) {
+        badge.textContent = currentAiResolution + (currentAiResolution === '2K' ? ' HD' : currentAiResolution === '4K' ? ' Ultra' : '');
+    }
+}
+window.setAiResolution = setAiResolution;
 
 // КОНФИГУРАЦИЯ ГЛАВНОГО ЭКРАНА (ШАПКА И КАРТОЧКИ РАЗДЕЛОВ)
 function getStoredMainHeader() {
@@ -145,20 +170,20 @@ function renderMainCards() {
 // ТРЕКОВЫЕ ШАБЛОНЫ ДЛЯ 3D COVERFLOW ГАЛЕРЕИ (STYLE DRIBBLE)
 const templateCatalog = {
     'ФОТО': [
-        { id: 1, title: 'ROBLOX HERO', desc: 'СТАНЬ ГЕРОЕМ ЛЮБИМОЙ ИГРЫ', img: 'images/photo1.jpg', model: 'nano-banana-2', prompt: 'Roblox hero blocky style' },
-        { id: 2, title: 'CYBER SAMURAI', desc: 'КИБЕРПАНК ВОИН 2077', img: 'images/photo3.jpg', model: 'nano-banana-2', prompt: 'Cyberpunk samurai in neon armor' },
-        { id: 3, title: 'ANIME WORLD', desc: 'АНИМЕ ГЕРОЙ В СОЧНЫХ ЦВЕТАХ', img: 'images/photo2.jpg', model: 'nano-banana-2', prompt: 'Anime style hero' },
-        { id: 4, title: 'FORBES COVER', desc: 'ТЫ НА ГЛАВНОЙ СТРАНИЦЕ FORBES', img: 'assets/hero_portrait.jpg', model: 'nano-banana-2', prompt: 'Forbes magazine cover' },
-        { id: 5, title: 'GIGACHAD SIGMA', desc: 'ХАРИЗМА И СТИЛЬ 100%', img: 'assets/hero_avatar.jpg', model: 'nano-banana-2', prompt: 'Sigma male portrait' }
+        { id: 1, title: 'ROBLOX HERO', desc: 'СТАНЬ ГЕРОЕМ ЛЮБИМОЙ ИГРЫ', img: 'images/photo1.jpg', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Roblox hero blocky style' },
+        { id: 2, title: 'CYBER SAMURAI', desc: 'КИБЕРПАНК ВОИН 2077', img: 'images/photo3.jpg', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Cyberpunk samurai in neon armor' },
+        { id: 3, title: 'ANIME WORLD', desc: 'АНИМЕ ГЕРОЙ В СОЧНЫХ ЦВЕТАХ', img: 'images/photo2.jpg', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Anime style hero' },
+        { id: 4, title: 'FORBES COVER', desc: 'ТЫ НА ГЛАВНОЙ СТРАНИЦЕ FORBES', img: 'assets/hero_portrait.jpg', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Forbes magazine cover' },
+        { id: 5, title: 'GIGACHAD SIGMA', desc: 'ХАРИЗМА И СТИЛЬ 100%', img: 'assets/hero_avatar.jpg', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Sigma male portrait' }
     ],
     'ВИДЕО': [
-        { id: 1, title: 'NEON MOTION', desc: 'ОЖИВИ СВОЙ ПОРТРЕТ В НЕОНЕ', img: 'images/photo3.jpg', model: 'kling-video', prompt: 'Neon light streaks swirling around cyberpunk hero' },
-        { id: 2, title: 'RETRO 90S VHS', desc: 'КИНЕМАТОГРАФИЧНЫЙ РЕТРО ЭФФЕКТ', img: 'images/photo1.jpg', model: 'kling-video', prompt: 'Vintage 90s VHS tape glitch effect' },
-        { id: 3, title: 'CYBER ROBOT', desc: 'ФУТУРИСТИЧНАЯ АНИМАЦИЯ', img: 'assets/hero_robot.jpg', model: 'kling-video', prompt: 'Futuristic cyborg awakening' }
+        { id: 1, title: 'NEON MOTION', desc: 'ОЖИВИ СВОЙ ПОРТРЕТ В НЕОНЕ', img: 'images/photo3.jpg', model: 'kling-video', resolution: '2K', prompt: 'Neon light streaks swirling around cyberpunk hero' },
+        { id: 2, title: 'RETRO 90S VHS', desc: 'КИНЕМАТОГРАФИЧНЫЙ РЕТРО ЭФФЕКТ', img: 'images/photo1.jpg', model: 'kling-video', resolution: '2K', prompt: 'Vintage 90s VHS tape glitch effect' },
+        { id: 3, title: 'CYBER ROBOT', desc: 'ФУТУРИСТИЧНАЯ АНИМАЦИЯ', img: 'assets/hero_robot.jpg', model: 'kling-video', resolution: '2K', prompt: 'Futuristic cyborg awakening' }
     ],
     'ТРЕНДЫ': [
-        { id: 1, title: 'TIKTOK DANCE', desc: 'ВИРУСНЫЙ ТАНЦЕВАЛЬНЫЙ ЧЕЛЛЕНДЖ', img: 'assets/hero_robot.jpg', model: 'kling-video', prompt: 'TikTok dance animation' },
-        { id: 2, title: 'REELS VIBE', desc: 'ПОПУЛЯРНЫЙ ТРЕНД ИЗ ИНСТАГРАМ', img: 'assets/hero_avatar.jpg', model: 'nano-banana-2', prompt: 'Reels trending aesthetic' }
+        { id: 1, title: 'TIKTOK DANCE', desc: 'ВИРУСНЫЙ ТАНЦЕВАЛЬНЫЙ ЧЕЛЛЕНДЖ', img: 'assets/hero_robot.jpg', model: 'kling-video', resolution: '2K', prompt: 'TikTok dance animation' },
+        { id: 2, title: 'REELS VIBE', desc: 'ПОПУЛЯРНЫЙ ТРЕНД ИЗ ИНСТАГРАМ', img: 'assets/hero_avatar.jpg', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Reels trending aesthetic' }
     ]
 };
 
@@ -183,21 +208,21 @@ try {
 
 if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.getItem('kiosk_templates_v2') === null)) {
     masterTemplates = [
-        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'chatgpt-2.5', prompt: 'Cute 3D animated character portrait, soft studio lighting, vibrant colors, retain facial likeness' },
-        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'chatgpt-2.5', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
-        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'chatgpt-2.5', prompt: 'Trending aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
-        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'chatgpt-2.5', prompt: 'Prestigious business magazine cover, elegant business suit, powerful charismatic gaze, studio lighting' },
-        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'chatgpt-2.5', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
-        { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'kling-video', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
-        { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'kling-video', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
-        { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'kling-video', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
-        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'chatgpt-2.5', prompt: 'Blocky voxel gaming character hero style, bright game world colors, playful gaming atmosphere' },
-        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'chatgpt-2.5', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
-        { id: 99, sectionId: 3, sectionTitle: 'ТРЕНДЫ', category: 'ПРОЖАРКА', title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)', img: 'assets/hero_portrait.jpg', price: 190, model: 'roast-standup', prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice' },
-        { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
-        { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
-        { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
-        { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
+        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Cute 3D animated character portrait, soft studio lighting, vibrant colors, retain facial likeness' },
+        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
+        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Trending aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
+        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Prestigious business magazine cover, elegant business suit, powerful charismatic gaze, studio lighting' },
+        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
+        { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'kling-video', resolution: '2K', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
+        { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'kling-video', resolution: '2K', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
+        { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'kling-video', resolution: '2K', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
+        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Blocky voxel gaming character hero style, bright game world colors, playful gaming atmosphere' },
+        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
+        { id: 99, sectionId: 3, sectionTitle: 'ТРЕНДЫ', category: 'ПРОЖАРКА', title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)', img: 'assets/hero_portrait.jpg', price: 190, model: 'roast-standup', resolution: '2K', prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice' },
+        { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
+        { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
+        { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
+        { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
     ];
 }
 
@@ -258,6 +283,9 @@ function normalizeTemplates(tplList, cardsList) {
             modelNorm = 'chatgpt-2.5';
         }
 
+        let resNorm = (t.resolution || '2K').toUpperCase();
+        if (!['1K', '2K', '4K'].includes(resNorm)) resNorm = '2K';
+
         return {
             ...t,
             id: Number(t.id) || Date.now(),
@@ -265,6 +293,7 @@ function normalizeTemplates(tplList, cardsList) {
             sectionTitle: stitle || 'ФОТО',
             category: cat,
             model: modelNorm,
+            resolution: resNorm,
             location: t.location || '',
             htmlCode: t.htmlCode || ''
         };
@@ -281,6 +310,7 @@ function normalizeTemplates(tplList, cardsList) {
             price: 450,
             location: 'Рынок Дордой, ряд 5, контейнер 142',
             model: 'chatgpt-2.5',
+            resolution: '2K',
             prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.',
             htmlCode: ''
         });
@@ -293,7 +323,8 @@ function normalizeTemplates(tplList, cardsList) {
             img: 'assets/hero_portrait.jpg',
             price: 450,
             location: 'Рынок Дордой, проход 3, контейнер 88',
-            model: 'nano-banana-2',
+            model: 'chatgpt-2.5',
+            resolution: '2K',
             prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.',
             htmlCode: ''
         });
@@ -306,7 +337,8 @@ function normalizeTemplates(tplList, cardsList) {
             img: 'assets/hero_robot.jpg',
             price: 490,
             location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum',
-            model: 'nano-banana-2',
+            model: 'chatgpt-2.5',
+            resolution: '2K',
             prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.',
             htmlCode: ''
         });
@@ -320,6 +352,7 @@ function normalizeTemplates(tplList, cardsList) {
             price: 350,
             location: 'Рынок Дордой, контейнер 205',
             model: 'chatgpt-2.5',
+            resolution: '2K',
             prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.',
             htmlCode: ''
         });
@@ -340,6 +373,7 @@ if (!masterTemplates.some(t => (t.model || '').toLowerCase() === 'roast-standup'
         img: 'assets/hero_portrait.jpg',
         price: 190,
         model: 'roast-standup',
+        resolution: '2K',
         prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice'
     });
 }
@@ -605,6 +639,8 @@ function renderGridTemplates() {
             selectedStylePhoto = item.img;
             selectedStylePrice = itemPrice;
             selectedStyleLocation = item.location || '';
+            selectedStyleResolution = item.resolution || '2K';
+            setAiResolution(selectedStyleResolution);
             isTryOnMode = isTryOnTemplate(item);
             selectedStyleModel = item.model || 'chatgpt-2.5';
             selectedStylePrompt = item.prompt || '';
@@ -659,24 +695,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmPhotoBtn = document.getElementById('confirm-photo-btn');
 
     // ВЫБОР РАЗРЕШЕНИЯ CHATGPT (1K, 2K HD, 4K ULTRA)
-    let currentAiResolution = localStorage.getItem('kiosk_ai_resolution') || '2K';
-
-    function setAiResolution(res) {
-        currentAiResolution = res || '2K';
-        localStorage.setItem('kiosk_ai_resolution', currentAiResolution);
-        document.querySelectorAll('.ai-res-pill').forEach(btn => {
-            if (btn.dataset.res === currentAiResolution) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
-        });
-        const badge = document.getElementById('pay-res-indicator');
-        if (badge) {
-            badge.textContent = currentAiResolution + (currentAiResolution === '2K' ? ' HD' : currentAiResolution === '4K' ? ' Ultra' : '');
-        }
-    }
-
     document.querySelectorAll('.ai-res-pill').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -2228,6 +2246,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedStylePhoto = cur.img;
                 selectedStylePrice = cur.price || 290;
                 selectedStyleLocation = cur.location || '';
+                selectedStyleResolution = cur.resolution || '2K';
+                setAiResolution(selectedStyleResolution);
                 isTryOnMode = isTryOnTemplate(cur);
                 selectedStyleModel = cur.model || 'chatgpt-2.5';
                 selectedStylePrompt = cur.prompt || '';

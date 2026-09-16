@@ -253,7 +253,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
             duration: 5
         };
     } else if (isTryOn) {
-        // Виртуальная примерка одежды / товаров на гостя через ChatGPT
+        // Виртуальная примерка одежды / товаров на гостя через ChatGPT (2 фото: гость + вещь)
         const tryOnPrompt = safePrompt && safePrompt.trim().length > 10
             ? safePrompt
             : 'Virtual clothing try-on: Fit the clothing item realistically onto the person in the photo. Seamlessly drape the garment with natural folds, lighting, and texture, keeping the person exact face, expression and hair.';
@@ -264,24 +264,21 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         }
 
         inputPayload = {
-            prompt: tryOnPrompt,
+            prompt: `Virtual clothing try-on: Fit the clothing item from the second image onto the person in the first image. CRITICAL: Strictly preserve the person's exact gender, face, facial features, facial hair (beard/mustache if present), identity, hair, and likeness from the first photo completely intact. Replace only the garment. ${tryOnPrompt}`,
             image_urls: imageUrls,
             resolution: targetResolution
         };
-    } else if (templateImgUrl && templateImgUrl.startsWith('http')) {
-        // Фото-шаблон (обложка журнала, стилизация, арт) через ChatGPT
-        const blendPrompt = safePrompt && safePrompt.trim().length > 5
-            ? `${safePrompt}. Retain the exact face, facial features, identity, expression and likeness of the person in the first image, seamlessly placing them into the template and scene of the second image.`
-            : `Seamlessly blend the person from the first image into the second image template, keeping their exact facial likeness, expression and hair.`;
+    } else {
+        // Стилизация портрета (дудл, арт, аниме, киберпанк, мультики, обложки и др.)
+        // ВАЖНО: В ChatGPT передается ТОЛЬКО ОДНО фото — фото самого гостя (publicPhotoUrl)!
+        // Картинка шаблона — это лишь обложка/образец стиля для меню. Если передать картинку шаблона,
+        // нейросеть берет внешность/пол человека с обложки (например, девушку вместо мужчины-гостя).
+        const stylePrompt = safePrompt && safePrompt.trim().length > 5
+            ? `${safePrompt}. CRITICAL INSTRUCTION: Transform the person from the input image into this exact artistic style. Strictly preserve the person's exact gender, face, facial structure, facial features, facial hair (beard, mustache if present), hair color, hairstyle, identity, age, and facial expression completely intact. Do not alter the person's gender or identity.`
+            : `Artistic stylized portrait. CRITICAL INSTRUCTION: Transform the person from the input image into this exact artistic style. Strictly preserve the person's exact gender, face, facial structure, facial features, facial hair (beard, mustache if present), hair color, hairstyle, identity, age, and facial expression completely intact. Do not alter the person's gender or identity.`;
 
         inputPayload = {
-            prompt: blendPrompt,
-            image_urls: [publicPhotoUrl, templateImgUrl],
-            resolution: targetResolution
-        };
-    } else {
-        inputPayload = {
-            prompt: safePrompt || 'Photorealistic high-end studio portrait, retain facial likeness and features',
+            prompt: stylePrompt,
             image_urls: [publicPhotoUrl],
             resolution: targetResolution
         };
