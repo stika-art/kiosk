@@ -1,11 +1,3828 @@
-﻿<!DOCTYPE html>
-<html>
+<!DOCTYPE html>
+<html lang="ru">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="refresh" content="0; url=/kiosk-ui/admin">
-    <script>window.location.replace("/kiosk-ui/admin");</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trendum — Админ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary: #D4A043;
+            --primary-hover: #B88328;
+            --primary-light: rgba(212, 160, 67, 0.12);
+            --primary-border: rgba(212, 160, 67, 0.3);
+            --bg-dark: #141414;
+            --sidebar-bg: #1A1A1A;
+            --card-bg: #1E1E1E;
+            --input-bg: #2A2A2A;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --text-main: #FFFFFF;
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --text-dim: rgba(255, 255, 255, 0.38);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* SIDEBAR (EXACT ALTYN KAZYK THEME) */
+        .admin-sidebar {
+            width: 240px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            min-height: 100vh;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .sidebar-brand {
+            padding: 32px 22px 20px;
+        }
+
+        .brand-title {
+            color: var(--primary);
+            font-size: 17px;
+            font-weight: 900;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+        }
+
+        .brand-subtitle {
+            color: var(--text-dim);
+            font-size: 13px;
+            font-weight: 400;
+            margin-top: 3px;
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: var(--text-muted);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            background: transparent;
+            width: 100%;
+            text-align: left;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .nav-item.active {
+            background: var(--primary-light);
+            border-color: var(--primary-border);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-item-icon {
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-footer {
+            padding: 16px 14px 24px;
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn-sidebar-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-to-kiosk {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            color: #ffffff;
+        }
+
+        .btn-to-kiosk:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-logout {
+            background: rgba(255, 59, 48, 0.08);
+            border: 1px solid rgba(255, 59, 48, 0.25);
+            color: #ff453a;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 59, 48, 0.18);
+            border-color: #ff453a;
+        }
+
+        /* MAIN CONTENT */
+        .admin-main {
+            flex: 1;
+            padding: 32px 36px;
+            max-width: 1280px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .admin-card {
+            background: var(--card-bg);
+            border-radius: 18px;
+            border: 1px solid var(--border-subtle);
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-header {
+            margin-bottom: 22px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* FORMS & INPUTS (ALTYN KAZYK STYLE) */
+        .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .admin-input, .admin-select {
+            background: var(--input-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            color: #ffffff;
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            padding: 12px 16px;
+            outline: none;
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 160px;
+        }
+
+        .admin-input:focus, .admin-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(212, 160, 67, 0.18);
+        }
+
+        .admin-select {
+            cursor: pointer;
+        }
+
+        .admin-select option {
+            background: #222222;
+            color: #ffffff;
+        }
+
+        /* BUTTONS (ALTYN KAZYK GOLD) */
+        .btn-primary {
+            background: var(--primary);
+            color: #000000;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(212, 160, 67, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(212, 160, 67, 0.35);
+        }
+
+        .btn-upload {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            color: #ffffff;
+            border-radius: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 11px 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-upload:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-del {
+            background: rgba(255, 59, 48, 0.1);
+            border: 1px solid rgba(255, 59, 48, 0.25);
+            color: #ff453a;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-del:hover {
+            background: rgba(255, 59, 48, 0.2);
+            border-color: #ff453a;
+        }
+
+        .btn-edit {
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            color: var(--primary);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-right: 6px;
+        }
+
+        .btn-edit:hover {
+            background: rgba(212, 160, 67, 0.25);
+        }
+
+        .btn-move {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: #ffffff;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-right: 4px;
+        }
+
+        .btn-move:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* TABLES */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 18px;
+        }
+
+        .items-table th {
+            text-align: left;
+            padding: 12px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .items-table td {
+            padding: 14px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-subtle);
+            vertical-align: middle;
+        }
+
+        .items-table tbody tr {
+            transition: background 0.15s ease;
+        }
+
+        .items-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tpl-preview-thumb {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 1px solid var(--border-subtle);
+            background: #000;
+        }
+
+        .cat-tag {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            color: rgba(255, 255, 255, 0.85);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .model-badge {
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .price-badge {
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 15px;
+        }
+
+        .prompt-preview-cell {
+            max-width: 260px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        /* STATUS MESSAGES */
+        .status-msg {
+            margin-top: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            min-height: 20px;
+        }
+
+        .status-msg.success {
+            color: #34c759;
+            background: rgba(52, 199, 89, 0.12);
+            border: 1px solid rgba(52, 199, 89, 0.35);
+            padding: 8px 16px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        .status-msg.error {
+            color: #ff3b30;
+            background: rgba(255, 59, 48, 0.12);
+            border: 1px solid rgba(255, 59, 48, 0.35);
+            padding: 8px 16px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        /* LOGIN OVERLAY (EXACT ALTYN KAZYK AUTH) */
+        .auth-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            padding: 24px;
+        }
+
+        .auth-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            padding: 40px 32px;
+            text-align: center;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+        }
+
+        .auth-icon-box {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+        }
+
+        .auth-title {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        .auth-subtitle {
+            color: var(--text-dim);
+            font-size: 14px;
+            margin-top: 4px;
+            margin-bottom: 32px;
+        }
+
+        .auth-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 16px;
+            color: #ffffff;
+            font-family: 'Outfit', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 6px;
+            outline: none;
+            margin-bottom: 18px;
+            transition: all 0.2s ease;
+        }
+
+        .auth-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(212, 160, 67, 0.2);
+        }
+
+        .btn-auth-submit {
+            width: 100%;
+            padding: 16px;
+            font-size: 15px;
+            font-weight: 800;
+            justify-content: center;
+            border-radius: 14px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .cloud-tip {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .tag-insert-btn {
+            background: rgba(212, 160, 67, 0.12);
+            border: 1px solid rgba(212, 160, 67, 0.35);
+            color: #F3D289;
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .tag-insert-btn:hover {
+            background: var(--primary);
+            color: #000000;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        /* MODAL CROPPER (TRENDUM LUXURY THEME) */
+        .crop-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.88);
+            backdrop-filter: blur(8px);
+            z-index: 100000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .crop-modal-content {
+            background: #1A1A1A;
+            border: 1px solid var(--primary-border);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 860px;
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(212, 160, 67, 0.2);
+        }
+
+        .crop-modal-header {
+            padding: 16px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .crop-modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .crop-modal-body {
+            padding: 16px 20px;
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0D0D0D;
+        }
+
+        .crop-canvas-wrapper {
+            width: 100%;
+            height: 440px;
+            max-height: 55vh;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        .crop-canvas-wrapper img {
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+        }
+
+        .crop-modal-toolbar {
+            padding: 12px 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: #161616;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .crop-tool-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            color: #ffffff;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .crop-tool-btn:hover {
+            background: rgba(212, 160, 67, 0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .crop-tool-btn.active {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .crop-modal-footer {
+            padding: 14px 22px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            border-top: 1px solid var(--border-subtle);
+            background: #1A1A1A;
+        }
+
+        /* Панель табов разделов шаблонов */
+        .section-tabs-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 24px;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border-subtle);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .section-tabs-bar::-webkit-scrollbar {
+            display: none;
+        }
+        .section-tab-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .section-tab-chip:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .section-tab-chip.active {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 4px 15px rgba(212, 160, 67, 0.2);
+        }
+        .section-tab-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 6px;
+            border-radius: 11px;
+            font-size: 11px;
+            font-weight: 800;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-dim);
+            transition: all 0.2s ease;
+        }
+        .section-tab-chip.active .section-tab-count {
+            background: var(--primary);
+            color: #141414;
+        }
+
+        /* Заголовок группы шаблонов при общем виде */
+        .tpl-section-group {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            margin-bottom: 24px;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        .tpl-section-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.035);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .tpl-section-group-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 16px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+        }
+        .tpl-section-group-badge {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+            background: var(--primary-light);
+            padding: 4px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--primary-border);
+        }
+
+        /* Подпункты сайдбара */
+        .sidebar-sub-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding-left: 20px;
+            padding-right: 8px;
+            margin-top: 2px;
+            margin-bottom: 6px;
+        }
+        .sidebar-sub-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 12px;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+            background: transparent;
+            border: 1px solid transparent;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.15s ease;
+            width: 100%;
+        }
+        .sidebar-sub-item:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .sidebar-sub-item.active {
+            color: var(--primary);
+            font-weight: 700;
+            background: var(--primary-light);
+            border-color: var(--primary-border);
+        }
+        .sidebar-sub-badge {
+            font-size: 11px;
+            padding: 1px 7px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-dim);
+        }
+        .sidebar-sub-item.active .sidebar-sub-badge {
+            background: var(--primary);
+            color: #141414;
+        }
+    </style>
 </head>
 <body>
-    <p>Redirecting to <a href="/kiosk-ui/admin">TRENDUM Admin Panel</a>...</p>
+
+    <!-- AUTH SCREEN (ALTYN KAZYK STYLE) -->
+    <div id="auth-screen" class="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-icon-box">🔒</div>
+            <h1 class="auth-title">TRENDUM</h1>
+            <p class="auth-subtitle">Панель управления</p>
+            <form id="auth-form" onsubmit="handleAuthSubmit(event)">
+                <input type="password" id="auth-pin-input" class="auth-input" placeholder="••••" maxlength="8" autofocus autocomplete="current-password">
+                <button type="submit" class="btn-primary btn-auth-submit">ВОЙТИ В ПАНЕЛЬ</button>
+            </form>
+            <div id="auth-error-msg" class="status-msg error" style="display: none; margin-top: 14px;"></div>
+        </div>
+    </div>
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-title">TRENDUM</div>
+            <div class="brand-subtitle">Панель управления</div>
+        </div>
+
+        <nav class="sidebar-menu">
+            <button class="nav-item active" id="tab-btn-cats" onclick="switchAdminTab('cats')">
+                <span class="nav-item-icon">📁</span>
+                <span>Категории</span>
+            </button>
+            <button class="nav-item" id="tab-btn-tpls" onclick="switchAdminTab('tpls')">
+                <span class="nav-item-icon">🖼️</span>
+                <span>Шаблоны</span>
+            </button>
+            <div id="sidebar-tpl-sub-menu" class="sidebar-sub-menu" style="display: none;">
+                <!-- Заполняется динамически JS: Все, Фото, Видео, Тренды, Примерка -->
+            </div>
+            <button class="nav-item" id="tab-btn-main" onclick="switchAdminTab('main')">
+                <span class="nav-item-icon">🎴</span>
+                <span>Главный экран</span>
+            </button>
+            <button class="nav-item" id="tab-btn-ads" onclick="switchAdminTab('ads')">
+                <span class="nav-item-icon">📺</span>
+                <span>Реклама и Баннеры</span>
+            </button>
+            <button class="nav-item" id="tab-btn-settings" onclick="switchAdminTab('settings')">
+                <span class="nav-item-icon">⚙️</span>
+                <span>Настройки</span>
+            </button>
+            <button class="nav-item" id="tab-btn-security" onclick="switchAdminTab('security')">
+                <span class="nav-item-icon">🔐</span>
+                <span>Безопасность</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="/" class="btn-sidebar-action btn-to-kiosk" title="Перейти к интерфейсу киоска">
+                <span>🖥️</span> Открыть Киоск
+            </a>
+            <button class="btn-sidebar-action btn-logout" onclick="handleLogout()">
+                <span>🚪</span> Выйти
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="admin-main">
+
+        <!-- TAB 1: CATEGORIES -->
+        <section id="tab-content-cats" class="admin-tab-content">
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">📁 Управление категориями кнопок</h2>
+                    <p class="card-subtitle">У каждой кнопки на главном экране киоска — свой собственный независимый список категорий</p>
+                </div>
+
+                <!-- ВЫБОР КНОПКИ ГЛАВНОГО ЭКРАНА -->
+                <div class="form-row" style="align-items: center; gap: 14px; background: rgba(255,255,255,0.02); padding: 14px 18px; border-radius: 14px; border: 1px solid var(--border-subtle); margin-bottom: 18px;">
+                    <label style="font-size: 14px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+                        <span>🎴</span> Кнопка главного экрана:
+                    </label>
+                    <select id="cat-section-select" class="admin-select" style="max-width: 280px; font-weight: 700;" onchange="handleCatSectionChange(this.value)"></select>
+                    <span class="cloud-tip">Выберите кнопку, для которой настраиваются категории</span>
+                </div>
+
+                <div class="form-row">
+                    <input type="text" id="new-cat-name" class="admin-input" placeholder="Название новой категории (напр: КИБЕРПАНК, КИНЕМАТОГРАФ, АРТ)...">
+                    <button class="btn-primary" id="add-cat-btn" onclick="addCategory()">+ Добавить категорию</button>
+                </div>
+                <div id="cat-status" class="status-msg"></div>
+
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">#</th>
+                            <th>Название категории</th>
+                            <th style="width: 160px;">Кнопка киоска</th>
+                            <th style="width: 170px; text-align: right;">Порядок / Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categories-table-body">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 2: TEMPLATES -->
+        <section id="tab-content-tpls" class="admin-tab-content hidden">
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">🖼️ Управление шаблонами</h2>
+                    <p class="card-subtitle">Добавляйте стили и шаблоны с привязкой к кнопке и категории</p>
+                </div>
+
+                <div class="form-row">
+                    <select id="tpl-section-select" class="admin-select" style="max-width: 190px; font-weight: 700;" title="Кнопка / Раздел" onchange="handleTplSectionChange(this.value)"></select>
+                    <select id="tpl-cat-select" class="admin-select" style="max-width: 180px;" title="Категория внутри кнопки"></select>
+                    <input type="text" id="tpl-title-input" class="admin-input" placeholder="Название товара / шаблона (напр: Толстовка Oversize)..." style="flex: 1.3;">
+                    <input type="number" id="tpl-price-input" class="admin-input" style="max-width: 140px;" placeholder="Цена (сом)" min="10" step="10" title="Цена товара в сомах">
+                    <input type="text" id="tpl-location-input" class="admin-input" placeholder="📍 Где продается (напр: Рынок Дордой, проход 4, контейнер 142)..." style="flex: 1.5;" title="Место продажи или номер контейнера/бутика">
+                    <select id="tpl-model-select" class="admin-select" style="max-width: 250px;" title="Модель обработки" onchange="toggleCustomModelInput(this.value)">
+                        <option value="chatgpt-2.5" selected>🎨 ChatGPT 2.5 (OpenAI / Sunburst)</option>
+                        <option value="nano-banana-2">🍌 Nano Banana 2 (Резервная)</option>
+                        <option value="roast-standup">🔥 Стендап-Прожарка (ChatGPT + ElevenLabs)</option>
+                        <option value="seedance-2.5">🎬 Seedance 2.5 (Видеоролик)</option>
+                        <option value="omni-flash">⚡ Google Omni Flash (Видеоролик)</option>
+                        <option value="kling-video">🎥 Kling AI (Видеоролик)</option>
+                        <option value="custom">✏️ Другая модель из агрегатора...</option>
+                    </select>
+                    <select id="tpl-resolution-select" class="admin-select" style="max-width: 175px; font-weight: 700;" title="Разрешение ChatGPT для этого шаблона">
+                        <option value="1K">⚡ 1K (6 кр — $0.03)</option>
+                        <option value="2K" selected>🌟 2K HD (10 кр — $0.05)</option>
+                        <option value="4K">💎 4K Ultra (16 кр — $0.08)</option>
+                    </select>
+                    <input type="text" id="tpl-custom-model-input" class="admin-input" style="max-width: 200px; display: none;" placeholder="ID модели...">
+                </div>
+
+                <div class="form-row" style="align-items: flex-start; gap: 16px; margin-top: 10px;">
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 13px; color: var(--primary); font-weight: 700;">📝 Текстовый промпт для нейросети (Prompt):</label>
+                        <textarea id="tpl-prompt-input" class="admin-input" style="height: 70px; resize: vertical; font-family: monospace; font-size: 13px; line-height: 1.4;" placeholder="Опишите сцену: напр. Futuristic cyberpunk male samurai in neon carbon armor, rainy Tokyo street, volumetric lighting, photorealistic..."></textarea>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 13px; color: var(--primary); font-weight: 700;">🖼️ Обложка шаблона (Загрузка в Base64 или путь):</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="file" id="tpl-file-input" accept="image/*" style="display: none;" onchange="handleTemplateFileSelect(event)">
+                            <button type="button" class="btn-upload" onclick="document.getElementById('tpl-file-input').click()">📁 Загрузить файл</button>
+                            <input type="text" id="tpl-img-input" class="admin-input" placeholder="Путь к фото или base64 (data:image/...)" style="font-size: 12px;" oninput="handleTemplateImgInput(this.value)">
+                            <div id="tpl-img-preview-box" style="width: 48px; height: 48px; border: 1px solid var(--border-subtle); border-radius: 10px; overflow: hidden; background: #000; flex-shrink: 0; display: none;">
+                                <img id="tpl-img-preview" src="" style="width: 100%; height: 100%; object-fit: cover;">
+                            </div>
+                        </div>
+                        <span class="cloud-tip" style="margin-top: 4px;">Файл автоматически сжимается до ~50 КБ и встраивается в шаблон.</span>
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top: 14px; align-items: center;">
+                    <button class="btn-primary" id="tpl-submit-btn" onclick="addOrUpdateTemplate()">+ Добавить шаблон</button>
+                    <button type="button" id="tpl-cancel-edit-btn" class="btn-del" style="display: none; margin-left: 10px; background: rgba(255,255,255,0.06); border-color: var(--border-subtle); color: #ccc;" onclick="cancelTemplateEdit()">✕ Отмена</button>
+                    <button type="button" class="btn-upload" onclick="syncAllToCloudManual('tpl-status')" style="margin-left: auto;" title="Сохранить и отправить шаблоны в киоск">☁️ Синхронизировать с киоском</button>
+                </div>
+                <div id="tpl-status" class="status-msg"></div>
+
+                <!-- ТАБЫ РАЗДЕЛОВ ШАБЛОНОВ: ВСЕ, ФОТО, ВИДЕО, ТРЕНДЫ, ПРИМЕРКА -->
+                <div class="section-tabs-bar" id="tpl-section-tabs-bar">
+                    <!-- Заполняется динамически JS -->
+                </div>
+
+                <!-- ОБЛАСТЬ ОТОБРАЖЕНИЯ ШАБЛОНОВ (РАЗДЕЛЕННАЯ ПО РАЗДЕЛАМ) -->
+                <div id="templates-display-area">
+                    <!-- Заполняется динамически JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: MAIN SCREEN (ГЛАВНЫЙ ЭКРАН) -->
+        <section id="tab-content-main" class="admin-tab-content hidden">
+            <!-- БЛОК 1: ШАПКА ГЛАВНОГО ЭКРАНА -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">✨ Шапка главного экрана</h2>
+                    <p class="card-subtitle">Настройка верхнего бейджика, логотипа/заголовка бренда и слогана</p>
+                </div>
+
+                <div class="form-row">
+                    <div style="flex: 1; min-width: 220px;">
+                        <label style="display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 600;">ВЕРХНИЙ БЕЙДЖ</label>
+                        <input type="text" id="main-header-badge-input" class="admin-input" placeholder="напр: PREMIUM PHOTO KIOSK" style="width: 100%;">
+                    </div>
+                    <div style="flex: 1; min-width: 220px;">
+                        <label style="display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 600;">ГЛАВНЫЙ ЗАГОЛОВОК</label>
+                        <input type="text" id="main-header-title-input" class="admin-input" placeholder="напр: TRENDUM" style="width: 100%;">
+                    </div>
+                    <div style="flex: 1.5; min-width: 280px;">
+                        <label style="display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 600;">ПОДЗАГОЛОВОК / СЛОГАН</label>
+                        <input type="text" id="main-header-sub-input" class="admin-input" placeholder="напр: ФОТОСТУДИЯ ПРЕМИУМ КЛАССА" style="width: 100%;">
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top: 10px; align-items: center;">
+                    <button class="btn-primary" onclick="saveMainHeader()">💾 Сохранить шапку</button>
+                    <div id="main-header-status" class="status-msg"></div>
+                </div>
+            </div>
+
+            <!-- БЛОК 2: КАРТОЧКИ / КНОПКИ ВЫБОРА -->
+            <div class="admin-card" style="margin-top: 24px;">
+                <div class="card-header">
+                    <h2 class="card-title">🎴 Карточки разделов на главном экране</h2>
+                    <p class="card-subtitle">Редактируйте тексты, бейджи, подзаголовки, категории и фоновые изображения на кнопках</p>
+                </div>
+
+                <!-- ФОРМА ДОБАВЛЕНИЯ / РЕДАКТИРОВАНИЯ КАРТОЧКИ -->
+                <div class="form-row">
+                    <input type="text" id="main-card-title-input" class="admin-input" placeholder="Заголовок кнопки (напр: ФОТО, ВИДЕО, ТРЕНДЫ)..." style="flex: 1.2;">
+                    <input type="text" id="main-card-badge-input" class="admin-input" placeholder="Верхний бейдж (напр: ОБЛОЖКИ • ПОРТРЕТЫ • АРТ)..." style="flex: 1.5;">
+                    <select id="main-card-filter-select" class="admin-select" style="flex: 1.3;" title="Что открывать при клике на карточку">
+                        <option value="PHOTO">📸 Только ФОТО (без видео)</option>
+                        <option value="VIDEO">🎬 Только ВИДЕО (клипы и анимация)</option>
+                        <option value="TRENDS">🔥 Только ТРЕНДЫ (популярное)</option>
+                        <option value="TRYON">👕 Примерка одежды и товаров</option>
+                        <option value="ALL">🌟 Все шаблоны подряд</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <input type="text" id="main-card-sub-input" class="admin-input" placeholder="Нижний подзаголовок (напр: БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ)..." style="flex: 2;">
+                </div>
+
+                <div class="form-row" style="align-items: center; gap: 12px;">
+                    <input type="file" id="main-card-file-input" accept="image/*" style="display: none;" onchange="handleMainCardFileSelect(event)">
+                    <button type="button" class="btn-upload" onclick="document.getElementById('main-card-file-input').click()">📁 Загрузить фото</button>
+                    <button type="button" class="btn-upload" id="main-card-crop-btn" onclick="openCropModalForCurrent()" style="display: none; background: rgba(212, 160, 67, 0.15); border-color: var(--primary-border); color: var(--primary);" title="Обрезать и подогнать пропорции фото">✂️ Кадрировать</button>
+                    <input type="text" id="main-card-img-input" class="admin-input" placeholder="Путь к фото или base64 / ссылка..." oninput="handleMainCardImgInput(this.value)" style="flex: 1; font-size: 12px;">
+                    <div id="main-card-preview-box" style="width: 58px; height: 44px; border: 1px solid var(--border-subtle); border-radius: 10px; overflow: hidden; background: #000; flex-shrink: 0; display: none; cursor: pointer;" onclick="openCropModalForCurrent()" title="Нажмите, чтобы кадрировать фото">
+                        <img id="main-card-preview-img" src="" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                </div>
+                <span class="cloud-tip" style="margin-top: -6px; margin-bottom: 12px; display: block;">При выборе фото сразу открывается кадрирование под форму карточки киоска.</span>
+
+                <div class="form-row" style="margin-top: 14px; align-items: center;">
+                    <button class="btn-primary" id="main-card-submit-btn" onclick="addOrUpdateMainCard()">+ Добавить карточку</button>
+                    <button type="button" id="main-card-cancel-btn" class="btn-del" style="display: none; margin-left: 10px; background: rgba(255,255,255,0.06); border-color: var(--border-subtle); color: #ccc;" onclick="cancelMainCardEdit()">✕ Отмена</button>
+                    <button type="button" class="btn-upload" onclick="syncAllToCloudManual('main-card-status')" style="margin-left: auto;" title="Сохранить и отправить в киоск">☁️ Синхронизировать с киоском</button>
+                </div>
+                <div id="main-card-status" class="status-msg"></div>
+
+                <!-- СПИСОК КАРТОЧЕК -->
+                <table class="items-table" style="margin-top: 20px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">#</th>
+                            <th style="width: 75px;">Фоновое фото</th>
+                            <th style="width: 130px;">Заголовок</th>
+                            <th>Бейдж</th>
+                            <th>Подзаголовок</th>
+                            <th style="width: 130px;">Раздел / Фильтр</th>
+                            <th style="width: 180px; text-align: right;">Порядок / Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="main-cards-table-body">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 3: ADS & BANNERS -->
+        <section id="tab-content-ads" class="admin-tab-content hidden">
+            <!-- TOP TICKER BANNERS -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">📺 Верхняя бегущая строка</h2>
+                    <p class="card-subtitle">Управление горизонтальными карточками и промо-роликами сверху</p>
+                </div>
+
+                <div class="form-row">
+                    <select id="ad-top-type-select" class="admin-select" style="max-width: 160px;">
+                        <option value="video">🎬 Видеоролик (.mp4)</option>
+                        <option value="image">🖼️ Баннер / Фото</option>
+                    </select>
+                    <input type="text" id="ad-top-title-input" class="admin-input" placeholder="Заголовок баннера...">
+                    <input type="number" id="ad-top-duration-input" class="admin-input" style="max-width: 150px;" placeholder="Секунд (напр: 8)" min="2" max="60">
+                </div>
+
+                <div class="form-row">
+                    <input type="file" id="ad-top-file-input" style="display: none;" onchange="uploadAdFile('top', event)">
+                    <button type="button" class="btn-upload" onclick="document.getElementById('ad-top-file-input').click()">📁 Загрузить файл в облако</button>
+                    <input type="text" id="ad-top-src-input" class="admin-input" placeholder="URL файла или путь (напр: assets/promo.mp4)...">
+                    <button class="btn-primary" onclick="addAd('top')">+ Добавить баннер</button>
+                </div>
+                <div id="ad-top-status" class="status-msg"></div>
+
+                <table class="items-table" style="margin-top: 16px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Превью</th>
+                            <th>Тип</th>
+                            <th>Название</th>
+                            <th>Файл / Источник</th>
+                            <th>Длительность</th>
+                            <th style="width: 170px; text-align: right;">Порядок / Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ad-top-table-body">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- BOTTOM TICKER BANNERS -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">📺 Нижняя бегущая строка</h2>
+                    <p class="card-subtitle">Управление нижним циклом рекламных баннеров</p>
+                </div>
+
+                <div class="form-row">
+                    <select id="ad-bottom-type-select" class="admin-select" style="max-width: 160px;">
+                        <option value="image">🖼️ Баннер / Фото</option>
+                        <option value="video">🎬 Видеоролик (.mp4)</option>
+                    </select>
+                    <input type="text" id="ad-bottom-title-input" class="admin-input" placeholder="Заголовок баннера...">
+                    <input type="number" id="ad-bottom-duration-input" class="admin-input" style="max-width: 150px;" placeholder="Секунд (напр: 5)" min="2" max="60">
+                </div>
+
+                <div class="form-row">
+                    <input type="file" id="ad-bottom-file-input" style="display: none;" onchange="uploadAdFile('bottom', event)">
+                    <button type="button" class="btn-upload" onclick="document.getElementById('ad-bottom-file-input').click()">📁 Загрузить файл в облако</button>
+                    <input type="text" id="ad-bottom-src-input" class="admin-input" placeholder="URL файла или путь (напр: assets/banner.jpg)...">
+                    <button class="btn-primary" onclick="addAd('bottom')">+ Добавить баннер</button>
+                </div>
+                <div id="ad-bottom-status" class="status-msg"></div>
+
+                <table class="items-table" style="margin-top: 16px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Превью</th>
+                            <th>Тип</th>
+                            <th>Название</th>
+                            <th>Файл / Источник</th>
+                            <th>Длительность</th>
+                            <th style="width: 170px; text-align: right;">Порядок / Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ad-bottom-table-body">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 4: SETTINGS -->
+        <section id="tab-content-settings" class="admin-tab-content hidden">
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">⚙️ Настройки киоска и заставки</h2>
+                    <p class="card-subtitle">Управление временем бездействия до запуска заставки (Screen Saver)</p>
+                </div>
+
+                <div style="max-width: 520px;">
+                    <div style="margin-bottom: 16px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">
+                            📷 Основная камера киоска:
+                        </label>
+                        <select id="camera-select" class="admin-select" style="width: 100%; margin-bottom: 6px;">
+                            <option value="">🤖 Автоматически (Logitech BRIO / лучшая камера)</option>
+                        </select>
+                        <p style="font-size: 12px; color: var(--text-dim);">
+                            Выберите конкретную веб-камеру для работы киоска (напр. Logitech BRIO).
+                        </p>
+                    </div>
+
+                    <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">
+                        ⏱️ Время ожидания до выхода заставки (секунд):
+                    </label>
+                    <div class="form-row" style="align-items: center;">
+                        <input type="number" id="attract-timeout-input" class="admin-input" min="3" max="300" placeholder="Например: 5" style="max-width: 160px;">
+                        <button class="btn-primary" onclick="saveKioskSettings()">Сохранить настройки</button>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-dim); margin-top: 5px;">
+                        По умолчанию: <strong>5 сек</strong>. Рекомендуется от 5 до 30 секунд.
+                    </p>
+                    <div id="settings-status" class="status-msg"></div>
+                </div>
+            </div>
+
+            <!-- AI AGGREGATOR SETTINGS CARD -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">🤖 Настройки агрегатора генерации</h2>
+                    <p class="card-subtitle">Подключение внешнего шлюза/агрегатора (Kie.ai, Nano Banana 2, Seedance 2.5, ChatGPT 2.5)</p>
+                </div>
+
+                <div style="max-width: 600px;">
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🌐 URL эндпоинта агрегатора:
+                        </label>
+                        <input type="text" id="aggregator-url-input" class="admin-input" style="width: 100%;" placeholder="https://api.kie.ai/api/v1/jobs/createTask">
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🔑 API Ключ (Bearer Token):
+                        </label>
+                        <input type="password" id="aggregator-key-input" class="admin-input" style="width: 100%;" placeholder="fde11cd9...">
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--primary); margin-bottom: 6px; font-weight: 700;">
+                            ⚡ Webhook Callback URL (эндпоинт киоска для Kie.ai):
+                        </label>
+                        <input type="text" id="aggregator-webhook-url" class="admin-input" style="width: 100%; color: var(--primary); font-family: monospace; font-size: 12px;" value="https://kiosk394.vercel.app/api/ai/kie-callback" readonly>
+                        <span style="font-size: 11px; color: var(--text-dim); display: block; margin-top: 4px;">Киоск автоматически передает этот адрес в Kie.ai (callBackUrl) для мгновенного получения готовых фото и видео.</span>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🛡️ Webhook HMAC Key (Ключ подписи из настроек Kie.ai):
+                        </label>
+                        <input type="password" id="aggregator-webhook-hmac-input" class="admin-input" style="width: 100%;" placeholder="Вставьте ключ после нажатия «Create Webhook Key» в Kie.ai...">
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display:block; font-size: 13px; color: var(--primary); margin-bottom: 6px; font-weight: 700;">
+                            ⚡ Разрешение ChatGPT по умолчанию:
+                        </label>
+                        <select id="aggregator-res-input" class="admin-select" style="width: 100%; font-weight: 700;">
+                            <option value="1K">1K (6 кредитов / $0.03 — быстрый режим)</option>
+                            <option value="2K" selected>2K HD (10 кредитов / $0.05 — рекомендуемое качество)</option>
+                            <option value="4K">4K Ultra (16 кредитов / $0.08 — наивысшая детализация)</option>
+                        </select>
+                        <span style="font-size: 11px; color: var(--text-dim); display: block; margin-top: 4px;">Пользователь на киоске также может сам переключить разрешение перед подтверждением фото.</span>
+                    </div>
+                    <button class="btn-primary" onclick="saveAggregatorSettings()">Сохранить параметры агрегатора</button>
+                    <div id="aggregator-status" class="status-msg" style="margin-top: 10px;"></div>
+
+                    <!-- BALANCE WIDGET -->
+                    <div style="margin-top: 20px; padding: 16px 20px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 14px; display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <span style="font-size: 12px; color: var(--text-muted); display: block; font-weight: 600;">Баланс кредитов Kie.ai:</span>
+                            <strong id="kie-balance-val" style="font-size: 18px; color: var(--primary);">—</strong>
+                        </div>
+                        <button type="button" class="btn-primary" style="padding: 9px 18px; font-size: 13px;" onclick="checkKieBalance()">🔄 Проверить баланс</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STANDUP ROAST & ELEVENLABS SETTINGS CARD -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">🎙️ Настройки Стендап-Прожарки & ElevenLabs</h2>
+                    <p class="card-subtitle">Живая дерзкая озвучка комика (со вздохами, смешками и паузами) + карикатуры GPT Image 2.5</p>
+                </div>
+
+                <div style="max-width: 620px;">
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🔑 Прямой ElevenLabs API Key (Необязательно):
+                        </label>
+                        <input type="password" id="elevenlabs-key-input" class="admin-input" style="width: 100%;" placeholder="sk_... (оставьте пустым для списания с Kie.ai)">
+                        <span class="cloud-tip" style="margin-top: 4px; display: block;">💡 <strong>Если оставить пустым</strong> — озвучка будет автоматически списываться с вашего баланса <strong>Kie.ai</strong> (модель <em>elevenlabs/text-to-speech-multilingual-v2</em>)!</span>
+                    </div>
+
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🗣️ Голос стендапера (Voice ID):
+                        </label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="elevenlabs-voice-input" class="admin-input" style="flex: 1;" placeholder="XNrB7jz2HCkpU5yK08kP или random">
+                            <select class="admin-select" style="max-width: 250px;" onchange="document.getElementById('elevenlabs-voice-input').value = this.value">
+                                <option value="XNrB7jz2HCkpU5yK08kP" selected>🔥 Фирменный (XNrB...)</option>
+                                <option value="ErXwobaYiN019PkySvjV">🎙️ Antoni (Дерзкий)</option>
+                                <option value="pNInz6obpgDQGcFmaJgB">🎙️ Adam (Саркастичный)</option>
+                                <option value="21m00Tcm4TlvDq8ikWAM">🎙️ Rachel (Девушка)</option>
+                                <option value="EXAVITQu4vr4xnSDxMaL">🎙️ Bella (Эмоциональная)</option>
+                                <option value="yoZ06aMxZJJ28mfd3POQ">🎙️ Sam (Ведущий)</option>
+                                <option value="random">🎲 Случайный каждый раз</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🧠 OpenAI API Key (для GPT-4o-mini Vision):
+                        </label>
+                        <input type="password" id="openai-key-input" class="admin-input" style="width: 100%;" placeholder="sk-proj-... (для генерации шуток и промптов карикатуры)">
+                        <span class="cloud-tip" style="margin-top: 4px; display: block;">Если не указан — задействуется встроенный пул остроумных шуток про ТЦ и кредиты.</span>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <button class="btn-primary" onclick="saveRoastSettings()">Сохранить настройки прожарки</button>
+                        <button type="button" class="btn-upload" onclick="testElevenLabsSpeech()">🔊 Тест голоса комика</button>
+                    </div>
+                    <div id="roast-settings-status" class="status-msg" style="margin-top: 10px;"></div>
+                </div>
+            </div>
+
+            <!-- PAYMENT & FINIK ELQR SETTINGS CARD -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">💳 Настройки эквайринга и кошелька ИП (Finik / ELQR)</h2>
+                    <p class="card-subtitle">Приём платежей в сомах через национальный стандарт ELQR (MBank, Optima, Bakai, Demir, O!Dengi, Balance)</p>
+                </div>
+
+                <div style="max-width: 620px;">
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🏦 Название ИП / Организации:
+                        </label>
+                        <input type="text" id="finik-merchant-name-input" class="admin-input" style="width: 100%;" placeholder="например: ИП Мээрим Абдышова">
+                    </div>
+
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🆔 ID счёта кошелька в Finik (Account ID):
+                        </label>
+                        <input type="text" id="finik-account-id-input" class="admin-input" style="width: 100%; font-family: monospace;" placeholder="например: cd47050e-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                        <span class="cloud-tip" style="margin-top: 4px; display: block;">Скопируйте из первой колонки кабинета Finik (значок 📋 рядом с кодом).</span>
+                    </div>
+
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🏪 ID точки продаж / кассы (POS / Terminal ID):
+                        </label>
+                        <input type="text" id="finik-pos-id-input" class="admin-input" style="width: 100%; font-family: monospace;" placeholder="например: 38f1c360-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                        <span class="cloud-tip" style="margin-top: 4px; display: block;">Скопируйте из второй колонки кабинета Finik (значок 📋 рядом с кодом).</span>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            📱 Ссылка на статический QR-код кошелька (ELQR URL):
+                        </label>
+                        <input type="text" id="finik-static-qr-input" class="admin-input" style="width: 100%; font-family: monospace; font-size: 12px;" placeholder="https://qr.finik.kg/#000201010211...">
+                        <span class="cloud-tip" style="margin-top: 4px; display: block;">Скопируйте ссылку из предпоследней колонки таблицы счетов Finik.</span>
+                    </div>
+
+                    <div style="margin-bottom: 18px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            ✨ Официальный брендированный QR Finik:
+                        </label>
+                        <div style="background: #ffffff; padding: 10px 14px; border-radius: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
+                            <img src="images/finik_elqr_badge.png" alt="Finik ELQR Badge" style="width: 130px; height: auto; display: block; border-radius: 8px;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <button class="btn-primary" onclick="savePaymentSettings()">💾 Сохранить настройки кошелька</button>
+                    </div>
+                    <div id="payment-settings-status" class="status-msg" style="margin-top: 10px;"></div>
+                </div>
+            </div>
+
+            <!-- CLOUD STORAGE STATUS CARD -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">⚡ Облачное хранилище медиа</h2>
+                    <p class="card-subtitle">Статус постоянного облачного хранилища видео и рекламных баннеров</p>
+                </div>
+
+                <div style="max-width: 500px;">
+                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 18px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-weight: 600; color: #fff;">Статус соединения:</span>
+                            <span id="supabase-status-badge" style="background: rgba(52, 199, 89, 0.15); border: 1px solid #34c759; color: #34c759; padding: 4px 14px; border-radius: 10px; font-size: 13px; font-weight: bold;">✅ Подключено (Облако активно)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: SECURITY -->
+        <section id="tab-content-security" class="admin-tab-content hidden">
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">🔐 Смена пароля администратора</h2>
+                    <p class="card-subtitle">Измените код доступа к веб-панели управления /admin</p>
+                </div>
+
+                <div class="form-row" style="max-width: 600px;">
+                    <input type="password" id="new-password-input" class="admin-input" placeholder="Новый пароль / PIN (от 4 знаков)...">
+                    <input type="password" id="confirm-password-input" class="admin-input" placeholder="Повторите пароль...">
+                    <button class="btn-primary" onclick="changePassword()">Сохранить пароль</button>
+                </div>
+                <div id="sec-status" class="status-msg"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // ИНИЦИАЛИЗАЦИЯ SUPABASE ДЛЯ ОБЛАЧНОГО ХРАНИЛИЩА МЕДИА
+        const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
+        const SUPABASE_BUCKET = 'kiosk-media';
+
+        let supabaseClient = null;
+        if (window.supabase && window.supabase.createClient) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        const DEFAULT_PIN = '1234';
+
+        function getStoredPin() {
+            try {
+                const stored = localStorage.getItem('kiosk_admin_pin');
+                if (stored && stored.trim().length >= 4) return stored.trim();
+            } catch(e) {}
+            return DEFAULT_PIN;
+        }
+
+        function getStoredCategories() {
+            try {
+                const cats = localStorage.getItem('kiosk_categories_v2');
+                if (cats) return JSON.parse(cats);
+            } catch(e) {}
+            return ['ВСЕ', 'ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'ВИДЕО', 'ТРЕНДЫ'];
+        }
+
+        function getStoredTemplates() {
+            try {
+                const tpls = localStorage.getItem('kiosk_templates_v2');
+                if (tpls) return JSON.parse(tpls);
+            } catch(e) {}
+            return [
+                { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Cute 3D animated character portrait, soft studio lighting, vibrant colors, retain facial likeness' },
+                { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
+                { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Trending aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
+                { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Prestigious business magazine cover, elegant business suit, powerful charismatic gaze, studio lighting' },
+                { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
+                { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'seedance-2.5', resolution: '2K', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
+                { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'seedance-2.5', resolution: '2K', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
+                { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'seedance-2.5', resolution: '2K', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
+                { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Blocky voxel gaming character hero style, bright game world colors, playful gaming atmosphere' },
+                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
+                { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
+                { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
+                { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
+                { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
+            ];
+        }
+
+        function getStoredTopAds() {
+            try {
+                const data = localStorage.getItem('kiosk_ads_top');
+                if (data) return JSON.parse(data);
+            } catch(e) {}
+            return [
+                { id: 1, type: 'video', title: 'Промо Видео', src: 'assets/card_loop.mp4', duration: 8 },
+                { id: 2, type: 'image', title: 'Рекламный баннер', src: 'assets/promo_ad.jpg', duration: 5 },
+                { id: 3, type: 'image', title: 'Пример фото 1', src: 'images/photo1.jpg', duration: 5 },
+                { id: 4, type: 'image', title: 'Пример фото 2', src: 'assets/child.png', duration: 5 },
+                { id: 5, type: 'image', title: 'Пример фото 3', src: 'images/photo3.jpg', duration: 5 }
+            ];
+        }
+
+        function getStoredBottomAds() {
+            try {
+                const data = localStorage.getItem('kiosk_ads_bottom');
+                if (data) return JSON.parse(data);
+            } catch(e) {}
+            return [
+                { id: 1, type: 'video', title: 'Нижний цикл видео', src: 'assets/card_loop.mp4', duration: 8 },
+                { id: 2, type: 'image', title: 'Нижний баннер 1', src: 'images/photo2.jpg', duration: 5 },
+                { id: 3, type: 'image', title: 'Нижний баннер 2', src: 'assets/hero_avatar.jpg', duration: 5 }
+            ];
+        }
+
+        function getStoredMainHeader() {
+            try {
+                const data = localStorage.getItem('kiosk_main_header_v1');
+                if (data) return JSON.parse(data);
+            } catch(e) {}
+            return {
+                badge: 'PREMIUM PHOTO KIOSK',
+                title: 'TRENDUM',
+                subtitle: 'ФОТОСТУДИЯ ПРЕМИУМ КЛАССА'
+            };
+        }
+
+        function normalizeMainCards(cards) {
+            let list = Array.isArray(cards) ? [...cards] : [];
+            // Полностью удаляем любые карточки пригласительных
+            list = list.filter(c => {
+                const t = (c.title || '').toUpperCase();
+                const f = (c.filter || '').toUpperCase();
+                return !t.includes('ПРИГЛАС') && f !== 'INVITE' && f !== 'INVITES';
+            });
+
+            if (list.length === 0) {
+                list = [
+                    { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
+                    { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
+                    { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'INSTA VIBE'] },
+                    { id: 4, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] }
+                ];
+            } else {
+                let tryOnCard = list.find(c => c.id === 4 || c.id === 5 || (c.title && c.title.toUpperCase().includes('ПРИМЕР')));
+                if (!tryOnCard) {
+                    list.push({
+                        id: 4,
+                        title: 'ПРИМЕРКА',
+                        badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ',
+                        subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК',
+                        filter: 'TRYON',
+                        category: 'ПРИМЕРКА',
+                        img: 'assets/1489.jpg',
+                        categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ']
+                    });
+                } else {
+                    tryOnCard.id = 4;
+                    tryOnCard.title = 'ПРИМЕРКА';
+                    tryOnCard.filter = 'TRYON';
+                }
+            }
+
+            return list.map(c => {
+                const titleUp = (c.title || '').toUpperCase();
+                let cats = Array.isArray(c.categories) && c.categories.length > 0 ? c.categories : null;
+                if (!cats) {
+                    if (c.id === 1 || titleUp === 'ФОТО') {
+                        cats = ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'];
+                    } else if (c.id === 2 || titleUp === 'ВИДЕО') {
+                        cats = ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'];
+                    } else if (c.id === 3 || titleUp === 'ТРЕНДЫ') {
+                        cats = ['TIKTOK', 'REELS', 'INSTA VIBE'];
+                    } else if (c.id === 4 || c.id === 5 || titleUp.includes('ПРИМЕР') || titleUp.includes('ОДЕЖД')) {
+                        cats = ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'];
+                    } else {
+                        cats = [c.title || 'ОБЩЕЕ'];
+                    }
+                }
+                return {
+                    ...c,
+                    id: Number(c.id) || Date.now(),
+                    categories: cats
+                };
+            });
+        }
+
+        function normalizeTemplates(tplList, cardsList) {
+            if (!Array.isArray(tplList)) return [];
+            const cards = cardsList || mainCards;
+
+            // Полностью удаляем любые шаблоны пригласительных
+            const cleanList = tplList.filter(t => {
+                const m = (t.model || '').toLowerCase();
+                const c = (t.category || '').toUpperCase();
+                const title = (t.title || '').toUpperCase();
+                const st = (t.sectionTitle || '').toUpperCase();
+                if (m === 'invite-web') return false;
+                if (st.includes('ПРИГЛАС')) return false;
+                if (c.includes('ПРИГЛАС') || c === 'СВАДЬБА' || c === 'КЫЗ УЗАТУУ' || c === 'ЮБИЛЕЙ' || c === 'СУННОТ ТОЙ') return false;
+                if (title.includes('WEDDING') || title.includes('КЫЗ УЗАТУУ') || title.includes('JUBILEE LUXURY')) return false;
+                return true;
+            });
+
+            const normalized = cleanList.map(t => {
+                let sid = Number(t.sectionId);
+                let stitle = t.sectionTitle;
+                let cat = t.category || 'ОБЩЕЕ';
+
+                const catUp = (cat || '').toUpperCase();
+                const modelUp = (t.model || '').toLowerCase();
+                const titleUp = (t.title || '').toUpperCase();
+                const stUp = (stitle || '').toUpperCase();
+
+                if (sid === 5 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || catUp.includes('ТОЛСТОВ') || catUp.includes('ХУДИ') || catUp.includes('ФУТБОЛ') || catUp.includes('КУРТК') || catUp.includes('МЕРЧ') || titleUp.includes('ТОЛСТОВ') || titleUp.includes('ХУДИ') || Boolean(t.location)) {
+                    sid = 4;
+                    stitle = 'ПРИМЕРКА';
+                } else if (!sid) {
+                    if (catUp === 'ВИДЕО' || modelUp.includes('seedance') || modelUp.includes('omni') || modelUp.includes('kling') || modelUp.includes('video')) {
+                        sid = 2;
+                        stitle = 'ВИДЕО';
+                        if (catUp === 'ВИДЕО') cat = 'НЕОН';
+                    } else if (catUp === 'ТРЕНДЫ' || titleUp.includes('TREND')) {
+                        sid = 3;
+                        stitle = 'ТРЕНДЫ';
+                        if (catUp === 'ТРЕНДЫ') cat = 'TIKTOK';
+                    } else {
+                        sid = 1;
+                        stitle = 'ФОТО';
+                    }
+                }
+
+                const matchedCard = cards.find(c => c.id === Number(sid));
+                if (matchedCard) {
+                    stitle = matchedCard.title;
+                }
+
+                return {
+                    ...t,
+                    id: Number(t.id) || Date.now(),
+                    sectionId: Number(sid),
+                    sectionTitle: stitle || 'ФОТО',
+                    category: cat,
+                    location: t.location || '',
+                    htmlCode: t.htmlCode || ''
+                };
+            });
+
+            // Если в шаблонах нет товаров примерки — добавляем образцы толстовок
+            if (!normalized.some(t => t.sectionId === 4 || (t.sectionTitle && t.sectionTitle.includes('ПРИМЕР')))) {
+                normalized.push({
+                    id: 101,
+                    sectionId: 4,
+                    sectionTitle: 'ПРИМЕРКА',
+                    category: 'ТОЛСТОВКИ',
+                    title: 'Толстовка TRENDUM Black Oversize',
+                    img: 'assets/hero_avatar.jpg',
+                    price: 450,
+                    location: 'Рынок Дордой, ряд 5, контейнер 142',
+                    model: 'chatgpt-2.5',
+                    prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.',
+                    htmlCode: ''
+                });
+                normalized.push({
+                    id: 102,
+                    sectionId: 4,
+                    sectionTitle: 'ПРИМЕРКА',
+                    category: 'ТОЛСТОВКИ',
+                    title: 'Толстовка ALTYN White Classic',
+                    img: 'assets/hero_portrait.jpg',
+                    price: 450,
+                    location: 'Рынок Дордой, проход 3, контейнер 88',
+                    model: 'nano-banana-2',
+                    prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.',
+                    htmlCode: ''
+                });
+                normalized.push({
+                    id: 103,
+                    sectionId: 4,
+                    sectionTitle: 'ПРИМЕРКА',
+                    category: 'ХУДИ',
+                    title: 'Худи Streetwear Cyberpunk',
+                    img: 'assets/hero_robot.jpg',
+                    price: 490,
+                    location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum',
+                    model: 'nano-banana-2',
+                    prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.',
+                    htmlCode: ''
+                });
+                normalized.push({
+                    id: 104,
+                    sectionId: 4,
+                    sectionTitle: 'ПРИМЕРКА',
+                    category: 'ФУТБОЛКИ',
+                    title: 'Футболка Trendum Minimalist',
+                    img: 'assets/man.jpg',
+                    price: 350,
+                    location: 'Рынок Дордой, контейнер 205',
+                    model: 'chatgpt-2.5',
+                    prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.',
+                    htmlCode: ''
+                });
+            }
+
+            return normalized;
+        }
+
+        function getStoredMainCards() {
+            try {
+                const data = localStorage.getItem('kiosk_main_cards_v1');
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        return normalizeMainCards(parsed);
+                    }
+                }
+            } catch(e) {}
+            return normalizeMainCards([]);
+        }
+
+        function getStoredCategories() {
+            // Для совместимости берем категории из карточек
+            const cards = getStoredMainCards();
+            const allCats = new Set(['ВСЕ']);
+            cards.forEach(c => (c.categories || []).forEach(cat => allCats.add(cat)));
+            return Array.from(allCats);
+        }
+
+        let mainCards = getStoredMainCards();
+        let templates = normalizeTemplates(getStoredTemplates(), mainCards);
+        let categories = getStoredCategories();
+        let topAds = getStoredTopAds();
+        let bottomAds = getStoredBottomAds();
+        let mainHeader = getStoredMainHeader();
+        let editingMainCardId = null;
+
+        // Состояние активного раздела для категорий и фильтра шаблонов
+        let activeCatSectionId = mainCards.length > 0 ? mainCards[0].id : 1;
+        let activeTplFilterSectionId = 'ALL';
+
+        // Check Session Authentication
+        function checkAuth() {
+            const isAuth = sessionStorage.getItem('trendum_admin_auth') === 'true';
+            const authScreen = document.getElementById('auth-screen');
+            if (isAuth) {
+                authScreen.classList.add('hidden');
+                renderCatSectionSelect();
+                renderCategories();
+                renderTplSectionSelect();
+                renderTplCategoryDropdown();
+                renderTplSectionTabs();
+                renderSidebarTplSubMenu();
+                renderTemplates();
+                renderAds();
+                renderMainHeaderInputs();
+                renderMainCardsAdmin();
+            } else {
+                authScreen.classList.remove('hidden');
+            }
+        }
+
+        function handleAuthSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('auth-pin-input');
+            const errorMsg = document.getElementById('auth-error-msg');
+            const val = input.value.trim();
+
+            if (val === getStoredPin()) {
+                sessionStorage.setItem('trendum_admin_auth', 'true');
+                errorMsg.style.display = 'none';
+                errorMsg.textContent = '';
+                input.value = '';
+                checkAuth();
+            } else {
+                errorMsg.style.display = 'inline-block';
+                errorMsg.textContent = '❌ Неверный пароль / PIN-код';
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem('trendum_admin_auth');
+            location.reload();
+        }
+
+        // Tab Navigation
+        function switchAdminTab(tabName, sectionId) {
+            document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+            const targetContent = document.getElementById('tab-content-' + tabName);
+            const targetBtn = document.getElementById('tab-btn-' + tabName);
+            const subMenu = document.getElementById('sidebar-tpl-sub-menu');
+
+            if (targetContent) targetContent.classList.remove('hidden');
+            if (targetBtn) targetBtn.classList.add('active');
+
+            if (tabName === 'tpls') {
+                if (subMenu) subMenu.style.display = 'flex';
+                renderSidebarTplSubMenu();
+                if (sectionId !== undefined) {
+                    selectTplSection(sectionId);
+                } else {
+                    renderTplSectionTabs();
+                    renderTemplates();
+                    updateHtmlCodeVisibility();
+                }
+            } else {
+                if (subMenu) subMenu.style.display = 'none';
+            }
+        }
+
+        // =============================================
+        // КАТЕГОРИИ ПО КНОПКАМ ГЛАВНОГО ЭКРАНА
+        // =============================================
+        function getCardIcon(card) {
+            const title = (card.title || '').toUpperCase();
+            if (title.includes('ФОТО')) return '📸';
+            if (title.includes('ВИДЕО')) return '🎬';
+            if (title.includes('ТРЕНД')) return '🔥';
+            if (title.includes('ПРИМЕР') || title.includes('ОДЕЖД') || card.id === 4 || card.id === 5 || card.filter === 'TRYON') return '👕';
+            return '🎴';
+        }
+
+        function renderCatSectionSelect() {
+            const select = document.getElementById('cat-section-select');
+            if (!select) return;
+
+            select.innerHTML = '';
+            mainCards.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = `${getCardIcon(c)} ${c.title} (${(c.categories || []).length} категорий)`;
+                select.appendChild(opt);
+            });
+
+            // Проверяем, существует ли еще выбранная карточка
+            if (!mainCards.some(c => c.id === activeCatSectionId) && mainCards.length > 0) {
+                activeCatSectionId = mainCards[0].id;
+            }
+            select.value = activeCatSectionId;
+            updateCatAddButtonText();
+        }
+
+        function handleCatSectionChange(val) {
+            activeCatSectionId = Number(val);
+            updateCatAddButtonText();
+            renderCategories();
+        }
+
+        function updateCatAddButtonText() {
+            const btn = document.getElementById('add-cat-btn');
+            const input = document.getElementById('new-cat-name');
+            const card = getActiveCatCard();
+            if (btn && card) {
+                btn.textContent = `+ Добавить в «${card.title}»`;
+            }
+            if (input && card) {
+                input.placeholder = `Название категории для кнопки «${card.title}» (напр: КИБЕРПАНК, АРТ)...`;
+            }
+        }
+
+        function getActiveCatCard() {
+            let card = mainCards.find(c => c.id === activeCatSectionId);
+            if (!card && mainCards.length > 0) {
+                card = mainCards[0];
+                activeCatSectionId = card.id;
+            }
+            if (card && !Array.isArray(card.categories)) {
+                card.categories = [card.title || 'ОБЩЕЕ'];
+            }
+            return card;
+        }
+
+        function renderCategories() {
+            const tbody = document.getElementById('categories-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const card = getActiveCatCard();
+            if (!card) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-dim); padding: 24px;">Создайте хотя бы одну кнопку на главном экране</td></tr>';
+                return;
+            }
+
+            const cats = card.categories || [];
+
+            if (cats.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-dim); padding: 30px;">
+                            У кнопки <strong>«${card.title}»</strong> пока нет категорий. Добавьте первую выше!
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            cats.forEach((cat, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: var(--text-dim);">${idx + 1}</td>
+                    <td><strong style="color: #ffffff; font-size: 14px;">${cat}</strong></td>
+                    <td>
+                        <span class="cat-tag" style="background: rgba(212,160,67,0.12); border-color: var(--primary-border); color: var(--primary);">
+                            ${getCardIcon(card)} ${card.title}
+                        </span>
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button class="btn-move" onclick="moveCategory(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
+                        <button class="btn-move" onclick="moveCategory(${idx}, 1)" ${idx === cats.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
+                        <button class="btn-del" onclick="deleteCategory('${cat.replace(/'/g, "\\'")}')">Удалить</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function moveCategory(idx, dir) {
+            const card = getActiveCatCard();
+            if (!card || !Array.isArray(card.categories)) return;
+
+            const newIdx = idx + dir;
+            if (newIdx < 0 || newIdx >= card.categories.length) return;
+
+            const temp = card.categories[idx];
+            card.categories[idx] = card.categories[newIdx];
+            card.categories[newIdx] = temp;
+
+            saveCategoriesState();
+            renderCategories();
+            renderCatSectionSelect();
+            renderTplCategoryDropdown();
+        }
+
+        function addCategory() {
+            const input = document.getElementById('new-cat-name');
+            const status = document.getElementById('cat-status');
+            const name = input.value.trim().toUpperCase();
+
+            if (!name) {
+                status.textContent = '❌ Введите название категории';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            const card = getActiveCatCard();
+            if (!card) return;
+
+            if (!Array.isArray(card.categories)) card.categories = [];
+
+            if (card.categories.some(c => c.toUpperCase() === name)) {
+                status.textContent = `❌ В кнопке «${card.title}» уже есть категория "${name}"`;
+                status.className = 'status-msg error';
+                return;
+            }
+
+            card.categories.push(name);
+            saveCategoriesState();
+
+            input.value = '';
+            status.textContent = `✅ Категория "${name}" добавлена в раздел «${card.title}»`;
+            status.className = 'status-msg success';
+
+            renderCategories();
+            renderCatSectionSelect();
+            renderTplCategoryDropdown();
+
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+        }
+
+        function deleteCategory(name) {
+            const card = getActiveCatCard();
+            if (!card || !Array.isArray(card.categories)) return;
+
+            if (!confirm(`Удалить категорию "${name}" из кнопки «${card.title}»?`)) return;
+
+            card.categories = card.categories.filter(c => c.toUpperCase() !== name.toUpperCase());
+            saveCategoriesState();
+
+            renderCategories();
+            renderCatSectionSelect();
+            renderTplCategoryDropdown();
+        }
+
+        function saveCategoriesState() {
+            localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
+            categories = getStoredCategories();
+            localStorage.setItem('kiosk_categories_v2', JSON.stringify(categories));
+            syncAllToCloud();
+        }
+
+        // =============================================
+        // ШАБЛОНЫ С ПРИВЯЗКОЙ К КНОПКЕ И КАТЕГОРИИ
+        // =============================================
+        let editingTemplateId = null;
+
+        function toggleCustomModelInput(val) {
+            const customInput = document.getElementById('tpl-custom-model-input');
+            if (val === 'custom') {
+                customInput.style.display = 'inline-block';
+                customInput.focus();
+            } else {
+                customInput.style.display = 'none';
+                customInput.value = '';
+            }
+        }
+
+        function getModelBadge(model) {
+            const m = model || 'chatgpt-2.5';
+            if (m === 'chatgpt-2.5') return '<span class="model-badge" style="background: rgba(212,160,67,0.18); border-color: #D4A043; color: #D4A043; font-weight: 800;">🎨 ChatGPT 2.5</span>';
+            if (m === 'roast-standup') return '<span class="model-badge" style="background: rgba(255,69,58,0.18); border-color: #ff453a; color: #ff453a;">🔥 Прожарка + Голос</span>';
+            if (m === 'nano-banana-2') return '<span class="model-badge">🍌 Nano Banana 2</span>';
+            if (m === 'seedance-2.5') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">🎬 Seedance 2.5</span>';
+            if (m === 'omni-flash' || m === 'google-omni-flash' || m === 'google/gemini-omni-flash-1-1') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">⚡ Omni Flash</span>';
+            if (m === 'kling-video') return '<span class="model-badge">🎥 Kling AI</span>';
+            return `<span class="model-badge">${m}</span>`;
+        }
+
+        function getResolutionBadge(resolution) {
+            const res = (resolution || '2K').toUpperCase();
+            if (res === '1K') return '<span class="model-badge" style="background: rgba(59,130,246,0.18); border-color: #3b82f6; color: #60a5fa; font-weight: 800;">⚡ 1K</span>';
+            if (res === '4K') return '<span class="model-badge" style="background: rgba(168,85,247,0.18); border-color: #a855f7; color: #c084fc; font-weight: 800;">💎 4K Ultra</span>';
+            return '<span class="model-badge" style="background: rgba(212,160,67,0.18); border-color: #d4a043; color: #d4a043; font-weight: 800;">🌟 2K HD</span>';
+        }
+
+        function renderTplSectionSelect() {
+            const secSelect = document.getElementById('tpl-section-select');
+            if (secSelect) {
+                secSelect.innerHTML = '';
+                mainCards.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = `${getCardIcon(c)} ${c.title}`;
+                    secSelect.appendChild(opt);
+                });
+                if (activeTplFilterSectionId !== 'ALL') {
+                    secSelect.value = activeTplFilterSectionId;
+                }
+            }
+            renderTplSectionTabs();
+            renderSidebarTplSubMenu();
+        }
+
+        function renderSidebarTplSubMenu() {
+            const subMenu = document.getElementById('sidebar-tpl-sub-menu');
+            if (!subMenu) return;
+            subMenu.innerHTML = '';
+
+            const allBtn = document.createElement('button');
+            allBtn.type = 'button';
+            allBtn.className = `sidebar-sub-item ${activeTplFilterSectionId === 'ALL' ? 'active' : ''}`;
+            allBtn.onclick = () => selectTplSection('ALL');
+            allBtn.innerHTML = `
+                <span>🌟 Все разделы</span>
+                <span class="sidebar-sub-badge">${templates.length}</span>
+            `;
+            subMenu.appendChild(allBtn);
+
+            mainCards.forEach(c => {
+                const count = templates.filter(t => t.sectionId === c.id).length;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `sidebar-sub-item ${activeTplFilterSectionId === c.id ? 'active' : ''}`;
+                btn.onclick = () => selectTplSection(c.id);
+                btn.innerHTML = `
+                    <span>${getCardIcon(c)} ${c.title}</span>
+                    <span class="sidebar-sub-badge">${count}</span>
+                `;
+                subMenu.appendChild(btn);
+            });
+        }
+
+        function renderTplSectionTabs() {
+            const container = document.getElementById('tpl-section-tabs-bar');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // 1. Кнопка "Все разделы"
+            const allChip = document.createElement('div');
+            allChip.className = `section-tab-chip ${activeTplFilterSectionId === 'ALL' ? 'active' : ''}`;
+            allChip.onclick = () => selectTplSection('ALL');
+            allChip.innerHTML = `
+                <span>🌟 Все разделы</span>
+                <span class="section-tab-count">${templates.length}</span>
+            `;
+            container.appendChild(allChip);
+
+            // 2. Кнопки для каждого раздела (Фото, Видео, Тренды, Примерка)
+            mainCards.forEach(c => {
+                const count = templates.filter(t => t.sectionId === c.id).length;
+                const chip = document.createElement('div');
+                chip.className = `section-tab-chip ${activeTplFilterSectionId === c.id ? 'active' : ''}`;
+                chip.onclick = () => selectTplSection(c.id);
+                chip.innerHTML = `
+                    <span>${getCardIcon(c)} ${c.title}</span>
+                    <span class="section-tab-count">${count}</span>
+                `;
+                container.appendChild(chip);
+            });
+        }
+
+        function selectTplSection(secId) {
+            activeTplFilterSectionId = (secId === 'ALL' ? 'ALL' : Number(secId));
+            renderTplSectionTabs();
+            renderSidebarTplSubMenu();
+
+            const secSelect = document.getElementById('tpl-section-select');
+            const submitBtn = document.getElementById('tpl-submit-btn');
+
+            if (activeTplFilterSectionId !== 'ALL') {
+                const card = mainCards.find(c => c.id === activeTplFilterSectionId);
+                if (secSelect && card) {
+                    secSelect.value = card.id;
+                    renderTplCategoryDropdown(card.id);
+                    updateHtmlCodeVisibility(card.id);
+                }
+                if (submitBtn && !editingTemplateId && card) {
+                    submitBtn.textContent = `+ Добавить шаблон в «${card.title}»`;
+                }
+            } else {
+                if (submitBtn && !editingTemplateId) {
+                    submitBtn.textContent = '+ Добавить шаблон';
+                }
+                updateHtmlCodeVisibility();
+            }
+
+            renderTemplates();
+        }
+
+        function focusAddTemplateForSection(sectionId) {
+            selectTplSection(sectionId);
+            const titleInput = document.getElementById('tpl-title-input');
+            if (titleInput) {
+                titleInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => titleInput.focus(), 250);
+            }
+        }
+
+        function handleTplSectionChange(val) {
+            renderTplCategoryDropdown(Number(val));
+            updateTryOnVisibility(Number(val));
+            const submitBtn = document.getElementById('tpl-submit-btn');
+            const card = mainCards.find(c => c.id === Number(val));
+            if (submitBtn && !editingTemplateId && card) {
+                submitBtn.textContent = `+ Добавить в «${card.title}»`;
+            }
+        }
+
+        function updateTryOnVisibility(sectionId) {
+            const card = mainCards.find(c => c.id === Number(sectionId));
+            const isTryOn = Number(sectionId) === 4 || Number(sectionId) === 5 || (card && (card.title.toUpperCase().includes('ПРИМЕР') || card.filter === 'TRYON'));
+            const promptInput = document.getElementById('tpl-prompt-input');
+            const locInput = document.getElementById('tpl-location-input');
+            const titleInput = document.getElementById('tpl-title-input');
+            if (isTryOn) {
+                if (titleInput && !titleInput.value) titleInput.placeholder = 'Название товара (напр: Толстовка Oversize Black)...';
+                if (locInput && !locInput.value) locInput.placeholder = '📍 Где продается (напр: Рынок Дордой, ряд 5, контейнер 142)...';
+                if (promptInput && !promptInput.value.trim()) {
+                    promptInput.value = 'Virtual clothing try-on: Fit the clothing item realistically onto the person in the photo. Seamlessly drape the garment with natural folds, lighting, and texture, keeping the person exact face, expression and hair.';
+                }
+            }
+        }
+
+        function renderTplCategoryDropdown(targetSectionId, preferredCategory) {
+            const catSelect = document.getElementById('tpl-cat-select');
+            const secSelect = document.getElementById('tpl-section-select');
+            if (!catSelect) return;
+
+            let sectionId = targetSectionId;
+            if (!sectionId && secSelect) {
+                sectionId = Number(secSelect.value);
+            }
+
+            const card = mainCards.find(c => c.id === sectionId) || mainCards[0];
+            catSelect.innerHTML = '';
+
+            if (card && Array.isArray(card.categories) && card.categories.length > 0) {
+                card.categories.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat;
+                    catSelect.appendChild(opt);
+                });
+            } else {
+                const opt = document.createElement('option');
+                opt.value = card ? card.title : 'ОБЩЕЕ';
+                opt.textContent = card ? card.title : 'ОБЩЕЕ';
+                catSelect.appendChild(opt);
+            }
+
+            if (preferredCategory) {
+                catSelect.value = preferredCategory;
+            }
+        }
+
+        function handleTplFilterSectionChange(val) {
+            selectTplSection(val);
+        }
+
+        function compressImage(file, maxWidth, maxHeight, quality, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                    callback(compressedBase64);
+                };
+                img.onerror = function() {
+                    callback(e.target.result);
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = function() {
+                alert('Не удалось прочитать выбранный файл изображения');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleTemplateFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const status = document.getElementById('tpl-status');
+            if (status) {
+                status.textContent = '⏳ Оптимизация изображения...';
+                status.className = 'status-msg';
+            }
+
+            compressImage(file, 800, 800, 0.85, function(compressedBase64) {
+                document.getElementById('tpl-img-input').value = compressedBase64;
+                handleTemplateImgInput(compressedBase64);
+                if (status) {
+                    status.textContent = '✅ Обложка оптимизирована и готова';
+                    status.className = 'status-msg success';
+                    setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 2500);
+                }
+            });
+        }
+
+        function handleTemplateImgInput(val) {
+            const previewBox = document.getElementById('tpl-img-preview-box');
+            const previewImg = document.getElementById('tpl-img-preview');
+            if (val && val.trim().length > 5) {
+                previewImg.src = val.trim();
+                previewBox.style.display = 'block';
+            } else {
+                previewBox.style.display = 'none';
+            }
+        }
+
+        function renderTemplates() {
+            const container = document.getElementById('templates-display-area');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (activeTplFilterSectionId !== 'ALL') {
+                // Показываем конкретный выбранный раздел (Фото, Видео, Тренды, Примерка)
+                const card = mainCards.find(c => c.id === Number(activeTplFilterSectionId)) || mainCards[0];
+                const sectionItems = templates.filter(t => t.sectionId === card.id);
+                const cardEl = buildSectionGroupCard(card, sectionItems, true);
+                container.appendChild(cardEl);
+            } else {
+                // Показываем все разделы, но аккуратно разделенные по отдельным блокам-карточкам!
+                mainCards.forEach(c => {
+                    const sectionItems = templates.filter(t => t.sectionId === c.id);
+                    const cardEl = buildSectionGroupCard(c, sectionItems, false);
+                    container.appendChild(cardEl);
+                });
+            }
+        }
+
+        function buildSectionGroupCard(card, items, isSingleMode) {
+            const cardEl = document.createElement('div');
+            cardEl.className = 'tpl-section-group';
+
+            const countText = `${items.length} ${getPluralTemplates(items.length)}`;
+            const icon = getCardIcon(card);
+
+            cardEl.innerHTML = `
+                <div class="tpl-section-group-header">
+                    <div class="tpl-section-group-title">
+                        <span style="font-size: 20px;">${icon}</span>
+                        <span>РАЗДЕЛ: ${card.title}</span>
+                        <span class="tpl-section-group-badge">${countText}</span>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button type="button" class="btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="focusAddTemplateForSection(${card.id})">
+                            + Добавить в «${card.title}»
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            if (items.length === 0) {
+                const emptyBox = document.createElement('div');
+                emptyBox.style.padding = '36px 20px';
+                emptyBox.style.textAlign = 'center';
+                emptyBox.style.color = 'var(--text-dim)';
+                emptyBox.style.lineHeight = '1.6';
+                emptyBox.innerHTML = `В разделе <strong>«${card.title}»</strong> пока нет шаблонов.<br><span style="font-size: 12px; color: var(--primary);">Нажмите «+ Добавить в «${card.title}»», чтобы добавить первый шаблон!</span>`;
+                cardEl.appendChild(emptyBox);
+                return cardEl;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'items-table';
+            table.style.marginTop = '0';
+            table.style.border = 'none';
+
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">#</th>
+                        <th style="width: 65px;">Превью</th>
+                        <th>Название шаблона</th>
+                        <th style="width: 150px;">Категория</th>
+                        <th style="width: 140px;">Модель ИИ</th>
+                        <th style="width: 110px;">Разрешение</th>
+                        <th>Промпт</th>
+                        <th style="width: 90px;">Цена</th>
+                        <th style="width: 180px; text-align: right;">Действия</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+
+            const tbody = table.querySelector('tbody');
+
+            items.forEach((tpl, idx) => {
+                const tr = document.createElement('tr');
+                const priceVal = tpl.price || 290;
+                const modelBadge = getModelBadge(tpl.model);
+                const resBadge = getResolutionBadge(tpl.resolution);
+                const promptText = tpl.prompt ? tpl.prompt.trim() : '—';
+                const promptEscaped = promptText.replace(/"/g, '&quot;');
+
+                tr.innerHTML = `
+                    <td style="color: var(--text-dim);">${idx + 1}</td>
+                    <td><img src="${tpl.img}" alt="${tpl.title}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'"></td>
+                    <td>
+                        <strong style="color: #ffffff; font-size: 14px;">${tpl.title}</strong>
+                        ${tpl.location ? `<div style="font-size: 11px; color: var(--primary); margin-top: 3px; display: flex; align-items: center; gap: 4px;"><span>📍</span><span>${tpl.location}</span></div>` : ''}
+                    </td>
+                    <td>
+                        <span class="cat-tag" style="font-size: 11px; padding: 3px 10px;">
+                            ${tpl.category || 'ОБЩЕЕ'}
+                        </span>
+                    </td>
+                    <td>
+                        ${modelBadge}
+                        ${tpl.htmlCode ? ' <span style="background: rgba(52,199,89,0.15); border: 1px solid #34c759; color: #34c759; font-size: 11px; padding: 2px 6px; border-radius: 6px; font-weight: 700; margin-left: 4px;" title="Шаблон содержит интерактивный HTML-дизайн">🌐 HTML</span>' : ''}
+                    </td>
+                    <td>
+                        ${resBadge}
+                    </td>
+                    <td><div class="prompt-preview-cell" title="${promptEscaped}">${promptText}</div></td>
+                    <td><span class="price-badge">${priceVal} сом</span></td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button class="btn-move" onclick="moveTemplateInSection(${tpl.id}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше внутри раздела">▲</button>
+                        <button class="btn-move" onclick="moveTemplateInSection(${tpl.id}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Переместить ниже внутри раздела">▼</button>
+                        <button class="btn-edit" onclick="editTemplate(${tpl.id})" title="Редактировать">✏️ Ред.</button>
+                        <button class="btn-del" onclick="deleteTemplate(${tpl.id})">Удалить</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            cardEl.appendChild(table);
+            return cardEl;
+        }
+
+        function getPluralTemplates(count) {
+            const mod10 = count % 10;
+            const mod100 = count % 100;
+            if (mod100 >= 11 && mod100 <= 19) return 'шаблонов';
+            if (mod10 === 1) return 'шаблон';
+            if (mod10 >= 2 && mod10 <= 4) return 'шаблона';
+            return 'шаблонов';
+        }
+
+        function moveTemplateInSection(tplId, dir) {
+            const tpl = templates.find(t => t.id === tplId);
+            if (!tpl) return;
+
+            const secItems = templates.filter(t => t.sectionId === tpl.sectionId);
+            const curSubIdx = secItems.findIndex(t => t.id === tplId);
+            const targetSubIdx = curSubIdx + dir;
+            if (targetSubIdx < 0 || targetSubIdx >= secItems.length) return;
+
+            const targetTpl = secItems[targetSubIdx];
+
+            const realIdx = templates.findIndex(t => t.id === tpl.id);
+            const targetRealIdx = templates.findIndex(t => t.id === targetTpl.id);
+
+            const temp = templates[realIdx];
+            templates[realIdx] = templates[targetRealIdx];
+            templates[targetRealIdx] = temp;
+
+            localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
+            syncAllToCloud();
+            renderTplSectionTabs();
+            renderSidebarTplSubMenu();
+            renderTemplates();
+        }
+
+        function editTemplate(id) {
+            const tpl = templates.find(t => t.id === id);
+            if (!tpl) return;
+
+            editingTemplateId = id;
+
+            const secSelect = document.getElementById('tpl-section-select');
+            if (secSelect && tpl.sectionId) {
+                secSelect.value = tpl.sectionId;
+            }
+            renderTplCategoryDropdown(tpl.sectionId, tpl.category);
+
+            document.getElementById('tpl-title-input').value = tpl.title || '';
+            document.getElementById('tpl-price-input').value = tpl.price || 290;
+            const locInput = document.getElementById('tpl-location-input');
+            if (locInput) locInput.value = tpl.location || '';
+
+            const modelVal = tpl.model || 'chatgpt-2.5';
+            const modelSelect = document.getElementById('tpl-model-select');
+            const customModelInput = document.getElementById('tpl-custom-model-input');
+            if (['chatgpt-2.5', 'nano-banana-2', 'seedance-2.5', 'omni-flash', 'kling-video', 'roast-standup'].includes(modelVal)) {
+                modelSelect.value = modelVal;
+                customModelInput.style.display = 'none';
+                customModelInput.value = '';
+            } else {
+                modelSelect.value = 'custom';
+                customModelInput.style.display = 'inline-block';
+                customModelInput.value = modelVal;
+            }
+
+            const resSelect = document.getElementById('tpl-resolution-select');
+            if (resSelect) {
+                resSelect.value = tpl.resolution || '2K';
+            }
+
+            document.getElementById('tpl-prompt-input').value = tpl.prompt || '';
+            document.getElementById('tpl-img-input').value = tpl.img || '';
+            
+            const htmlInput = document.getElementById('tpl-html-input');
+            if (htmlInput) {
+                htmlInput.value = tpl.htmlCode || '';
+            }
+            updateTryOnVisibility(tpl.sectionId);
+
+            handleTemplateImgInput(tpl.img || '');
+
+            const submitBtn = document.getElementById('tpl-submit-btn');
+            const cancelBtn = document.getElementById('tpl-cancel-edit-btn');
+            submitBtn.textContent = '💾 Сохранить изменения';
+            cancelBtn.style.display = 'inline-block';
+
+            document.getElementById('tab-content-tpls').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelTemplateEdit() {
+            editingTemplateId = null;
+            document.getElementById('tpl-title-input').value = '';
+            document.getElementById('tpl-price-input').value = '';
+            const locInput = document.getElementById('tpl-location-input');
+            if (locInput) locInput.value = '';
+            document.getElementById('tpl-prompt-input').value = '';
+            document.getElementById('tpl-img-input').value = '';
+            document.getElementById('tpl-model-select').value = 'chatgpt-2.5';
+            const resSelect = document.getElementById('tpl-resolution-select');
+            if (resSelect) resSelect.value = '2K';
+            document.getElementById('tpl-custom-model-input').style.display = 'none';
+            document.getElementById('tpl-custom-model-input').value = '';
+            document.getElementById('tpl-file-input').value = '';
+            
+            const htmlInput = document.getElementById('tpl-html-input');
+            if (htmlInput) {
+                htmlInput.value = '';
+            }
+            handleTemplateImgInput('');
+
+            const submitBtn = document.getElementById('tpl-submit-btn');
+            const cancelBtn = document.getElementById('tpl-cancel-edit-btn');
+            submitBtn.textContent = '+ Добавить шаблон';
+            cancelBtn.style.display = 'none';
+        }
+
+        function addOrUpdateTemplate() {
+            const secSelect = document.getElementById('tpl-section-select');
+            const catSelect = document.getElementById('tpl-cat-select');
+            const titleInput = document.getElementById('tpl-title-input');
+            const priceInput = document.getElementById('tpl-price-input');
+            const locationInput = document.getElementById('tpl-location-input');
+            const modelSelect = document.getElementById('tpl-model-select');
+            const resSelect = document.getElementById('tpl-resolution-select');
+            const customModelInput = document.getElementById('tpl-custom-model-input');
+            const promptInput = document.getElementById('tpl-prompt-input');
+            const imgInput = document.getElementById('tpl-img-input');
+            const htmlInput = document.getElementById('tpl-html-input');
+            const status = document.getElementById('tpl-status');
+
+            const sectionId = secSelect ? Number(secSelect.value) : 1;
+            const targetCard = mainCards.find(c => c.id === sectionId) || mainCards[0];
+            const sectionTitle = targetCard ? targetCard.title : 'ФОТО';
+            const category = catSelect ? catSelect.value : (targetCard && targetCard.categories ? targetCard.categories[0] : 'ОБЩЕЕ');
+
+            const title = titleInput ? titleInput.value.trim() : '';
+            const price = priceInput ? (Number(priceInput.value) || 290) : 290;
+            const location = locationInput ? locationInput.value.trim() : '';
+            
+            let model = modelSelect ? modelSelect.value : 'chatgpt-2.5';
+            if (model === 'custom' && customModelInput) {
+                model = customModelInput.value.trim() || 'chatgpt-2.5';
+            }
+            const resolution = resSelect ? resSelect.value : '2K';
+
+            const prompt = promptInput ? promptInput.value.trim() : '';
+            const img = imgInput ? imgInput.value.trim() : '';
+            let htmlCode = htmlInput ? htmlInput.value.trim() : '';
+
+            if (!title) {
+                status.textContent = '❌ Введите название шаблона или товара';
+                status.className = 'status-msg error';
+                titleInput.focus();
+                return;
+            }
+
+            if (!img) {
+                status.textContent = '❌ Загрузите обложку или фото одежды через кнопку «📁 Загрузить файл»';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            if (editingTemplateId) {
+                // РЕЖИМ РЕДАКТИРОВАНИЯ
+                const targetIdx = templates.findIndex(t => t.id === editingTemplateId);
+                if (targetIdx !== -1) {
+                    templates[targetIdx] = {
+                        ...templates[targetIdx],
+                        sectionId,
+                        sectionTitle,
+                        category,
+                        title,
+                        price,
+                        location,
+                        model,
+                        resolution,
+                        prompt,
+                        img,
+                        htmlCode
+                    };
+                    status.textContent = `✅ Товар / шаблон "${title}" успешно обновлён в разделе «${sectionTitle}»`;
+                    status.className = 'status-msg success';
+                }
+                cancelTemplateEdit();
+            } else {
+                // РЕЖИМ ДОБАВЛЕНИЯ НОВОГО ШАБЛОНА
+                const newId = Date.now();
+                templates.push({
+                    id: newId,
+                    sectionId,
+                    sectionTitle,
+                    category,
+                    title,
+                    price,
+                    location,
+                    model,
+                    resolution,
+                    prompt,
+                    img,
+                    htmlCode
+                });
+
+                titleInput.value = '';
+                priceInput.value = '';
+                if (locationInput) locationInput.value = '';
+                promptInput.value = '';
+                imgInput.value = '';
+                if (htmlInput) htmlInput.value = '';
+                document.getElementById('tpl-file-input').value = '';
+                handleTemplateImgInput('');
+
+                status.textContent = `✅ "${title}" добавлен в раздел «${sectionTitle}» (${price} сом)${location ? ' • ' + location : ''}`;
+                status.className = 'status-msg success';
+            }
+
+            try {
+                localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
+            } catch (storageErr) {
+                console.warn('LocalStorage error:', storageErr);
+            }
+
+            try {
+                syncAllToCloud();
+            } catch (cloudErr) {
+                console.warn('Cloud sync error:', cloudErr);
+            }
+
+            renderTplSectionTabs();
+            renderSidebarTplSubMenu();
+            renderTemplates();
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
+        }
+
+        function deleteTemplate(id) {
+            if (!confirm('Удалить этот шаблон?')) return;
+            if (editingTemplateId === id) cancelTemplateEdit();
+            templates = templates.filter(t => t.id !== id);
+            localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
+            syncAllToCloud();
+            renderTplSectionTabs();
+            renderSidebarTplSubMenu();
+            renderTemplates();
+        }
+
+        // =============================================
+        // MAIN SCREEN LOGIC (ШАПКА И КАРТОЧКИ КИОСКА)
+        // =============================================
+        function renderMainHeaderInputs() {
+            const badgeInput = document.getElementById('main-header-badge-input');
+            const titleInput = document.getElementById('main-header-title-input');
+            const subInput = document.getElementById('main-header-sub-input');
+            if (badgeInput) badgeInput.value = mainHeader.badge || '';
+            if (titleInput) titleInput.value = mainHeader.title || '';
+            if (subInput) subInput.value = mainHeader.subtitle || '';
+        }
+
+        function saveMainHeader() {
+            const badgeInput = document.getElementById('main-header-badge-input');
+            const titleInput = document.getElementById('main-header-title-input');
+            const subInput = document.getElementById('main-header-sub-input');
+            const status = document.getElementById('main-header-status');
+
+            mainHeader = {
+                badge: badgeInput ? badgeInput.value.trim() : '',
+                title: titleInput ? titleInput.value.trim() : '',
+                subtitle: subInput ? subInput.value.trim() : ''
+            };
+
+            localStorage.setItem('kiosk_main_header_v1', JSON.stringify(mainHeader));
+            syncAllToCloud();
+
+            if (status) {
+                status.textContent = '✅ Шапка главного экрана сохранена и синхронизирована!';
+                status.className = 'status-msg success';
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+            }
+        }
+
+        function renderMainCardCategoryDropdown() {
+            const select = document.getElementById('main-card-cat-select');
+            if (!select) return;
+            select.innerHTML = '';
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = `Категория: ${cat}`;
+                select.appendChild(opt);
+            });
+        }
+
+        // =============================================
+        // КАДРИРОВАНИЕ ФОТО (CROPPER.JS)
+        // =============================================
+        let cropperInstance = null;
+        let cropTargetCallback = null;
+
+        function openCropModal(imageSrc, callback) {
+            cropTargetCallback = callback;
+            const modal = document.getElementById('crop-modal');
+            const targetImg = document.getElementById('crop-image-target');
+            if (!modal || !targetImg) return;
+
+            if (cropperInstance) {
+                cropperInstance.destroy();
+                cropperInstance = null;
+            }
+
+            targetImg.src = imageSrc;
+            modal.style.display = 'flex';
+
+            // Инициализируем Cropper.js после отображения модалки
+            setTimeout(() => {
+                cropperInstance = new Cropper(targetImg, {
+                    aspectRatio: 16 / 9,
+                    viewMode: 2,
+                    dragMode: 'move',
+                    autoCropArea: 0.95,
+                    restore: false,
+                    guides: true,
+                    center: true,
+                    highlight: false,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
+                    toggleDragModeOnDblclick: false
+                });
+            }, 100);
+        }
+
+        function setCropRatio(ratio, btnEl) {
+            if (!cropperInstance) return;
+            cropperInstance.setAspectRatio(ratio);
+            document.querySelectorAll('.crop-tool-btn[id^="crop-ratio-"]').forEach(btn => btn.classList.remove('active'));
+            if (btnEl) btnEl.classList.add('active');
+        }
+
+        function rotateCrop(deg) {
+            if (cropperInstance) cropperInstance.rotate(deg);
+        }
+
+        function zoomCrop(factor) {
+            if (cropperInstance) cropperInstance.zoom(factor);
+        }
+
+        function resetCrop() {
+            if (cropperInstance) cropperInstance.reset();
+        }
+
+        function closeCropModal() {
+            const modal = document.getElementById('crop-modal');
+            if (modal) modal.style.display = 'none';
+            if (cropperInstance) {
+                cropperInstance.destroy();
+                cropperInstance = null;
+            }
+            cropTargetCallback = null;
+            const fileInput = document.getElementById('main-card-file-input');
+            if (fileInput) fileInput.value = '';
+        }
+
+        function applyCrop() {
+            if (!cropperInstance) return;
+            const canvas = cropperInstance.getCroppedCanvas({
+                width: 960,
+                height: 540,
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high'
+            });
+
+            if (!canvas) {
+                alert('Не удалось сформировать изображение');
+                return;
+            }
+
+            const croppedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+            if (typeof cropTargetCallback === 'function') {
+                cropTargetCallback(croppedBase64);
+            }
+            closeCropModal();
+        }
+
+        function openCropModalForCurrent() {
+            const curSrc = document.getElementById('main-card-img-input').value.trim();
+            if (!curSrc) {
+                alert('Сначала загрузите или укажите фото карточки');
+                return;
+            }
+            openCropModal(curSrc, function(cropped) {
+                document.getElementById('main-card-img-input').value = cropped;
+                handleMainCardImgInput(cropped);
+                const status = document.getElementById('main-card-status');
+                if (status) {
+                    status.textContent = '✅ Фото успешно кадрировано!';
+                    status.className = 'status-msg success';
+                    setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+                }
+            });
+        }
+
+        // =============================================
+        // MAIN SCREEN LOGIC (ШАПКА И КАРТОЧКИ КИОСКА)
+        // =============================================
+        function renderMainHeaderInputs() {
+            const badgeInput = document.getElementById('main-header-badge-input');
+            const titleInput = document.getElementById('main-header-title-input');
+            const subInput = document.getElementById('main-header-sub-input');
+            if (badgeInput) badgeInput.value = mainHeader.badge || '';
+            if (titleInput) titleInput.value = mainHeader.title || '';
+            if (subInput) subInput.value = mainHeader.subtitle || '';
+        }
+
+        function saveMainHeader() {
+            const badgeInput = document.getElementById('main-header-badge-input');
+            const titleInput = document.getElementById('main-header-title-input');
+            const subInput = document.getElementById('main-header-sub-input');
+            const status = document.getElementById('main-header-status');
+
+            mainHeader = {
+                badge: badgeInput ? badgeInput.value.trim() : '',
+                title: titleInput ? titleInput.value.trim() : '',
+                subtitle: subInput ? subInput.value.trim() : ''
+            };
+
+            localStorage.setItem('kiosk_main_header_v1', JSON.stringify(mainHeader));
+            syncAllToCloud();
+
+            if (status) {
+                status.textContent = '✅ Шапка главного экрана сохранена и синхронизирована!';
+                status.className = 'status-msg success';
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+            }
+        }
+
+        function renderMainCardCategoryDropdown() {
+            // Больше не требуется отдельный список категорий для карточки,
+            // так как карточка напрямую управляет разделом (ФОТО, ВИДЕО, ТРЕНДЫ)
+        }
+
+        function handleMainCardImgInput(val) {
+            const previewBox = document.getElementById('main-card-preview-box');
+            const previewImg = document.getElementById('main-card-preview-img');
+            const cropBtn = document.getElementById('main-card-crop-btn');
+            if (val && val.trim().length > 5) {
+                previewImg.src = val.trim();
+                previewBox.style.display = 'block';
+                if (cropBtn) cropBtn.style.display = 'inline-flex';
+            } else {
+                previewBox.style.display = 'none';
+                if (cropBtn) cropBtn.style.display = 'none';
+            }
+        }
+
+        function handleMainCardFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const status = document.getElementById('main-card-status');
+            if (status) {
+                status.textContent = '⏳ Открытие инструмента кадрирования...';
+                status.className = 'status-msg';
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const rawBase64 = e.target.result;
+                openCropModal(rawBase64, function(croppedBase64) {
+                    document.getElementById('main-card-img-input').value = croppedBase64;
+                    handleMainCardImgInput(croppedBase64);
+                    if (status) {
+                        status.textContent = '✅ Фото успешно кадрировано и готово!';
+                        status.className = 'status-msg success';
+                        setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+                    }
+                });
+            };
+            reader.onerror = function() {
+                alert('Не удалось прочитать выбранный файл');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function getCardFilterBadge(filter) {
+            const f = (filter || 'PHOTO').toUpperCase();
+            if (f === 'PHOTO' || f === 'ФОТО') return '<span class="cat-tag" style="background: rgba(212,160,67,0.15); color: #D4A043; border-color: #D4A043;">📸 ФОТО</span>';
+            if (f === 'VIDEO' || f === 'ВИДЕО') return '<span class="cat-tag" style="background: rgba(88,86,214,0.2); color: #b4a7ff; border-color: #5856d6;">🎬 ВИДЕО</span>';
+            if (f === 'TRENDS' || f === 'ТРЕНДЫ') return '<span class="cat-tag" style="background: rgba(255,45,85,0.2); color: #ff6b8b; border-color: #ff2d55;">🔥 ТРЕНДЫ</span>';
+            return '<span class="cat-tag">🌟 ВСЕ</span>';
+        }
+
+        function renderMainCardsAdmin() {
+            const tbody = document.getElementById('main-cards-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            mainCards.forEach((c, idx) => {
+                const tr = document.createElement('tr');
+                const filterVal = c.filter || (c.category === 'ВИДЕО' ? 'VIDEO' : (c.category === 'ТРЕНДЫ' ? 'TRENDS' : 'PHOTO'));
+                const filterBadge = getCardFilterBadge(filterVal);
+
+                tr.innerHTML = `
+                    <td style="color: var(--text-dim);">${idx + 1}</td>
+                    <td>
+                        <img src="${c.img || ''}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'" style="width: 64px; height: 38px; border-radius: 8px; cursor: pointer;" onclick="openCropModalForCard(${c.id})" title="Нажмите для кадрирования">
+                    </td>
+                    <td><strong style="color: var(--primary); font-size: 15px;">${c.title}</strong></td>
+                    <td style="font-size: 12px; color: rgba(255,255,255,0.85);">${c.badge || '—'}</td>
+                    <td style="font-size: 12px; color: var(--text-muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.subtitle || '—'}</td>
+                    <td>${filterBadge}</td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button class="btn-move" onclick="moveMainCard(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
+                        <button class="btn-move" onclick="moveMainCard(${idx}, 1)" ${idx === mainCards.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
+                        <button class="btn-edit" onclick="editMainCard(${c.id})" title="Редактировать" style="background: rgba(212, 160, 67, 0.15); border: 1px solid var(--primary-border); color: var(--primary); padding: 5px 10px; border-radius: 8px; font-weight: 600; cursor: pointer;">✏️</button>
+                        <button class="btn-del" onclick="deleteMainCard(${c.id})" title="Удалить">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openCropModalForCard(id) {
+            const card = mainCards.find(c => c.id === id);
+            if (!card || !card.img) return;
+            openCropModal(card.img, function(cropped) {
+                card.img = cropped;
+                localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
+                syncAllToCloud();
+                renderMainCardsAdmin();
+                const status = document.getElementById('main-card-status');
+                if (status) {
+                    status.textContent = `✅ Фото для "${card.title}" обновлено!`;
+                    status.className = 'status-msg success';
+                    setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+                }
+            });
+        }
+
+        function addOrUpdateMainCard() {
+            const titleInput = document.getElementById('main-card-title-input');
+            const badgeInput = document.getElementById('main-card-badge-input');
+            const subInput = document.getElementById('main-card-sub-input');
+            const filterSelect = document.getElementById('main-card-filter-select');
+            const imgInput = document.getElementById('main-card-img-input');
+            const status = document.getElementById('main-card-status');
+
+            const title = titleInput.value.trim().toUpperCase();
+            const badge = badgeInput.value.trim().toUpperCase();
+            const subtitle = subInput.value.trim().toUpperCase();
+            const filter = filterSelect ? filterSelect.value : 'PHOTO';
+            const img = imgInput.value.trim();
+
+            if (!title) {
+                status.textContent = '❌ Укажите заголовок карточки (напр: ФОТО, ВИДЕО)';
+                status.className = 'status-msg error';
+                titleInput.focus();
+                return;
+            }
+
+            if (!img) {
+                status.textContent = '❌ Загрузите фоновое изображение карточки через «📁 Загрузить фото»';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            if (editingMainCardId) {
+                const targetIdx = mainCards.findIndex(c => c.id === editingMainCardId);
+                if (targetIdx !== -1) {
+                    const existingCats = mainCards[targetIdx].categories || [title];
+                    mainCards[targetIdx] = {
+                        ...mainCards[targetIdx],
+                        title,
+                        badge,
+                        subtitle,
+                        filter,
+                        category: filter,
+                        img,
+                        categories: existingCats
+                    };
+                    status.textContent = `✅ Карточка "${title}" обновлена`;
+                    status.className = 'status-msg success';
+                }
+                cancelMainCardEdit();
+            } else {
+                mainCards.push({
+                    id: Date.now(),
+                    title,
+                    badge,
+                    subtitle,
+                    filter,
+                    category: filter,
+                    img,
+                    categories: [title]
+                });
+
+                titleInput.value = '';
+                badgeInput.value = '';
+                subInput.value = '';
+                imgInput.value = '';
+                document.getElementById('main-card-file-input').value = '';
+                handleMainCardImgInput('');
+
+                status.textContent = `✅ Карточка "${title}" добавлена на главный экран`;
+                status.className = 'status-msg success';
+            }
+
+            localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
+            syncAllToCloud();
+            renderMainCardsAdmin();
+            renderCatSectionSelect();
+            renderCategories();
+            renderTplSectionSelect();
+            renderTplCategoryDropdown();
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3500);
+        }
+
+        function editMainCard(id) {
+            const card = mainCards.find(c => c.id === id);
+            if (!card) return;
+
+            editingMainCardId = id;
+            document.getElementById('main-card-title-input').value = card.title || '';
+            document.getElementById('main-card-badge-input').value = card.badge || '';
+            document.getElementById('main-card-sub-input').value = card.subtitle || '';
+            
+            const filterVal = card.filter || (card.category === 'ВИДЕО' ? 'VIDEO' : (card.category === 'ТРЕНДЫ' ? 'TRENDS' : 'PHOTO'));
+            document.getElementById('main-card-filter-select').value = filterVal;
+            
+            document.getElementById('main-card-img-input').value = card.img || '';
+            handleMainCardImgInput(card.img || '');
+
+            document.getElementById('main-card-submit-btn').textContent = '💾 Сохранить изменения';
+            document.getElementById('main-card-cancel-btn').style.display = 'inline-block';
+
+            document.getElementById('main-card-title-input').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function cancelMainCardEdit() {
+            editingMainCardId = null;
+            document.getElementById('main-card-title-input').value = '';
+            document.getElementById('main-card-badge-input').value = '';
+            document.getElementById('main-card-sub-input').value = '';
+            document.getElementById('main-card-img-input').value = '';
+            document.getElementById('main-card-file-input').value = '';
+            handleMainCardImgInput('');
+
+            document.getElementById('main-card-submit-btn').textContent = '+ Добавить карточку';
+            document.getElementById('main-card-cancel-btn').style.display = 'none';
+        }
+
+        function deleteMainCard(id) {
+            if (mainCards.length <= 1) {
+                alert('На главном экране должна оставаться хотя бы 1 карточка!');
+                return;
+            }
+            if (!confirm('Удалить эту карточку с главного экрана?')) return;
+            if (editingMainCardId === id) cancelMainCardEdit();
+            mainCards = mainCards.filter(c => c.id !== id);
+            localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
+            syncAllToCloud();
+            renderMainCardsAdmin();
+            renderCatSectionSelect();
+            renderCategories();
+            renderTplSectionSelect();
+            renderTplCategoryDropdown();
+        }
+
+        function moveMainCard(idx, dir) {
+            const newIdx = idx + dir;
+            if (newIdx < 0 || newIdx >= mainCards.length) return;
+            const temp = mainCards[idx];
+            mainCards[idx] = mainCards[newIdx];
+            mainCards[newIdx] = temp;
+            localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
+            syncAllToCloud();
+            renderMainCardsAdmin();
+        }
+
+        // ADS & BANNERS LOGIC
+        function renderAds() {
+            renderTopAds();
+            renderBottomAds();
+        }
+
+        function renderTopAds() {
+            const tbody = document.getElementById('ad-top-table-body');
+            tbody.innerHTML = '';
+            topAds.forEach((ad, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        ${ad.type === 'video' 
+                            ? `<video src="${ad.src}" style="width: 50px; height: 35px; object-fit: cover; border-radius: 6px;" muted loop></video>`
+                            : `<img src="${ad.src}" style="width: 50px; height: 35px; object-fit: cover; border-radius: 6px;">`
+                        }
+                    </td>
+                    <td><span class="cat-tag">${ad.type === 'video' ? '🎬 Видео' : '🖼️ Баннер'}</span></td>
+                    <td><strong>${ad.title}</strong></td>
+                    <td style="color: var(--text-dim); font-size: 12px; max-width: 180px; overflow: hidden; text-overflow: ellipsis;">${ad.src}</td>
+                    <td>${ad.duration} сек</td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button class="btn-move" onclick="moveAd('top', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''}>▲</button>
+                        <button class="btn-move" onclick="moveAd('top', ${idx}, 1)" ${idx === topAds.length - 1 ? 'disabled' : ''}>▼</button>
+                        <button class="btn-del" onclick="deleteAd('top', ${ad.id})">Удалить</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderBottomAds() {
+            const tbody = document.getElementById('ad-bottom-table-body');
+            tbody.innerHTML = '';
+            bottomAds.forEach((ad, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        ${ad.type === 'video' 
+                            ? `<video src="${ad.src}" style="width: 50px; height: 35px; object-fit: cover; border-radius: 6px;" muted loop></video>`
+                            : `<img src="${ad.src}" style="width: 50px; height: 35px; object-fit: cover; border-radius: 6px;">`
+                        }
+                    </td>
+                    <td><span class="cat-tag">${ad.type === 'video' ? '🎬 Видео' : '🖼️ Баннер'}</span></td>
+                    <td><strong>${ad.title}</strong></td>
+                    <td style="color: var(--text-dim); font-size: 12px; max-width: 180px; overflow: hidden; text-overflow: ellipsis;">${ad.src}</td>
+                    <td>${ad.duration} сек</td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        <button class="btn-move" onclick="moveAd('bottom', ${idx}, -1)" ${idx === 0 ? 'disabled' : ''}>▲</button>
+                        <button class="btn-move" onclick="moveAd('bottom', ${idx}, 1)" ${idx === bottomAds.length - 1 ? 'disabled' : ''}>▼</button>
+                        <button class="btn-del" onclick="deleteAd('bottom', ${ad.id})">Удалить</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addAd(zone) {
+            const type = document.getElementById(`ad-${zone}-type-select`).value;
+            const titleInput = document.getElementById(`ad-${zone}-title-input`);
+            const durationInput = document.getElementById(`ad-${zone}-duration-input`);
+            const srcInput = document.getElementById(`ad-${zone}-src-input`);
+            const status = document.getElementById(`ad-${zone}-status`);
+
+            const title = titleInput.value.trim();
+            const duration = parseInt(durationInput.value, 10) || (type === 'video' ? 8 : 5);
+            const src = srcInput.value.trim();
+
+            if (!title || !src) {
+                status.textContent = '❌ Заполните название и файл/URL баннера';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            const newAd = { id: Date.now(), type, title, duration, src };
+            if (zone === 'top') {
+                topAds.push(newAd);
+                localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));
+                renderTopAds();
+            } else {
+                bottomAds.push(newAd);
+                localStorage.setItem('kiosk_ads_bottom', JSON.stringify(bottomAds));
+                renderBottomAds();
+            }
+
+            syncAllToCloud();
+            titleInput.value = '';
+            srcInput.value = '';
+            durationInput.value = '';
+            status.textContent = `✅ Баннер "${title}" добавлен`;
+            status.className = 'status-msg success';
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+        }
+
+        function deleteAd(zone, id) {
+            if (!confirm('Удалить этот медиа-элемент?')) return;
+            if (zone === 'top') {
+                topAds = topAds.filter(a => a.id !== id);
+                localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));
+                renderTopAds();
+            } else {
+                bottomAds = bottomAds.filter(a => a.id !== id);
+                localStorage.setItem('kiosk_ads_bottom', JSON.stringify(bottomAds));
+                renderBottomAds();
+            }
+            syncAllToCloud();
+        }
+
+        function moveAd(zone, idx, dir) {
+            const list = zone === 'top' ? topAds : bottomAds;
+            const newIdx = idx + dir;
+            if (newIdx < 0 || newIdx >= list.length) return;
+            const temp = list[idx];
+            list[idx] = list[newIdx];
+            list[newIdx] = temp;
+            if (zone === 'top') {
+                localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));
+                renderTopAds();
+            } else {
+                localStorage.setItem('kiosk_ads_bottom', JSON.stringify(bottomAds));
+                renderBottomAds();
+            }
+            syncAllToCloud();
+        }
+
+        // ОБЛАЧНАЯ ЗАГРУЗКА МЕДИА В SUPABASE STORAGE
+        async function uploadAdFile(zone, event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const status = document.getElementById(`ad-${zone}-status`);
+            const inputEl = document.getElementById(`ad-${zone}-src-input`);
+
+            status.textContent = `⏳ Загрузка в облако Supabase Storage... (${(file.size / 1024 / 1024).toFixed(1)} МБ)`;
+            status.className = 'status-msg';
+
+            let uploadedUrl = null;
+            if (supabaseClient) {
+                try {
+                    const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+                    const filePath = `ads/${Date.now()}_${cleanName}`;
+                    const { data, error } = await supabaseClient.storage
+                        .from(SUPABASE_BUCKET)
+                        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+                    if (!error && data) {
+                        const { data: pubData } = supabaseClient.storage
+                            .from(SUPABASE_BUCKET)
+                            .getPublicUrl(filePath);
+                        uploadedUrl = pubData.publicUrl;
+                    }
+                } catch (e) {
+                    console.warn('Supabase upload failed:', e);
+                }
+            }
+
+            if (uploadedUrl) {
+                inputEl.value = uploadedUrl;
+                status.textContent = `✅ Файл успешно сохранен в облачном хранилище!`;
+                status.className = 'status-msg success';
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+            } else {
+                status.textContent = `❌ Ошибка загрузки. Убедитесь, что бакет kiosk-media создан.`;
+                status.className = 'status-msg error';
+            }
+        }
+
+        // SECURITY LOGIC
+        function changePassword() {
+            const newPass = document.getElementById('new-password-input').value.trim();
+            const confirmPass = document.getElementById('confirm-password-input').value.trim();
+            const status = document.getElementById('sec-status');
+
+            if (!newPass || newPass.length < 4) {
+                status.textContent = '❌ Пароль должен состоять минимум из 4 символов';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                status.textContent = '❌ Пароли не совпадают';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            localStorage.setItem('kiosk_admin_pin', newPass);
+            document.getElementById('new-password-input').value = '';
+            document.getElementById('confirm-password-input').value = '';
+            status.textContent = '✅ Пароль администратора успешно обновлен!';
+            status.className = 'status-msg success';
+
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+        }
+
+        // KIOSK SETTINGS LOGIC
+        async function loadKioskSettings() {
+            try {
+                const val = localStorage.getItem('kiosk_attract_timeout') || '5';
+                const input = document.getElementById('attract-timeout-input');
+                if (input) input.value = val;
+
+                // Загрузка списка доступных камер
+                const camSelect = document.getElementById('camera-select');
+                if (camSelect && navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+                    try {
+                        let devices = await navigator.mediaDevices.enumerateDevices();
+                        let videoDevs = devices.filter(d => d.kind === 'videoinput');
+                        if (videoDevs.length > 0 && !videoDevs.some(d => d.label)) {
+                            const tmpStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                            devices = await navigator.mediaDevices.enumerateDevices();
+                            videoDevs = devices.filter(d => d.kind === 'videoinput');
+                            tmpStream.getTracks().forEach(t => t.stop());
+                        }
+
+                        const savedCamId = localStorage.getItem('kiosk_camera_device_id');
+                        camSelect.innerHTML = '<option value="">🤖 Автоматически (Logitech BRIO / лучшая камера)</option>';
+                        videoDevs.forEach(d => {
+                            const opt = document.createElement('option');
+                            opt.value = d.deviceId;
+                            opt.textContent = d.label || `Веб-камера (${d.deviceId.slice(0, 8)}...)`;
+                            if (d.deviceId === savedCamId) opt.selected = true;
+                            camSelect.appendChild(opt);
+                        });
+                    } catch(camErr) {
+                        console.warn('Не удалось запросить список камер:', camErr);
+                    }
+                }
+            } catch(e) {}
+        }
+
+        function saveKioskSettings() {
+            const input = document.getElementById('attract-timeout-input');
+            const status = document.getElementById('settings-status');
+            const val = parseInt(input.value, 10);
+
+            if (isNaN(val) || val < 3 || val > 300) {
+                status.textContent = '❌ Укажите значение от 3 до 300 секунд';
+                status.className = 'status-msg error';
+                return;
+            }
+
+            localStorage.setItem('kiosk_attract_timeout', val.toString());
+
+            const camSelect = document.getElementById('camera-select');
+            if (camSelect) {
+                if (camSelect.value) {
+                    localStorage.setItem('kiosk_user_selected_cam_id', camSelect.value);
+                    localStorage.setItem('kiosk_camera_device_id', camSelect.value);
+                } else {
+                    localStorage.removeItem('kiosk_user_selected_cam_id');
+                    localStorage.removeItem('kiosk_camera_device_id');
+                }
+            }
+
+            syncAllToCloud();
+            status.textContent = `✅ Настройки сохранены (заставка: ${val} сек)`;
+            status.className = 'status-msg success';
+
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+        }
+
+        // AGGREGATOR SETTINGS LOGIC
+        function loadAggregatorSettings() {
+            try {
+                const url = localStorage.getItem('kiosk_aggregator_url') || 'https://api.kie.ai/api/v1/jobs/createTask';
+                const key = localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd';
+                const hmac = localStorage.getItem('kiosk_kie_webhook_hmac') || '';
+                const res = localStorage.getItem('kiosk_ai_resolution') || '2K';
+                const urlInput = document.getElementById('aggregator-url-input');
+                const keyInput = document.getElementById('aggregator-key-input');
+                const hmacInput = document.getElementById('aggregator-webhook-hmac-input');
+                const resInput = document.getElementById('aggregator-res-input');
+                if (urlInput) urlInput.value = url;
+                if (keyInput) keyInput.value = key;
+                if (hmacInput) hmacInput.value = hmac;
+                if (resInput) resInput.value = res;
+            } catch(e) {}
+        }
+
+        function saveAggregatorSettings() {
+            const urlInput = document.getElementById('aggregator-url-input');
+            const keyInput = document.getElementById('aggregator-key-input');
+            const hmacInput = document.getElementById('aggregator-webhook-hmac-input');
+            const resInput = document.getElementById('aggregator-res-input');
+            const status = document.getElementById('aggregator-status');
+
+            const url = urlInput ? urlInput.value.trim() : '';
+            const key = keyInput ? keyInput.value.trim() : '';
+            const hmac = hmacInput ? hmacInput.value.trim() : '';
+            const res = resInput ? resInput.value : '2K';
+
+            localStorage.setItem('kiosk_aggregator_url', url);
+            localStorage.setItem('kiosk_aggregator_key', key);
+            localStorage.setItem('kiosk_kie_webhook_hmac', hmac);
+            localStorage.setItem('kiosk_ai_resolution', res);
+
+            status.textContent = '✅ Параметры агрегатора и разрешение успешно сохранены!';
+            status.className = 'status-msg success';
+
+            checkKieBalance();
+            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+        }
+
+        // STANDUP ROAST & ELEVENLABS SETTINGS LOGIC
+        function loadRoastSettings() {
+            try {
+                const elKey = localStorage.getItem('kiosk_elevenlabs_key') || '';
+                const elVoice = localStorage.getItem('kiosk_elevenlabs_voice_id') || 'XNrB7jz2HCkpU5yK08kP';
+                const openaiKey = localStorage.getItem('kiosk_openai_key') || '';
+
+                const elKeyInput = document.getElementById('elevenlabs-key-input');
+                const elVoiceInput = document.getElementById('elevenlabs-voice-input');
+                const openaiKeyInput = document.getElementById('openai-key-input');
+
+                if (elKeyInput) elKeyInput.value = elKey;
+                if (elVoiceInput) elVoiceInput.value = elVoice;
+                if (openaiKeyInput) openaiKeyInput.value = openaiKey;
+            } catch(e) {}
+        }
+
+        // PAYMENT & FINIK ELQR SETTINGS LOGIC
+        function loadPaymentSettings() {
+            try {
+                const accountId = localStorage.getItem('kiosk_finik_account_id') || '';
+                const posId = localStorage.getItem('kiosk_finik_pos_id') || '';
+                const merchantName = localStorage.getItem('kiosk_finik_merchant_name') || 'ИП Мээрим Абдышова';
+                const staticQr = localStorage.getItem('kiosk_finik_static_qr') || '';
+
+                const accInput = document.getElementById('finik-account-id-input');
+                const posInput = document.getElementById('finik-pos-id-input');
+                const nameInput = document.getElementById('finik-merchant-name-input');
+                const qrInput = document.getElementById('finik-static-qr-input');
+
+                if (accInput) accInput.value = accountId;
+                if (posInput) posInput.value = posId;
+                if (nameInput) nameInput.value = merchantName;
+                if (qrInput) qrInput.value = staticQr;
+            } catch (e) {
+                console.warn('loadPaymentSettings error:', e);
+            }
+        }
+
+        function savePaymentSettings() {
+            const accInput = document.getElementById('finik-account-id-input');
+            const posInput = document.getElementById('finik-pos-id-input');
+            const nameInput = document.getElementById('finik-merchant-name-input');
+            const qrInput = document.getElementById('finik-static-qr-input');
+            const status = document.getElementById('payment-settings-status');
+
+            const accountId = accInput ? accInput.value.trim() : '';
+            const posId = posInput ? posInput.value.trim() : '';
+            const merchantName = nameInput ? nameInput.value.trim() : '';
+            const staticQr = qrInput ? qrInput.value.trim() : '';
+
+            localStorage.setItem('kiosk_finik_account_id', accountId);
+            localStorage.setItem('kiosk_finik_pos_id', posId);
+            localStorage.setItem('kiosk_finik_merchant_name', merchantName);
+            localStorage.setItem('kiosk_finik_static_qr', staticQr);
+
+            syncAllToCloud();
+
+            if (status) {
+                status.className = 'status-msg success';
+                status.textContent = '✅ Настройки кошелька ИП и ELQR успешно сохранены и синхронизированы с облаком!';
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
+            }
+        }
+
+        function saveRoastSettings() {
+            const elKeyInput = document.getElementById('elevenlabs-key-input');
+            const elVoiceInput = document.getElementById('elevenlabs-voice-input');
+            const openaiKeyInput = document.getElementById('openai-key-input');
+            const status = document.getElementById('roast-settings-status');
+
+            const elKey = elKeyInput ? elKeyInput.value.trim() : '';
+            const elVoice = elVoiceInput ? elVoiceInput.value.trim() : 'XNrB7jz2HCkpU5yK08kP';
+            const openaiKey = openaiKeyInput ? openaiKeyInput.value.trim() : '';
+
+            localStorage.setItem('kiosk_elevenlabs_key', elKey);
+            localStorage.setItem('kiosk_elevenlabs_voice_id', elVoice);
+            localStorage.setItem('kiosk_openai_key', openaiKey);
+
+            syncAllToCloud();
+            if (status) {
+                status.textContent = '✅ Настройки Стендап-Прожарки и ElevenLabs успешно сохранены!';
+                status.className = 'status-msg success';
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+            }
+        }
+
+        async function testElevenLabsSpeech() {
+            const elKey = (document.getElementById('elevenlabs-key-input')?.value || localStorage.getItem('kiosk_elevenlabs_key') || '').trim();
+            const kieKey = (document.getElementById('aggregator-key-input')?.value || localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd').trim();
+            let elVoice = (document.getElementById('elevenlabs-voice-input')?.value || localStorage.getItem('kiosk_elevenlabs_voice_id') || 'XNrB7jz2HCkpU5yK08kP').trim();
+            if (elVoice.toLowerCase() === 'random') elVoice = 'XNrB7jz2HCkpU5yK08kP';
+            const status = document.getElementById('roast-settings-status');
+
+            if (!elKey && !kieKey) {
+                alert('Пожалуйста, укажите ключ ElevenLabs или ключ Kie.ai для проверки озвучки');
+                return;
+            }
+
+            if (status) {
+                status.textContent = elKey ? '⏳ Генерация через прямой ElevenLabs API...' : '⏳ Генерация через баланс Kie.ai (ElevenLabs Multilingual)...';
+                status.className = 'status-msg';
+            }
+
+            const sampleText = "Так... [sigh] взгляд человека, который зашёл в молл за бесплатным вайфаем... [chuckle] Уверенность на миллион!";
+
+            try {
+                if (elKey) {
+                    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${elVoice}?output_format=mp3_44100_128`, {
+                        method: 'POST',
+                        headers: {
+                            'xi-api-key': elKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            text: sampleText,
+                            model_id: 'eleven_multilingual_v2',
+                            voice_settings: { stability: 0.35, similarity_boost: 0.85, style: 0.55, use_speaker_boost: true }
+                        })
+                    });
+
+                    if (res.ok) {
+                        const blob = await res.blob();
+                        const audio = new Audio(URL.createObjectURL(blob));
+                        audio.play();
+                        if (status) {
+                            status.textContent = '🔊 Воспроизведение голоса ElevenLabs!';
+                            status.className = 'status-msg success';
+                            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
+                        }
+                    } else {
+                        const err = await res.text();
+                        if (status) {
+                            status.textContent = '❌ Ошибка ElevenLabs: ' + err;
+                            status.className = 'status-msg error';
+                        }
+                    }
+                } else {
+                    // Генерация через Kie.ai createTask
+                    const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${kieKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            model: 'elevenlabs/text-to-speech-multilingual-v2',
+                            input: {
+                                text: sampleText,
+                                voice: elVoice
+                            }
+                        })
+                    });
+
+                    const createData = await createRes.json();
+                    if (createData.code !== 200) {
+                        if (status) {
+                            status.textContent = '❌ Ответ Kie.ai: ' + (createData.msg || JSON.stringify(createData));
+                            status.className = 'status-msg error';
+                        }
+                        return;
+                    }
+
+                    const taskId = createData.data?.taskId || createData.taskId;
+                    if (status) status.textContent = '⏳ Задача создана на Kie.ai, ожидаем аудио...';
+
+                    let audioUrl = null;
+                    for (let i = 0; i < 15; i++) {
+                        await new Promise(r => setTimeout(r, 1500));
+                        const checkRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+                            headers: { 'Authorization': `Bearer ${kieKey}` }
+                        });
+                        const checkData = await checkRes.json();
+                        const tInfo = checkData.data || checkData;
+                        const state = tInfo.state || tInfo.status;
+                        if (state === 'success' || state === 'SUCCESS' || state === 'completed') {
+                            if (tInfo.resultJson) {
+                                try {
+                                    const parsed = typeof tInfo.resultJson === 'string' ? JSON.parse(tInfo.resultJson) : tInfo.resultJson;
+                                    audioUrl = (parsed.resultUrls && parsed.resultUrls[0]) || parsed.url;
+                                } catch(e) {}
+                            }
+                            if (!audioUrl) audioUrl = tInfo.audio_url || tInfo.url;
+                            break;
+                        } else if (state === 'failed' || state === 'FAILED') {
+                            break;
+                        }
+                    }
+
+                    if (audioUrl) {
+                        const audio = new Audio(audioUrl);
+                        audio.play();
+                        if (status) {
+                            status.textContent = '🔊 Воспроизведение тестового голоса через Kie.ai!';
+                            status.className = 'status-msg success';
+                            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
+                        }
+                    } else {
+                        if (status) {
+                            status.textContent = '⚠️ Не удалось получить аудио от Kie.ai. Проверьте баланс кредитов.';
+                            status.className = 'status-msg error';
+                        }
+                    }
+                }
+            } catch(e) {
+                if (status) {
+                    status.textContent = '❌ Ошибка запроса: ' + e.message;
+                    status.className = 'status-msg error';
+                }
+            }
+        }
+
+        async function checkKieBalance() {
+            const key = localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd';
+            const balEl = document.getElementById('kie-balance-val');
+            if (!balEl) return;
+            balEl.textContent = '⏳ Проверка...';
+            try {
+                const res = await fetch('https://api.kie.ai/api/v1/chat/credit', {
+                    headers: { 'Authorization': `Bearer ${key}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const credits = data.data !== undefined ? data.data : 0;
+                    const usd = (credits * 0.005).toFixed(2);
+                    balEl.textContent = `${credits} кредитов ($${usd})`;
+                    balEl.style.color = credits > 0 ? '#34c759' : '#ff3b30';
+                } else {
+                    balEl.textContent = 'Ошибка проверки';
+                    balEl.style.color = '#ff3b30';
+                }
+            } catch (e) {
+                balEl.textContent = '0 кредитов ($0.00)';
+                balEl.style.color = '#ff3b30';
+            }
+        }
+
+        // ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ НАСТРОЕК И ПЛЕЙЛИСТОВ (SUPABASE STORAGE)
+        async function syncAllToCloud() {
+            try {
+                const payload = {
+                    main_header: mainHeader,
+                    main_cards: mainCards,
+                    ads_top: topAds,
+                    ads_bottom: bottomAds,
+                    templates: templates,
+                    categories: categories,
+                    attract_timeout: localStorage.getItem('kiosk_attract_timeout') || '5',
+                    elevenlabs_key: localStorage.getItem('kiosk_elevenlabs_key') || '',
+                    elevenlabs_voice_id: localStorage.getItem('kiosk_elevenlabs_voice_id') || 'ErXwobaYiN019PkySvjV',
+                    openai_key: localStorage.getItem('kiosk_openai_key') || '',
+                    finik_account_id: localStorage.getItem('kiosk_finik_account_id') || '',
+                    finik_pos_id: localStorage.getItem('kiosk_finik_pos_id') || '',
+                    finik_merchant_name: localStorage.getItem('kiosk_finik_merchant_name') || '',
+                    finik_static_qr: localStorage.getItem('kiosk_finik_static_qr') || '',
+                    updated_at: new Date().toISOString()
+                };
+                const jsonContent = JSON.stringify(payload, null, 2);
+                let savedOk = false;
+
+                if (supabaseClient) {
+                    const blob = new Blob([jsonContent], { type: 'application/json' });
+                    const { error } = await supabaseClient.storage
+                        .from(SUPABASE_BUCKET)
+                        .upload('config/settings.json', blob, {
+                            cacheControl: '0',
+                            upsert: true
+                        });
+                    if (!error) savedOk = true;
+                }
+
+                if (!savedOk) {
+                    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/config/settings.json`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Content-Type': 'application/json',
+                            'x-upsert': 'true'
+                        },
+                        body: jsonContent
+                    });
+                    if (res.ok) savedOk = true;
+                }
+
+                if (savedOk) {
+                    console.log('✅ Настройки и баннеры успешно сохранены в облако!');
+                    updateSupabaseBadge(true);
+                } else {
+                    console.error('Ошибка сохранения настроек в облако');
+                }
+            } catch (err) {
+                console.error('Ошибка syncAllToCloud:', err);
+            }
+        }
+
+        async function fetchCloudConfig() {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?_t=${Date.now()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    let changed = false;
+                    if (data.main_header) {
+                        mainHeader = data.main_header;
+                        localStorage.setItem('kiosk_main_header_v1', JSON.stringify(mainHeader));
+                        renderMainHeaderInputs();
+                        changed = true;
+                    }
+                    if (Array.isArray(data.main_cards) && data.main_cards.length > 0) {
+                        mainCards = normalizeMainCards(data.main_cards);
+                        localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
+                        renderMainCardsAdmin();
+                        renderCatSectionSelect();
+                        renderCategories();
+                        renderTplSectionSelect();
+                        renderTplCategoryDropdown();
+                        changed = true;
+                    }
+                    if (Array.isArray(data.ads_top) && data.ads_top.length > 0) {
+                        topAds = data.ads_top;
+                        localStorage.setItem('kiosk_ads_top', JSON.stringify(topAds));
+                        renderTopAds();
+                        changed = true;
+                    }
+                    if (Array.isArray(data.ads_bottom) && data.ads_bottom.length > 0) {
+                        bottomAds = data.ads_bottom;
+                        localStorage.setItem('kiosk_ads_bottom', JSON.stringify(bottomAds));
+                        renderBottomAds();
+                        changed = true;
+                    }
+                    if (Array.isArray(data.templates)) {
+                        templates = normalizeTemplates(data.templates, mainCards);
+                        localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
+                        renderTemplates();
+                        changed = true;
+                    } else if (templates && templates.length >= 0) {
+                        syncAllToCloud();
+                    }
+                    if (Array.isArray(data.categories)) {
+                        categories = data.categories;
+                        localStorage.setItem('kiosk_categories_v2', JSON.stringify(categories));
+                        changed = true;
+                    }
+                    if (data.attract_timeout) {
+                        localStorage.setItem('kiosk_attract_timeout', data.attract_timeout);
+                        const input = document.getElementById('attract-timeout-input');
+                        if (input) input.value = data.attract_timeout;
+                    }
+                    if (data.elevenlabs_key) {
+                        localStorage.setItem('kiosk_elevenlabs_key', data.elevenlabs_key);
+                        const input = document.getElementById('elevenlabs-key-input');
+                        if (input && !input.value) input.value = data.elevenlabs_key;
+                    }
+                    if (data.elevenlabs_voice_id) {
+                        localStorage.setItem('kiosk_elevenlabs_voice_id', data.elevenlabs_voice_id);
+                        const input = document.getElementById('elevenlabs-voice-input');
+                        if (input && !input.value) input.value = data.elevenlabs_voice_id;
+                    }
+                    if (data.openai_key) {
+                        localStorage.setItem('kiosk_openai_key', data.openai_key);
+                        const input = document.getElementById('openai-key-input');
+                        if (input && !input.value) input.value = data.openai_key;
+                    }
+                    if (data.finik_account_id) {
+                        localStorage.setItem('kiosk_finik_account_id', data.finik_account_id);
+                        const input = document.getElementById('finik-account-id-input');
+                        if (input && !input.value) input.value = data.finik_account_id;
+                    }
+                    if (data.finik_pos_id) {
+                        localStorage.setItem('kiosk_finik_pos_id', data.finik_pos_id);
+                        const input = document.getElementById('finik-pos-id-input');
+                        if (input && !input.value) input.value = data.finik_pos_id;
+                    }
+                    if (data.finik_merchant_name) {
+                        localStorage.setItem('kiosk_finik_merchant_name', data.finik_merchant_name);
+                        const input = document.getElementById('finik-merchant-name-input');
+                        if (input && !input.value) input.value = data.finik_merchant_name;
+                    }
+                    if (data.finik_static_qr) {
+                        localStorage.setItem('kiosk_finik_static_qr', data.finik_static_qr);
+                        const input = document.getElementById('finik-static-qr-input');
+                        if (input && !input.value) input.value = data.finik_static_qr;
+                    }
+                    if (changed) {
+                        console.log('✅ Данные админки успешно синхронизированы с облаком');
+                    }
+                }
+            } catch(e) {
+                console.warn('Не удалось загрузить настройки из облака:', e);
+            }
+        }
+
+        async function syncAllToCloudManual(statusId) {
+            const status = document.getElementById(statusId);
+            if (status) {
+                status.textContent = '⏳ Синхронизация данных с облаком и киоском...';
+                status.className = 'status-msg';
+            }
+            await syncAllToCloud();
+            if (status) {
+                status.textContent = '✅ Данные успешно сохранены и синхронизированы с киоском!';
+                status.className = 'status-msg success';
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3500);
+            }
+        }
+
+        // Проверка подключения к Supabase Storage
+        async function checkSupabaseStatus() {
+            const badge = document.getElementById('supabase-status-badge');
+            if (!badge) return;
+
+            if (!supabaseClient) {
+                badge.textContent = '❌ SDK не загружен';
+                badge.style.color = '#ff3b30';
+                badge.style.borderColor = '#ff3b30';
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient.storage
+                    .from(SUPABASE_BUCKET)
+                    .list('', { limit: 1 });
+
+                if (!error) {
+                    badge.textContent = '✅ Подключено (Бакет активен)';
+                    badge.style.color = '#34c759';
+                    badge.style.borderColor = '#34c759';
+                } else {
+                    badge.textContent = '⚠️ Ошибка доступа к бакету';
+                    badge.style.color = '#ff9f0a';
+                    badge.style.borderColor = '#ff9f0a';
+                }
+            } catch(e) {
+                badge.textContent = '⚠️ Ошибка соединения';
+                badge.style.color = '#ff9f0a';
+                badge.style.borderColor = '#ff9f0a';
+            }
+        }
+
+        function updateSupabaseBadge(success) {
+            const badge = document.getElementById('supabase-status-badge');
+            if (!badge) return;
+            if (success) {
+                badge.textContent = '✅ Подключено (Файлы сохраняются)';
+                badge.style.color = '#34c759';
+                badge.style.borderColor = '#34c759';
+            }
+        }
+
+        // Init on load
+        checkAuth();
+        loadKioskSettings();
+        loadAggregatorSettings();
+        loadRoastSettings();
+        loadPaymentSettings();
+        checkKieBalance();
+        checkSupabaseStatus();
+        fetchCloudConfig();
+    </script>
+
+    <!-- MODAL FOR IMAGE CROPPING -->
+    <div id="crop-modal" class="crop-modal-overlay" style="display: none;">
+        <div class="crop-modal-content">
+            <div class="crop-modal-header">
+                <div class="crop-modal-title">
+                    <span>✂️</span>
+                    <span>Кадрирование фонового фото карточки</span>
+                </div>
+                <button type="button" class="btn-sidebar-action" onclick="closeCropModal()" style="width: 36px; height: 36px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.06); color: #fff; border: 1px solid var(--border-subtle); cursor: pointer;">✕</button>
+            </div>
+            <div class="crop-modal-body">
+                <div class="crop-canvas-wrapper">
+                    <img id="crop-image-target" src="" alt="Кадрирование">
+                </div>
+            </div>
+            <div class="crop-modal-toolbar">
+                <span style="font-size: 12px; color: var(--text-dim); font-weight: 600; margin-right: 4px;">ПРОПОРЦИЯ:</span>
+                <button type="button" class="crop-tool-btn active" id="crop-ratio-16-9" onclick="setCropRatio(16/9, this)">16:9 (Карточка киоска)</button>
+                <button type="button" class="crop-tool-btn" id="crop-ratio-2-1" onclick="setCropRatio(2/1, this)">2:1</button>
+                <button type="button" class="crop-tool-btn" id="crop-ratio-4-3" onclick="setCropRatio(4/3, this)">4:3</button>
+                <button type="button" class="crop-tool-btn" id="crop-ratio-free" onclick="setCropRatio(NaN, this)">Свободно</button>
+                
+                <div style="height: 20px; width: 1px; background: var(--border-subtle); margin: 0 4px;"></div>
+                
+                <button type="button" class="crop-tool-btn" onclick="rotateCrop(-90)" title="Повернуть против часовой стрелки">↺ 90°</button>
+                <button type="button" class="crop-tool-btn" onclick="rotateCrop(90)" title="Повернуть по часовой стрелке">↻ 90°</button>
+                <button type="button" class="crop-tool-btn" onclick="zoomCrop(0.1)" title="Приблизить">🔍 +</button>
+                <button type="button" class="crop-tool-btn" onclick="zoomCrop(-0.1)" title="Отдалить">🔍 −</button>
+                <button type="button" class="crop-tool-btn" onclick="resetCrop()" title="Сбросить кадрирование">Сброс</button>
+            </div>
+            <div class="crop-modal-footer">
+                <button type="button" class="btn-sidebar-action btn-logout" onclick="closeCropModal()" style="border-radius: 12px; padding: 10px 18px; cursor: pointer;">Отмена</button>
+                <button type="button" class="btn-primary" onclick="applyCrop()" style="border-radius: 12px; padding: 10px 22px;">✂️ Применить кадрирование</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
