@@ -1139,15 +1139,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function updateCamBadge(track) {
+    let uiFrameCount = 0;
+    let uiLastTime = performance.now();
+    let currentUiFps = 60;
+
+    function trackUiFps() {
+        const onUiFrame = (now) => {
+            uiFrameCount++;
+            const elapsed = now - uiLastTime;
+            if (elapsed >= 1000) {
+                currentUiFps = Math.round((uiFrameCount * 1000) / elapsed);
+                uiFrameCount = 0;
+                uiLastTime = now;
+            }
+            requestAnimationFrame(onUiFrame);
+        };
+        requestAnimationFrame(onUiFrame);
+    }
+    trackUiFps();
+
+    function updateCamBadge(track, camFps = 30) {
         if (!camInfoBadge) return;
         const w = webcamEl ? (webcamEl.videoWidth || (currentCamResolution === '720p' ? 1280 : 1920)) : 1920;
         const h = webcamEl ? (webcamEl.videoHeight || (currentCamResolution === '720p' ? 720 : 1080)) : 1080;
         const label = (track && track.label) ? track.label.replace(/\(.*?\)/g, '').trim() : 'Камера';
         const isFHD = (w >= 1920 && h >= 1080) || (w >= 1080 && h >= 1920);
         const resText = isFHD ? 'Full HD' : (w >= 1280 ? '720p HD' : `${w}×${h}`);
+        const fpsColor = camFps >= 24 ? '#4ade80' : (camFps >= 15 ? '#f59e0b' : '#ef4444');
 
-        camInfoBadge.innerHTML = `⚡ <b>${w}×${h}</b> ${resText} <span id="cam-fps-val" style="color:#4ade80;margin-left:4px;font-weight:800;">• 30 FPS</span> • ${label}`;
+        camInfoBadge.innerHTML = `⚡ <b>${w}×${h}</b> ${resText} <span id="cam-fps-val" style="color:${fpsColor};margin-left:4px;font-weight:800;">• ${camFps} FPS</span> <span style="color:#94a3b8;font-size:11px;margin-left:4px;">(Экран: ${currentUiFps})</span> • ${label}`;
     }
 
     function startFpsCounter() {
@@ -1165,14 +1185,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const elapsed = now - fpsLastTime;
             if (elapsed >= 900) {
                 const fps = Math.round((fpsFrameCount * 1000) / elapsed);
-                const fpsSpan = document.getElementById('cam-fps-val');
-                if (fpsSpan) {
-                    fpsSpan.textContent = `• ${fps} FPS`;
-                    fpsSpan.style.color = fps >= 24 ? '#4ade80' : (fps >= 15 ? '#f59e0b' : '#ef4444');
-                }
+                const track = mediaStream ? mediaStream.getVideoTracks()[0] : null;
+                updateCamBadge(track, fps);
 
-                // Детектор узкого горла USB шины (когда камера выдает <= 7 FPS на 1080p)
-                if (fps <= 7 && currentCamResolution === '1080p') {
+                // Детектор узкого горла (когда камера выдает <= 7 FPS)
+                if (fps <= 7) {
                     lowFpsStreak++;
                     if (lowFpsStreak >= 2 && camFpsWarning) {
                         if (warnFpsVal) warnFpsVal.textContent = fps;
@@ -1238,18 +1255,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // 3. Формируем constraints в зависимости от выбранного разрешения
+            // 3. Формируем constraints в зависимости от выбранного разрешения (без жестких min рамок)
             const is720 = currentCamResolution === '720p';
             const targetConstraints = {
                 audio: false,
                 video: is720 ? {
                     width: { ideal: 1280, max: 1280 },
                     height: { ideal: 720, max: 720 },
-                    frameRate: { ideal: 30, min: 25 }
+                    frameRate: { ideal: 30 }
                 } : {
-                    width: { ideal: 1920, min: 1280 },
-                    height: { ideal: 1080, min: 720 },
-                    frameRate: { ideal: 30, min: 24 }
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 },
+                    frameRate: { ideal: 30 }
                 }
             };
 
@@ -1302,9 +1319,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         audio: false,
                         video: {
                             deviceId: { exact: detectedBrio.deviceId },
-                            width: is720 ? { ideal: 1280 } : { ideal: 1920, min: 1280 },
-                            height: is720 ? { ideal: 720 } : { ideal: 1080, min: 720 },
-                            frameRate: { ideal: 30, min: 24 }
+                            width: is720 ? { ideal: 1280 } : { ideal: 1920 },
+                            height: is720 ? { ideal: 720 } : { ideal: 1080 },
+                            frameRate: { ideal: 30 }
                         }
                     });
                     chosenDeviceId = detectedBrio.deviceId;
@@ -1320,7 +1337,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentTrack && currentTrack.applyConstraints) {
                 try {
                     await currentTrack.applyConstraints({
-                        frameRate: { ideal: 30, min: 24 }
+                        frameRate: { ideal: 30 }
                     });
                 } catch(e) {}
             }

@@ -677,7 +677,7 @@
             border-radius: 20px;
             pointer-events: none;
             z-index: 10;
-            backdrop-filter: blur(8px);
+            background: rgba(10, 10, 15, 0.94);
             white-space: nowrap;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
             display: inline-flex;
@@ -1695,8 +1695,8 @@
                     <div class="hud-corner bottom-left"></div>
                     <div class="hud-corner bottom-right"></div>
                     <div id="countdown-overlay" class="countdown-num"></div>
-                    <div id="cam-fps-warning" style="display: none; position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(220, 38, 38, 0.94); color: #fff; padding: 8px 18px; border-radius: 20px; font-size: 12px; font-weight: 700; z-index: 15; box-shadow: 0 4px 18px rgba(0,0,0,0.9); cursor: pointer; text-align: center; white-space: nowrap; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.3);">
-                        ⚠️ Медленный порт USB (<span id="warn-fps-val">4</span> FPS) • <u>Нажмите для плавного 720p 30 FPS 🚀</u>
+                    <div id="cam-fps-warning" style="display: none; position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(220, 38, 38, 0.96); color: #fff; padding: 8px 18px; border-radius: 20px; font-size: 12px; font-weight: 700; z-index: 15; box-shadow: 0 4px 18px rgba(0,0,0,0.9); cursor: pointer; text-align: center; white-space: nowrap; border: 1px solid rgba(255,255,255,0.4);">
+                        ⚠️ Низкий FPS (<span id="warn-fps-val">4</span> FPS) • <u>Нажмите для 720p 🚀 или проверьте свет</u>
                     </div>
                 </div>
             </div>
@@ -1935,6 +1935,6 @@
 </div>
 
 <script src="qrcode.min.js"></script>
-<script src="script.js?v=fhd_720p_v8"></script>
+<script src="script.js?v=diag_dual_fps_v10"></script>
 </body>
 </html>
