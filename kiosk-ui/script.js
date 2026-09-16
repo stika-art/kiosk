@@ -183,20 +183,20 @@ try {
 
 if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.getItem('kiosk_templates_v2') === null)) {
     masterTemplates = [
-        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'nano-banana-2', prompt: 'Cute Pixar 3D animated character portrait, soft Disney lighting, vibrant colors, retain facial likeness' },
-        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'nano-banana-2', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
-        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'nano-banana-2', prompt: 'Trending Instagram aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
-        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'nano-banana-2', prompt: 'Forbes magazine cover, elegant business suit, powerful charismatic gaze, studio magazine lighting' },
-        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'nano-banana-2', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
+        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'chatgpt-2.5', prompt: 'Cute 3D animated character portrait, soft studio lighting, vibrant colors, retain facial likeness' },
+        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'chatgpt-2.5', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
+        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'chatgpt-2.5', prompt: 'Trending aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
+        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'chatgpt-2.5', prompt: 'Prestigious business magazine cover, elegant business suit, powerful charismatic gaze, studio lighting' },
+        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'chatgpt-2.5', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
         { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'kling-video', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
         { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'kling-video', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
         { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'kling-video', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
-        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'nano-banana-2', prompt: 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere' },
-        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'nano-banana-2', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
+        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'chatgpt-2.5', prompt: 'Blocky voxel gaming character hero style, bright game world colors, playful gaming atmosphere' },
+        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'chatgpt-2.5', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
         { id: 99, sectionId: 3, sectionTitle: 'ТРЕНДЫ', category: 'ПРОЖАРКА', title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)', img: 'assets/hero_portrait.jpg', price: 190, model: 'roast-standup', prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice' },
         { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
-        { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'nano-banana-2', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
-        { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'nano-banana-2', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
+        { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
+        { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
         { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
     ];
 }
@@ -254,8 +254,8 @@ function normalizeTemplates(tplList, cardsList) {
         }
 
         let modelNorm = (t.model || '').trim();
-        if (modelNorm === 'face-swap' || !modelNorm) {
-            modelNorm = 'nano-banana-2';
+        if (modelNorm === 'face-swap' || modelNorm === 'nano-banana-2' || !modelNorm) {
+            modelNorm = 'chatgpt-2.5';
         }
 
         return {
@@ -606,8 +606,8 @@ function renderGridTemplates() {
             selectedStylePrice = itemPrice;
             selectedStyleLocation = item.location || '';
             isTryOnMode = isTryOnTemplate(item);
-            selectedStyleModel = item.model || 'nano-banana-2';
-            if (selectedStyleModel === 'face-swap') selectedStyleModel = 'nano-banana-2';
+            selectedStyleModel = item.model || 'chatgpt-2.5';
+            if (selectedStyleModel === 'face-swap' || selectedStyleModel === 'nano-banana-2') selectedStyleModel = 'chatgpt-2.5';
             selectedStylePrompt = item.prompt || '';
             selectedTemplateId = item.id;
             selectedTemplateHtml = item.htmlCode || '';
@@ -658,6 +658,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const photoPreviewConfirm = document.getElementById('photo-preview-confirm');
     const retakeBtn = document.getElementById('retake-btn');
     const confirmPhotoBtn = document.getElementById('confirm-photo-btn');
+
+    // ВЫБОР РАЗРЕШЕНИЯ CHATGPT (1K, 2K HD, 4K ULTRA)
+    let currentAiResolution = localStorage.getItem('kiosk_ai_resolution') || '2K';
+
+    function setAiResolution(res) {
+        currentAiResolution = res || '2K';
+        localStorage.setItem('kiosk_ai_resolution', currentAiResolution);
+        document.querySelectorAll('.ai-res-pill').forEach(btn => {
+            if (btn.dataset.res === currentAiResolution) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        const badge = document.getElementById('pay-res-indicator');
+        if (badge) {
+            badge.textContent = currentAiResolution + (currentAiResolution === '2K' ? ' HD' : currentAiResolution === '4K' ? ' Ultra' : '');
+        }
+    }
+
+    document.querySelectorAll('.ai-res-pill').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const res = btn.dataset.res || '2K';
+            setAiResolution(res);
+        });
+    });
+
+    setAiResolution(currentAiResolution);
 
     // Payment Elements
     const qrPaymentZone = document.getElementById('qr-payment-zone');
@@ -1003,10 +1032,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const paySubtext = document.querySelector('.pay-subtext');
         if (paySubtext) {
+            const resLabel = currentAiResolution + (currentAiResolution === '2K' ? ' HD' : currentAiResolution === '4K' ? ' Ultra' : '');
             if (isTryOnMode) {
-                paySubtext.textContent = 'Виртуальная примерка одежды в студийном качестве';
+                paySubtext.innerHTML = `Виртуальная примерка в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">${resLabel}</span> (ChatGPT)`;
             } else {
-                paySubtext.textContent = 'Финальное фото в студийном качестве';
+                paySubtext.innerHTML = `Финальное фото в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">${resLabel}</span> (ChatGPT)`;
             }
         }
 
@@ -1962,12 +1992,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     photoData: capturedPhotoData,
                     templateImg: selectedStylePhoto,
                     prompt: selectedStylePrompt,
-                    model: selectedStyleModel,
+                    model: selectedStyleModel || 'chatgpt-2.5',
                     title: selectedStyle,
                     price: selectedStylePrice,
                     orderId: currentOrderId,
                     location: selectedStyleLocation,
                     isTryOn: isTryOnMode,
+                    resolution: currentAiResolution || '2K',
                     aggregatorUrl,
                     aggregatorKey,
                     elevenlabsKey,
@@ -1978,9 +2009,52 @@ document.addEventListener('DOMContentLoaded', () => {
             if (resp.ok) {
                 const data = await resp.json();
                 if (data.success) {
-                    if (data.resultUrl) finalResultUrl = data.resultUrl;
                     if (data.audioUrl) tryonAudioUrl = data.audioUrl;
                     if (data.speechText) tryonSpeechText = data.speechText;
+
+                    if (data.pending && data.taskId) {
+                        clearInterval(interval);
+                        console.log(`[AI Polling] Задача ChatGPT ${data.taskId} в процессе генерации, запускаем поллинг...`);
+                        const chatGptStatuses = [
+                            `Нейросеть ChatGPT генерирует портрет в качестве ${currentAiResolution}...`,
+                            `OpenAI прорисовывает фотореалистичные черты лица...`,
+                            `Художественная стилизация и сохранение сходства...`,
+                            `Шлифовка реалистичной текстуры и студийного света...`,
+                            `Финальный рендеринг высокого разрешения...`
+                        ];
+                        let pollIdx = 0;
+                        let pollAttempts = 0;
+                        const maxPollAttempts = 45; // ~110 секунд
+
+                        while (pollAttempts < maxPollAttempts) {
+                            if (aiStatusText) {
+                                aiStatusText.textContent = chatGptStatuses[pollIdx % chatGptStatuses.length];
+                                pollIdx++;
+                            }
+
+                            await new Promise(r => setTimeout(r, 2500));
+                            pollAttempts++;
+
+                            try {
+                                const sRes = await fetch(`/api/ai/status?taskId=${encodeURIComponent(data.taskId)}&_t=${Date.now()}`);
+                                if (sRes.ok) {
+                                    const sData = await sRes.json();
+                                    if (sData.state === 'success' && sData.resultUrl) {
+                                        console.log(`[AI Polling] Успех! Результат получен:`, sData.resultUrl);
+                                        finalResultUrl = sData.resultUrl;
+                                        break;
+                                    } else if (sData.state === 'fail') {
+                                        console.warn('[AI Polling] Ошибка генерации:', sData.error);
+                                        break;
+                                    }
+                                }
+                            } catch (pollErr) {
+                                console.warn('[AI Polling] Ошибка запроса статуса:', pollErr);
+                            }
+                        }
+                    } else if (data.resultUrl) {
+                        finalResultUrl = data.resultUrl;
+                    }
                 }
             }
         } catch (err) {
@@ -2156,8 +2230,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedStylePrice = cur.price || 290;
                 selectedStyleLocation = cur.location || '';
                 isTryOnMode = isTryOnTemplate(cur);
-                selectedStyleModel = cur.model || 'nano-banana-2';
-                if (selectedStyleModel === 'face-swap') selectedStyleModel = 'nano-banana-2';
+                selectedStyleModel = cur.model || 'chatgpt-2.5';
+                if (selectedStyleModel === 'face-swap' || selectedStyleModel === 'nano-banana-2') selectedStyleModel = 'chatgpt-2.5';
                 selectedStylePrompt = cur.prompt || '';
                 selectedTemplateId = cur.id;
                 selectedTemplateHtml = cur.htmlCode || '';

@@ -191,28 +191,49 @@ async function generateElevenLabsAudio({ text, elevenlabsKey, apiKey, voiceId, o
     return null;
 }
 
+// Функция очистки промптов от товарных знаков, блокируемых фильтрами OpenAI (Forbes, Roblox, Pixar и др.)
+function sanitizeForOpenAI(p) {
+    if (!p) return 'Photorealistic high-end studio portrait, retain facial likeness and features';
+    return p
+        .replace(/\bforbes\b/gi, 'prestigious business magazine')
+        .replace(/\broblox\b/gi, '3D voxel gaming character')
+        .replace(/\bdisney\b/gi, '3D animated cartoon')
+        .replace(/\bpixar\b/gi, '3D CGI animated')
+        .replace(/\bmarvel\b/gi, 'superhero cinematic')
+        .replace(/\bplayboy\b/gi, 'luxury glamour magazine')
+        .replace(/\bvogue\b/gi, 'haute couture fashion magazine')
+        .replace(/\btiktok\b/gi, 'viral dynamic video aesthetic')
+        .replace(/\binstagram\b/gi, 'social media aesthetic');
+}
+
 // 5. Вызов Kie.ai API и ожидание результата задачи генерации изображения
-async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateImgUrl, isTryOn }) {
+async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateImgUrl, isTryOn, resolution }) {
     if (!apiKey || !publicPhotoUrl) return null;
 
-    // Сопоставление внутренних имен с официальными идентификаторами моделей Kie.ai
-    let kieModel = 'google/nano-banana-edit';
+    // Выбор разрешения (1K, 2K, 4K)
+    const validResolutions = ['1K', '2K', '4K'];
+    const targetResolution = validResolutions.includes((resolution || '').toUpperCase()) 
+        ? resolution.toUpperCase() 
+        : '2K';
+
+    // Сопоставление моделей: для всех фото и стилей используется официальный ChatGPT (gpt-image-2-5-sunburst)
+    let kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') {
         kieModel = 'bytedance/seedance-2-5';
     } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'google/gemini-omni-flash-1-1' || model === 'gemini-omni-video') {
         kieModel = 'google/gemini-omni-flash-1-1';
     } else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6') {
         kieModel = 'kwaivgi/kling-v1-6';
-    } else if (model === 'chatgpt-2.5' || model === 'gpt-image-2.5' || model === 'gpt-image-2-5-flare') {
-        kieModel = 'gpt-image-2-5-flare-image-to-image';
-    } else if (model === 'gpt-image-2-5-sunburst') {
+    } else if (model === 'google/nano-banana-edit' || model === 'nano-banana-2') {
         kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     } else {
-        // Все фотостили, обложки, face-swap, nano-banana-2 -> google/nano-banana-edit
-        kieModel = 'google/nano-banana-edit';
+        // chatgpt-2.5, gpt-image-2-5-sunburst, face-swap, и все стили
+        kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     }
 
-    console.log(`[Kie.ai] Запуск задачи для модели "${kieModel}" (isTryOn=${Boolean(isTryOn)})...`);
+    console.log(`[Kie.ai ChatGPT] Запуск задачи "${kieModel}" [${targetResolution}] (isTryOn=${Boolean(isTryOn)})...`);
+
+    const safePrompt = sanitizeForOpenAI(prompt);
 
     // Формирование входных данных под выбранный тип модели
     let inputPayload = {};
@@ -229,9 +250,9 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
             duration: 5
         };
     } else if (isTryOn) {
-        // Виртуальная примерка одежды / товаров на гостя
-        const tryOnPrompt = prompt && prompt.trim().length > 10
-            ? prompt
+        // Виртуальная примерка одежды / товаров на гостя через ChatGPT
+        const tryOnPrompt = safePrompt && safePrompt.trim().length > 10
+            ? safePrompt
             : 'Virtual clothing try-on: Fit the clothing item realistically onto the person in the photo. Seamlessly drape the garment with natural folds, lighting, and texture, keeping the person exact face, expression and hair.';
         
         const imageUrls = [publicPhotoUrl];
@@ -242,30 +263,24 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         inputPayload = {
             prompt: tryOnPrompt,
             image_urls: imageUrls,
-            input_urls: imageUrls,
-            output_format: 'png',
-            aspect_ratio: '3:4'
+            resolution: targetResolution
         };
     } else if (templateImgUrl && templateImgUrl.startsWith('http')) {
-        // Фото-шаблон (обложка журнала Forbes, стилизация, арт):
-        const blendPrompt = prompt && prompt.trim().length > 5
-            ? `${prompt}. Retain the exact face, facial features, identity, expression and likeness of the person in the first image, seamlessly placing them into the template and scene of the second image.`
+        // Фото-шаблон (обложка журнала, стилизация, арт) через ChatGPT
+        const blendPrompt = safePrompt && safePrompt.trim().length > 5
+            ? `${safePrompt}. Retain the exact face, facial features, identity, expression and likeness of the person in the first image, seamlessly placing them into the template and scene of the second image.`
             : `Seamlessly blend the person from the first image into the second image template, keeping their exact facial likeness, expression and hair.`;
 
         inputPayload = {
             prompt: blendPrompt,
             image_urls: [publicPhotoUrl, templateImgUrl],
-            input_urls: [publicPhotoUrl, templateImgUrl],
-            output_format: 'png',
-            aspect_ratio: '3:4'
+            resolution: targetResolution
         };
     } else {
         inputPayload = {
-            prompt: prompt || 'Photorealistic high-end studio portrait, retain facial likeness',
+            prompt: safePrompt || 'Photorealistic high-end studio portrait, retain facial likeness and features',
             image_urls: [publicPhotoUrl],
-            input_urls: [publicPhotoUrl],
-            output_format: 'png',
-            aspect_ratio: '1:1'
+            resolution: targetResolution
         };
     }
 
@@ -299,13 +314,14 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
                 return null;
             }
 
-            console.log(`[Kie.ai] Задача создана (${targetModel}), taskId: ${taskId}. Ожидание результата...`);
+            console.log(`[Kie.ai ChatGPT] Задача создана (${targetModel}), taskId: ${taskId}, разрешение: ${targetResolution}. Ожидание результата...`);
 
+            // Опрос статуса до 45 секунд (в пределах лимита Vercel)
             const maxWaitMs = 45000;
             const startTime = Date.now();
 
             while (Date.now() - startTime < maxWaitMs) {
-                await new Promise(r => setTimeout(r, 2000));
+                await new Promise(r => setTimeout(r, 2500));
 
                 // 1. Проверяем webhook в Supabase
                 try {
@@ -314,7 +330,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
                         const webhookData = await webhookFileRes.json();
                         if (webhookData && webhookData.mediaUrl) {
                             console.log(`[Kie.ai Webhook] Задача ${taskId} получена через Webhook!`);
-                            return webhookData.mediaUrl;
+                            return { resultUrl: webhookData.mediaUrl, taskId, resolution: targetResolution };
                         }
                     }
                 } catch (_) {}
@@ -344,35 +360,42 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
                         }
 
                         const finalMediaUrl = (resultUrls && resultUrls[0]) || taskInfo.video_url || taskInfo.image_url;
-                        if (finalMediaUrl) return finalMediaUrl;
+                        if (finalMediaUrl) {
+                            return { resultUrl: finalMediaUrl, taskId, resolution: targetResolution };
+                        }
                     } else if (state === 'fail' || state === 'failed' || state === 'error') {
                         console.warn(`[Kie.ai] Задача ${taskId} завершилась с ошибкой:`, taskInfo.failMsg || taskInfo.errorMessage || 'Неизвестная ошибка');
                         return null;
                     }
                 }
             }
+
+            // Если задача ещё в процессе (OpenAI может генерировать до 60-80с) — возвращаем taskId для асинхронного поллинга клиентом
+            console.log(`[Kie.ai ChatGPT] Задача ${taskId} всё ещё генерируется, передаем клиенту для поллинга`);
+            return { pending: true, taskId, resolution: targetResolution };
+
         } catch (err) {
             console.warn(`[Kie.ai Task Exception for ${targetModel}]`, err.message);
         }
         return null;
     }
 
-    // Попытка 1: запуск с выбранной моделью и payload
-    let result = await executeKieTask(kieModel, inputPayload);
-    if (result) return result;
+    // Попытка 1: запуск через ChatGPT (gpt-image-2-5-sunburst)
+    let outcome = await executeKieTask(kieModel, inputPayload);
+    if (outcome) return outcome;
 
-    // Попытка 2 (Резерв): если целевая модель или два фото не прошли, пробуем google/nano-banana-edit с одним фото гостя
-    if (kieModel !== 'google/nano-banana-edit' || (inputPayload.image_urls && inputPayload.image_urls.length > 1)) {
-        console.warn('[Kie.ai] Резервная попытка генерации через google/nano-banana-edit с фото гостя...');
+    // Попытка 2 (Резерв): если ChatGPT дал сбой или отклонён фильтром OpenAI, пробуем резервную модель
+    if (kieModel.includes('gpt-image') || (inputPayload.image_urls && inputPayload.image_urls.length > 1)) {
+        console.warn('[Kie.ai] Резервная попытка генерации через google/nano-banana-edit...');
         const fallbackPayload = {
-            prompt: prompt || 'Photorealistic cinematic studio portrait, retain facial likeness and features',
+            prompt: safePrompt || 'Photorealistic cinematic studio portrait, retain facial likeness and features',
             image_urls: [publicPhotoUrl],
             input_urls: [publicPhotoUrl],
             output_format: 'png',
             aspect_ratio: '3:4'
         };
-        result = await executeKieTask('google/nano-banana-edit', fallbackPayload);
-        if (result) return result;
+        outcome = await executeKieTask('google/nano-banana-edit', fallbackPayload);
+        if (outcome) return outcome;
     }
 
     return null;
@@ -394,11 +417,12 @@ module.exports = async (req, res) => {
 
     try {
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-        const { photoData, templateImg, prompt, model, title, price, orderId, location, isTryOn, aggregatorUrl, aggregatorKey, elevenlabsKey, elevenlabsVoiceId } = body;
+        const { photoData, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey, elevenlabsKey, elevenlabsVoiceId } = body;
 
         const effectiveKey = aggregatorKey || process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || 'fde11cd9f361b989eb19b8ef8530bfbd';
+        const targetResolution = resolution || '2K';
 
-        console.log(`[AI Hub] Новый запрос: "${title}", модель="${model}", заказ="${orderId}", isTryOn=${Boolean(isTryOn)}, location="${location || ''}"`);
+        console.log(`[AI Hub] Новый запрос: "${title}", модель="${model || 'chatgpt-2.5'}", разрешение="${targetResolution}", заказ="${orderId}", isTryOn=${Boolean(isTryOn)}`);
 
         // 1. Получаем публичный URL фото гостя и шаблона одежды через CDN Supabase
         const publicPhotoUrl = await uploadImageToCDN(photoData, 'guests', orderId);
@@ -410,14 +434,15 @@ module.exports = async (req, res) => {
             speechText = `Вам очень идёт ${title || 'эта одежда'}! Её можно приобрести: ${location}. Стоимость — ${price || 450} сом. Покажите это фото продавцу!`;
         }
 
-        // 3. Параллельный запуск генерации изображения и озвучки ElevenLabs (0 задержки!)
+        // 3. Запуск генерации через ChatGPT (Kie.ai) и озвучки ElevenLabs
         const imagePromise = effectiveKey ? generateViaKie({
             apiKey: effectiveKey,
-            model: model || 'nano-banana-2',
+            model: model || 'chatgpt-2.5',
             prompt,
             publicPhotoUrl,
             templateImgUrl: publicTemplateUrl,
-            isTryOn: Boolean(isTryOn)
+            isTryOn: Boolean(isTryOn),
+            resolution: targetResolution
         }) : Promise.resolve(null);
 
         const audioPromise = (speechText && (effectiveKey || elevenlabsKey)) ? generateElevenLabsAudio({
@@ -428,15 +453,35 @@ module.exports = async (req, res) => {
             orderId: `tryon_voice_${orderId || Date.now()}`
         }).catch(e => null) : Promise.resolve(null);
 
-        const [generatedImageUrl, audioUrl] = await Promise.all([imagePromise, audioPromise]);
+        const [generationOutcome, audioUrl] = await Promise.all([imagePromise, audioPromise]);
 
-        // Fallback: если генерация не удалась, возвращаем эталонный шаблон
+        // Если задача ещё в процессе (OpenAI) — возвращаем статус pending для поллинга
+        if (generationOutcome && generationOutcome.pending) {
+            return res.status(200).json({
+                success: true,
+                pending: true,
+                state: 'generating',
+                taskId: generationOutcome.taskId,
+                orderId,
+                resolution: generationOutcome.resolution || targetResolution,
+                model: 'chatgpt-2.5',
+                audioUrl: audioUrl || null,
+                speechText: speechText || '',
+                message: 'Генерация ChatGPT выполняется...'
+            });
+        }
+
+        const generatedImageUrl = generationOutcome?.resultUrl || null;
         const resultUrl = generatedImageUrl || templateImg;
 
         return res.status(200).json({
             success: true,
+            pending: false,
+            state: generatedImageUrl ? 'success' : 'fallback',
             orderId,
-            model: model || 'nano-banana-2',
+            taskId: generationOutcome?.taskId || null,
+            model: 'chatgpt-2.5',
+            resolution: generationOutcome?.resolution || targetResolution,
             title: title || 'Портрет',
             prompt: prompt || '',
             location: location || '',
@@ -445,10 +490,11 @@ module.exports = async (req, res) => {
             audioUrl: audioUrl || null,
             speechText: speechText || '',
             mode: effectiveKey ? 'live' : 'preview',
-            message: effectiveKey ? 'Успешно обработано через Kie.ai' : 'Тестовый режим (ключ не задан)'
+            message: generatedImageUrl ? 'Успешно сгенерировано через ChatGPT' : 'Генерация завершилась'
         });
     } catch (err) {
         console.error('[AI Gateway Error]', err);
         return res.status(500).json({ success: false, error: err.message });
     }
 };
+

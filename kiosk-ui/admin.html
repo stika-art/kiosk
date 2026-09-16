@@ -927,10 +927,10 @@
                     <input type="text" id="tpl-title-input" class="admin-input" placeholder="Название товара / шаблона (напр: Толстовка Oversize)..." style="flex: 1.3;">
                     <input type="number" id="tpl-price-input" class="admin-input" style="max-width: 140px;" placeholder="Цена (сом)" min="10" step="10" title="Цена товара в сомах">
                     <input type="text" id="tpl-location-input" class="admin-input" placeholder="📍 Где продается (напр: Рынок Дордой, проход 4, контейнер 142)..." style="flex: 1.5;" title="Место продажи или номер контейнера/бутика">
-                    <select id="tpl-model-select" class="admin-select" style="max-width: 250px;" title="Модель обработки" onchange="toggleCustomModelInput(this.value)">
-                        <option value="nano-banana-2">🍌 Nano Banana 2 (Фото / Примерка)</option>
-                        <option value="chatgpt-2.5">🎨 GPT Image 2.5 (Фото / Примерка)</option>
-                        <option value="roast-standup">🔥 Стендап-Прожарка (GPT Image 2.5 + ElevenLabs)</option>
+                    <select id="tpl-model-select" class="admin-select" style="max-width: 260px;" title="Модель обработки" onchange="toggleCustomModelInput(this.value)">
+                        <option value="chatgpt-2.5" selected>🎨 ChatGPT 2.5 (OpenAI / Sunburst)</option>
+                        <option value="nano-banana-2">🍌 Nano Banana 2 (Резервная)</option>
+                        <option value="roast-standup">🔥 Стендап-Прожарка (ChatGPT + ElevenLabs)</option>
                         <option value="seedance-2.5">🎬 Seedance 2.5 (Видеоролик)</option>
                         <option value="omni-flash">⚡ Google Omni Flash (Видеоролик)</option>
                         <option value="kling-video">🎥 Kling AI (Видеоролик)</option>
@@ -1222,6 +1222,17 @@
                         </label>
                         <input type="password" id="aggregator-webhook-hmac-input" class="admin-input" style="width: 100%;" placeholder="Вставьте ключ после нажатия «Create Webhook Key» в Kie.ai...">
                     </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display:block; font-size: 13px; color: var(--primary); margin-bottom: 6px; font-weight: 700;">
+                            ⚡ Разрешение ChatGPT по умолчанию:
+                        </label>
+                        <select id="aggregator-res-input" class="admin-select" style="width: 100%; font-weight: 700;">
+                            <option value="1K">1K (6 кредитов / $0.03 — быстрый режим)</option>
+                            <option value="2K" selected>2K HD (10 кредитов / $0.05 — рекомендуемое качество)</option>
+                            <option value="4K">4K Ultra (16 кредитов / $0.08 — наивысшая детализация)</option>
+                        </select>
+                        <span style="font-size: 11px; color: var(--text-dim); display: block; margin-top: 4px;">Пользователь на киоске также может сам переключить разрешение перед подтверждением фото.</span>
+                    </div>
                     <button class="btn-primary" onclick="saveAggregatorSettings()">Сохранить параметры агрегатора</button>
                     <div id="aggregator-status" class="status-msg" style="margin-top: 10px;"></div>
 
@@ -1412,19 +1423,19 @@
                 if (tpls) return JSON.parse(tpls);
             } catch(e) {}
             return [
-                { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'nano-banana-2', prompt: 'Cute Pixar 3D animated character portrait, soft Disney lighting, vibrant colors, retain facial likeness' },
-                { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'nano-banana-2', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
-                { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'nano-banana-2', prompt: 'Trending Instagram aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
-                { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'nano-banana-2', prompt: 'Forbes magazine cover, elegant business suit, powerful charismatic gaze, studio magazine lighting' },
-                { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'nano-banana-2', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
+                { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'chatgpt-2.5', prompt: 'Cute 3D animated character portrait, soft studio lighting, vibrant colors, retain facial likeness' },
+                { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'chatgpt-2.5', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
+                { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'chatgpt-2.5', prompt: 'Trending aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
+                { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'chatgpt-2.5', prompt: 'Prestigious business magazine cover, elegant business suit, powerful charismatic gaze, studio lighting' },
+                { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'chatgpt-2.5', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
                 { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'seedance-2.5', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
                 { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'seedance-2.5', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
                 { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'seedance-2.5', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
-                { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'nano-banana-2', prompt: 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere' },
-                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'nano-banana-2', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
+                { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'chatgpt-2.5', prompt: 'Blocky voxel gaming character hero style, bright game world colors, playful gaming atmosphere' },
+                { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'chatgpt-2.5', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
                 { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
-                { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'nano-banana-2', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
-                { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'nano-banana-2', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
+                { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
+                { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
                 { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'chatgpt-2.5', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
             ];
         }
@@ -1950,10 +1961,10 @@
         }
 
         function getModelBadge(model) {
-            const m = model || 'nano-banana-2';
+            const m = model || 'chatgpt-2.5';
+            if (m === 'chatgpt-2.5') return '<span class="model-badge" style="background: rgba(212,160,67,0.18); border-color: #D4A043; color: #D4A043; font-weight: 800;">🎨 ChatGPT 2.5</span>';
             if (m === 'roast-standup') return '<span class="model-badge" style="background: rgba(255,69,58,0.18); border-color: #ff453a; color: #ff453a;">🔥 Прожарка + Голос</span>';
             if (m === 'nano-banana-2') return '<span class="model-badge">🍌 Nano Banana 2</span>';
-            if (m === 'chatgpt-2.5') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">🎨 GPT Image 2.5</span>';
             if (m === 'seedance-2.5') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">🎬 Seedance 2.5</span>';
             if (m === 'omni-flash' || m === 'google-omni-flash' || m === 'google/gemini-omni-flash-1-1') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">⚡ Omni Flash</span>';
             if (m === 'kling-video') return '<span class="model-badge">🎥 Kling AI</span>';
@@ -2373,10 +2384,10 @@
             const locInput = document.getElementById('tpl-location-input');
             if (locInput) locInput.value = tpl.location || '';
 
-            const modelVal = tpl.model || 'nano-banana-2';
+            const modelVal = tpl.model || 'chatgpt-2.5';
             const modelSelect = document.getElementById('tpl-model-select');
             const customModelInput = document.getElementById('tpl-custom-model-input');
-            if (['nano-banana-2', 'chatgpt-2.5', 'seedance-2.5', 'omni-flash', 'kling-video'].includes(modelVal)) {
+            if (['chatgpt-2.5', 'nano-banana-2', 'seedance-2.5', 'omni-flash', 'kling-video', 'roast-standup'].includes(modelVal)) {
                 modelSelect.value = modelVal;
                 customModelInput.style.display = 'none';
                 customModelInput.value = '';
@@ -2413,7 +2424,7 @@
             if (locInput) locInput.value = '';
             document.getElementById('tpl-prompt-input').value = '';
             document.getElementById('tpl-img-input').value = '';
-            document.getElementById('tpl-model-select').value = 'nano-banana-2';
+            document.getElementById('tpl-model-select').value = 'chatgpt-2.5';
             document.getElementById('tpl-custom-model-input').style.display = 'none';
             document.getElementById('tpl-custom-model-input').value = '';
             document.getElementById('tpl-file-input').value = '';
@@ -2452,9 +2463,9 @@
             const price = priceInput ? (Number(priceInput.value) || 290) : 290;
             const location = locationInput ? locationInput.value.trim() : '';
             
-            let model = modelSelect ? modelSelect.value : 'nano-banana-2';
+            let model = modelSelect ? modelSelect.value : 'chatgpt-2.5';
             if (model === 'custom' && customModelInput) {
-                model = customModelInput.value.trim() || 'nano-banana-2';
+                model = customModelInput.value.trim() || 'chatgpt-2.5';
             }
 
             const prompt = promptInput ? promptInput.value.trim() : '';
@@ -3253,12 +3264,15 @@
                 const url = localStorage.getItem('kiosk_aggregator_url') || 'https://api.kie.ai/api/v1/jobs/createTask';
                 const key = localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd';
                 const hmac = localStorage.getItem('kiosk_kie_webhook_hmac') || '';
+                const res = localStorage.getItem('kiosk_ai_resolution') || '2K';
                 const urlInput = document.getElementById('aggregator-url-input');
                 const keyInput = document.getElementById('aggregator-key-input');
                 const hmacInput = document.getElementById('aggregator-webhook-hmac-input');
+                const resInput = document.getElementById('aggregator-res-input');
                 if (urlInput) urlInput.value = url;
                 if (keyInput) keyInput.value = key;
                 if (hmacInput) hmacInput.value = hmac;
+                if (resInput) resInput.value = res;
             } catch(e) {}
         }
 
@@ -3266,17 +3280,20 @@
             const urlInput = document.getElementById('aggregator-url-input');
             const keyInput = document.getElementById('aggregator-key-input');
             const hmacInput = document.getElementById('aggregator-webhook-hmac-input');
+            const resInput = document.getElementById('aggregator-res-input');
             const status = document.getElementById('aggregator-status');
 
             const url = urlInput ? urlInput.value.trim() : '';
             const key = keyInput ? keyInput.value.trim() : '';
             const hmac = hmacInput ? hmacInput.value.trim() : '';
+            const res = resInput ? resInput.value : '2K';
 
             localStorage.setItem('kiosk_aggregator_url', url);
             localStorage.setItem('kiosk_aggregator_key', key);
             localStorage.setItem('kiosk_kie_webhook_hmac', hmac);
+            localStorage.setItem('kiosk_ai_resolution', res);
 
-            status.textContent = '✅ Параметры агрегатора успешно сохранены!';
+            status.textContent = '✅ Параметры агрегатора и разрешение успешно сохранены!';
             status.className = 'status-msg success';
 
             checkKieBalance();

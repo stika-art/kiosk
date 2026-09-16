@@ -179,6 +179,30 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    // МАРШРУТ СТАТУСА ПОЛЛИНГА ИИ (CHATGPT)
+    if (req.url.startsWith('/api/ai/status') && (req.method === 'GET' || req.method === 'OPTIONS')) {
+        const statusHandler = require('./api/ai/status');
+        const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+        req.query = Object.fromEntries(urlObj.searchParams);
+        const fakeRes = {
+            setHeader: (k, v) => res.setHeader(k, v),
+            status: (code) => ({
+                json: (data) => {
+                    res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
+                    res.end(JSON.stringify(data));
+                },
+                end: () => res.end()
+            })
+        };
+        try {
+            statusHandler(req, fakeRes);
+        } catch (err) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+        return;
+    }
+
     // МАРШРУТ ГЕНЕРАЦИИ ИИ
     if (req.url.startsWith('/api/ai/generate') && req.method === 'POST') {
         const generateHandler = require('./api/ai/generate');
