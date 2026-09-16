@@ -14,13 +14,19 @@ module.exports = async (req, res) => {
         console.log('[Finik Callback] Получено уведомление:', JSON.stringify(body));
 
         // Извлекаем идентификатор заказа из структуры webhook Finik
-        const orderId = body.PaymentId || 
+        const orderId = body.transactionId || 
+                        (body.fields && body.fields.paymentId) || 
+                        body.PaymentId || 
                         body.paymentId || 
                         (body.Data && body.Data.orderId) || 
                         (body.data && body.data.orderId) || 
                         body.id;
 
-        const isSuccess = body.status === 'SUCCEEDED' || body.status === 'succeeded' || body.status === 'PAID';
+        const isSuccess = body.status === 'SUCCEEDED' || 
+                          body.status === 'succeeded' || 
+                          body.status === 'PAID' || 
+                          body.status === 'paid' || 
+                          body.status === 'SUCCESS';
 
         if (orderId) {
             const updatedOrder = {
@@ -40,6 +46,26 @@ module.exports = async (req, res) => {
                 },
                 body: JSON.stringify(updatedOrder)
             });
+
+            // Также сохраняем по альтернативным ID (body.id, fields.paymentId)
+            const extraIds = [
+                body.id, 
+                body.transactionId, 
+                body.fields && body.fields.paymentId
+            ].filter(id => id && id !== orderId);
+
+            for (const extraId of extraIds) {
+                await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/orders/${extraId}.json`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'x-upsert': 'true'
+                    },
+                    body: JSON.stringify({ ...updatedOrder, orderId: extraId })
+                }).catch(() => {});
+            }
 
             console.log(`[Finik Callback] Заказ ${orderId} успешно переведен в статус: ${updatedOrder.status}`);
         }

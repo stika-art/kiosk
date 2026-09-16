@@ -1027,12 +1027,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ПОЛЛИНГ СТАТУСА ПЛАТЕЖА (ПРОВЕРКА ВЕБХУКА КАЖДЫЕ 2.5 СЕКУНДЫ)
+    // ПОЛЛИНГ СТАТУСА ПЛАТЕЖА (ПРОВЕРКА ВЕБХУКА КАЖДЫЕ 1.8 СЕКУНДЫ)
     function startPaymentPolling(orderId) {
         stopPaymentPolling();
         paymentPollTimer = setInterval(async () => {
             try {
-                const res = await fetch(`/api/payment/status?orderId=${encodeURIComponent(orderId)}`);
+                const res = await fetch(`/api/payment/status?orderId=${encodeURIComponent(orderId)}&_t=${Date.now()}`);
                 const info = await res.json();
                 if (info.success && info.status === 'PAID') {
                     stopPaymentPolling();
@@ -1041,7 +1041,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (err) {
                 // Ignore network hiccups during polling
             }
-        }, 2500);
+        }, 1800);
     }
 
     function stopPaymentPolling() {
