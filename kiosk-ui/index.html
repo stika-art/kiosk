@@ -649,22 +649,14 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(212, 160, 67, 0.15);
             border-radius: 20px;
             overflow: hidden;
-            /* GPU-ускорение — убирает программный рендеринг CPU */
-            contain: strict;
             transform: translateZ(0);
-            -webkit-transform: translateZ(0);
-            will-change: contents;
         }
 
         #webcam {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transform: scaleX(-1) translateZ(0);
-            -webkit-transform: scaleX(-1) translateZ(0);
-            will-change: transform;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
+            transform: scaleX(-1);
         }
 
         .webcam-hud {
@@ -1639,6 +1631,10 @@
                 <button type="button" class="cam-source-tab active" id="tab-kiosk-cam">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                     КАМЕРА КИОСКА
+                </button>
+                <button type="button" class="cam-source-tab" id="switch-cam-btn" style="display: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    <span id="switch-cam-label">СМЕНИТЬ КАМЕРУ</span>
                 </button>
                 <button type="button" class="cam-source-tab" id="tab-phone-cam">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
