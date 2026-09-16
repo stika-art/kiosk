@@ -1089,6 +1089,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let fpsLastTime = performance.now();
     let lowFpsStreak = 0;
     let currentCamResolution = localStorage.getItem('kiosk_camera_res') || '1080p';
+    let currentCameraFps = 30;
+    let lastSingleFrameTime = performance.now();
+    let recentFrameDeltas = [];
 
     const switchCamBtn = document.getElementById('switch-cam-btn');
     const switchCamLabel = document.getElementById('switch-cam-label');
@@ -1098,6 +1101,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnRes720 = document.getElementById('btn-res-720');
     const camFpsWarning = document.getElementById('cam-fps-warning');
     const warnFpsVal = document.getElementById('warn-fps-val');
+    const openDiagBtn = document.getElementById('open-diag-btn');
+
+    // ЭЛЕМЕНТЫ МОДАЛЬНОГО ОКНА ДИАГНОСТИКИ
+    const diagModal = document.getElementById('diag-modal');
+    const closeDiagBtn = document.getElementById('close-diag-btn');
+    const sendDiagBtn = document.getElementById('send-diag-btn');
+    const copyDiagBtn = document.getElementById('copy-diag-btn');
+    const diagSendStatus = document.getElementById('diag-send-status');
+    const diagCamFps = document.getElementById('diag-cam-fps');
+    const diagCamStatus = document.getElementById('diag-cam-status');
+    const diagFrameDelta = document.getElementById('diag-frame-delta');
+    const diagFrameDetail = document.getElementById('diag-frame-detail');
+    const diagUiFps = document.getElementById('diag-ui-fps');
+    const diagCamRes = document.getElementById('diag-cam-res');
+    const diagResTarget = document.getElementById('diag-res-target');
+    const diagVerdictText = document.getElementById('diag-verdict-text');
+    const diagCamName = document.getElementById('diag-cam-name');
+    const diagGpuInfo = document.getElementById('diag-gpu-info');
+    const diagCpuRam = document.getElementById('diag-cpu-ram');
+    const diagTrackSettings = document.getElementById('diag-track-settings');
+    const diagRecentDeltas = document.getElementById('diag-recent-deltas');
 
     function updateResButtonsUI() {
         if (btnRes1080 && btnRes720) {
@@ -1126,7 +1150,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnRes1080) btnRes1080.addEventListener('click', () => setCamResolution('1080p'));
     if (btnRes720) btnRes720.addEventListener('click', () => setCamResolution('720p'));
-    if (camFpsWarning) camFpsWarning.addEventListener('click', () => setCamResolution('720p'));
 
     if (camDeviceSelect) {
         camDeviceSelect.addEventListener('change', (e) => {
@@ -1158,6 +1181,264 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     trackUiFps();
 
+    function getWebGLInfo() {
+        try {
+            const c = document.createElement('canvas');
+            const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+            if (!gl) return { vendor: 'N/A', renderer: 'WebGL недоступен' };
+            const ext = gl.getExtension('WEBGL_debug_renderer_info');
+            if (ext) {
+                return {
+                    vendor: gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) || 'Unknown',
+                    renderer: gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || 'Unknown'
+                };
+            }
+            return {
+                vendor: gl.getParameter(gl.VENDOR) || 'Unknown',
+                renderer: gl.getParameter(gl.RENDERER) || 'Unknown'
+            };
+        } catch(e) {
+            return { vendor: 'Error', renderer: e.message };
+        }
+    }
+
+    function gatherDiagnosticData() {
+        const track = mediaStream ? mediaStream.getVideoTracks()[0] : null;
+        const settings = (track && track.getSettings) ? track.getSettings() : {};
+        const capabilities = (track && track.getCapabilities) ? track.getCapabilities() : {};
+        const gpu = getWebGLInfo();
+
+        let avgDelta = 0;
+        let minDelta = 0;
+        let maxDelta = 0;
+        if (recentFrameDeltas.length > 0) {
+            avgDelta = Math.round(recentFrameDeltas.reduce((a, b) => a + b, 0) / recentFrameDeltas.length);
+            minDelta = Math.min(...recentFrameDeltas);
+            maxDelta = Math.max(...recentFrameDeltas);
+        }
+
+        const w = webcamEl ? webcamEl.videoWidth : 0;
+        const h = webcamEl ? webcamEl.videoHeight : 0;
+
+        let verdict = '';
+        if (currentCameraFps <= 7 && avgDelta >= 170) {
+            verdict = `⚠️ СЕНСОР КАМЕРЫ НА ДЛИННОЙ ВЫДЕРЖКЕ (~${avgDelta} мс на кадр):\n` +
+                      `1. Сенсор UVC-камеры при недостатке света автоматически растянул затвор до ~1/4 сек (250 мс), из-за чего физически не может выдать более ${currentCameraFps} FPS.\n` +
+                      `👉 ТЕСТ СВЕТА: Включите фонарик смартфона и посветите прямо в глазок камеры на 3 секунды. Если FPS сразу подскочит до 25-30 — добавьте свет на киоск!\n` +
+                      `2. Если света достаточно: в Windows Chrome драйвер MediaFoundation часто багует на портах USB 2.0. Перейдите по ссылке chrome://flags/#enable-media-foundation-video-capture, выберите Disabled и нажмите Relaunch.`;
+        } else if (currentUiFps < 20) {
+            verdict = `⚠️ НИЗКИЙ FPS ИНТЕРФЕЙСА (${currentUiFps} FPS):\n` +
+                      `Сам браузер медленно отрисовывает кадры. GPU: ${gpu.renderer}.\n` +
+                      `Включите в настройках Chrome: Система -> 'Использовать аппаратное ускорение'.`;
+        } else if (currentCameraFps >= 24) {
+            verdict = `✅ ОТЛИЧНО: Поток плавный (${currentCameraFps} FPS), задержка кадра ~${avgDelta} мс, отрисовка интерфейса ${currentUiFps} FPS.`;
+        } else {
+            verdict = `ℹ️ УМЕРЕННАЯ ЧАСТОТА: ${currentCameraFps} FPS (интервал ~${avgDelta} мс). Рекомендуется включить режим 720p и проверить направленное освещение.`;
+        }
+
+        return {
+            timestamp: new Date().toISOString(),
+            url: window.location.href,
+            camera: {
+                fps: currentCameraFps,
+                label: track ? track.label : 'Не подключена',
+                width: w,
+                height: h,
+                resolutionMode: currentCamResolution,
+                avgDeltaMs: avgDelta,
+                minDeltaMs: minDelta,
+                maxDeltaMs: maxDelta,
+                recentDeltas: recentFrameDeltas.slice(-10),
+                settings: settings,
+                capabilities: capabilities
+            },
+            ui: {
+                fps: currentUiFps,
+                windowSize: `${window.innerWidth}x${window.innerHeight}`,
+                screenSize: `${screen.width}x${screen.height}`,
+                dpr: window.devicePixelRatio
+            },
+            system: {
+                userAgent: navigator.userAgent,
+                cpuCores: navigator.hardwareConcurrency || 'N/A',
+                deviceMemoryGb: navigator.deviceMemory || 'N/A',
+                gpu: gpu
+            },
+            devices: availableVideoDevices.map(d => ({ label: d.label, id: d.deviceId })),
+            verdict: verdict
+        };
+    }
+
+    let diagUpdateTimer = null;
+    function renderDiagnostics() {
+        const data = gatherDiagnosticData();
+
+        if (diagCamFps) {
+            diagCamFps.textContent = `${data.camera.fps} FPS`;
+            diagCamFps.style.color = data.camera.fps >= 24 ? '#4ade80' : (data.camera.fps >= 15 ? '#f59e0b' : '#ef4444');
+        }
+        if (diagCamStatus) {
+            diagCamStatus.textContent = data.camera.fps <= 7 ? '⚠️ КРИТИЧЕСКИЙ ЛАГ' : (data.camera.fps >= 24 ? 'Нормальный поток' : 'Сниженная частота');
+        }
+        if (diagFrameDelta) {
+            diagFrameDelta.textContent = data.camera.avgDeltaMs > 0 ? `${data.camera.avgDeltaMs} мс` : '-- мс';
+            diagFrameDelta.style.color = data.camera.avgDeltaMs <= 40 ? '#4ade80' : (data.camera.avgDeltaMs <= 70 ? '#f59e0b' : '#ef4444');
+        }
+        if (diagFrameDetail) {
+            diagFrameDetail.textContent = data.camera.avgDeltaMs >= 170 ? 'Затвор ~1/4 сек (свет/драйвер)' : 'Интервал кадра';
+        }
+        if (diagUiFps) {
+            diagUiFps.textContent = `${data.ui.fps} FPS`;
+            diagUiFps.style.color = data.ui.fps >= 40 ? '#4ade80' : '#ef4444';
+        }
+        if (diagCamRes) {
+            diagCamRes.textContent = `${data.camera.width} × ${data.camera.height}`;
+        }
+        if (diagResTarget) {
+            diagResTarget.textContent = `Целевой режим: ${data.camera.resolutionMode}`;
+        }
+        if (diagVerdictText) {
+            diagVerdictText.innerHTML = data.verdict.replace(/\n/g, '<br>');
+        }
+        if (diagCamName) {
+            diagCamName.textContent = data.camera.label;
+        }
+        if (diagGpuInfo) {
+            diagGpuInfo.textContent = `${data.system.gpu.renderer} (${data.system.gpu.vendor})`;
+        }
+        if (diagCpuRam) {
+            diagCpuRam.textContent = `${data.system.cpuCores} ядер CPU • ${data.system.deviceMemoryGb} GB RAM`;
+        }
+        if (diagTrackSettings) {
+            const s = data.camera.settings;
+            diagTrackSettings.textContent = `w:${s.width || '--'}, h:${s.height || '--'}, fps:${s.frameRate || '--'}, facing:${s.facingMode || 'user'}`;
+        }
+        if (diagRecentDeltas) {
+            diagRecentDeltas.textContent = data.camera.recentDeltas.length > 0 ? `[${data.camera.recentDeltas.join(', ')}]` : 'накопление...';
+        }
+
+        return data;
+    }
+
+    function openDiagModal() {
+        if (!diagModal) return;
+        diagModal.style.display = 'flex';
+        renderDiagnostics();
+        if (diagUpdateTimer) clearInterval(diagUpdateTimer);
+        diagUpdateTimer = setInterval(renderDiagnostics, 700);
+    }
+
+    function closeDiagModal() {
+        if (!diagModal) return;
+        diagModal.style.display = 'none';
+        if (diagUpdateTimer) {
+            clearInterval(diagUpdateTimer);
+            diagUpdateTimer = null;
+        }
+    }
+
+    async function sendDiagnosticsToServer() {
+        const data = renderDiagnostics();
+        if (sendDiagBtn) {
+            sendDiagBtn.disabled = true;
+            sendDiagBtn.textContent = '⏳ ОТПРАВКА...';
+        }
+        if (diagSendStatus) {
+            diagSendStatus.style.display = 'block';
+            diagSendStatus.style.color = '#38bdf8';
+            diagSendStatus.textContent = 'Отправка отчета на сервер...';
+        }
+
+        try {
+            let sent = false;
+            try {
+                const res = await fetch('/api/diag', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) sent = true;
+            } catch(e) {
+                console.warn('POST /api/diag err:', e);
+            }
+
+            if (!sent) {
+                const SUPA_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
+                const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
+                const sRes = await fetch(`${SUPA_URL}/storage/v1/object/kiosk-media/diag/kiosk_report.json`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPA_KEY,
+                        'Authorization': `Bearer ${SUPA_KEY}`,
+                        'Content-Type': 'application/json',
+                        'x-upsert': 'true'
+                    },
+                    body: JSON.stringify(data, null, 2)
+                });
+                if (sRes.ok) sent = true;
+            }
+
+            if (sent) {
+                if (diagSendStatus) {
+                    diagSendStatus.style.color = '#4ade80';
+                    diagSendStatus.textContent = '✅ ЛОГ УСПЕШНО ОТПРАВЛЕН! Разработчик видит данные на сервере.';
+                }
+                if (sendDiagBtn) {
+                    sendDiagBtn.textContent = '✅ ОТПРАВЛЕНО (ОБНОВИТЬ)';
+                    sendDiagBtn.disabled = false;
+                }
+            } else {
+                throw new Error('Сервер не ответил 200 OK');
+            }
+        } catch(err) {
+            if (diagSendStatus) {
+                diagSendStatus.style.color = '#ef4444';
+                diagSendStatus.textContent = '❌ Ошибка отправки: ' + err.message + '. Скопируйте текст кнопкой ниже.';
+            }
+            if (sendDiagBtn) {
+                sendDiagBtn.textContent = '🚀 ПОВТОРИТЬ ОТПРАВКУ';
+                sendDiagBtn.disabled = false;
+            }
+        }
+    }
+
+    function copyDiagnosticsToClipboard() {
+        const data = gatherDiagnosticData();
+        const text = `=== ДИАГНОСТИКА КИОСКА (${new Date().toLocaleString('ru')}) ===\n` +
+            `Камера: ${data.camera.label}\n` +
+            `FPS Камеры: ${data.camera.fps} FPS\n` +
+            `Интервал кадра: ~${data.camera.avgDeltaMs} мс (мин: ${data.camera.minDeltaMs}, макс: ${data.camera.maxDeltaMs})\n` +
+            `Разрешение: ${data.camera.width}x${data.camera.height} (${data.camera.resolutionMode})\n` +
+            `FPS Экрана: ${data.ui.fps} FPS\n` +
+            `GPU: ${data.system.gpu.renderer} (${data.system.gpu.vendor})\n` +
+            `CPU/RAM: ${data.system.cpuCores} cores, ${data.system.deviceMemoryGb} GB\n` +
+            `Дельты 10 кадров: [${data.camera.recentDeltas.join(', ')}]\n` +
+            `UserAgent: ${data.system.userAgent}\n` +
+            `ВЕРДИКТ:\n${data.verdict}\n` +
+            `==================================`;
+
+        navigator.clipboard.writeText(text).then(() => {
+            if (copyDiagBtn) {
+                const orig = copyDiagBtn.textContent;
+                copyDiagBtn.textContent = '✅ СКОПИРОВАНО В БУФЕР!';
+                setTimeout(() => { copyDiagBtn.textContent = orig; }, 2500);
+            }
+        }).catch(() => {
+            alert(text);
+        });
+    }
+
+    if (openDiagBtn) openDiagBtn.addEventListener('click', openDiagModal);
+    if (closeDiagBtn) closeDiagBtn.addEventListener('click', closeDiagModal);
+    if (camFpsWarning) camFpsWarning.addEventListener('click', openDiagModal);
+    if (sendDiagBtn) sendDiagBtn.addEventListener('click', sendDiagnosticsToServer);
+    if (copyDiagBtn) copyDiagBtn.addEventListener('click', copyDiagnosticsToClipboard);
+    if (diagModal) {
+        diagModal.addEventListener('click', (e) => {
+            if (e.target === diagModal) closeDiagModal();
+        });
+    }
+
     function updateCamBadge(track, camFps = 30) {
         if (!camInfoBadge) return;
         const w = webcamEl ? (webcamEl.videoWidth || (currentCamResolution === '720p' ? 1280 : 1920)) : 1920;
@@ -1178,13 +1459,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         fpsFrameCount = 0;
         fpsLastTime = performance.now();
+        lastSingleFrameTime = performance.now();
         lowFpsStreak = 0;
 
         const onFrame = (now) => {
+            const singleDelta = Math.round(now - lastSingleFrameTime);
+            lastSingleFrameTime = now;
+            if (singleDelta > 0 && singleDelta < 3000) {
+                recentFrameDeltas.push(singleDelta);
+                if (recentFrameDeltas.length > 25) {
+                    recentFrameDeltas.shift();
+                }
+            }
+
             fpsFrameCount++;
             const elapsed = now - fpsLastTime;
             if (elapsed >= 900) {
                 const fps = Math.round((fpsFrameCount * 1000) / elapsed);
+                currentCameraFps = fps;
                 const track = mediaStream ? mediaStream.getVideoTracks()[0] : null;
                 updateCamBadge(track, fps);
 

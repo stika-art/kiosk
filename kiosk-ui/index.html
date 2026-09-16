@@ -1682,6 +1682,10 @@
                         🚀 720p (30 FPS)
                     </button>
                 </div>
+
+                <button type="button" id="open-diag-btn" style="background: rgba(212,160,67,0.15); border: 1px solid rgba(212,160,67,0.5); color: var(--primary); padding: 7px 14px; border-radius: 12px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.2s;">
+                    🔍 ДИАГНОСТИКА
+                </button>
             </div>
 
             <!-- ПРЕВЬЮ КАМЕРЫ КИОСКА -->
@@ -1696,7 +1700,7 @@
                     <div class="hud-corner bottom-right"></div>
                     <div id="countdown-overlay" class="countdown-num"></div>
                     <div id="cam-fps-warning" style="display: none; position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(220, 38, 38, 0.96); color: #fff; padding: 8px 18px; border-radius: 20px; font-size: 12px; font-weight: 700; z-index: 15; box-shadow: 0 4px 18px rgba(0,0,0,0.9); cursor: pointer; text-align: center; white-space: nowrap; border: 1px solid rgba(255,255,255,0.4);">
-                        ⚠️ Низкий FPS (<span id="warn-fps-val">4</span> FPS) • <u>Нажмите для 720p 🚀 или проверьте свет</u>
+                        ⚠️ Низкий FPS (<span id="warn-fps-val">4</span> FPS) • <u>Нажмите для диагностики 🔍 или переключения 720p</u>
                     </div>
                 </div>
             </div>
@@ -1934,7 +1938,82 @@
     </div>
 </div>
 
+<!-- =====================================================
+     МОДАЛЬНОЕ ОКНО АППАРАТНОЙ ДИАГНОСТИКИ КИОСКА
+===================================================== -->
+<div id="diag-modal" class="modal-overlay" style="display:none; z-index: 100000; background: rgba(5, 5, 10, 0.96);">
+    <div class="modal-content" style="max-width: 860px; width: 95vw; text-align: left; padding: 28px; border: 1px solid rgba(212,160,67,0.6); box-shadow: 0 20px 60px rgba(0,0,0,0.95), 0 0 40px rgba(212,160,67,0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 26px;">🔍</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: 0.5px;">АППАРАТНЫЙ ЛОГ И ДИАГНОСТИКА КИОСКА</h3>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Замер частоты сенсора камеры, времени затвора, GPU и браузера</div>
+                </div>
+            </div>
+            <button id="close-diag-btn" type="button" style="background: rgba(255,255,255,0.1); border: none; color: #fff; width: 36px; height: 36px; border-radius: 50%; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">&times;</button>
+        </div>
+
+        <!-- КЛЮЧЕВЫЕ МЕТРИКИ КАРТОЧКАМИ -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px;">
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">Частота камеры</div>
+                <div id="diag-cam-fps" style="font-size: 28px; font-weight: 900; color: #ef4444; margin-top: 4px;">-- FPS</div>
+                <div id="diag-cam-status" style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Замер...</div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">Интервал кадров (Delta)</div>
+                <div id="diag-frame-delta" style="font-size: 28px; font-weight: 900; color: #f59e0b; margin-top: 4px;">-- мс</div>
+                <div id="diag-frame-detail" style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Выдержка сенсора</div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">FPS Экрана / UI</div>
+                <div id="diag-ui-fps" style="font-size: 28px; font-weight: 900; color: #4ade80; margin-top: 4px;">-- FPS</div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Отрисовка браузера</div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">Фактич. Разрешение</div>
+                <div id="diag-cam-res" style="font-size: 22px; font-weight: 900; color: #fff; margin-top: 8px;">-- × --</div>
+                <div id="diag-res-target" style="font-size: 11px; color: #94a3b8; margin-top: 4px;">--</div>
+            </div>
+        </div>
+
+        <!-- АВТОМАТИЧЕСКИЙ ВЕРДИКТ -->
+        <div id="diag-verdict-box" style="background: rgba(212,160,67,0.1); border: 1px solid rgba(212,160,67,0.5); border-radius: 14px; padding: 16px; margin-bottom: 18px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; color: var(--primary); margin-bottom: 6px;">
+                <span>💡</span> ВЕРДИКТ И ПРИЧИНА ТОРМОЗОВ:
+            </div>
+            <div id="diag-verdict-text" style="font-size: 13px; color: #e2e8f0; line-height: 1.55;">
+                Сбор телеметрии камеры...
+            </div>
+        </div>
+
+        <!-- ПОДРОБНЫЕ ДАННЫЕ В ТАБЛИЦЕ -->
+        <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; font-family: monospace; font-size: 12px; line-height: 1.6; max-height: 160px; overflow-y: auto;">
+            <div style="color: #94a3b8;"><b>📷 Камера:</b> <span id="diag-cam-name" style="color: #fff;">--</span></div>
+            <div style="color: #94a3b8;"><b>🎮 GPU / WebGL:</b> <span id="diag-gpu-info" style="color: #fff;">--</span></div>
+            <div style="color: #94a3b8;"><b>💻 CPU Cores / RAM:</b> <span id="diag-cpu-ram" style="color: #fff;">--</span></div>
+            <div style="color: #94a3b8;"><b>⚙️ Настройки потока:</b> <span id="diag-track-settings" style="color: #fff;">--</span></div>
+            <div style="color: #94a3b8;"><b>⏱️ Дельты кадров (мс):</b> <span id="diag-recent-deltas" style="color: #38bdf8;">--</span></div>
+        </div>
+
+        <!-- ДЕЙСТВИЯ -->
+        <div style="display: flex; gap: 12px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+            <button id="copy-diag-btn" type="button" class="action-btn cancel-btn" style="padding: 12px 20px; font-size: 13px; border-radius: 12px; cursor: pointer;">
+                📋 СКОПИРОВАТЬ ТЕКСТ
+            </button>
+            <button id="send-diag-btn" type="button" class="action-btn primary-btn" style="padding: 12px 24px; font-size: 13px; font-weight: 800; border-radius: 12px; cursor: pointer; background: var(--primary); color: #000;">
+                🚀 ОТПРАВИТЬ ЛОГ НА СЕРВЕР
+            </button>
+        </div>
+        <div id="diag-send-status" style="font-size: 13px; font-weight: 700; margin-top: 10px; text-align: right; color: #4ade80; display: none;"></div>
+    </div>
+</div>
+
 <script src="qrcode.min.js"></script>
-<script src="script.js?v=diag_dual_fps_v10"></script>
+<script src="script.js?v=diag_panel_v12"></script>
 </body>
 </html>
