@@ -969,9 +969,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const configuredQrImg = localStorage.getItem('kiosk_finik_qr_img') || 'images/finik_elqr_badge.png';
 
         if (elqrImg) {
-            elqrImg.src = configuredQrImg;
+            elqrImg.style.transition = 'opacity 0.25s ease, filter 0.25s ease';
+            elqrImg.style.opacity = '0.35';
+            elqrImg.style.filter = 'blur(2px)';
         }
-        if (paymentStatusText) paymentStatusText.textContent = 'Ожидание оплаты...';
+        if (paymentStatusText) paymentStatusText.textContent = `Формирование счёта на ${amount} сом...`;
 
         // Сразу запускаем опрос статуса платежа
         startPaymentPolling(currentOrderId);
@@ -993,12 +995,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Когда Finik вернул официальный динамический QR с зафиксированной суммой чека
             if (data.success && data.qrImageUrl) {
-                if (elqrImg) elqrImg.src = data.qrImageUrl;
+                if (elqrImg) {
+                    elqrImg.src = data.qrImageUrl;
+                    elqrImg.style.opacity = '1';
+                    elqrImg.style.filter = 'none';
+                }
+                if (paymentStatusText) paymentStatusText.textContent = `Ожидание оплаты ${amount} сом...`;
             } else if (data.success && data.paymentUrl && !data.paymentUrl.includes('qr.finik.kg')) {
-                if (elqrImg) renderInstantQR(elqrImg, data.paymentUrl, 260);
+                if (elqrImg) {
+                    renderInstantQR(elqrImg, data.paymentUrl, 260);
+                    elqrImg.style.opacity = '1';
+                    elqrImg.style.filter = 'none';
+                }
+                if (paymentStatusText) paymentStatusText.textContent = `Ожидание оплаты ${amount} сом...`;
+            } else {
+                if (elqrImg) {
+                    elqrImg.src = configuredQrImg;
+                    elqrImg.style.opacity = '1';
+                    elqrImg.style.filter = 'none';
+                }
+                if (paymentStatusText) paymentStatusText.textContent = 'Ожидание оплаты...';
             }
         } catch (e) {
             console.warn('API error (автономный режим Finik ELQR активен):', e);
+            if (elqrImg) {
+                elqrImg.src = configuredQrImg;
+                elqrImg.style.opacity = '1';
+                elqrImg.style.filter = 'none';
+            }
+            if (paymentStatusText) paymentStatusText.textContent = 'Ожидание оплаты...';
         }
     }
 
