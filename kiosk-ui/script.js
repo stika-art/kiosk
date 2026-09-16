@@ -1221,12 +1221,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const h = webcamEl ? webcamEl.videoHeight : 0;
 
         let verdict = '';
-        if (currentCameraFps <= 7 && avgDelta >= 170) {
+        const isBasicGpu = gpu.renderer.includes('Basic Render') || gpu.renderer.includes('SwiftShader') || gpu.renderer.includes('Software');
+
+        if (isBasicGpu || currentUiFps <= 12) {
+            verdict = `🚨 КРИТИЧЕСКАЯ ПРИЧИНА ТОРМОЗОВ — ОТКЛЮЧЕН GPU (${currentUiFps} FPS ЭКРАНА):\n` +
+                      `Видеочип: "${gpu.renderer}". Браузер рендерит интерфейс и Full HD видео чисто процессором через софтверную эмуляцию, из-за чего процессор перегружен на 100% и выдает 2 FPS!\n` +
+                      `КАК ИСПРАВИТЬ:\n` +
+                      `1. Откройте в Chrome chrome://settings/system и ВКЛЮЧИТЕ пункт "Использовать аппаратное ускорение (при наличии)", затем нажмите Перезапустить.\n` +
+                      `2. Откройте chrome://flags/#ignore-gpu-blocklist, переключите в "Enabled" и нажмите Relaunch.\n` +
+                      `3. Если в chrome://gpu всё еще Basic Render Driver — в Windows не установлен видеодрайвер (Диспетчер устройств -> Видеоадаптеры -> нужен Intel HD Graphics, а не Microsoft Basic Display).`;
+        } else if (currentCameraFps <= 7 && avgDelta >= 170) {
             verdict = `⚠️ СЕНСОР КАМЕРЫ НА ДЛИННОЙ ВЫДЕРЖКЕ (~${avgDelta} мс на кадр):\n` +
                       `1. Сенсор UVC-камеры при недостатке света автоматически растянул затвор до ~1/4 сек (250 мс), из-за чего физически не может выдать более ${currentCameraFps} FPS.\n` +
                       `👉 ТЕСТ СВЕТА: Включите фонарик смартфона и посветите прямо в глазок камеры на 3 секунды. Если FPS сразу подскочит до 25-30 — добавьте свет на киоск!\n` +
                       `2. Если света достаточно: в Windows Chrome драйвер MediaFoundation часто багует на портах USB 2.0. Перейдите по ссылке chrome://flags/#enable-media-foundation-video-capture, выберите Disabled и нажмите Relaunch.`;
-        } else if (currentUiFps < 20) {
+        } else if (currentUiFps < 25) {
             verdict = `⚠️ НИЗКИЙ FPS ИНТЕРФЕЙСА (${currentUiFps} FPS):\n` +
                       `Сам браузер медленно отрисовывает кадры. GPU: ${gpu.renderer}.\n` +
                       `Включите в настройках Chrome: Система -> 'Использовать аппаратное ускорение'.`;
