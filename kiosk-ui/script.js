@@ -959,24 +959,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // МГНОВЕННЫЙ QR-КОД (0мс): формируем заказ и рендерим QR сразу без ожидания сети!
+        // БРЕНДИРОВАННЫЙ ОФИЦИАЛЬНЫЙ FINIK ELQR (0мс):
         const amount = selectedStylePrice || 290;
         currentOrderId = 'TRD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 
         const DEFAULT_STATIC_QR = 'https://qr.finik.kg/#00020101021132750011qr.finik.kg0114averspay-items1032cd47050e1ea84bc886fdacd1b1f0e7461302125204799953034175908Finik-QR63040896';
         const configuredStaticQr = localStorage.getItem('kiosk_finik_static_qr') || DEFAULT_STATIC_QR;
         const configuredAccountId = localStorage.getItem('kiosk_finik_account_id') || 'cd47050e-1ea8-4bc8-86fd-acd1b1f0e746';
+        const configuredQrImg = localStorage.getItem('kiosk_finik_qr_img') || 'images/finik_elqr_badge.png';
 
-        // Банковские приложения Кыргызстана (MBank, Optima, Bakai и др.) считывают официальный стандарт ELQR (000201...)
-        let instantPayload = configuredStaticQr;
-        if (instantPayload.includes('#000201')) {
-            instantPayload = instantPayload.split('#')[1];
-        } else if (!instantPayload.startsWith('000201')) {
-            instantPayload = DEFAULT_STATIC_QR.split('#')[1];
-        }
-        
         if (elqrImg) {
-            renderInstantQR(elqrImg, instantPayload, 260);
+            elqrImg.src = configuredQrImg;
         }
         if (paymentStatusText) paymentStatusText.textContent = 'Ожидание оплаты...';
 
@@ -998,18 +991,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await resp.json();
 
-            if (data.success && data.paymentUrl) {
-                let targetPayload = data.paymentUrl;
-                if (targetPayload.includes('#000201')) {
-                    targetPayload = targetPayload.split('#')[1];
-                }
-                // Обновляем QR только если пришёл новый валидный ELQR или URL шлюза, отсекая любые временные заглушки
-                if (targetPayload && targetPayload !== instantPayload && !targetPayload.includes('#orderId=')) {
-                    if (elqrImg) renderInstantQR(elqrImg, targetPayload, 260);
-                }
+            // Если внешняя платежная система вернула отдельный динамический шлюз
+            if (data.success && data.paymentUrl && data.paymentUrl.startsWith('http') && !data.paymentUrl.includes('qr.finik.kg')) {
+                if (elqrImg) renderInstantQR(elqrImg, data.paymentUrl, 260);
             }
         } catch (e) {
-            console.warn('API error (автономный режим ELQR активен):', e);
+            console.warn('API error (автономный режим Finik ELQR активен):', e);
         }
     }
 
@@ -1632,6 +1619,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (data.finik_static_qr) {
                     localStorage.setItem('kiosk_finik_static_qr', data.finik_static_qr);
+                }
+                if (data.finik_qr_img) {
+                    localStorage.setItem('kiosk_finik_qr_img', data.finik_qr_img);
                 }
             }
         } catch(e) {
