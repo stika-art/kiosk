@@ -31,35 +31,11 @@ async function uploadImageToCDN(photoBase64OrUrl, prefix = 'guests', orderId) {
         return `https://kiosk394.vercel.app/kiosk-ui/${cleanPath}`;
     }
 
-    // Загрузка Base64 данных в Supabase Storage
+    const cleanBase64 = photoBase64OrUrl.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(cleanBase64, 'base64');
+
+    // 1. Быстрая загрузка через Catbox CDN (прямые постоянные ссылки)
     try {
-        const cleanBase64 = photoBase64OrUrl.replace(/^data:image\/\w+;base64,/, '');
-        const buffer = Buffer.from(cleanBase64, 'base64');
-        const filename = `${prefix}/${prefix}_${orderId || Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-
-        const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Content-Type': 'image/jpeg',
-                'x-upsert': 'true'
-            },
-            body: buffer
-        });
-
-        if (res.ok) {
-            const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${filename}`;
-            console.log(`[CDN] ${prefix} успешно сохранено:`, publicUrl);
-            return publicUrl;
-        }
-    } catch (e) {
-        console.warn(`[CDN Supabase Error (${prefix})]`, e.message);
-    }
-
-    // Резервная загрузка через Catbox CDN, если бакет Supabase недоступен
-    try {
-        const cleanBase64 = photoBase64OrUrl.replace(/^data:image\/\w+;base64,/, '');
-        const buffer = Buffer.from(cleanBase64, 'base64');
         const form = new FormData();
         form.append('reqtype', 'fileupload');
         form.append('fileToUpload', new Blob([buffer], { type: 'image/jpeg' }), `${prefix}_${Date.now()}.jpg`);
@@ -74,8 +50,28 @@ async function uploadImageToCDN(photoBase64OrUrl, prefix = 'guests', orderId) {
                 return catUrl;
             }
         }
+    } catch (e) {
+        console.warn(`[CDN Catbox Error (${prefix})]`, e.message);
+    }
+
+    // 2. Резервный CDN tmpfiles.org
+    try {
+        const tForm = new FormData();
+        tForm.append('file', new Blob([buffer], { type: 'image/jpeg' }), `${prefix}_${Date.now()}.jpg`);
+        const tRes = await fetch('https://tmpfiles.org/api/v1/upload', {
+            method: 'POST',
+            body: tForm
+        });
+        if (tRes.ok) {
+            const tData = await tRes.json();
+            if (tData && tData.data && tData.data.url) {
+                const dlUrl = tData.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+                console.log(`[CDN Tmpfiles] ${prefix} успешно загружено:`, dlUrl);
+                return dlUrl;
+            }
+        }
     } catch (e2) {
-        console.warn(`[CDN Catbox Error (${prefix})]`, e2.message);
+        console.warn(`[CDN Tmpfiles Error (${prefix})]`, e2.message);
     }
 
     return photoBase64OrUrl;
@@ -278,7 +274,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
             image_url: publicPhotoUrl,
             duration: 5
         };
-    } else if (isTryOn || kieModel.includes('nano-banana')) {
+    } else if (isTryOn) {
         // Виртуальная примерка одежды / товаров на гостя через Nano Banana (2 фото: гость + вещь)
         const tryOnPrompt = safePrompt && safePrompt.trim().length > 10
             ? safePrompt
@@ -294,29 +290,33 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
             image_urls: imageUrls,
             input_urls: imageUrls,
             image_url: publicPhotoUrl,
+            inputImage: publicPhotoUrl,
             output_format: 'png',
             aspect_ratio: '3:4',
             resolution: targetResolution
         };
     } else {
         // Стилизация портрета (дудл, арт, аниме, киберпанк, мультики, обложки и др.)
-        // ВАЖНО: В ChatGPT передается ТОЛЬКО ОДНО фото — фото самого гостя (publicPhotoUrl)!
-        // Картинка шаблона — это лишь обложка/образец стиля для меню.
-        // Очищаем и нейтрализуем указания на пол в описании стиля (например "девушка в дудл стиле" или "cute girl"),
-        // чтобы шаблон стиля не сбивал нейросеть при обработке мужчин, парней или детей.
-        let rawStyleText = (safePrompt && safePrompt.trim().length > 3) ? safePrompt.trim() : 'doodle art style, vibrant colors, expressive artistic portrait';
+        // ВАЖНО: В модель передается фото самого гостя (publicPhotoUrl)!
+        let rawStyleText = (safePrompt && safePrompt.trim().length > 3) ? safePrompt.trim() : 'artistic portrait style, vibrant aesthetic';
         let cleanStyleText = rawStyleText
             .replace(/\b(девушка|девушки|девушку|девушке|женщина|женщины|женщину|парень|парня|парню|мужчина|мужчины|мужчину|девочка|девочки|девочку|мальчик|мальчика)\b/gi, 'person')
             .replace(/\b(girl|woman|female|lady|man|male|guy|boy)\b/gi, 'person');
 
-        const stylePrompt = `CRITICAL MANDATORY INSTRUCTION: You are transforming the REAL PERSON shown in the input photo into this exact artistic style.
-1. GENDER & LIKENESS: Strictly PRESERVE the exact gender, biological sex, facial features, face shape, facial hair (beard/mustache if present), hair color, hairstyle, age, ethnicity, and facial expression of the person in the input photo completely intact. Do NOT change a man into a woman or a woman into a man under any circumstances. If the person in the photo is a male/man, the output MUST be a male/man.
-2. ARTISTIC STYLE: Apply ONLY the artistic visual illustration style, line work, aesthetic, color palette, and background to this person: ${cleanStyleText}.
-3. The resulting portrait MUST clearly and unmistakably be the EXACT SAME PERSON from the input photo, seamlessly drawn in this artistic style.`;
+        const stylePrompt = `Transform the person from the input photo into this exact artistic style: ${cleanStyleText}.
+CRITICAL MANDATORY:
+1. Strictly preserve the original person: keep their exact face, facial features, facial hair, hairstyle, and gender completely recognizable.
+2. If male/man, output MUST be a male/man. If female/woman, output MUST be a female/woman.
+3. Apply ONLY the artistic visual style to this specific person. Do NOT generate a different face or person.`;
 
         inputPayload = {
             prompt: stylePrompt,
+            input_urls: [publicPhotoUrl],
             image_urls: [publicPhotoUrl],
+            image_url: publicPhotoUrl,
+            inputImage: publicPhotoUrl,
+            output_format: 'png',
+            aspect_ratio: '3:4',
             resolution: targetResolution
         };
     }
@@ -360,19 +360,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
             while (Date.now() - startTime < maxWaitMs) {
                 await new Promise(r => setTimeout(r, 2500));
 
-                // 1. Проверяем webhook в Supabase
-                try {
-                    const webhookFileRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/tasks/${taskId}.json?t=${Date.now()}`);
-                    if (webhookFileRes.ok) {
-                        const webhookData = await webhookFileRes.json();
-                        if (webhookData && webhookData.mediaUrl) {
-                            console.log(`[Kie.ai Webhook] Задача ${taskId} получена через Webhook!`);
-                            return { resultUrl: webhookData.mediaUrl, taskId, resolution: targetResolution };
-                        }
-                    }
-                } catch (_) {}
-
-                // 2. Прямой опрос Kie.ai recordInfo
+                // Прямой опрос Kie.ai recordInfo
                 const recordRes = await fetch(`${KIE_RECORD_URL}?taskId=${encodeURIComponent(taskId)}`, {
                     headers: { 'Authorization': `Bearer ${apiKey}` }
                 });
@@ -408,7 +396,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
             }
 
             // Если задача ещё в процессе (OpenAI может генерировать до 60-80с) — возвращаем taskId для асинхронного поллинга клиентом
-            console.log(`[Kie.ai ChatGPT] Задача ${taskId} всё ещё генерируется, передаем клиенту для поллинга`);
+            console.log(`[Kie.ai AI Hub] Задача ${taskId} всё ещё генерируется, передаем клиенту для поллинга`);
             return { pending: true, taskId, resolution: targetResolution };
 
         } catch (err) {
@@ -417,19 +405,22 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         return null;
     }
 
-    // Попытка 1: запуск через ChatGPT (gpt-image-2-5-sunburst)
+    // Попытка 1: запуск через целевую модель (ChatGPT / Nano Banana / видео)
     let outcome = await executeKieTask(kieModel, inputPayload);
     if (outcome) return outcome;
 
-    // Попытка 2 (Резерв): если ChatGPT дал сбой или отклонён фильтром OpenAI, пробуем резервную модель
-    if (kieModel.includes('gpt-image') || (inputPayload.image_urls && inputPayload.image_urls.length > 1)) {
+    // Попытка 2 (Резерв): если целевая модель дала сбой, пробуем google/nano-banana-edit
+    if (kieModel !== 'google/nano-banana-edit') {
         console.warn('[Kie.ai] Резервная попытка генерации через google/nano-banana-edit...');
         const fallbackPayload = {
-            prompt: safePrompt || 'Photorealistic cinematic studio portrait, retain facial likeness and features',
-            image_urls: [publicPhotoUrl],
-            input_urls: [publicPhotoUrl],
+            prompt: inputPayload.prompt || safePrompt || 'Photorealistic cinematic studio portrait, retain facial likeness and features',
+            image_urls: inputPayload.image_urls || [publicPhotoUrl],
+            input_urls: inputPayload.input_urls || [publicPhotoUrl],
+            image_url: publicPhotoUrl,
+            inputImage: publicPhotoUrl,
             output_format: 'png',
-            aspect_ratio: '3:4'
+            aspect_ratio: '3:4',
+            resolution: targetResolution
         };
         outcome = await executeKieTask('google/nano-banana-edit', fallbackPayload);
         if (outcome) return outcome;

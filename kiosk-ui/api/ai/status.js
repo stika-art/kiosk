@@ -23,23 +23,7 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // 1. Проверяем webhook в Supabase Storage
-        try {
-            const webhookRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/tasks/${taskId}.json?_t=${Date.now()}`);
-            if (webhookRes.ok) {
-                const webhookData = await webhookRes.json();
-                if (webhookData && webhookData.mediaUrl) {
-                    return res.status(200).json({
-                        success: true,
-                        state: 'success',
-                        taskId,
-                        resultUrl: webhookData.mediaUrl
-                    });
-                }
-            }
-        } catch (_) {}
-
-        // 2. Прямой опрос Kie.ai recordInfo
+        // Прямой опрос Kie.ai recordInfo
         const recordRes = await fetch(`${KIE_RECORD_URL}?taskId=${encodeURIComponent(taskId)}`, {
             headers: { 'Authorization': `Bearer ${apiKey}` }
         });
