@@ -963,12 +963,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const amount = selectedStylePrice || 290;
         currentOrderId = 'TRD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 
-        const configuredStaticQr = localStorage.getItem('kiosk_finik_static_qr') || '';
-        const configuredAccountId = localStorage.getItem('kiosk_finik_account_id') || '';
+        const DEFAULT_STATIC_QR = 'https://qr.finik.kg/#00020101021132750011qr.finik.kg0114averspay-items1032cd47050e1ea84bc886fdacd1b1f0e7461302125204799953034175908Finik-QR63040896';
+        const configuredStaticQr = localStorage.getItem('kiosk_finik_static_qr') || DEFAULT_STATIC_QR;
+        const configuredAccountId = localStorage.getItem('kiosk_finik_account_id') || 'cd47050e-1ea8-4bc8-86fd-acd1b1f0e746';
 
+        // Банковские приложения Кыргызстана (MBank, Optima, Bakai и др.) считывают официальный стандарт ELQR (000201...)
         let instantPayload = configuredStaticQr;
-        if (!instantPayload) {
-            instantPayload = `https://qr.finik.kg/#orderId=${currentOrderId}&amount=${amount}&title=${encodeURIComponent(selectedStyle || 'Photo')}`;
+        if (instantPayload.includes('#000201')) {
+            instantPayload = instantPayload.split('#')[1];
+        } else if (!instantPayload.startsWith('000201')) {
+            instantPayload = DEFAULT_STATIC_QR.split('#')[1];
         }
         
         if (elqrImg) {
@@ -988,14 +992,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     orderId: currentOrderId,
                     amount: amount,
                     templateTitle: selectedStyle,
-                    accountId: configuredAccountId
+                    accountId: configuredAccountId,
+                    staticQr: configuredStaticQr
                 })
             });
             const data = await resp.json();
 
-            if (data.success && data.paymentUrl && data.paymentUrl !== instantPayload) {
-                // Если Finik вернул специфический URL платежного шлюза, обновляем QR
-                if (elqrImg) renderInstantQR(elqrImg, data.paymentUrl, 260);
+            if (data.success && data.paymentUrl) {
+                let targetPayload = data.paymentUrl;
+                if (targetPayload.includes('#000201')) {
+                    targetPayload = targetPayload.split('#')[1];
+                }
+                // Обновляем QR только если пришёл новый валидный ELQR или URL шлюза, отсекая любые временные заглушки
+                if (targetPayload && targetPayload !== instantPayload && !targetPayload.includes('#orderId=')) {
+                    if (elqrImg) renderInstantQR(elqrImg, targetPayload, 260);
+                }
             }
         } catch (e) {
             console.warn('API error (автономный режим ELQR активен):', e);

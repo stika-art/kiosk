@@ -52,9 +52,13 @@ module.exports = async (req, res) => {
             qrImageUrl = finikRes.qrImageUrl;
             paymentUrl = finikRes.paymentUrl;
         } catch (finikErr) {
-            console.warn('[Finik API Warning] Используем ELQR генератор / статический QR:', finikErr.message);
-            // Fallback: формируем ELQR QR код
-            const elqrPayload = body.staticQr || `https://qr.finik.kg/#orderId=${orderId}&amount=${amount}&title=${encodeURIComponent(templateTitle)}`;
+            console.warn('[Finik API Warning] Используем официальный ELQR (Finik):', finikErr.message);
+            // Официальный Национальный стандарт ELQR для кошелька ИП Trendum в Finik
+            const defaultStatic = '00020101021132750011qr.finik.kg0114averspay-items1032cd47050e1ea84bc886fdacd1b1f0e7461302125204799953034175908Finik-QR63040896';
+            const rawQr = body.staticQr || process.env.FINIK_STATIC_QR || defaultStatic;
+            const elqrPayload = rawQr.includes('#000201') 
+                ? rawQr.split('#')[1] 
+                : (rawQr.startsWith('000201') ? rawQr : defaultStatic);
             paymentUrl = elqrPayload;
             qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(elqrPayload)}`;
         }
