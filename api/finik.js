@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const FINIK_HOST = process.env.FINIK_HOST || 'api.acquiring.averspay.kg';
-const FINIK_API_KEY = process.env.FINIK_API_KEY || 'zDN9eKsniY6urxK2FAMxW1iy7CUhIARA3tpCkdf3';
+const FINIK_API_KEY = process.env.FINIK_API_KEY || '8OKS0ggRVk7VjNl5FVCVy3wVokxcVHqG7RcHIYwd';
 const FINIK_ACCOUNT_ID = process.env.FINIK_ACCOUNT_ID || 'cd47050e-1ea8-4bc8-86fd-acd1b1f0e746';
 const FINIK_REDIRECT_URL = process.env.FINIK_REDIRECT_URL || 'https://kiosk394.vercel.app/kiosk-ui/';
 
@@ -44,10 +44,9 @@ function signFinikRequest({ method, path: reqPath, host, apiKey, timestamp, body
     }
     const headersData = headerParts.join('&');
     
-    const sortedBody = {};
-    Object.keys(body || {}).sort().forEach(k => {
-        sortedBody[k] = body[k];
-    });
+    const sortedBody = Object.entries(body || {})
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .reduce((res, [k, v]) => { res[k] = v; return res; }, {});
     const jsonBody = JSON.stringify(sortedBody);
     
     const canonicalString = [httpMethod, cleanPath, headersData, jsonBody].join('\n');
@@ -105,16 +104,29 @@ async function createFinikPayment({ amount, orderId, templateTitle, accountId })
         },
         body: jsonBody,
         redirect: 'manual',
-        signal: AbortSignal.timeout(1500)
+        signal: AbortSignal.timeout(4000)
     });
     
     const location = response.headers.get('location');
     if (location) {
+        let qrImageUrl = '';
+        try {
+            const pageRes = await fetch(location, { signal: AbortSignal.timeout(3000) });
+            const html = await pageRes.text();
+            const start = html.indexOf('data:image');
+            if (start !== -1) {
+                const end = html.indexOf('"', start);
+                qrImageUrl = html.slice(start, end);
+            }
+        } catch (e) {
+            console.warn('Failed to extract base64 QR from Finik page:', e.message);
+        }
+
         return {
             success: true,
             orderId,
             paymentUrl: location,
-            qrImageUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(location)
+            qrImageUrl: qrImageUrl || ('https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(location))
         };
     }
     

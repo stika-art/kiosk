@@ -1,4 +1,6 @@
-﻿kiosk_data/
+kiosk_data/
 *.log
 .DS_Store
+node_modules/
+
 

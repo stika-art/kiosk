@@ -991,8 +991,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await resp.json();
 
-            // Если внешняя платежная система вернула отдельный динамический шлюз
-            if (data.success && data.paymentUrl && data.paymentUrl.startsWith('http') && !data.paymentUrl.includes('qr.finik.kg')) {
+            // Когда Finik вернул официальный динамический QR с зафиксированной суммой чека
+            if (data.success && data.qrImageUrl) {
+                if (elqrImg) elqrImg.src = data.qrImageUrl;
+            } else if (data.success && data.paymentUrl && !data.paymentUrl.includes('qr.finik.kg')) {
                 if (elqrImg) renderInstantQR(elqrImg, data.paymentUrl, 260);
             }
         } catch (e) {
