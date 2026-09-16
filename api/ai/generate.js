@@ -216,6 +216,11 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         ? resolution.toUpperCase() 
         : '2K';
 
+    if (!publicPhotoUrl && !templateImgUrl) {
+        console.warn('[Kie.ai] Отсутствуют изображения для обработки, вызов Kie.ai отменен для защиты баланса.');
+        return null;
+    }
+
     // Сопоставление моделей: для всех фото и стилей используется официальный ChatGPT (gpt-image-2-5-sunburst)
     let kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') {
@@ -224,10 +229,8 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         kieModel = 'google/gemini-omni-flash-1-1';
     } else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6') {
         kieModel = 'kwaivgi/kling-v1-6';
-    } else if (model === 'google/nano-banana-edit' || model === 'nano-banana-2') {
-        kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     } else {
-        // chatgpt-2.5, gpt-image-2-5-sunburst, face-swap, и все стили
+        // Для всех фото-стилей и виртуальной примерки: ChatGPT 2.5 (gpt-image-2-5-sunburst)
         kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     }
 
@@ -424,9 +427,30 @@ module.exports = async (req, res) => {
 
         console.log(`[AI Hub] Новый запрос: "${title}", модель="${model || 'chatgpt-2.5'}", разрешение="${targetResolution}", заказ="${orderId}", isTryOn=${Boolean(isTryOn)}`);
 
+        // Защита от списания кредитов Kie.ai без реальных данных
+        if (!photoData && !templateImg) {
+            console.log('[AI Hub] Входные изображения отсутствуют. Обращение к Kie.ai пропущено для защиты кредитов.');
+            return res.status(200).json({
+                success: true,
+                pending: false,
+                state: 'fallback',
+                message: 'Изображения отсутствуют, генерация пропущена'
+            });
+        }
+
         // 1. Получаем публичный URL фото гостя и шаблона одежды через CDN Supabase
         const publicPhotoUrl = await uploadImageToCDN(photoData, 'guests', orderId);
         const publicTemplateUrl = await uploadImageToCDN(templateImg, 'clothes', orderId);
+
+        if (!publicPhotoUrl && !publicTemplateUrl) {
+            console.log('[AI Hub] Изображения не загружены в CDN. Обращение к Kie.ai отменено для защиты кредитов.');
+            return res.status(200).json({
+                success: true,
+                pending: false,
+                state: 'fallback',
+                message: 'Изображения не загружены'
+            });
+        }
 
         // 2. Формируем текст голосовой озвучки (в каком бутике продается)
         let speechText = '';

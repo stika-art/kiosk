@@ -254,7 +254,7 @@ function normalizeTemplates(tplList, cardsList) {
         }
 
         let modelNorm = (t.model || '').trim();
-        if (modelNorm === 'face-swap' || modelNorm === 'nano-banana-2' || !modelNorm) {
+        if (modelNorm !== 'seedance-2.5' && modelNorm !== 'omni-flash' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'chatgpt-2.5') {
             modelNorm = 'chatgpt-2.5';
         }
 
@@ -607,7 +607,6 @@ function renderGridTemplates() {
             selectedStyleLocation = item.location || '';
             isTryOnMode = isTryOnTemplate(item);
             selectedStyleModel = item.model || 'chatgpt-2.5';
-            if (selectedStyleModel === 'face-swap' || selectedStyleModel === 'nano-banana-2') selectedStyleModel = 'chatgpt-2.5';
             selectedStylePrompt = item.prompt || '';
             selectedTemplateId = item.id;
             selectedTemplateHtml = item.htmlCode || '';
@@ -2231,7 +2230,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedStyleLocation = cur.location || '';
                 isTryOnMode = isTryOnTemplate(cur);
                 selectedStyleModel = cur.model || 'chatgpt-2.5';
-                if (selectedStyleModel === 'face-swap' || selectedStyleModel === 'nano-banana-2') selectedStyleModel = 'chatgpt-2.5';
                 selectedStylePrompt = cur.prompt || '';
                 selectedTemplateId = cur.id;
                 selectedTemplateHtml = cur.htmlCode || '';
