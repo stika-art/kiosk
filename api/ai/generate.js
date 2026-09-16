@@ -268,14 +268,20 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
             image_urls: imageUrls,
             resolution: targetResolution
         };
-    } else {
         // Стилизация портрета (дудл, арт, аниме, киберпанк, мультики, обложки и др.)
         // ВАЖНО: В ChatGPT передается ТОЛЬКО ОДНО фото — фото самого гостя (publicPhotoUrl)!
-        // Картинка шаблона — это лишь обложка/образец стиля для меню. Если передать картинку шаблона,
-        // нейросеть берет внешность/пол человека с обложки (например, девушку вместо мужчины-гостя).
-        const stylePrompt = safePrompt && safePrompt.trim().length > 5
-            ? `${safePrompt}. CRITICAL INSTRUCTION: Transform the person from the input image into this exact artistic style. Strictly preserve the person's exact gender, face, facial structure, facial features, facial hair (beard, mustache if present), hair color, hairstyle, identity, age, and facial expression completely intact. Do not alter the person's gender or identity.`
-            : `Artistic stylized portrait. CRITICAL INSTRUCTION: Transform the person from the input image into this exact artistic style. Strictly preserve the person's exact gender, face, facial structure, facial features, facial hair (beard, mustache if present), hair color, hairstyle, identity, age, and facial expression completely intact. Do not alter the person's gender or identity.`;
+        // Картинка шаблона — это лишь обложка/образец стиля для меню.
+        // Очищаем и нейтрализуем указания на пол в описании стиля (например "девушка в дудл стиле" или "cute girl"),
+        // чтобы шаблон стиля не сбивал нейросеть при обработке мужчин, парней или детей.
+        let rawStyleText = (safePrompt && safePrompt.trim().length > 3) ? safePrompt.trim() : 'doodle art style, vibrant colors, expressive artistic portrait';
+        let cleanStyleText = rawStyleText
+            .replace(/\b(девушка|девушки|девушку|девушке|женщина|женщины|женщину|парень|парня|парню|мужчина|мужчины|мужчину|девочка|девочки|девочку|мальчик|мальчика)\b/gi, 'person')
+            .replace(/\b(girl|woman|female|lady|man|male|guy|boy)\b/gi, 'person');
+
+        const stylePrompt = `CRITICAL MANDATORY INSTRUCTION: You are transforming the REAL PERSON shown in the input photo into this exact artistic style.
+1. GENDER & LIKENESS: Strictly PRESERVE the exact gender, biological sex, facial features, face shape, facial hair (beard/mustache if present), hair color, hairstyle, age, ethnicity, and facial expression of the person in the input photo completely intact. Do NOT change a man into a woman or a woman into a man under any circumstances. If the person in the photo is a male/man, the output MUST be a male/man.
+2. ARTISTIC STYLE: Apply ONLY the artistic visual illustration style, line work, aesthetic, color palette, and background to this person: ${cleanStyleText}.
+3. The resulting portrait MUST clearly and unmistakably be the EXACT SAME PERSON from the input photo, seamlessly drawn in this artistic style.`;
 
         inputPayload = {
             prompt: stylePrompt,
