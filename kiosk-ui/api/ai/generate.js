@@ -193,18 +193,24 @@ async function generateElevenLabsAudio({ text, elevenlabsKey, apiKey, voiceId, o
 
 // 5. Вызов Kie.ai API и ожидание результата задачи генерации изображения
 async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateImgUrl, isTryOn }) {
-    if (!apiKey) return null;
+    if (!apiKey || !publicPhotoUrl) return null;
 
     // Сопоставление внутренних имен с официальными идентификаторами моделей Kie.ai
     let kieModel = 'google/nano-banana-edit';
-    if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') kieModel = 'bytedance/seedance-2-5';
-    else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'google/gemini-omni-flash-1-1' || model === 'gemini-omni-video') kieModel = 'google/gemini-omni-flash-1-1';
-    else if (model === 'nano-banana-2' || model === 'google/nano-banana-edit') kieModel = 'google/nano-banana-edit';
-    else if (model === 'chatgpt-2.5' || model === 'gpt-image-2.5' || model === 'openai/gpt-4o-image' || model === 'gpt-image' || model === 'openai/chatgpt-2.5' || model === 'gpt-image-2-5-flare') kieModel = 'gpt-image-2-5-flare-image-to-image';
-    else if (model === 'gpt-image-2-5-sunburst' || model === 'gpt-2.5-sunburst') kieModel = 'gpt-image-2-5-sunburst-image-to-image';
-    else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6') kieModel = 'kwaivgi/kling-v1-6';
-    else if (model && model.includes('/')) kieModel = model;
-    else if (model) kieModel = model;
+    if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') {
+        kieModel = 'bytedance/seedance-2-5';
+    } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'google/gemini-omni-flash-1-1' || model === 'gemini-omni-video') {
+        kieModel = 'google/gemini-omni-flash-1-1';
+    } else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6') {
+        kieModel = 'kwaivgi/kling-v1-6';
+    } else if (model === 'chatgpt-2.5' || model === 'gpt-image-2.5' || model === 'gpt-image-2-5-flare') {
+        kieModel = 'gpt-image-2-5-flare-image-to-image';
+    } else if (model === 'gpt-image-2-5-sunburst') {
+        kieModel = 'gpt-image-2-5-sunburst-image-to-image';
+    } else {
+        // Все фотостили, обложки, face-swap, nano-banana-2 -> google/nano-banana-edit
+        kieModel = 'google/nano-banana-edit';
+    }
 
     console.log(`[Kie.ai] Запуск задачи для модели "${kieModel}" (isTryOn=${Boolean(isTryOn)})...`);
 
@@ -214,7 +220,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         inputPayload = {
             prompt: prompt || 'Cinematic video portrait, smooth natural motion, 4k high quality',
             image_url: publicPhotoUrl,
-            duration: '6' // "4", "6", "8", "10"
+            duration: '6'
         };
     } else if (kieModel.includes('seedance') || kieModel.includes('kling')) {
         inputPayload = {
@@ -222,7 +228,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
             image_url: publicPhotoUrl,
             duration: 5
         };
-    } else if (isTryOn || (templateImgUrl && (kieModel.includes('nano-banana') || kieModel.includes('gpt-4o-image')))) {
+    } else if (isTryOn) {
         // Виртуальная примерка одежды / товаров на гостя
         const tryOnPrompt = prompt && prompt.trim().length > 10
             ? prompt
@@ -240,6 +246,19 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
             output_format: 'png',
             aspect_ratio: '3:4'
         };
+    } else if (templateImgUrl && templateImgUrl.startsWith('http')) {
+        // Фото-шаблон (обложка журнала Forbes, стилизация, арт):
+        const blendPrompt = prompt && prompt.trim().length > 5
+            ? `${prompt}. Retain the exact face, facial features, identity, expression and likeness of the person in the first image, seamlessly placing them into the template and scene of the second image.`
+            : `Seamlessly blend the person from the first image into the second image template, keeping their exact facial likeness, expression and hair.`;
+
+        inputPayload = {
+            prompt: blendPrompt,
+            image_urls: [publicPhotoUrl, templateImgUrl],
+            input_urls: [publicPhotoUrl, templateImgUrl],
+            output_format: 'png',
+            aspect_ratio: '3:4'
+        };
     } else {
         inputPayload = {
             prompt: prompt || 'Photorealistic high-end studio portrait, retain facial likeness',
@@ -250,106 +269,112 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         };
     }
 
-    try {
-        // Создание задачи с указанием Webhook Callback URL
-        let createRes = await fetch(DEFAULT_KIE_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: kieModel,
-                callBackUrl: 'https://kiosk394.vercel.app/api/ai/kie-callback',
-                input: inputPayload
-            })
-        });
-
-        // Если специфическая модель вернула ошибку, автоматически пробуем надежный google/nano-banana-edit
-        if (!createRes.ok && kieModel !== 'google/nano-banana-edit') {
-            const errStatus = createRes.status;
-            console.warn(`[Kie.ai] Модель ${kieModel} вернула ${errStatus}, выполняем резервный вызов google/nano-banana-edit...`);
-            createRes = await fetch(DEFAULT_KIE_URL, {
+    // Вспомогательная функция выполнения задачи с опросом статуса
+    async function executeKieTask(targetModel, targetPayload) {
+        try {
+            let createRes = await fetch(DEFAULT_KIE_URL, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: 'google/nano-banana-edit',
+                    model: targetModel,
                     callBackUrl: 'https://kiosk394.vercel.app/api/ai/kie-callback',
-                    input: inputPayload
+                    input: targetPayload
                 })
             });
-        }
 
-        if (!createRes.ok) {
-            const errText = await createRes.text();
-            console.warn(`[Kie.ai Create Task Error] ${createRes.status}:`, errText);
-            return null;
-        }
-
-        const createData = await createRes.json();
-        const taskId = createData.data ? (createData.data.taskId || createData.data.id) : createData.taskId;
-
-        if (!taskId) {
-            console.warn('[Kie.ai] Task ID не получен:', createData);
-            return null;
-        }
-
-        console.log(`[Kie.ai] Задача создана, taskId: ${taskId}. Webhook: https://kiosk394.vercel.app/api/ai/kie-callback. Ожидание...`);
-
-        // Опрос статуса и вебхука до 50 секунд
-        const maxWaitMs = 50000;
-        const startTime = Date.now();
-
-        while (Date.now() - startTime < maxWaitMs) {
-            await new Promise(r => setTimeout(r, 2500));
-
-            // 1. Проверяем, пришел ли уже Webhook от Kie.ai в Supabase Storage
+            let createData = null;
             try {
-                const webhookFileRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/tasks/${taskId}.json?t=${Date.now()}`);
-                if (webhookFileRes.ok) {
-                    const webhookData = await webhookFileRes.json();
-                    if (webhookData && webhookData.mediaUrl) {
-                        console.log(`[Kie.ai Webhook] Задача ${taskId} выполнена и получена через Webhook!`);
-                        return webhookData.mediaUrl;
+                createData = await createRes.json();
+            } catch(e) {}
+
+            let taskId = (createData && createData.code === 200 && createData.data) 
+                ? (createData.data.taskId || createData.data.id || createData.data.recordId) 
+                : null;
+
+            if (!taskId) {
+                console.warn(`[Kie.ai Create Task Error for ${targetModel}]`, createData || createRes.status);
+                return null;
+            }
+
+            console.log(`[Kie.ai] Задача создана (${targetModel}), taskId: ${taskId}. Ожидание результата...`);
+
+            const maxWaitMs = 45000;
+            const startTime = Date.now();
+
+            while (Date.now() - startTime < maxWaitMs) {
+                await new Promise(r => setTimeout(r, 2000));
+
+                // 1. Проверяем webhook в Supabase
+                try {
+                    const webhookFileRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/tasks/${taskId}.json?t=${Date.now()}`);
+                    if (webhookFileRes.ok) {
+                        const webhookData = await webhookFileRes.json();
+                        if (webhookData && webhookData.mediaUrl) {
+                            console.log(`[Kie.ai Webhook] Задача ${taskId} получена через Webhook!`);
+                            return webhookData.mediaUrl;
+                        }
                     }
-                }
-            } catch (_) {}
+                } catch (_) {}
 
-            // 2. Резервный прямой опрос Kie.ai recordInfo
-            const recordRes = await fetch(`${KIE_RECORD_URL}?taskId=${encodeURIComponent(taskId)}`, {
-                headers: { 'Authorization': `Bearer ${apiKey}` }
-            });
+                // 2. Прямой опрос Kie.ai recordInfo
+                const recordRes = await fetch(`${KIE_RECORD_URL}?taskId=${encodeURIComponent(taskId)}`, {
+                    headers: { 'Authorization': `Bearer ${apiKey}` }
+                });
 
-            if (recordRes.ok) {
-                const recordData = await recordRes.json();
-                const taskInfo = recordData.data || recordData;
-                const state = taskInfo.state || taskInfo.status;
+                if (recordRes.ok) {
+                    const recordData = await recordRes.json();
+                    const taskInfo = recordData.data || recordData;
+                    const state = (taskInfo.state || taskInfo.status || '').toLowerCase();
 
-                if (state === 'success' || state === 'SUCCESS' || state === 'completed') {
-                    console.log(`[Kie.ai] Задача ${taskId} успешно выполнена!`);
-                    
-                    let resultUrls = [];
-                    if (taskInfo.resultJson) {
-                        try {
-                            const parsed = typeof taskInfo.resultJson === 'string' ? JSON.parse(taskInfo.resultJson) : taskInfo.resultJson;
-                            resultUrls = parsed.resultUrls || parsed.urls || [parsed.url || parsed.video_url];
-                        } catch(e) {}
+                    if (state === 'success' || state === 'completed') {
+                        console.log(`[Kie.ai] Задача ${taskId} успешно выполнена!`);
+                        
+                        let resultUrls = [];
+                        if (taskInfo.resultJson) {
+                            try {
+                                const parsed = typeof taskInfo.resultJson === 'string' ? JSON.parse(taskInfo.resultJson) : taskInfo.resultJson;
+                                resultUrls = parsed.resultUrls || parsed.urls || [parsed.url || parsed.video_url];
+                            } catch(e) {}
+                        }
+                        if ((!resultUrls || resultUrls.length === 0) && taskInfo.response) {
+                            resultUrls = taskInfo.response.resultUrls || [taskInfo.response.url];
+                        }
+
+                        const finalMediaUrl = (resultUrls && resultUrls[0]) || taskInfo.video_url || taskInfo.image_url;
+                        if (finalMediaUrl) return finalMediaUrl;
+                    } else if (state === 'fail' || state === 'failed' || state === 'error') {
+                        console.warn(`[Kie.ai] Задача ${taskId} завершилась с ошибкой:`, taskInfo.failMsg || taskInfo.errorMessage || 'Неизвестная ошибка');
+                        return null;
                     }
-
-                    const finalMediaUrl = (resultUrls && resultUrls[0]) || taskInfo.video_url || taskInfo.image_url;
-                    if (finalMediaUrl) return finalMediaUrl;
-                } else if (state === 'failed' || state === 'FAILED' || state === 'error') {
-                    console.warn(`[Kie.ai] Задача ${taskId} завершилась с ошибкой:`, taskInfo.failMsg || 'Неизвестная ошибка');
-                    return null;
                 }
             }
+        } catch (err) {
+            console.warn(`[Kie.ai Task Exception for ${targetModel}]`, err.message);
         }
-    } catch (err) {
-        console.warn('[Kie.ai Exception]', err.message);
+        return null;
     }
+
+    // Попытка 1: запуск с выбранной моделью и payload
+    let result = await executeKieTask(kieModel, inputPayload);
+    if (result) return result;
+
+    // Попытка 2 (Резерв): если целевая модель или два фото не прошли, пробуем google/nano-banana-edit с одним фото гостя
+    if (kieModel !== 'google/nano-banana-edit' || (inputPayload.image_urls && inputPayload.image_urls.length > 1)) {
+        console.warn('[Kie.ai] Резервная попытка генерации через google/nano-banana-edit с фото гостя...');
+        const fallbackPayload = {
+            prompt: prompt || 'Photorealistic cinematic studio portrait, retain facial likeness and features',
+            image_urls: [publicPhotoUrl],
+            input_urls: [publicPhotoUrl],
+            output_format: 'png',
+            aspect_ratio: '3:4'
+        };
+        result = await executeKieTask('google/nano-banana-edit', fallbackPayload);
+        if (result) return result;
+    }
+
     return null;
 }
 

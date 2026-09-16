@@ -1056,10 +1056,13 @@
         }
         .result-qr img,
         .result-qr svg,
-        .result-qr canvas {
+        .result-qr canvas,
+        .result-qr .qr-svg-holder {
             width: 100% !important;
             height: 100% !important;
-            display: block !important;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
             object-fit: contain;
         }
 
@@ -2039,6 +2042,6 @@
 </div>
 
 <script src="qrcode.min.js"></script>
-<script src="script.js?v=diag_panel_v14"></script>
+<script src="script.js?v=qr_ai_fix_v15"></script>
 </body>
 </html>

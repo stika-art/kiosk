@@ -7,7 +7,7 @@ let selectedStylePhoto = 'images/photo1.jpg';
 let selectedStylePrice = 290;
 let selectedStyleLocation = '';
 let isTryOnMode = false;
-let selectedStyleModel = 'face-swap';
+let selectedStyleModel = 'nano-banana-2';
 let selectedStylePrompt = 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere';
 let selectedTemplateId = null;
 let selectedTemplateHtml = '';
@@ -145,11 +145,11 @@ function renderMainCards() {
 // ТРЕКОВЫЕ ШАБЛОНЫ ДЛЯ 3D COVERFLOW ГАЛЕРЕИ (STYLE DRIBBLE)
 const templateCatalog = {
     'ФОТО': [
-        { id: 1, title: 'ROBLOX HERO', desc: 'СТАНЬ ГЕРОЕМ ЛЮБИМОЙ ИГРЫ', img: 'images/photo1.jpg', model: 'face-swap', prompt: 'Roblox hero blocky style' },
-        { id: 2, title: 'CYBER SAMURAI', desc: 'КИБЕРПАНК ВОИН 2077', img: 'images/photo3.jpg', model: 'face-swap', prompt: 'Cyberpunk samurai in neon armor' },
-        { id: 3, title: 'ANIME WORLD', desc: 'АНИМЕ ГЕРОЙ В СОЧНЫХ ЦВЕТАХ', img: 'images/photo2.jpg', model: 'face-swap', prompt: 'Anime style hero' },
-        { id: 4, title: 'FORBES COVER', desc: 'ТЫ НА ГЛАВНОЙ СТРАНИЦЕ FORBES', img: 'assets/hero_portrait.jpg', model: 'face-swap', prompt: 'Forbes magazine cover' },
-        { id: 5, title: 'GIGACHAD SIGMA', desc: 'ХАРИЗМА И СТИЛЬ 100%', img: 'assets/hero_avatar.jpg', model: 'face-swap', prompt: 'Sigma male portrait' }
+        { id: 1, title: 'ROBLOX HERO', desc: 'СТАНЬ ГЕРОЕМ ЛЮБИМОЙ ИГРЫ', img: 'images/photo1.jpg', model: 'nano-banana-2', prompt: 'Roblox hero blocky style' },
+        { id: 2, title: 'CYBER SAMURAI', desc: 'КИБЕРПАНК ВОИН 2077', img: 'images/photo3.jpg', model: 'nano-banana-2', prompt: 'Cyberpunk samurai in neon armor' },
+        { id: 3, title: 'ANIME WORLD', desc: 'АНИМЕ ГЕРОЙ В СОЧНЫХ ЦВЕТАХ', img: 'images/photo2.jpg', model: 'nano-banana-2', prompt: 'Anime style hero' },
+        { id: 4, title: 'FORBES COVER', desc: 'ТЫ НА ГЛАВНОЙ СТРАНИЦЕ FORBES', img: 'assets/hero_portrait.jpg', model: 'nano-banana-2', prompt: 'Forbes magazine cover' },
+        { id: 5, title: 'GIGACHAD SIGMA', desc: 'ХАРИЗМА И СТИЛЬ 100%', img: 'assets/hero_avatar.jpg', model: 'nano-banana-2', prompt: 'Sigma male portrait' }
     ],
     'ВИДЕО': [
         { id: 1, title: 'NEON MOTION', desc: 'ОЖИВИ СВОЙ ПОРТРЕТ В НЕОНЕ', img: 'images/photo3.jpg', model: 'kling-video', prompt: 'Neon light streaks swirling around cyberpunk hero' },
@@ -158,7 +158,7 @@ const templateCatalog = {
     ],
     'ТРЕНДЫ': [
         { id: 1, title: 'TIKTOK DANCE', desc: 'ВИРУСНЫЙ ТАНЦЕВАЛЬНЫЙ ЧЕЛЛЕНДЖ', img: 'assets/hero_robot.jpg', model: 'kling-video', prompt: 'TikTok dance animation' },
-        { id: 2, title: 'REELS VIBE', desc: 'ПОПУЛЯРНЫЙ ТРЕНД ИЗ ИНСТАГРАМ', img: 'assets/hero_avatar.jpg', model: 'face-swap', prompt: 'Reels trending aesthetic' }
+        { id: 2, title: 'REELS VIBE', desc: 'ПОПУЛЯРНЫЙ ТРЕНД ИЗ ИНСТАГРАМ', img: 'assets/hero_avatar.jpg', model: 'nano-banana-2', prompt: 'Reels trending aesthetic' }
     ]
 };
 
@@ -183,16 +183,16 @@ try {
 
 if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.getItem('kiosk_templates_v2') === null)) {
     masterTemplates = [
-        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'face-swap', prompt: 'Cute Pixar 3D animated character portrait, soft Disney lighting, vibrant colors, retain facial likeness' },
-        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'face-swap', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
-        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'face-swap', prompt: 'Trending Instagram aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
-        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'face-swap', prompt: 'Forbes magazine cover, elegant business suit, powerful charismatic gaze, studio magazine lighting' },
-        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'face-swap', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
+        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'nano-banana-2', prompt: 'Cute Pixar 3D animated character portrait, soft Disney lighting, vibrant colors, retain facial likeness' },
+        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'nano-banana-2', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
+        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'nano-banana-2', prompt: 'Trending Instagram aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
+        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'nano-banana-2', prompt: 'Forbes magazine cover, elegant business suit, powerful charismatic gaze, studio magazine lighting' },
+        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'nano-banana-2', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
         { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'kling-video', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
         { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'kling-video', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
         { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'kling-video', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
-        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'face-swap', prompt: 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere' },
-        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'face-swap', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
+        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'nano-banana-2', prompt: 'Roblox blocky character hero style, bright game world colors, playful gaming atmosphere' },
+        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'nano-banana-2', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
         { id: 99, sectionId: 3, sectionTitle: 'ТРЕНДЫ', category: 'ПРОЖАРКА', title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)', img: 'assets/hero_portrait.jpg', price: 190, model: 'roast-standup', prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice' },
         { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
         { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'nano-banana-2', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
@@ -253,12 +253,18 @@ function normalizeTemplates(tplList, cardsList) {
             stitle = matchedCard.title;
         }
 
+        let modelNorm = (t.model || '').trim();
+        if (modelNorm === 'face-swap' || !modelNorm) {
+            modelNorm = 'nano-banana-2';
+        }
+
         return {
             ...t,
             id: Number(t.id) || Date.now(),
             sectionId: Number(sid),
             sectionTitle: stitle || 'ФОТО',
             category: cat,
+            model: modelNorm,
             location: t.location || '',
             htmlCode: t.htmlCode || ''
         };
@@ -600,7 +606,8 @@ function renderGridTemplates() {
             selectedStylePrice = itemPrice;
             selectedStyleLocation = item.location || '';
             isTryOnMode = isTryOnTemplate(item);
-            selectedStyleModel = item.model || (isTryOnMode ? 'nano-banana-2' : 'face-swap');
+            selectedStyleModel = item.model || 'nano-banana-2';
+            if (selectedStyleModel === 'face-swap') selectedStyleModel = 'nano-banana-2';
             selectedStylePrompt = item.prompt || '';
             selectedTemplateId = item.id;
             selectedTemplateHtml = item.htmlCode || '';
@@ -693,7 +700,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
     const SUPABASE_BUCKET = 'kiosk-media';
 
-    // МГНОВЕННАЯ И 100% НАДЕЖНАЯ ГЕНЕРАЦИЯ QR-КОДОВ (Векторный SVG + Canvas + Fallback)
+    // МГНОВЕННАЯ И 100% НАДЕЖНАЯ ГЕНЕРАЦИЯ QR-КОДОВ (Векторный SVG + Canvas)
     function renderInstantQR(element, text, size = 260) {
         if (!element || !text) return;
 
@@ -722,21 +729,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     correctLevel: QRCode.CorrectLevel.M
                 });
 
-                // 1. Приоритет: генерация чистого векторного SVG (не зависит от видеодрайвера и аппаратного WebGL/Canvas)
+                // 1. Приоритет: генерация чистого векторного SVG прямо в DOM контейнера
+                // Полностью исключает сетевые запросы, Canvas toDataURL и битые картинки
                 if (qrInstance && qrInstance._oQRCode) {
                     const svgString = buildSvgString(qrInstance._oQRCode, size);
-                    const svgDataUri = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+
+                    const targetContainer = (element.tagName === 'IMG' && element.parentElement) 
+                        ? element.parentElement 
+                        : element;
+
+                    let svgHolder = targetContainer.querySelector('.qr-svg-holder');
+                    if (!svgHolder) {
+                        svgHolder = document.createElement('div');
+                        svgHolder.className = 'qr-svg-holder';
+                        svgHolder.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;';
+                        targetContainer.appendChild(svgHolder);
+                    }
+                    svgHolder.innerHTML = svgString;
 
                     if (element.tagName === 'IMG') {
-                        element.src = svgDataUri;
-                        element.style.display = 'block';
-                        element.onerror = () => {
-                            if (element.parentElement) {
-                                element.parentElement.innerHTML = svgString;
-                            }
-                        };
-                    } else {
-                        element.innerHTML = svgString;
+                        element.style.display = 'none';
+                        try {
+                            element.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+                        } catch(e) {}
                     }
                     return;
                 }
@@ -758,16 +773,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         } catch (qrErr) {
-            console.warn('Локальный QR рендер выдал исключение, переключаемся на SVG/Fallback:', qrErr);
+            console.warn('Локальный QR рендер выдал исключение:', qrErr);
         }
 
-        // 3. Fallback: внешний QR-сервер при непредвиденных сбоях
-        const fallbackUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}`;
+        // Если библиотека не сработала, прячем img, чтобы не показывать значок битой картинки
         if (element.tagName === 'IMG') {
-            element.src = fallbackUrl;
-            element.style.display = 'block';
-        } else {
-            element.innerHTML = `<img src="${fallbackUrl}" alt="QR" style="width:100%;height:100%;object-fit:contain;display:block;">`;
+            element.style.display = 'none';
         }
     }
 
@@ -2145,7 +2156,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedStylePrice = cur.price || 290;
                 selectedStyleLocation = cur.location || '';
                 isTryOnMode = isTryOnTemplate(cur);
-                selectedStyleModel = cur.model || (isTryOnMode ? 'nano-banana-2' : 'face-swap');
+                selectedStyleModel = cur.model || 'nano-banana-2';
+                if (selectedStyleModel === 'face-swap') selectedStyleModel = 'nano-banana-2';
                 selectedStylePrompt = cur.prompt || '';
                 selectedTemplateId = cur.id;
                 selectedTemplateHtml = cur.htmlCode || '';
