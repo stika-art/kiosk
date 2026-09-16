@@ -41,12 +41,14 @@ module.exports = async (req, res) => {
         const templateTitle = body.templateTitle || 'Photo';
         const orderId = body.orderId || ('TRD-' + Date.now() + '-' + Math.floor(Math.random() * 1000));
 
+        const accountId = body.accountId || undefined;
+
         let qrImageUrl = '';
         let paymentUrl = '';
 
         // Попытка создать реальный платёж в Finik
         try {
-            const finikRes = await createFinikPayment({ amount, orderId, templateTitle });
+            const finikRes = await createFinikPayment({ amount, orderId, templateTitle, accountId });
             qrImageUrl = finikRes.qrImageUrl;
             paymentUrl = finikRes.paymentUrl;
         } catch (finikErr) {

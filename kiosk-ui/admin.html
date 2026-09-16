@@ -1274,6 +1274,52 @@
                 </div>
             </div>
 
+            <!-- PAYMENT & FINIK ELQR SETTINGS CARD -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">💳 Настройки эквайринга и кошелька ИП (Finik / ELQR)</h2>
+                    <p class="card-subtitle">Приём платежей в сомах через национальный стандарт ELQR (MBank, Optima, Bakai, Demir, O!Dengi, Balance)</p>
+                </div>
+
+                <div style="max-width: 620px;">
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🏦 Название ИП / Организации:
+                        </label>
+                        <input type="text" id="finik-merchant-name-input" class="admin-input" style="width: 100%;" placeholder="например: ИП Мээрим Абдышова">
+                    </div>
+
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🆔 ID счёта кошелька в Finik (Account ID):
+                        </label>
+                        <input type="text" id="finik-account-id-input" class="admin-input" style="width: 100%; font-family: monospace;" placeholder="например: cd47050e-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                        <span class="cloud-tip" style="margin-top: 4px; display: block;">Скопируйте из первой колонки кабинета Finik (значок 📋 рядом с кодом).</span>
+                    </div>
+
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            🏪 ID точки продаж / кассы (POS / Terminal ID):
+                        </label>
+                        <input type="text" id="finik-pos-id-input" class="admin-input" style="width: 100%; font-family: monospace;" placeholder="например: 38f1c360-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                        <span class="cloud-tip" style="margin-top: 4px; display: block;">Скопируйте из второй колонки кабинета Finik (значок 📋 рядом с кодом).</span>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
+                            📱 Ссылка на статический QR-код кошелька (ELQR URL):
+                        </label>
+                        <input type="text" id="finik-static-qr-input" class="admin-input" style="width: 100%; font-family: monospace; font-size: 12px;" placeholder="https://qr.finik.kg/#000201010211...">
+                        <span class="cloud-tip" style="margin-top: 4px; display: block;">Скопируйте ссылку из предпоследней колонки таблицы счетов Finik.</span>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <button class="btn-primary" onclick="savePaymentSettings()">💾 Сохранить настройки кошелька</button>
+                    </div>
+                    <div id="payment-settings-status" class="status-msg" style="margin-top: 10px;"></div>
+                </div>
+            </div>
+
             <!-- CLOUD STORAGE STATUS CARD -->
             <div class="admin-card">
                 <div class="card-header">
@@ -3194,6 +3240,54 @@
             } catch(e) {}
         }
 
+        // PAYMENT & FINIK ELQR SETTINGS LOGIC
+        function loadPaymentSettings() {
+            try {
+                const accountId = localStorage.getItem('kiosk_finik_account_id') || '';
+                const posId = localStorage.getItem('kiosk_finik_pos_id') || '';
+                const merchantName = localStorage.getItem('kiosk_finik_merchant_name') || 'ИП Мээрим Абдышова';
+                const staticQr = localStorage.getItem('kiosk_finik_static_qr') || '';
+
+                const accInput = document.getElementById('finik-account-id-input');
+                const posInput = document.getElementById('finik-pos-id-input');
+                const nameInput = document.getElementById('finik-merchant-name-input');
+                const qrInput = document.getElementById('finik-static-qr-input');
+
+                if (accInput) accInput.value = accountId;
+                if (posInput) posInput.value = posId;
+                if (nameInput) nameInput.value = merchantName;
+                if (qrInput) qrInput.value = staticQr;
+            } catch (e) {
+                console.warn('loadPaymentSettings error:', e);
+            }
+        }
+
+        function savePaymentSettings() {
+            const accInput = document.getElementById('finik-account-id-input');
+            const posInput = document.getElementById('finik-pos-id-input');
+            const nameInput = document.getElementById('finik-merchant-name-input');
+            const qrInput = document.getElementById('finik-static-qr-input');
+            const status = document.getElementById('payment-settings-status');
+
+            const accountId = accInput ? accInput.value.trim() : '';
+            const posId = posInput ? posInput.value.trim() : '';
+            const merchantName = nameInput ? nameInput.value.trim() : '';
+            const staticQr = qrInput ? qrInput.value.trim() : '';
+
+            localStorage.setItem('kiosk_finik_account_id', accountId);
+            localStorage.setItem('kiosk_finik_pos_id', posId);
+            localStorage.setItem('kiosk_finik_merchant_name', merchantName);
+            localStorage.setItem('kiosk_finik_static_qr', staticQr);
+
+            syncAllToCloud();
+
+            if (status) {
+                status.className = 'status-msg success';
+                status.textContent = '✅ Настройки кошелька ИП и ELQR успешно сохранены и синхронизированы с облаком!';
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
+            }
+        }
+
         function saveRoastSettings() {
             const elKeyInput = document.getElementById('elevenlabs-key-input');
             const elVoiceInput = document.getElementById('elevenlabs-voice-input');
@@ -3380,6 +3474,10 @@
                     elevenlabs_key: localStorage.getItem('kiosk_elevenlabs_key') || '',
                     elevenlabs_voice_id: localStorage.getItem('kiosk_elevenlabs_voice_id') || 'ErXwobaYiN019PkySvjV',
                     openai_key: localStorage.getItem('kiosk_openai_key') || '',
+                    finik_account_id: localStorage.getItem('kiosk_finik_account_id') || '',
+                    finik_pos_id: localStorage.getItem('kiosk_finik_pos_id') || '',
+                    finik_merchant_name: localStorage.getItem('kiosk_finik_merchant_name') || '',
+                    finik_static_qr: localStorage.getItem('kiosk_finik_static_qr') || '',
                     updated_at: new Date().toISOString()
                 };
                 const jsonContent = JSON.stringify(payload, null, 2);
@@ -3488,6 +3586,26 @@
                         const input = document.getElementById('openai-key-input');
                         if (input && !input.value) input.value = data.openai_key;
                     }
+                    if (data.finik_account_id) {
+                        localStorage.setItem('kiosk_finik_account_id', data.finik_account_id);
+                        const input = document.getElementById('finik-account-id-input');
+                        if (input && !input.value) input.value = data.finik_account_id;
+                    }
+                    if (data.finik_pos_id) {
+                        localStorage.setItem('kiosk_finik_pos_id', data.finik_pos_id);
+                        const input = document.getElementById('finik-pos-id-input');
+                        if (input && !input.value) input.value = data.finik_pos_id;
+                    }
+                    if (data.finik_merchant_name) {
+                        localStorage.setItem('kiosk_finik_merchant_name', data.finik_merchant_name);
+                        const input = document.getElementById('finik-merchant-name-input');
+                        if (input && !input.value) input.value = data.finik_merchant_name;
+                    }
+                    if (data.finik_static_qr) {
+                        localStorage.setItem('kiosk_finik_static_qr', data.finik_static_qr);
+                        const input = document.getElementById('finik-static-qr-input');
+                        if (input && !input.value) input.value = data.finik_static_qr;
+                    }
                     if (changed) {
                         console.log('✅ Данные админки успешно синхронизированы с облаком');
                     }
@@ -3559,6 +3677,7 @@
         loadKioskSettings();
         loadAggregatorSettings();
         loadRoastSettings();
+        loadPaymentSettings();
         checkKieBalance();
         checkSupabaseStatus();
         fetchCloudConfig();

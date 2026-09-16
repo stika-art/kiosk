@@ -962,7 +962,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // МГНОВЕННЫЙ QR-КОД (0мс): формируем заказ и рендерим QR сразу без ожидания сети!
         const amount = selectedStylePrice || 290;
         currentOrderId = 'TRD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-        const instantPayload = `https://qr.finik.kg/#orderId=${currentOrderId}&amount=${amount}&title=${encodeURIComponent(selectedStyle || 'Photo')}`;
+
+        const configuredStaticQr = localStorage.getItem('kiosk_finik_static_qr') || '';
+        const configuredAccountId = localStorage.getItem('kiosk_finik_account_id') || '';
+
+        let instantPayload = configuredStaticQr;
+        if (!instantPayload) {
+            instantPayload = `https://qr.finik.kg/#orderId=${currentOrderId}&amount=${amount}&title=${encodeURIComponent(selectedStyle || 'Photo')}`;
+        }
         
         if (elqrImg) {
             renderInstantQR(elqrImg, instantPayload, 260);
@@ -980,7 +987,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     orderId: currentOrderId,
                     amount: amount,
-                    templateTitle: selectedStyle
+                    templateTitle: selectedStyle,
+                    accountId: configuredAccountId
                 })
             });
             const data = await resp.json();
@@ -1601,6 +1609,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     kioskCategories = data.categories;
                     localStorage.setItem('kiosk_categories_v2', JSON.stringify(data.categories));
                     renderCategoryPillsBar();
+                }
+                if (data.finik_account_id) {
+                    localStorage.setItem('kiosk_finik_account_id', data.finik_account_id);
+                }
+                if (data.finik_pos_id) {
+                    localStorage.setItem('kiosk_finik_pos_id', data.finik_pos_id);
+                }
+                if (data.finik_merchant_name) {
+                    localStorage.setItem('kiosk_finik_merchant_name', data.finik_merchant_name);
+                }
+                if (data.finik_static_qr) {
+                    localStorage.setItem('kiosk_finik_static_qr', data.finik_static_qr);
                 }
             }
         } catch(e) {
