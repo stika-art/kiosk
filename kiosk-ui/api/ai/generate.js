@@ -244,20 +244,23 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         return null;
     }
 
-    // Сопоставление моделей: для всех фото и стилей используется официальный ChatGPT (gpt-image-2-5-sunburst)
+    // Сопоставление моделей:
     let kieModel = 'gpt-image-2-5-sunburst-image-to-image';
-    if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') {
+    if (isTryOn || model === 'nano-banana-2' || model === 'google/nano-banana-edit') {
+        // Виртуальная примерка одежды полностью переведена на Nano Banana (Google Image Edit)
+        kieModel = 'google/nano-banana-edit';
+    } else if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') {
         kieModel = 'bytedance/seedance-2-5';
     } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'google/gemini-omni-flash-1-1' || model === 'gemini-omni-video') {
         kieModel = 'google/gemini-omni-flash-1-1';
     } else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6') {
         kieModel = 'kwaivgi/kling-v1-6';
     } else {
-        // Для всех фото-стилей и виртуальной примерки: ChatGPT 2.5 (gpt-image-2-5-sunburst)
+        // Для всех фото-стилей и портретов: ChatGPT 2.5 (gpt-image-2-5-sunburst)
         kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     }
 
-    console.log(`[Kie.ai ChatGPT] Запуск задачи "${kieModel}" [${targetResolution}] (isTryOn=${Boolean(isTryOn)})...`);
+    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isTryOn=${Boolean(isTryOn)})...`);
 
     const safePrompt = sanitizeForOpenAI(prompt);
 
@@ -275,8 +278,8 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
             image_url: publicPhotoUrl,
             duration: 5
         };
-    } else if (isTryOn) {
-        // Виртуальная примерка одежды / товаров на гостя через ChatGPT (2 фото: гость + вещь)
+    } else if (isTryOn || kieModel.includes('nano-banana')) {
+        // Виртуальная примерка одежды / товаров на гостя через Nano Banana (2 фото: гость + вещь)
         const tryOnPrompt = safePrompt && safePrompt.trim().length > 10
             ? safePrompt
             : 'Virtual clothing try-on: Fit the clothing item realistically onto the person in the photo. Seamlessly drape the garment with natural folds, lighting, and texture, keeping the person exact face, expression and hair.';
@@ -287,8 +290,12 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         }
 
         inputPayload = {
-            prompt: `Virtual clothing try-on: Fit the clothing item from the second image onto the person in the first image. CRITICAL MANDATORY: Strictly preserve the exact person from the first image completely intact: keep their exact gender, face, facial structure, facial features, facial hair (beard, mustache if present), hair color, hairstyle, age, and likeness from the first photo. Do NOT alter the person's gender or identity. Replace ONLY the garment with the clothing from the second image. ${tryOnPrompt}`,
+            prompt: `Virtual try-on: Take the clothing item from the second image and dress the person in the first image in it. CRITICAL MANDATORY: Strictly preserve the exact person from the first image completely intact: keep their exact gender, face, facial features, facial hair (beard, mustache if present), hair color, hairstyle, age, and likeness. Do NOT alter the person's gender or facial identity. Replace ONLY the garment with the clothing from the second image. ${tryOnPrompt}`,
             image_urls: imageUrls,
+            input_urls: imageUrls,
+            image_url: publicPhotoUrl,
+            output_format: 'png',
+            aspect_ratio: '3:4',
             resolution: targetResolution
         };
     } else {

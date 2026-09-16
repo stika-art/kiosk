@@ -219,10 +219,10 @@ if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.ge
         { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Blocky voxel gaming character hero style, bright game world colors, playful gaming atmosphere' },
         { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
         { id: 99, sectionId: 3, sectionTitle: 'ТРЕНДЫ', category: 'ПРОЖАРКА', title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)', img: 'assets/hero_portrait.jpg', price: 190, model: 'roast-standup', resolution: '2K', prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice' },
-        { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
-        { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
-        { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
-        { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'chatgpt-2.5', resolution: '2K', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
+        { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'nano-banana-2', resolution: '2K', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
+        { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'nano-banana-2', resolution: '2K', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
+        { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'nano-banana-2', resolution: '2K', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
+        { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'nano-banana-2', resolution: '2K', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
     ];
 }
 
@@ -279,7 +279,9 @@ function normalizeTemplates(tplList, cardsList) {
         }
 
         let modelNorm = (t.model || '').trim();
-        if (modelNorm !== 'seedance-2.5' && modelNorm !== 'omni-flash' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'chatgpt-2.5') {
+        if (sid === 4 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || Boolean(t.location)) {
+            modelNorm = 'nano-banana-2';
+        } else if (modelNorm !== 'seedance-2.5' && modelNorm !== 'omni-flash' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2' && modelNorm !== 'chatgpt-2.5') {
             modelNorm = 'chatgpt-2.5';
         }
 
@@ -309,7 +311,7 @@ function normalizeTemplates(tplList, cardsList) {
             img: 'assets/hero_avatar.jpg',
             price: 450,
             location: 'Рынок Дордой, ряд 5, контейнер 142',
-            model: 'chatgpt-2.5',
+            model: 'nano-banana-2',
             resolution: '2K',
             prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.',
             htmlCode: ''
@@ -323,7 +325,7 @@ function normalizeTemplates(tplList, cardsList) {
             img: 'assets/hero_portrait.jpg',
             price: 450,
             location: 'Рынок Дордой, проход 3, контейнер 88',
-            model: 'chatgpt-2.5',
+            model: 'nano-banana-2',
             resolution: '2K',
             prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.',
             htmlCode: ''
@@ -337,7 +339,7 @@ function normalizeTemplates(tplList, cardsList) {
             img: 'assets/hero_robot.jpg',
             price: 490,
             location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum',
-            model: 'chatgpt-2.5',
+            model: 'nano-banana-2',
             resolution: '2K',
             prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.',
             htmlCode: ''
@@ -351,7 +353,7 @@ function normalizeTemplates(tplList, cardsList) {
             img: 'assets/man.jpg',
             price: 350,
             location: 'Рынок Дордой, контейнер 205',
-            model: 'chatgpt-2.5',
+            model: 'nano-banana-2',
             resolution: '2K',
             prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.',
             htmlCode: ''
@@ -2031,7 +2033,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (data.pending && data.taskId) {
                         clearInterval(interval);
-                        console.log(`[AI Polling] Задача ChatGPT ${data.taskId} в процессе генерации, запускаем поллинг...`);
+                        console.log(`[AI Polling] Задача ${data.taskId} в процессе генерации, запускаем поллинг...`);
                         const chatGptStatuses = [
                             `Нейросеть ChatGPT генерирует портрет в качестве ${currentAiResolution}...`,
                             `OpenAI прорисовывает фотореалистичные черты лица...`,
@@ -2039,13 +2041,21 @@ document.addEventListener('DOMContentLoaded', () => {
                             `Шлифовка реалистичной текстуры и студийного света...`,
                             `Финальный рендеринг высокого разрешения...`
                         ];
+                        const nanoBananaStatuses = [
+                            `🍌 ИИ Nano Banana выполняет примерку одежды...`,
+                            `👗 Точная посадка кроя по вашей фигуре и позе...`,
+                            `👤 Сохранение вашего пола, лица и индивидуальности...`,
+                            `✨ Прорисовка реалистичной ткани и теней...`,
+                            `🎉 Финальный рендеринг готового образа...`
+                        ];
+                        const activePollStatuses = (isTryOnMode || selectedStyleModel === 'nano-banana-2') ? nanoBananaStatuses : chatGptStatuses;
                         let pollIdx = 0;
                         let pollAttempts = 0;
                         const maxPollAttempts = 45; // ~110 секунд
 
                         while (pollAttempts < maxPollAttempts) {
                             if (aiStatusText) {
-                                aiStatusText.textContent = chatGptStatuses[pollIdx % chatGptStatuses.length];
+                                aiStatusText.textContent = activePollStatuses[pollIdx % activePollStatuses.length];
                                 pollIdx++;
                             }
 
