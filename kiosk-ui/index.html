@@ -1052,12 +1052,37 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
         }
         .result-qr img,
-        .result-qr svg {
-            width: 100%;
-            height: 100%;
-            display: block;
+        .result-qr svg,
+        .result-qr canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block !important;
+            object-fit: contain;
+        }
+
+        @media (max-width: 900px), (max-height: 1300px) {
+            .result-content {
+                gap: 16px !important;
+                margin-bottom: 16px !important;
+            }
+            .result-image-box img,
+            .result-image-box video {
+                max-width: min(85vw, 360px) !important;
+                min-height: 220px !important;
+                max-height: 38vh !important;
+            }
+            .result-qr-box {
+                padding: 14px 20px !important;
+                gap: 8px !important;
+            }
+            .result-qr {
+                width: 170px !important;
+                height: 170px !important;
+                padding: 10px !important;
+            }
         }
 
         .qr-badge-title {
@@ -2014,6 +2039,6 @@
 </div>
 
 <script src="qrcode.min.js"></script>
-<script src="script.js?v=diag_panel_v13"></script>
+<script src="script.js?v=diag_panel_v14"></script>
 </body>
 </html>

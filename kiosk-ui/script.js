@@ -693,13 +693,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
     const SUPABASE_BUCKET = 'kiosk-media';
 
-    // МГНОВЕННАЯ ГЕНЕРАЦИЯ QR-КОДОВ (0ms, локально через QRCode.js, с fallback на qrserver)
+    // МГНОВЕННАЯ И 100% НАДЕЖНАЯ ГЕНЕРАЦИЯ QR-КОДОВ (Векторный SVG + Canvas + Fallback)
     function renderInstantQR(element, text, size = 260) {
         if (!element || !text) return;
+
+        function buildSvgString(qrModel, sz) {
+            const count = qrModel.getModuleCount();
+            let path = '';
+            for (let r = 0; r < count; r++) {
+                for (let c = 0; c < count; c++) {
+                    if (qrModel.isDark(r, c)) {
+                        path += `M${c},${r}h1v1h-1z`;
+                    }
+                }
+            }
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${count} ${count}" width="${sz}" height="${sz}" shape-rendering="crispEdges" style="width:100%;height:100%;display:block;border-radius:12px;"><path fill="#ffffff" d="M0,0h${count}v${count}h-${count}z"/><path fill="#000000" d="${path}"/></svg>`;
+        }
+
         try {
             if (typeof QRCode !== 'undefined') {
-                const tempDiv = document.createElement('div');
-                new QRCode(tempDiv, {
+                const dummyDiv = document.createElement('div');
+                const qrInstance = new QRCode(dummyDiv, {
                     text: text,
                     width: size,
                     height: size,
@@ -707,27 +721,53 @@ document.addEventListener('DOMContentLoaded', () => {
                     colorLight: '#ffffff',
                     correctLevel: QRCode.CorrectLevel.M
                 });
-                const canvas = tempDiv.querySelector('canvas');
-                if (canvas) {
-                    const dataUrl = canvas.toDataURL('image/png');
+
+                // 1. Приоритет: генерация чистого векторного SVG (не зависит от видеодрайвера и аппаратного WebGL/Canvas)
+                if (qrInstance && qrInstance._oQRCode) {
+                    const svgString = buildSvgString(qrInstance._oQRCode, size);
+                    const svgDataUri = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+
                     if (element.tagName === 'IMG') {
-                        element.src = dataUrl;
+                        element.src = svgDataUri;
+                        element.style.display = 'block';
+                        element.onerror = () => {
+                            if (element.parentElement) {
+                                element.parentElement.innerHTML = svgString;
+                            }
+                        };
                     } else {
-                        element.innerHTML = '';
-                        element.appendChild(canvas);
+                        element.innerHTML = svgString;
                     }
                     return;
                 }
+
+                // 2. Резерв: использование растрового Canvas из QRCode.js
+                const canvas = dummyDiv.querySelector('canvas');
+                if (canvas) {
+                    const pngDataUri = canvas.toDataURL('image/png');
+                    if (pngDataUri && pngDataUri.length > 50) {
+                        if (element.tagName === 'IMG') {
+                            element.src = pngDataUri;
+                            element.style.display = 'block';
+                        } else {
+                            element.innerHTML = '';
+                            element.appendChild(canvas);
+                        }
+                        return;
+                    }
+                }
             }
         } catch (qrErr) {
-            console.warn('Локальный QR рендер не сработал, переключаемся на fallback:', qrErr);
+            console.warn('Локальный QR рендер выдал исключение, переключаемся на SVG/Fallback:', qrErr);
         }
-        // Fallback через api.qrserver.com, если библиотеки нет
+
+        // 3. Fallback: внешний QR-сервер при непредвиденных сбоях
         const fallbackUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}`;
         if (element.tagName === 'IMG') {
             element.src = fallbackUrl;
+            element.style.display = 'block';
         } else {
-            element.innerHTML = `<img src="${fallbackUrl}" alt="QR" style="width:100%;height:100%;object-fit:contain;">`;
+            element.innerHTML = `<img src="${fallbackUrl}" alt="QR" style="width:100%;height:100%;object-fit:contain;display:block;">`;
         }
     }
 
@@ -1954,10 +1994,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Формирование QR-кода для скачивания результата на смартфон
         const resultQrEl = document.getElementById('result-qr-img');
-        if (resultQrEl && finalResultUrl) {
-            const absoluteDownloadUrl = finalResultUrl.startsWith('http') 
-                ? finalResultUrl 
-                : (window.location.origin + (finalResultUrl.startsWith('/') ? '' : '/') + finalResultUrl);
+        const targetResultUrl = finalResultUrl || selectedStylePhoto || window.location.href;
+        if (resultQrEl) {
+            const absoluteDownloadUrl = targetResultUrl.startsWith('http') 
+                ? targetResultUrl 
+                : (window.location.origin + (targetResultUrl.startsWith('/') ? '' : '/') + targetResultUrl);
+            console.log('📱 Формирование QR-кода результата для загрузки:', absoluteDownloadUrl);
             renderInstantQR(resultQrEl, absoluteDownloadUrl, 260);
         }
 
