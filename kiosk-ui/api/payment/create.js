@@ -52,9 +52,9 @@ module.exports = async (req, res) => {
             qrImageUrl = finikRes.qrImageUrl;
             paymentUrl = finikRes.paymentUrl;
         } catch (finikErr) {
-            console.warn('[Finik API Warning] Используем тестовый ELQR генератор, пока не настроен ключ:', finikErr.message);
-            // Fallback: формируем ELQR QR код для теста
-            const elqrPayload = `https://qr.finik.kg/#orderId=${orderId}&amount=${amount}&title=${encodeURIComponent(templateTitle)}`;
+            console.warn('[Finik API Warning] Используем ELQR генератор / статический QR:', finikErr.message);
+            // Fallback: формируем ELQR QR код
+            const elqrPayload = body.staticQr || `https://qr.finik.kg/#orderId=${orderId}&amount=${amount}&title=${encodeURIComponent(templateTitle)}`;
             paymentUrl = elqrPayload;
             qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(elqrPayload)}`;
         }
