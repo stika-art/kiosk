@@ -53,8 +53,31 @@ async function uploadImageToCDN(photoBase64OrUrl, prefix = 'guests', orderId) {
             return publicUrl;
         }
     } catch (e) {
-        console.warn(`[CDN Upload Error (${prefix})]`, e.message);
+        console.warn(`[CDN Supabase Error (${prefix})]`, e.message);
     }
+
+    // Резервная загрузка через Catbox CDN, если бакет Supabase недоступен
+    try {
+        const cleanBase64 = photoBase64OrUrl.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(cleanBase64, 'base64');
+        const form = new FormData();
+        form.append('reqtype', 'fileupload');
+        form.append('fileToUpload', new Blob([buffer], { type: 'image/jpeg' }), `${prefix}_${Date.now()}.jpg`);
+        const catRes = await fetch('https://catbox.moe/user/api.php', {
+            method: 'POST',
+            body: form
+        });
+        if (catRes.ok) {
+            const catUrl = (await catRes.text()).trim();
+            if (catUrl && catUrl.startsWith('http')) {
+                console.log(`[CDN Catbox] ${prefix} успешно загружено:`, catUrl);
+                return catUrl;
+            }
+        }
+    } catch (e2) {
+        console.warn(`[CDN Catbox Error (${prefix})]`, e2.message);
+    }
+
     return photoBase64OrUrl;
 }
 
@@ -264,10 +287,11 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         }
 
         inputPayload = {
-            prompt: `Virtual clothing try-on: Fit the clothing item from the second image onto the person in the first image. CRITICAL: Strictly preserve the person's exact gender, face, facial features, facial hair (beard/mustache if present), identity, hair, and likeness from the first photo completely intact. Replace only the garment. ${tryOnPrompt}`,
+            prompt: `Virtual clothing try-on: Fit the clothing item from the second image onto the person in the first image. CRITICAL MANDATORY: Strictly preserve the exact person from the first image completely intact: keep their exact gender, face, facial structure, facial features, facial hair (beard, mustache if present), hair color, hairstyle, age, and likeness from the first photo. Do NOT alter the person's gender or identity. Replace ONLY the garment with the clothing from the second image. ${tryOnPrompt}`,
             image_urls: imageUrls,
             resolution: targetResolution
         };
+    } else {
         // Стилизация портрета (дудл, арт, аниме, киберпанк, мультики, обложки и др.)
         // ВАЖНО: В ChatGPT передается ТОЛЬКО ОДНО фото — фото самого гостя (publicPhotoUrl)!
         // Картинка шаблона — это лишь обложка/образец стиля для меню.
