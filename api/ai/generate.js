@@ -200,9 +200,11 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
     if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') kieModel = 'bytedance/seedance-2-5';
     else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'google/gemini-omni-flash-1-1' || model === 'gemini-omni-video') kieModel = 'google/gemini-omni-flash-1-1';
     else if (model === 'nano-banana-2' || model === 'google/nano-banana-edit') kieModel = 'google/nano-banana-edit';
-    else if (model === 'chatgpt-2.5' || model === 'openai/gpt-4o-image' || model === 'gpt-image-2.5' || model === 'openai/chatgpt-2.5') kieModel = 'openai/gpt-4o-image';
+    else if (model === 'chatgpt-2.5' || model === 'gpt-image-2.5' || model === 'openai/gpt-4o-image' || model === 'gpt-image' || model === 'openai/chatgpt-2.5' || model === 'gpt-image-2-5-flare') kieModel = 'gpt-image-2-5-flare-image-to-image';
+    else if (model === 'gpt-image-2-5-sunburst' || model === 'gpt-2.5-sunburst') kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6') kieModel = 'kwaivgi/kling-v1-6';
     else if (model && model.includes('/')) kieModel = model;
+    else if (model) kieModel = model;
 
     console.log(`[Kie.ai] Запуск задачи для модели "${kieModel}" (isTryOn=${Boolean(isTryOn)})...`);
 
@@ -234,6 +236,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         inputPayload = {
             prompt: tryOnPrompt,
             image_urls: imageUrls,
+            input_urls: imageUrls,
             output_format: 'png',
             aspect_ratio: '3:4'
         };
@@ -241,6 +244,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         inputPayload = {
             prompt: prompt || 'Photorealistic high-end studio portrait, retain facial likeness',
             image_urls: [publicPhotoUrl],
+            input_urls: [publicPhotoUrl],
             output_format: 'png',
             aspect_ratio: '1:1'
         };

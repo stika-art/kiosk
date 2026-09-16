@@ -259,11 +259,12 @@ async function generateCaricatureViaGptImage({ apiKey, publicPhotoUrl, caricatur
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'google/nano-banana-edit',
+                model: 'gpt-image-2-5-flare-image-to-image',
                 callBackUrl: 'https://kiosk394.vercel.app/api/ai/kie-callback',
                 input: {
                     prompt: fullPrompt,
                     image_urls: [publicPhotoUrl],
+                    input_urls: [publicPhotoUrl],
                     output_format: 'png',
                     aspect_ratio: '9:16'
                 }
