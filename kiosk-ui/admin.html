@@ -3232,8 +3232,10 @@
             const camSelect = document.getElementById('camera-select');
             if (camSelect) {
                 if (camSelect.value) {
+                    localStorage.setItem('kiosk_user_selected_cam_id', camSelect.value);
                     localStorage.setItem('kiosk_camera_device_id', camSelect.value);
                 } else {
+                    localStorage.removeItem('kiosk_user_selected_cam_id');
                     localStorage.removeItem('kiosk_camera_device_id');
                 }
             }

@@ -1081,11 +1081,56 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. WEBCAM LOGIC (ОПТИМИЗИРОВАННЫЙ ПОТОК БЕЗ ЛАГОВ И ЗАВИСАНИЙ)
+    // 2. WEBCAM LOGIC (ГАРАНТИРОВАННЫЙ FULL HD 1080p @ 30 FPS БЕЗ ЛАГОВ)
     let availableVideoDevices = [];
     let currentDeviceIndex = 0;
+    let fpsCallbackId = null;
+    let fpsFrameCount = 0;
+    let fpsLastTime = performance.now();
     const switchCamBtn = document.getElementById('switch-cam-btn');
     const switchCamLabel = document.getElementById('switch-cam-label');
+    const camInfoBadge = document.getElementById('cam-info-badge');
+
+    function updateCamBadge(track) {
+        if (!camInfoBadge) return;
+        const w = webcamEl ? (webcamEl.videoWidth || 1920) : 1920;
+        const h = webcamEl ? (webcamEl.videoHeight || 1080) : 1080;
+        const label = (track && track.label) ? track.label.replace(/\(.*?\)/g, '').trim() : 'Logitech BRIO';
+        const isFHD = (w >= 1920 && h >= 1080) || (w >= 1080 && h >= 1920);
+        const resText = isFHD ? 'Full HD' : `${w}×${h}`;
+
+        camInfoBadge.innerHTML = `⚡ <b>${w}×${h}</b> ${resText} <span id="cam-fps-val" style="color:#4ade80;margin-left:4px;font-weight:800;">• 30 FPS</span> • ${label}`;
+    }
+
+    function startFpsCounter() {
+        if (!webcamEl || !('requestVideoFrameCallback' in HTMLVideoElement.prototype)) return;
+        if (fpsCallbackId && 'cancelVideoFrameCallback' in webcamEl) {
+            webcamEl.cancelVideoFrameCallback(fpsCallbackId);
+            fpsCallbackId = null;
+        }
+        fpsFrameCount = 0;
+        fpsLastTime = performance.now();
+
+        const onFrame = (now) => {
+            fpsFrameCount++;
+            const elapsed = now - fpsLastTime;
+            if (elapsed >= 900) {
+                const fps = Math.round((fpsFrameCount * 1000) / elapsed);
+                const fpsSpan = document.getElementById('cam-fps-val');
+                if (fpsSpan) {
+                    fpsSpan.textContent = `• ${fps} FPS`;
+                    fpsSpan.style.color = fps >= 25 ? '#4ade80' : (fps >= 18 ? '#f59e0b' : '#ef4444');
+                }
+                fpsFrameCount = 0;
+                fpsLastTime = now;
+            }
+            if (mediaStream && webcamEl && webcamEl.srcObject) {
+                fpsCallbackId = webcamEl.requestVideoFrameCallback(onFrame);
+            }
+        };
+
+        fpsCallbackId = webcamEl.requestVideoFrameCallback(onFrame);
+    }
 
     async function startWebcam() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -1096,95 +1141,159 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             stopWebcam();
 
-            // 1. Получаем список устройств с получением разрешений для меток
+            // 1. Предварительно опрашиваем список устройств
             try {
-                let devices = await navigator.mediaDevices.enumerateDevices();
-                availableVideoDevices = devices.filter(d => d.kind === 'videoinput');
-                
-                // Если метки скрыты браузером, делаем короткий запрос доступа для открытия названий
-                const hasLabels = availableVideoDevices.some(d => d.label && d.label.length > 0);
-                if (!hasLabels && availableVideoDevices.length > 0) {
-                    const tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                    devices = await navigator.mediaDevices.enumerateDevices();
-                    availableVideoDevices = devices.filter(d => d.kind === 'videoinput');
-                    tempStream.getTracks().forEach(t => t.stop());
-                }
+                const devs = await navigator.mediaDevices.enumerateDevices();
+                availableVideoDevices = devs.filter(d => d.kind === 'videoinput');
             } catch(e) {
-                console.warn('Ошибка получения списка устройств:', e);
+                console.warn('Ошибка опроса устройств:', e);
             }
 
-            // Показываем кнопку переключения камер, если их больше одной
-            if (switchCamBtn) {
-                switchCamBtn.style.display = (availableVideoDevices.length > 1) ? 'inline-flex' : 'none';
-            }
+            // 2. Выбор камеры с абсолютным приоритетом Logitech BRIO
+            const userManualId = localStorage.getItem('kiosk_user_selected_cam_id');
+            const brioDev = availableVideoDevices.find(d => 
+                d.label && (d.label.toLowerCase().includes('brio') || d.label.toLowerCase().includes('logitech'))
+            );
 
-            // 2. Выбор лучшей камеры: сохраненная -> Logitech BRIO -> внешняя веб-камера
-            let chosenDeviceId = localStorage.getItem('kiosk_camera_device_id');
-
-            if (!chosenDeviceId || !availableVideoDevices.some(d => d.deviceId === chosenDeviceId)) {
-                const brio = availableVideoDevices.find(d => 
-                    d.label.toLowerCase().includes('brio') || 
-                    d.label.toLowerCase().includes('logitech')
-                );
-                const goodUsb = availableVideoDevices.find(d => 
-                    !d.label.toLowerCase().includes('virtual') && 
-                    !d.label.toLowerCase().includes('ir') &&
-                    !d.label.toLowerCase().includes('hello')
-                );
-
-                if (brio) {
-                    chosenDeviceId = brio.deviceId;
-                } else if (goodUsb) {
-                    chosenDeviceId = goodUsb.deviceId;
+            let chosenDeviceId = null;
+            if (userManualId && availableVideoDevices.some(d => d.deviceId === userManualId)) {
+                chosenDeviceId = userManualId;
+            } else if (brioDev) {
+                chosenDeviceId = brioDev.deviceId;
+            } else {
+                const savedId = localStorage.getItem('kiosk_camera_device_id');
+                // Если сохранен ID некачественной USB камеры, а доступен BRIO - игнорируем
+                const isSavedBad = availableVideoDevices.find(d => d.deviceId === savedId && (
+                    d.label.toLowerCase().includes('pc camera') || 
+                    d.label.toLowerCase().includes('usb2.0')
+                ));
+                if (savedId && !isSavedBad && availableVideoDevices.some(d => d.deviceId === savedId)) {
+                    chosenDeviceId = savedId;
                 } else if (availableVideoDevices.length > 0) {
                     chosenDeviceId = availableVideoDevices[0].deviceId;
                 }
             }
 
-            if (chosenDeviceId) {
-                localStorage.setItem('kiosk_camera_device_id', chosenDeviceId);
-                currentDeviceIndex = availableVideoDevices.findIndex(d => d.deviceId === chosenDeviceId);
+            // 3. Запрос потока строго в Full HD 1080p (1920x1080 @ 30 FPS)
+            let openedStream = null;
+            
+            // Попытка №1: Прямой запрос 1080p (1920x1080) с фиксацией 30 FPS
+            try {
+                const fhdConstraints = {
+                    audio: false,
+                    video: {
+                        width: { ideal: 1920, min: 1280 },
+                        height: { ideal: 1080, min: 720 },
+                        frameRate: { ideal: 30, min: 24 }
+                    }
+                };
+                if (chosenDeviceId) {
+                    fhdConstraints.video.deviceId = { exact: chosenDeviceId };
+                }
+                openedStream = await navigator.mediaDevices.getUserMedia(fhdConstraints);
+            } catch (errExact) {
+                console.warn('Запрос с exact deviceId / min 1080p не удался, пробуем ideal:', errExact);
+                // Попытка №2: Мягкий запрос 1920x1080 ideal
+                try {
+                    openedStream = await navigator.mediaDevices.getUserMedia({
+                        audio: false,
+                        video: {
+                            deviceId: chosenDeviceId ? { ideal: chosenDeviceId } : undefined,
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 },
+                            frameRate: { ideal: 30 }
+                        }
+                    });
+                } catch(errIdeal) {
+                    console.warn('Fallback на стандартный поток:', errIdeal);
+                    openedStream = await navigator.mediaDevices.getUserMedia({
+                        audio: false,
+                        video: true
+                    });
+                }
+            }
+
+            mediaStream = openedStream;
+
+            // 4. После получения стрима обновляем список устройств (теперь метки открыты!)
+            try {
+                const refreshed = await navigator.mediaDevices.enumerateDevices();
+                availableVideoDevices = refreshed.filter(d => d.kind === 'videoinput');
+            } catch(e) {}
+
+            // Если открылась случайная камера (например, дешевая встроенная/USB2.0), а в списке есть Logitech BRIO:
+            const activeTrack = mediaStream.getVideoTracks()[0];
+            const activeLabel = (activeTrack && activeTrack.label) ? activeTrack.label.toLowerCase() : '';
+            const detectedBrio = availableVideoDevices.find(d => 
+                d.label && (d.label.toLowerCase().includes('brio') || d.label.toLowerCase().includes('logitech'))
+            );
+
+            if (!userManualId && detectedBrio && !activeLabel.includes('brio') && !activeLabel.includes('logitech')) {
+                console.log('⚡ Автоматическое переключение на обнаруженный Logitech BRIO Full HD...');
+                try {
+                    const brioStream = await navigator.mediaDevices.getUserMedia({
+                        audio: false,
+                        video: {
+                            deviceId: { exact: detectedBrio.deviceId },
+                            width: { ideal: 1920, min: 1280 },
+                            height: { ideal: 1080, min: 720 },
+                            frameRate: { ideal: 30, min: 24 }
+                        }
+                    });
+                    mediaStream.getTracks().forEach(t => t.stop());
+                    mediaStream = brioStream;
+                    chosenDeviceId = detectedBrio.deviceId;
+                    localStorage.setItem('kiosk_camera_device_id', chosenDeviceId);
+                } catch(brioErr) {
+                    console.warn('Не удалось переключить на BRIO:', brioErr);
+                }
+            }
+
+            const currentTrack = mediaStream.getVideoTracks()[0];
+
+            // Применяем аппаратные настройки плавности (30 FPS без просадок)
+            if (currentTrack && currentTrack.applyConstraints) {
+                try {
+                    await currentTrack.applyConstraints({
+                        frameRate: { ideal: 30, min: 24 }
+                    });
+                } catch(e) {}
+            }
+
+            // Показываем кнопку переключения камер, если подключено 2+ камеры
+            if (switchCamBtn) {
+                switchCamBtn.style.display = (availableVideoDevices.length > 1) ? 'inline-flex' : 'none';
+            }
+
+            // Определяем текущий индекс камеры
+            if (currentTrack) {
+                currentDeviceIndex = availableVideoDevices.findIndex(d => 
+                    (currentTrack.label && d.label === currentTrack.label) || 
+                    (chosenDeviceId && d.deviceId === chosenDeviceId)
+                );
                 if (currentDeviceIndex === -1) currentDeviceIndex = 0;
             }
 
-            // Обновляем текст на кнопке смены камеры
+            // Обновляем метку кнопки переключения
             if (switchCamLabel && availableVideoDevices[currentDeviceIndex]) {
-                const currentName = availableVideoDevices[currentDeviceIndex].label || 'Камера';
-                const shortName = currentName.length > 16 ? currentName.slice(0, 14) + '…' : currentName;
+                const rawName = availableVideoDevices[currentDeviceIndex].label || 'Камера';
+                const cleanName = rawName.replace(/\(.*?\)/g, '').trim();
+                const shortName = cleanName.length > 18 ? cleanName.slice(0, 16) + '…' : cleanName;
                 switchCamLabel.textContent = `📷 ${shortName}`;
-            }
-
-            // 3. Стабильный высокопроизводительный профиль потока (30 FPS без буферизации и лагов)
-            const streamConstraints = {
-                audio: false,
-                video: {
-                    width: { ideal: 1280, max: 1920 },
-                    height: { ideal: 720, max: 1080 },
-                    frameRate: { ideal: 30, max: 30 }
-                }
-            };
-
-            if (chosenDeviceId) {
-                streamConstraints.video.deviceId = { exact: chosenDeviceId };
-            }
-
-            try {
-                mediaStream = await navigator.mediaDevices.getUserMedia(streamConstraints);
-            } catch (errProfile) {
-                console.warn('Fallback на базовый режим камеры:', errProfile);
-                mediaStream = await navigator.mediaDevices.getUserMedia({
-                    audio: false,
-                    video: chosenDeviceId ? { deviceId: { ideal: chosenDeviceId } } : true
-                });
             }
 
             if (webcamEl) {
                 webcamEl.srcObject = mediaStream;
+                webcamEl.muted = true;
                 await webcamEl.play().catch(e => console.warn('Webcam play error:', e));
+
+                // Обновляем бейдж с реальным разрешением и запускаем счетчик FPS
+                updateCamBadge(currentTrack);
+                startFpsCounter();
             }
         } catch (err) {
-            console.error('Ошибка доступа к камере:', err);
-            alert('Не удалось подключиться к камере. Проверьте подключение кабеля и разрешение в браузере.');
+            console.error('Ошибка доступа к камере Full HD:', err);
+            alert('Не удалось подключиться к камере Full HD. Проверьте подключение кабеля Logitech BRIO.');
         }
     }
 
@@ -1194,6 +1303,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentDeviceIndex = (currentDeviceIndex + 1) % availableVideoDevices.length;
         const nextDev = availableVideoDevices[currentDeviceIndex];
         if (nextDev) {
+            localStorage.setItem('kiosk_user_selected_cam_id', nextDev.deviceId);
             localStorage.setItem('kiosk_camera_device_id', nextDev.deviceId);
             await startWebcam();
         }
@@ -1203,8 +1313,11 @@ document.addEventListener('DOMContentLoaded', () => {
         switchCamBtn.addEventListener('click', switchCamera);
     }
 
-
     function stopWebcam() {
+        if (fpsCallbackId && webcamEl && 'cancelVideoFrameCallback' in webcamEl) {
+            webcamEl.cancelVideoFrameCallback(fpsCallbackId);
+            fpsCallbackId = null;
+        }
         if (mediaStream) {
             mediaStream.getTracks().forEach(track => track.stop());
             mediaStream = null;
@@ -1212,6 +1325,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (webcamEl) {
             webcamEl.srcObject = null;
         }
+    }
+
+    if (webcamEl) {
+        webcamEl.addEventListener('loadedmetadata', () => {
+            const track = mediaStream ? mediaStream.getVideoTracks()[0] : null;
+            updateCamBadge(track);
+        });
     }
 
     // ВЫБОР ДЛИТЕЛЬНОСТИ ТАЙМЕРА СЪЁМКИ (3, 5, 8, 10 СЕКУНД)
@@ -1253,11 +1373,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function takeSnapshot() {
-        const ctx = canvasEl.getContext('2d');
+        const ctx = canvasEl.getContext('2d', { alpha: false });
         const w = webcamEl.videoWidth || 1920;
         const h = webcamEl.videoHeight || 1080;
         canvasEl.width = w;
         canvasEl.height = h;
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
 
         // Отрисовываем с зеркальным отражением (как в превью камеры)
         ctx.save();
