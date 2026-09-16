@@ -1230,8 +1230,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!userManualId && detectedBrio && !activeLabel.includes('brio') && !activeLabel.includes('logitech')) {
                 console.log('⚡ Автоматическое переключение на обнаруженный Logitech BRIO Full HD...');
+                // Обязательно освобождаем USB-канал старой камеры перед захватом новой
+                mediaStream.getTracks().forEach(t => t.stop());
+                mediaStream = null;
                 try {
-                    const brioStream = await navigator.mediaDevices.getUserMedia({
+                    mediaStream = await navigator.mediaDevices.getUserMedia({
                         audio: false,
                         video: {
                             deviceId: { exact: detectedBrio.deviceId },
@@ -1240,12 +1243,23 @@ document.addEventListener('DOMContentLoaded', () => {
                             frameRate: { ideal: 30, min: 24 }
                         }
                     });
-                    mediaStream.getTracks().forEach(t => t.stop());
-                    mediaStream = brioStream;
                     chosenDeviceId = detectedBrio.deviceId;
                     localStorage.setItem('kiosk_camera_device_id', chosenDeviceId);
                 } catch(brioErr) {
-                    console.warn('Не удалось переключить на BRIO:', brioErr);
+                    console.warn('Не удалось переключить на BRIO exact, пробуем ideal:', brioErr);
+                    try {
+                        mediaStream = await navigator.mediaDevices.getUserMedia({
+                            audio: false,
+                            video: {
+                                deviceId: { ideal: detectedBrio.deviceId },
+                                width: { ideal: 1920 },
+                                height: { ideal: 1080 },
+                                frameRate: { ideal: 30 }
+                            }
+                        });
+                    } catch(brioFallbackErr) {
+                        console.warn('Не удалось восстановить поток:', brioFallbackErr);
+                    }
                 }
             }
 
