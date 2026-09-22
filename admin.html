@@ -4112,6 +4112,15 @@
         checkKieBalance();
         checkSupabaseStatus();
         fetchCloudConfig();
+
+        // Фоновая авто-синхронизация админки с Supabase при смене вкладки или каждые 25 секунд
+        setInterval(fetchCloudConfig, 25000);
+        window.addEventListener('focus', () => {
+            fetchCloudConfig();
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) fetchCloudConfig();
+        });
     </script>
 
     <!-- MODAL FOR IMAGE CROPPING -->

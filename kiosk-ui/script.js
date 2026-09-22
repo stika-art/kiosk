@@ -726,6 +726,10 @@ window.selectCard = function(cardEl, cardIdOrMode) {
 
 // 2. GRID ROUTER & RENDERER (ДЛЯ КАЖДОЙ КНОПКИ — СВОИ КАТЕГОРИИ И СВОИ ШАБЛОНЫ)
 function openTemplateGallery(cardIdOrMode) {
+    // Фоновая проверка актуальных шаблонов из Supabase
+    if (typeof window.syncCloudConfig === 'function') {
+        window.syncCloudConfig();
+    }
     // Находим активную кнопку главного экрана
     let activeCard = null;
     if (typeof cardIdOrMode === 'number' || (!isNaN(Number(cardIdOrMode)) && String(Number(cardIdOrMode)) === String(cardIdOrMode).trim())) {
@@ -1257,6 +1261,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (tryonLocationInfoCard) tryonLocationInfoCard.style.display = 'none';
         modal.style.display = 'none';
         resetState();
+        syncCloudConfig(); // Обновление при завершении сессии заказа
     }
 
     function showStep(stepEl) {
@@ -2703,32 +2708,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ОБЛАЧНАЯ КОНФИГУРАЦИЯ БАННЕРОВ И НАСТРОЕК (SUPABASE STORAGE)
     const CLOUD_CONFIG_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/config/settings.json';
+    let lastCloudUpdatedAt = null;
+    let isSyncingCloud = false;
 
     async function syncCloudConfig() {
+        if (isSyncingCloud) return;
+        isSyncingCloud = true;
         try {
             const res = await fetch(CLOUD_CONFIG_URL + '?_t=' + Date.now(), { cache: 'no-store' });
             if (res.ok) {
                 const data = await res.json();
+
+                // Если конфиг не менялся, не перерисовываем DOM без необходимости
+                if (data.updated_at && lastCloudUpdatedAt === data.updated_at) {
+                    return;
+                }
+                if (data.updated_at) {
+                    lastCloudUpdatedAt = data.updated_at;
+                }
+
                 if (data.main_header) {
                     mainHeaderConfig = data.main_header;
-                    localStorage.setItem('kiosk_main_header_v1', JSON.stringify(data.main_header));
+                    try { localStorage.setItem('kiosk_main_header_v1', JSON.stringify(data.main_header)); } catch(e){}
                 }
                 if (Array.isArray(data.main_cards) && data.main_cards.length > 0) {
                     mainCardsConfig = normalizeMainCards(data.main_cards);
-                    localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCardsConfig));
+                    try { localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCardsConfig)); } catch(e){}
+                    renderMainCards();
                 }
-                renderMainCards();
 
                 if (Array.isArray(data.ads_top) && data.ads_top.length > 0) {
                     topPlaylist = data.ads_top;
-                    localStorage.setItem('kiosk_ads_top', JSON.stringify(data.ads_top));
+                    try { localStorage.setItem('kiosk_ads_top', JSON.stringify(data.ads_top)); } catch(e){}
                 }
                 if (Array.isArray(data.ads_bottom) && data.ads_bottom.length > 0) {
                     bottomPlaylist = data.ads_bottom;
-                    localStorage.setItem('kiosk_ads_bottom', JSON.stringify(data.ads_bottom));
+                    try { localStorage.setItem('kiosk_ads_bottom', JSON.stringify(data.ads_bottom)); } catch(e){}
                 }
                 if (data.attract_timeout) {
-                    localStorage.setItem('kiosk_attract_timeout', data.attract_timeout);
+                    try { localStorage.setItem('kiosk_attract_timeout', data.attract_timeout); } catch(e){}
                 }
                 if (Array.isArray(data.templates) && data.templates.length > 0) {
                     masterTemplates = normalizeTemplates(data.templates, mainCardsConfig);
@@ -2742,29 +2760,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (Array.isArray(data.categories)) {
                     kioskCategories = data.categories;
-                    localStorage.setItem('kiosk_categories_v2', JSON.stringify(data.categories));
+                    try { localStorage.setItem('kiosk_categories_v2', JSON.stringify(data.categories)); } catch(e){}
                     renderCategoryPillsBar();
                 }
                 if (data.finik_account_id) {
-                    localStorage.setItem('kiosk_finik_account_id', data.finik_account_id);
+                    try { localStorage.setItem('kiosk_finik_account_id', data.finik_account_id); } catch(e){}
                 }
                 if (data.finik_pos_id) {
-                    localStorage.setItem('kiosk_finik_pos_id', data.finik_pos_id);
+                    try { localStorage.setItem('kiosk_finik_pos_id', data.finik_pos_id); } catch(e){}
                 }
                 if (data.finik_merchant_name) {
-                    localStorage.setItem('kiosk_finik_merchant_name', data.finik_merchant_name);
+                    try { localStorage.setItem('kiosk_finik_merchant_name', data.finik_merchant_name); } catch(e){}
                 }
                 if (data.finik_static_qr) {
-                    localStorage.setItem('kiosk_finik_static_qr', data.finik_static_qr);
+                    try { localStorage.setItem('kiosk_finik_static_qr', data.finik_static_qr); } catch(e){}
                 }
                 if (data.finik_qr_img) {
-                    localStorage.setItem('kiosk_finik_qr_img', data.finik_qr_img);
+                    try { localStorage.setItem('kiosk_finik_qr_img', data.finik_qr_img); } catch(e){}
                 }
+                console.log('☁️ Авто-синхронизация Supabase: обновлены шаблоны и настройки на устройстве (' + (data.templates ? data.templates.length : 0) + ' шт.)');
             }
         } catch(e) {
             console.warn('Cloud config fetch skipped/offline:', e);
+        } finally {
+            isSyncingCloud = false;
         }
     }
+    window.syncCloudConfig = syncCloudConfig;
 
     function getTopPlaylist() {
         try {
@@ -2969,6 +2991,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 450);
         }
         resetInactivityTimer();
+        syncCloudConfig(); // Свежие данные из Supabase прямо при пробуждении киоска
     };
 
     // Сброс таймера и закрытие заставки при касании
@@ -3015,4 +3038,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1500);
 
     resetInactivityTimer();
+
+    // Авто-синхронизация с Supabase каждые 20 секунд (независимость от киоска и автообновление всех устройств)
+    setInterval(() => {
+        syncCloudConfig();
+    }, 20000);
+
+    // Авто-синхронизация при возвращении фокуса / видимости окна
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncCloudConfig();
+    });
+    window.addEventListener('focus', () => {
+        syncCloudConfig();
+    });
 });
