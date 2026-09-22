@@ -7,7 +7,7 @@ let selectedStylePhoto = 'images/photo1.jpg';
 let selectedStylePrice = 290;
 let selectedStyleLocation = '';
 let isTryOnMode = false;
-let selectedStyleModel = 'chatgpt-2.5';
+let selectedStyleModel = 'chatgpt-2';
 let selectedStylePrompt = '';
 let selectedStyleResolution = '2K';
 let selectedTemplateId = null;
@@ -765,7 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (aiProgressModelBadge) {
             const isTryOn = isTryOnMode || modelName === 'nano-banana-2';
-            aiProgressModelBadge.textContent = isTryOn ? '🍌 Nano Banana (Примерка)' : '⚡ GPT Image 2.5';
+            aiProgressModelBadge.textContent = isTryOn ? '🍌 Nano Banana (Примерка)' : '⚡ GPT Image 2';
         }
         if (aiProgressResBadge) {
             aiProgressResBadge.textContent = `✨ ${res || currentAiResolution || '2K'} HD`;
@@ -2128,7 +2128,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     photoData: capturedPhotoData,
                     templateImg: selectedStylePhoto,
                     prompt: selectedStylePrompt,
-                    model: selectedStyleModel || 'chatgpt-2.5',
+                    model: selectedStyleModel || 'chatgpt-2',
                     title: selectedStyle,
                     price: selectedStylePrice,
                     orderId: currentOrderId,

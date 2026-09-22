@@ -927,8 +927,10 @@
                     <input type="text" id="tpl-title-input" class="admin-input" placeholder="Название товара / шаблона (напр: Толстовка Oversize)..." style="flex: 1.3;">
                     <input type="number" id="tpl-price-input" class="admin-input" style="max-width: 140px;" placeholder="Цена (сом)" min="10" step="10" title="Цена товара в сомах">
                     <input type="text" id="tpl-location-input" class="admin-input" placeholder="📍 Где продается (напр: Рынок Дордой, проход 4, контейнер 142)..." style="flex: 1.5;" title="Место продажи или номер контейнера/бутика">
-                    <select id="tpl-model-select" class="admin-select" style="max-width: 250px;" title="Модель обработки" onchange="toggleCustomModelInput(this.value)">
-                        <option value="chatgpt-2.5" selected>🎨 GPT Image 2 (OpenAI Sunburst — По умолчанию)</option>
+                    <select id="tpl-model-select" class="admin-select" style="max-width: 260px;" title="Модель обработки" onchange="toggleCustomModelInput(this.value)">
+                        <option value="chatgpt-2" selected>🎨 GPT Image 2 (Обычный базовый — По умолчанию)</option>
+                        <option value="chatgpt-2.5-sunburst">☀️ GPT Image 2.5 Sunburst (Детальный)</option>
+                        <option value="chatgpt-2.5-flare">🔥 GPT Image 2.5 Flare (Быстрый)</option>
                         <option value="nano-banana-2">🍌 Nano Banana 2 (Google Image Edit / Примерка)</option>
                         <option value="roast-standup">🔥 Стендап-Прожарка (ChatGPT + ElevenLabs)</option>
                         <option value="seedance-2.5">🎬 Seedance 2.5 (Видеоролик)</option>
@@ -1989,8 +1991,10 @@
         }
 
         function getModelBadge(model) {
-            const m = model || 'chatgpt-2.5';
-            if (m === 'chatgpt-2.5') return '<span class="model-badge" style="background: rgba(212,160,67,0.18); border-color: #D4A043; color: #D4A043; font-weight: 800;">🎨 ChatGPT 2.5</span>';
+            const m = model || 'chatgpt-2';
+            if (m === 'chatgpt-2' || m === 'chatgpt-2.5' || m === 'gpt-image-2') return '<span class="model-badge" style="background: rgba(212,160,67,0.18); border-color: #D4A043; color: #D4A043; font-weight: 800;">🎨 GPT Image 2</span>';
+            if (m === 'chatgpt-2.5-sunburst' || m === 'gpt-image-2-5-sunburst') return '<span class="model-badge" style="background: rgba(212,160,67,0.18); border-color: #D4A043; color: #D4A043; font-weight: 800;">☀️ GPT 2.5 Sunburst</span>';
+            if (m === 'chatgpt-2.5-flare' || m === 'gpt-image-2-5-flare') return '<span class="model-badge" style="background: rgba(255,149,0,0.18); border-color: #ff9500; color: #ff9500; font-weight: 800;">🔥 GPT 2.5 Flare</span>';
             if (m === 'roast-standup') return '<span class="model-badge" style="background: rgba(255,69,58,0.18); border-color: #ff453a; color: #ff453a;">🔥 Прожарка + Голос</span>';
             if (m === 'nano-banana-2') return '<span class="model-badge">🍌 Nano Banana 2</span>';
             if (m === 'seedance-2.5') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">🎬 Seedance 2.5</span>';
@@ -2441,8 +2445,8 @@
             const modelVal = tpl.model || 'chatgpt-2.5';
             const modelSelect = document.getElementById('tpl-model-select');
             const customModelInput = document.getElementById('tpl-custom-model-input');
-            if (['chatgpt-2.5', 'nano-banana-2', 'seedance-2.5', 'omni-flash', 'kling-video', 'roast-standup'].includes(modelVal)) {
-                modelSelect.value = modelVal;
+            if (['chatgpt-2', 'chatgpt-2.5', 'gpt-image-2', 'chatgpt-2.5-sunburst', 'chatgpt-2.5-flare', 'nano-banana-2', 'seedance-2.5', 'omni-flash', 'kling-video', 'roast-standup'].includes(modelVal)) {
+                modelSelect.value = (modelVal === 'chatgpt-2.5' || modelVal === 'gpt-image-2') ? 'chatgpt-2' : modelVal;
                 customModelInput.style.display = 'none';
                 customModelInput.value = '';
             } else {

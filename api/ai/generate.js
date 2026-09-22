@@ -246,23 +246,32 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
     }
 
     // Сопоставление моделей:
-    // По умолчанию для всех фото-шаблонов используется GPT Image 2 (gpt-image-2-5-sunburst-image-to-image),
+    // По умолчанию для всех фото-шаблонов используется обычный базовый GPT Image 2 (gpt-image-2-image-to-image),
     // а для виртуальной примерки одежды — google/nano-banana-edit.
-    let kieModel = 'gpt-image-2-5-sunburst-image-to-image';
+    let kieModel = 'gpt-image-2-image-to-image';
     if (isTryOn) {
         // Виртуальная примерка одежды -> Nano Banana (Google Image Edit)
         kieModel = 'google/nano-banana-edit';
     } else if (model === 'nano-banana-2' || model === 'google/nano-banana-edit') {
         kieModel = 'google/nano-banana-edit';
+    } else if (model === 'gpt-image-2-5-sunburst' || model === 'chatgpt-2.5-sunburst' || model === 'gpt-image-2-5-sunburst-image-to-image') {
+        kieModel = 'gpt-image-2-5-sunburst-image-to-image';
+    } else if (model === 'gpt-image-2-5-flare' || model === 'chatgpt-2.5-flare' || model === 'gpt-image-2-5-flare-image-to-image') {
+        kieModel = 'gpt-image-2-5-flare-image-to-image';
+    } else if (model === 'gpt-image-2' || model === 'chatgpt-2' || model === 'chatgpt-2.5' || model === 'gpt-image-2-image-to-image') {
+        // Обычный базовый GPT Image 2 (без Sunburst и без Flare)
+        kieModel = 'gpt-image-2-image-to-image';
     } else if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') {
         kieModel = 'bytedance/seedance-2-5';
     } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'google/gemini-omni-flash-1-1' || model === 'gemini-omni-video') {
         kieModel = 'google/gemini-omni-flash-1-1';
     } else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6') {
         kieModel = 'kwaivgi/kling-v1-6';
+    } else if (model && model !== 'default') {
+        kieModel = model;
     } else {
-        // По умолчанию для всех фото-шаблонов: GPT Image 2 (Sunburst)
-        kieModel = 'gpt-image-2-5-sunburst-image-to-image';
+        // Обычный базовый GPT Image 2 (без Sunburst и Flare)
+        kieModel = 'gpt-image-2-image-to-image';
     }
 
     console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isTryOn=${Boolean(isTryOn)})...`);
@@ -341,14 +350,17 @@ CRITICAL MANDATORY INSTRUCTIONS:
    - Blend the original person seamlessly into the chosen style without modifying their personal facial identity.`;
 
         if (kieModel.includes('gpt-image')) {
-            // Строго официальный payload для GPT Image 2.5 (Sunburst / Flare Image-to-Image) на Kie.ai
+            // Строго официальный payload для GPT Image 2 и 2.5 Image-to-Image на Kie.ai
             inputPayload = {
                 prompt: styleDirective,
                 input_urls: [publicPhotoUrl],
                 aspect_ratio: '3:4',
-                resolution: targetResolution,
-                background: 'auto'
+                resolution: targetResolution
             };
+            // В Kie.ai параметр background поддерживается только при 1K
+            if (targetResolution === '1K') {
+                inputPayload.background = 'auto';
+            }
         } else {
             inputPayload = {
                 prompt: styleDirective,
