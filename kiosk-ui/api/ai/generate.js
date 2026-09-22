@@ -241,20 +241,23 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
     }
 
     // Сопоставление моделей:
-    // По умолчанию для всех фото-стилей и примерки используется google/nano-banana-edit (Google Image Edit),
-    // так как он редактирует исходное фото и бережно сохраняет лицо, а не рисует новое лицо с нуля.
-    let kieModel = 'google/nano-banana-edit';
-    if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') {
+    // По умолчанию для всех фото-шаблонов используется GPT Image 2 (gpt-image-2-5-sunburst-image-to-image),
+    // а для виртуальной примерки одежды — google/nano-banana-edit.
+    let kieModel = 'gpt-image-2-5-sunburst-image-to-image';
+    if (isTryOn) {
+        // Виртуальная примерка одежды -> Nano Banana (Google Image Edit)
+        kieModel = 'google/nano-banana-edit';
+    } else if (model === 'nano-banana-2' || model === 'google/nano-banana-edit') {
+        kieModel = 'google/nano-banana-edit';
+    } else if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') {
         kieModel = 'bytedance/seedance-2-5';
     } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'google/gemini-omni-flash-1-1' || model === 'gemini-omni-video') {
         kieModel = 'google/gemini-omni-flash-1-1';
     } else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6') {
         kieModel = 'kwaivgi/kling-v1-6';
-    } else if (model === 'chatgpt-2.5' || model === 'gpt-image-2-5-sunburst') {
-        kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     } else {
-        // По умолчанию для фото-стилей и примерки: google/nano-banana-edit
-        kieModel = 'google/nano-banana-edit';
+        // По умолчанию для всех фото-шаблонов: GPT Image 2 (Sunburst)
+        kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     }
 
     console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isTryOn=${Boolean(isTryOn)})...`);

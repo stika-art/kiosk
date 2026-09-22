@@ -208,16 +208,16 @@ try {
 
 if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.getItem('kiosk_templates_v2') === null)) {
     masterTemplates = [
-        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'nano-banana-2', resolution: '2K', prompt: '3D animation style, cute soft studio lighting, vibrant colors' },
-        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'nano-banana-2', resolution: '2K', prompt: 'Cyberpunk style in high-tech carbon neon suit, rainy Neo-Tokyo background, volumetric lighting' },
-        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'nano-banana-2', resolution: '2K', prompt: 'Trending aesthetic style, warm natural golden hour sunlight, soft 85mm lens depth of field' },
-        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'nano-banana-2', resolution: '2K', prompt: 'Prestigious Forbes business magazine cover style, elegant business suit, studio lighting' },
-        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'nano-banana-2', resolution: '2K', prompt: 'Dramatic black and white high contrast lighting, chiseled shadow aesthetic' },
+        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: '3D animation style, cute soft studio lighting, vibrant colors' },
+        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Cyberpunk style in high-tech carbon neon suit, rainy Neo-Tokyo background, volumetric lighting' },
+        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Trending aesthetic style, warm natural golden hour sunlight, soft 85mm lens depth of field' },
+        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Prestigious Forbes business magazine cover style, elegant business suit, studio lighting' },
+        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Dramatic black and white high contrast lighting, chiseled shadow aesthetic' },
         { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'kling-video', resolution: '2K', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
         { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'kling-video', resolution: '2K', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
         { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'kling-video', resolution: '2K', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
-        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'nano-banana-2', resolution: '2K', prompt: 'Blocky voxel gaming character style, bright game world colors, playful gaming atmosphere' },
-        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'nano-banana-2', resolution: '2K', prompt: 'Makoto Shinkai anime style, beautiful sky with fluffy clouds, vibrant pastel colors' },
+        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Blocky voxel gaming character style, bright game world colors, playful gaming atmosphere' },
+        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Makoto Shinkai anime style, beautiful sky with fluffy clouds, vibrant pastel colors' },
         { id: 99, sectionId: 3, sectionTitle: 'ТРЕНДЫ', category: 'ПРОЖАРКА', title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)', img: 'assets/hero_portrait.jpg', price: 190, model: 'roast-standup', resolution: '2K', prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice' },
         { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'nano-banana-2', resolution: '2K', prompt: 'Black oversize streetwear hoodie with realistic folds and shadows' },
         { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'nano-banana-2', resolution: '2K', prompt: 'Stylish premium white cotton hoodie with photorealistic drape' },
@@ -281,8 +281,8 @@ function normalizeTemplates(tplList, cardsList) {
         let modelNorm = (t.model || '').trim();
         if (sid === 4 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || Boolean(t.location)) {
             modelNorm = 'nano-banana-2';
-        } else if (modelNorm !== 'seedance-2.5' && modelNorm !== 'omni-flash' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'chatgpt-2.5') {
-            modelNorm = 'nano-banana-2';
+        } else if (modelNorm !== 'seedance-2.5' && modelNorm !== 'omni-flash' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2') {
+            modelNorm = 'chatgpt-2.5';
         }
 
         let resNorm = (t.resolution || '2K').toUpperCase();
