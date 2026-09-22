@@ -738,6 +738,87 @@ document.addEventListener('DOMContentLoaded', () => {
     const finishBtn = document.getElementById('finish-btn');
     const aiStatusText = document.getElementById('ai-status-text');
 
+    // AI Modern Progress Bar Elements
+    const aiProgressFill = document.getElementById('ai-progress-fill');
+    const aiProgressPercent = document.getElementById('ai-progress-percent');
+    const aiProgressModelBadge = document.getElementById('ai-progress-model-badge');
+    const aiProgressResBadge = document.getElementById('ai-progress-res-badge');
+    const aiProcessingMainTitle = document.getElementById('ai-processing-main-title');
+
+    // Контроллер неонового прогресс-бара генерации ИИ
+    let aiProgressTimer = null;
+    let currentAiProgress = 0;
+    let targetAiProgress = 0;
+
+    function resetAiProgress(titleText = 'СОЗДАНИЕ ПОРТРЕТА', modelName = 'chatgpt-2.5', res = '2K') {
+        if (aiProgressTimer) {
+            clearInterval(aiProgressTimer);
+            aiProgressTimer = null;
+        }
+        currentAiProgress = 0;
+        targetAiProgress = 6;
+
+        if (aiProcessingMainTitle) aiProcessingMainTitle.textContent = titleText;
+        if (aiProgressFill) aiProgressFill.style.width = '0%';
+        if (aiProgressPercent) aiProgressPercent.textContent = '0%';
+        if (aiStatusText) aiStatusText.textContent = 'Инициализация генерации...';
+
+        if (aiProgressModelBadge) {
+            const isTryOn = isTryOnMode || modelName === 'nano-banana-2';
+            aiProgressModelBadge.textContent = isTryOn ? '🍌 Nano Banana (Примерка)' : '⚡ GPT Image 2.5';
+        }
+        if (aiProgressResBadge) {
+            aiProgressResBadge.textContent = `✨ ${res || currentAiResolution || '2K'} HD`;
+        }
+
+        // Плавный интерполятор прогресса с частотой обновления 30ms (плавные 33 fps)
+        aiProgressTimer = setInterval(() => {
+            if (currentAiProgress < targetAiProgress) {
+                const diff = targetAiProgress - currentAiProgress;
+                const step = Math.max(0.25, diff * 0.08);
+                currentAiProgress = Math.min(targetAiProgress, currentAiProgress + step);
+                const displayVal = Math.floor(currentAiProgress);
+                if (aiProgressFill) aiProgressFill.style.width = `${currentAiProgress}%`;
+                if (aiProgressPercent) aiProgressPercent.textContent = `${displayVal}%`;
+            }
+        }, 30);
+    }
+
+    function setAiProgress(target, status) {
+        targetAiProgress = Math.min(95, Math.max(0, target));
+        if (status && aiStatusText) {
+            aiStatusText.textContent = status;
+        }
+    }
+
+    async function finishAiProgress() {
+        targetAiProgress = 100;
+        if (aiStatusText) aiStatusText.textContent = '✨ Готово! Открытие портрета...';
+
+        let timeout = 0;
+        while (currentAiProgress < 99 && timeout < 40) {
+            await new Promise(r => setTimeout(r, 25));
+            timeout++;
+        }
+        currentAiProgress = 100;
+        if (aiProgressFill) aiProgressFill.style.width = '100%';
+        if (aiProgressPercent) aiProgressPercent.textContent = '100%';
+
+        await new Promise(r => setTimeout(r, 380));
+
+        if (aiProgressTimer) {
+            clearInterval(aiProgressTimer);
+            aiProgressTimer = null;
+        }
+    }
+
+    function stopAiProgress() {
+        if (aiProgressTimer) {
+            clearInterval(aiProgressTimer);
+            aiProgressTimer = null;
+        }
+    }
+
     // Try-On Location Info Card Elements & Voice Audio
     const tryonLocationInfoCard = document.getElementById('tryon-location-info-card');
     const tryonLocPriceVal = document.getElementById('tryon-loc-price-val');
@@ -1921,12 +2002,13 @@ document.addEventListener('DOMContentLoaded', () => {
         capturedPhotoData = canvasEl.toDataURL('image/jpeg', 0.88);
     }
 
-    // 4. СТУДИЙНАЯ ОБРАБОТКА И СОЗДАНИЕ ПОРТРЕТА / ПРОЖАРКА
+    // 4. СТУДИЙНАЯ ОБРАБОТКА И СОЗДАНИЕ ПОРТРЕТА / ПРОЖАРКА (С СОВРЕМЕННЫМ НЕОНОВЫМ ПРОГРЕСС-БАРОМ)
     async function runAIGeneration() {
         // Проверка: режим Стендап-Прожарки
         const isRoast = selectedStyleModel === 'roast-standup' || (selectedStyle && selectedStyle.toUpperCase().includes('ПРОЖАР'));
 
         if (isRoast) {
+            resetAiProgress('СТЕНДАП-ПРОЖАРКА', 'chatgpt-2.5', '2K');
             const roastStatuses = [
                 `Анализ лука и позы перед камерой...`,
                 `Сканирование брендов с Дордоя и ЦУМа...`,
@@ -1935,11 +2017,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 `Стендапер разминает связки в ElevenLabs...`
             ];
             let rIdx = 0;
-            if (aiStatusText) aiStatusText.textContent = roastStatuses[0];
+            setAiProgress(15, roastStatuses[0]);
             const rInterval = setInterval(() => {
                 rIdx++;
-                if (rIdx < roastStatuses.length && aiStatusText) {
-                    aiStatusText.textContent = roastStatuses[rIdx];
+                if (rIdx < roastStatuses.length) {
+                    setAiProgress(Math.min(90, 15 + rIdx * 18), roastStatuses[rIdx]);
                 }
             }, 1400);
 
@@ -1967,6 +2049,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (resp.ok) {
                     const data = await resp.json();
                     if (data.success) {
+                        await finishAiProgress();
+
                         if (roastCaricatureImg) roastCaricatureImg.src = data.imageUrl || data.originalPhotoUrl || selectedStylePhoto;
                         if (roastPunchTitle) roastPunchTitle.textContent = data.title || 'ПРОЖАРКА В ТЦ';
                         const cleanSpeech = (data.text || '').replace(/\[\w+\]/g, '').replace(/\.\.\./g, '…');
@@ -1998,30 +2082,32 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch(err) {
                 console.warn('[Roast Pipeline Error]', err);
                 clearInterval(rInterval);
+                stopAiProgress();
             }
         }
+
+        const genTitle = isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
+        resetAiProgress(genTitle, selectedStyleModel, currentAiResolution);
 
         const statuses = isTryOnMode ? [
             `Анализ силуэта и позы гостя...`,
             `Подбор размера и примерка одежды...`,
             `Сохранение черт лица и индивидуальности...`,
-            `Генерация реалистичных складок и текстуры...`,
-            `Финальный рендеринг примерки...`
+            `Генерация складок ткани и освещения...`
         ] : [
             `Анализ кадра и ракурса...`,
-            `Стилизация портрета...`,
+            `Стилизация портрета в нейросети...`,
             `Применение художественного освещения...`,
-            `Цветокоррекция и ретушь...`,
-            `Подготовка финального фото...`
+            `Цветокоррекция и сохранение сходства...`
         ];
 
         let idx = 0;
-        if (aiStatusText) aiStatusText.textContent = statuses[0];
+        setAiProgress(14, statuses[0]);
 
         const interval = setInterval(() => {
             idx++;
-            if (idx < statuses.length && aiStatusText) {
-                aiStatusText.textContent = statuses[idx];
+            if (idx < statuses.length) {
+                setAiProgress(Math.min(28, 14 + idx * 5), statuses[idx]);
             }
         }, 1300);
 
@@ -2083,15 +2169,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         let pollIdx = 0;
                         let pollAttempts = 0;
                         const maxPollAttempts = 45; // ~110 секунд
+                        setAiProgress(34, activePollStatuses[0]);
 
                         while (pollAttempts < maxPollAttempts) {
-                            if (aiStatusText) {
-                                aiStatusText.textContent = activePollStatuses[pollIdx % activePollStatuses.length];
-                                pollIdx++;
-                            }
-
                             await new Promise(r => setTimeout(r, 2500));
                             pollAttempts++;
+
+                            // Плавный рост прогресса на каждом шаге поллинга
+                            const pollTarget = Math.min(94, 34 + Math.floor(pollAttempts * 7.5));
+                            setAiProgress(pollTarget, activePollStatuses[pollIdx % activePollStatuses.length]);
+                            pollIdx++;
 
                             try {
                                 const sRes = await fetch(`/api/ai/status?taskId=${encodeURIComponent(data.taskId)}&_t=${Date.now()}`);
@@ -2117,9 +2204,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (err) {
             console.warn('[AI Pipeline] Ошибка генерации, переключаем на превью стиля:', err);
+            stopAiProgress();
         }
 
         clearInterval(interval);
+        // Завершаем заполнение прогресс-бара до 100% с неоновым свечением
+        await finishAiProgress();
         const isVideo = finalResultUrl.endsWith('.mp4') || finalResultUrl.endsWith('.webm') || finalResultUrl.includes('/video/') || selectedStyleModel === 'seedance-2.5' || selectedStyleModel === 'omni-flash' || selectedStyleModel === 'kling-video' || selectedStyleModel.includes('omni') || selectedStyleModel.includes('video');
         if (isVideo && resultVideo) {
             resultVideo.src = finalResultUrl;
