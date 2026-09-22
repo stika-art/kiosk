@@ -208,21 +208,21 @@ try {
 
 if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.getItem('kiosk_templates_v2') === null)) {
     masterTemplates = [
-        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Cute 3D animated character portrait, soft studio lighting, vibrant colors, retain facial likeness' },
-        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Cyberpunk male warrior in high-tech carbon neon suit, rainy Neo-Tokyo, volumetric lighting, photorealistic' },
-        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Trending aesthetic portrait, warm natural golden hour sunlight, 85mm lens depth of field' },
-        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Prestigious business magazine cover, elegant business suit, powerful charismatic gaze, studio lighting' },
-        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Sigma male portrait, chiseled jawline, dramatic black and white high contrast lighting, hypermasculine charisma' },
+        { id: 1, category: 'МУЛЬТИКИ', title: 'KIDS FANTASY', img: 'assets/child.png', price: 290, model: 'nano-banana-2', resolution: '2K', prompt: '3D animation style, cute soft studio lighting, vibrant colors' },
+        { id: 2, category: 'КИБЕРПАНК', title: 'CYBER MAN', img: 'assets/man.jpg', price: 350, model: 'nano-banana-2', resolution: '2K', prompt: 'Cyberpunk style in high-tech carbon neon suit, rainy Neo-Tokyo background, volumetric lighting' },
+        { id: 3, category: 'ТРЕНДЫ', title: 'TRENDING PHOTO', img: 'assets/1489.jpg', price: 290, model: 'nano-banana-2', resolution: '2K', prompt: 'Trending aesthetic style, warm natural golden hour sunlight, soft 85mm lens depth of field' },
+        { id: 4, category: 'ОБЛОЖКИ', title: 'FORBES COVER', img: 'assets/hero_portrait.jpg', price: 390, model: 'nano-banana-2', resolution: '2K', prompt: 'Prestigious Forbes business magazine cover style, elegant business suit, studio lighting' },
+        { id: 5, category: 'ОБЛОЖКИ', title: 'GIGACHAD SIGMA', img: 'assets/hero_avatar.jpg', price: 350, model: 'nano-banana-2', resolution: '2K', prompt: 'Dramatic black and white high contrast lighting, chiseled shadow aesthetic' },
         { id: 6, category: 'ВИДЕО', title: 'NEON MOTION', img: 'assets/honor.jpg', price: 450, model: 'kling-video', resolution: '2K', prompt: 'Neon light streaks swirling around cyberpunk hero, subtle dynamic head turn and breathing animation, cinematic 4k' },
         { id: 7, category: 'ВИДЕО', title: 'RETRO 90S VHS', img: 'assets/ruiner.jpg', price: 450, model: 'kling-video', resolution: '2K', prompt: 'Vintage 90s VHS tape glitch effect, retro synthwave mood, neon glow animation' },
         { id: 8, category: 'ВИДЕО', title: 'CYBER ROBOT', img: 'assets/hero_robot.jpg', price: 490, model: 'kling-video', resolution: '2K', prompt: 'Futuristic cyborg awakening, mechanical parts glowing with blue energy, smooth cinematic camera motion' },
-        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Blocky voxel gaming character hero style, bright game world colors, playful gaming atmosphere' },
-        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'chatgpt-2.5', resolution: '2K', prompt: 'Makoto Shinkai anime style portrait, beautiful sky with fluffy clouds, vibrant pastel colors, expressive anime eyes' },
+        { id: 9, category: 'ИГРЫ', title: 'ROBLOX HERO', img: 'images/photo1.jpg', price: 290, model: 'nano-banana-2', resolution: '2K', prompt: 'Blocky voxel gaming character style, bright game world colors, playful gaming atmosphere' },
+        { id: 10, category: 'ТРЕНДЫ', title: 'ANIME VIBE', img: 'images/photo2.jpg', price: 290, model: 'nano-banana-2', resolution: '2K', prompt: 'Makoto Shinkai anime style, beautiful sky with fluffy clouds, vibrant pastel colors' },
         { id: 99, sectionId: 3, sectionTitle: 'ТРЕНДЫ', category: 'ПРОЖАРКА', title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)', img: 'assets/hero_portrait.jpg', price: 190, model: 'roast-standup', resolution: '2K', prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice' },
-        { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'nano-banana-2', resolution: '2K', prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.' },
-        { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'nano-banana-2', resolution: '2K', prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.' },
-        { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'nano-banana-2', resolution: '2K', prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.' },
-        { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'nano-banana-2', resolution: '2K', prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.' }
+        { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'nano-banana-2', resolution: '2K', prompt: 'Black oversize streetwear hoodie with realistic folds and shadows' },
+        { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'nano-banana-2', resolution: '2K', prompt: 'Stylish premium white cotton hoodie with photorealistic drape' },
+        { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'nano-banana-2', resolution: '2K', prompt: 'Futuristic graphic streetwear hoodie with photorealistic texture' },
+        { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'nano-banana-2', resolution: '2K', prompt: 'Minimalist black cotton graphic t-shirt' }
     ];
 }
 
@@ -281,8 +281,8 @@ function normalizeTemplates(tplList, cardsList) {
         let modelNorm = (t.model || '').trim();
         if (sid === 4 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || Boolean(t.location)) {
             modelNorm = 'nano-banana-2';
-        } else if (modelNorm !== 'seedance-2.5' && modelNorm !== 'omni-flash' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2' && modelNorm !== 'chatgpt-2.5') {
-            modelNorm = 'chatgpt-2.5';
+        } else if (modelNorm !== 'seedance-2.5' && modelNorm !== 'omni-flash' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'chatgpt-2.5') {
+            modelNorm = 'nano-banana-2';
         }
 
         let resNorm = (t.resolution || '2K').toUpperCase();
@@ -1871,23 +1871,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function takeSnapshot() {
+        const rawW = webcamEl.videoWidth || 1920;
+        const rawH = webcamEl.videoHeight || 1080;
+
+        // Ограничиваем максимальный размер до 1280px для мгновенной передачи в ИИ и четкого захвата лица
+        let targetW = rawW;
+        let targetH = rawH;
+        const maxDim = 1280;
+        if (targetW > maxDim || targetH > maxDim) {
+            if (targetW > targetH) {
+                targetH = Math.round((targetH * maxDim) / targetW);
+                targetW = maxDim;
+            } else {
+                targetW = Math.round((targetW * maxDim) / targetH);
+                targetH = maxDim;
+            }
+        }
+
+        canvasEl.width = targetW;
+        canvasEl.height = targetH;
         const ctx = canvasEl.getContext('2d', { alpha: false });
-        const w = webcamEl.videoWidth || 1920;
-        const h = webcamEl.videoHeight || 1080;
-        canvasEl.width = w;
-        canvasEl.height = h;
 
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
 
         // Отрисовываем с зеркальным отражением (как в превью камеры)
         ctx.save();
-        ctx.translate(w, 0);
+        ctx.translate(targetW, 0);
         ctx.scale(-1, 1);
-        ctx.drawImage(webcamEl, 0, 0, w, h);
+        ctx.drawImage(webcamEl, 0, 0, targetW, targetH);
         ctx.restore();
 
-        capturedPhotoData = canvasEl.toDataURL('image/jpeg', 0.95);
+        // 0.88 обеспечивает высокую четкость черт лица при размере файла всего ~200-300 КБ
+        capturedPhotoData = canvasEl.toDataURL('image/jpeg', 0.88);
     }
 
     // 4. СТУДИЙНАЯ ОБРАБОТКА И СОЗДАНИЕ ПОРТРЕТА / ПРОЖАРКА

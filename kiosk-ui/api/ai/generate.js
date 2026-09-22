@@ -241,19 +241,20 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
     }
 
     // Сопоставление моделей:
-    let kieModel = 'gpt-image-2-5-sunburst-image-to-image';
-    if (isTryOn || model === 'nano-banana-2' || model === 'google/nano-banana-edit') {
-        // Виртуальная примерка одежды полностью переведена на Nano Banana (Google Image Edit)
-        kieModel = 'google/nano-banana-edit';
-    } else if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') {
+    // По умолчанию для всех фото-стилей и примерки используется google/nano-banana-edit (Google Image Edit),
+    // так как он редактирует исходное фото и бережно сохраняет лицо, а не рисует новое лицо с нуля.
+    let kieModel = 'google/nano-banana-edit';
+    if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') {
         kieModel = 'bytedance/seedance-2-5';
     } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'google/gemini-omni-flash-1-1' || model === 'gemini-omni-video') {
         kieModel = 'google/gemini-omni-flash-1-1';
     } else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6') {
         kieModel = 'kwaivgi/kling-v1-6';
-    } else {
-        // Для всех фото-стилей и портретов: ChatGPT 2.5 (gpt-image-2-5-sunburst)
+    } else if (model === 'chatgpt-2.5' || model === 'gpt-image-2-5-sunburst') {
         kieModel = 'gpt-image-2-5-sunburst-image-to-image';
+    } else {
+        // По умолчанию для фото-стилей и примерки: google/nano-banana-edit
+        kieModel = 'google/nano-banana-edit';
     }
 
     console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isTryOn=${Boolean(isTryOn)})...`);
@@ -276,17 +277,29 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         };
     } else if (isTryOn) {
         // Виртуальная примерка одежды / товаров на гостя через Nano Banana (2 фото: гость + вещь)
-        const tryOnPrompt = safePrompt && safePrompt.trim().length > 10
-            ? safePrompt
-            : 'Virtual clothing try-on: Fit the clothing item realistically onto the person in the photo. Seamlessly drape the garment with natural folds, lighting, and texture, keeping the person exact face, expression and hair.';
-        
+        const cleanTryOn = (safePrompt || '')
+            .replace(/\b(девушка|девушки|девушку|девушке|женщина|женщины|женщину|парень|парня|парню|мужчина|мужчины|мужчину|девочка|девочки|девочку|мальчик|мальчика|человек|человека|модель|персонаж|портрет)\b/gi, '')
+            .replace(/\b(girl|woman|female|lady|man|male|guy|boy|person|human|model|character|portrait)\b/gi, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+
         const imageUrls = [publicPhotoUrl];
         if (templateImgUrl && templateImgUrl.startsWith('http')) {
             imageUrls.push(templateImgUrl);
         }
 
+        const tryOnDirective = `IMAGE EDITING DIRECTIVE — DO NOT GENERATE FROM SCRATCH:
+Two source images provided:
+Image 1: The original photograph of the person.
+Image 2: The clothing item to try on.
+
+CRITICAL MANDATORY INSTRUCTIONS:
+1. DO NOT GENERATE A NEW PERSON OR FACE FROM SCRATCH.
+2. ABSOLUTE IDENTITY & FACE PRESERVATION: Keep the real person from Image 1 100% intact. Retain their exact face, facial features, facial structure, eyes, nose, mouth, skin tone, facial hair (beard/mustache if present), hair color, hairstyle, body build, gender, age, and natural expression identical to Image 1. Do NOT alter their facial identity under any circumstances.
+3. CLOTHING REPLACEMENT ONLY: Remove only the clothes worn by the person in Image 1 and dress them in the exact garment from Image 2. Drape the clothing realistically onto their body, matching their pose and lighting with photorealistic fabric texture and natural folds. ${cleanTryOn ? 'Garment details: ' + cleanTryOn : ''}`;
+
         inputPayload = {
-            prompt: `Virtual try-on: Take the clothing item from the second image and dress the person in the first image in it. CRITICAL MANDATORY: Strictly preserve the exact person from the first image completely intact: keep their exact gender, face, facial features, facial hair (beard, mustache if present), hair color, hairstyle, age, and likeness. Do NOT alter the person's gender or facial identity. Replace ONLY the garment with the clothing from the second image. ${tryOnPrompt}`,
+            prompt: tryOnDirective,
             image_urls: imageUrls,
             input_urls: imageUrls,
             image_url: publicPhotoUrl,
@@ -298,19 +311,29 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
     } else {
         // Стилизация портрета (дудл, арт, аниме, киберпанк, мультики, обложки и др.)
         // ВАЖНО: В модель передается фото самого гостя (publicPhotoUrl)!
-        let rawStyleText = (safePrompt && safePrompt.trim().length > 3) ? safePrompt.trim() : 'artistic portrait style, vibrant aesthetic';
+        // Очищаем промпт от слов, заставляющих ИИ рисовать человека/портрет с нуля
+        let rawStyleText = (safePrompt && safePrompt.trim().length > 3) ? safePrompt.trim() : 'artistic aesthetic styling';
         let cleanStyleText = rawStyleText
-            .replace(/\b(девушка|девушки|девушку|девушке|женщина|женщины|женщину|парень|парня|парню|мужчина|мужчины|мужчину|девочка|девочки|девочку|мальчик|мальчика)\b/gi, 'person')
-            .replace(/\b(girl|woman|female|lady|man|male|guy|boy)\b/gi, 'person');
+            .replace(/\b(девушка|девушки|девушку|девушке|женщина|женщины|женщину|парень|парня|парню|мужчина|мужчины|мужчину|девочка|девочки|девочку|мальчик|мальчика|человек|человека|модель|персонаж|портрет|портрета)\b/gi, '')
+            .replace(/\b(girl|woman|female|lady|man|male|guy|boy|person|human|model|character|portrait)\b/gi, '')
+            .replace(/\b(create a|generate a|draw a|paint a|render a)\b/gi, '')
+            .replace(/\s+/g, ' ')
+            .trim();
 
-        const stylePrompt = `Transform the person from the input photo into this exact artistic style: ${cleanStyleText}.
-CRITICAL MANDATORY:
-1. Strictly preserve the original person: keep their exact face, facial features, facial hair, hairstyle, and gender completely recognizable.
-2. If male/man, output MUST be a male/man. If female/woman, output MUST be a female/woman.
-3. Apply ONLY the artistic visual style to this specific person. Do NOT generate a different face or person.`;
+        const styleDirective = `IMAGE EDITING DIRECTIVE — DO NOT GENERATE A NEW PERSON OR FACE FROM SCRATCH:
+An original photograph of a real person is provided as the input image.
+
+CRITICAL MANDATORY INSTRUCTIONS:
+1. DO NOT GENERATE FROM SCRATCH: This is an image editing task on the provided photo. Do NOT invent a new character, new face, or random model.
+2. ABSOLUTE FACE & LIKENESS PRESERVATION:
+   - Strictly keep the exact face, facial features, facial structure, eye shape, nose, lips, jawline, skin tone, facial hair (beard, mustache if present), hair color, hairstyle, gender, and age of the person in the input photo 100% UNCHANGED.
+   - The person in the output must be unmistakably recognized as the EXACT SAME real individual from the input photo.
+3. AESTHETIC STYLING ONLY:
+   - Apply ONLY the artistic visual style, lighting, color palette, background, and textures (${cleanStyleText || 'vibrant artistic aesthetic'}) directly onto this existing photograph.
+   - Blend the original person seamlessly into the chosen style without modifying their personal facial identity.`;
 
         inputPayload = {
-            prompt: stylePrompt,
+            prompt: styleDirective,
             input_urls: [publicPhotoUrl],
             image_urls: [publicPhotoUrl],
             image_url: publicPhotoUrl,
