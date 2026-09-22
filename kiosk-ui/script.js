@@ -221,7 +221,7 @@ const DEFAULT_KIOSK_TEMPLATES = [
         "price": 1,
         "model": "chatgpt-2.5",
         "prompt": "Создай портрет, не меняя черты лица. Черно-белое художественное фото мужчины, стоящей на фоне стены, на которую спроецировано крупное число «34». Свет от проектора ярко освещает цифры и часть фигуры, создавая глубокие тени и драматичный контраст. Мужчина одет в объемную белую рубашку, и стильные солнцезащитные очки. В руке он держит виски. Атмосфера элегантной вечеринки по случаю дня рождения, эстетика минимализма, высокая контрастность, пленочное зерно.",
-        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789208643545.jpg",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789208643545.png",
         "sectionId": 1,
         "sectionTitle": "ФОТО",
         "htmlCode": "",
@@ -460,6 +460,34 @@ const DEFAULT_KIOSK_TEMPLATES = [
         "resolution": "1K",
         "prompt": "Используй загруженную фотографию как референс. Сохрани узнаваемую внешность человека, причёску, выражение лица, позу, одежду, детёныша животного и исходные цвета.\n\nПерерисуй изображение в виде милого, немного неуклюжего рисунка от руки: сделай голову непропорционально большой и слегка кривоватой, тело — маленьким и забавным, глаза — в виде точек, а черты лица — максимально простыми.\n\nИспользуй тонкие, слегка дрожащие линии чёрной шариковой ручки и небрежные штрихи цветными карандашами. Стиль должен выглядеть намеренно любительским, очаровательно неловким и немного детским, но при этом аккуратным и незахламлённым.\n\nУпрости фон, оставив много свободного пространства и белой бумаги.",
         "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1790102576781.jpg",
+        "htmlCode": ""
+    },
+    {
+        "id": 1790104358488,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "People",
+        "price": 1,
+        "location": "",
+        "model": "chatgpt-2.5",
+        "resolution": "1K",
+        "prompt": "Black-and-white cinematic street portrait of a young person with short tousled hair and a calm, serious expression, standing perfectly still in the center of a busy urban crowd. The subject is wearing a dark puffer jacket with a high collar. Strong contrast between the sharply focused face and the people moving around, long-exposure motion blur on both sides and in the foreground, blurred silhouettes, dramatic urban atmosphere, documentary photography, editorial fashion photography, realistic skin texture, soft overcast light, shallow depth of field, centered composition, eye-level camera, symmetrical framing, high-detail monochrome film grain, cinematic 35mm photography, vertical portrait",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1790104358488.jpg",
+        "htmlCode": ""
+    },
+    {
+        "id": 1790105406787,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "МУЛЬТИКИ",
+        "title": "Material",
+        "price": 290,
+        "location": "",
+        "model": "chatgpt-2.5",
+        "resolution": "1K",
+        "prompt": "Please create a high-end fiber art editing poster for each character travel photo I upload. Do not collage multiple images - each photo should be output independently. The overall 3:4 vertical diptyl composition is adopted: the upper part retains the clearly visible original image, while the lower part reconstructs the same character of the \"woolen curly felt Doll\". Ensure that the boundary between the upper and lower parts is clear, smooth and restricted to prevent felt material from contaminating the photography area. The upper part should occupy approximately 45% to 50% of the frame, faithfully preserving the original photo. Accurately maintain the character's identity, number, facial features, hair volume, hat or scarf, expression, posture, hand contact, main clothing color, travel items, and the true relationship between the character and the environment. Just use fine independent magazina-style color grading and extremely light film grain processing, while ensuring it is clear and distinguishable as real photography. To fit the picture, you can naturally extend the simple background, but do not redraw the character, change the face, stretch, distort, mirror or change the clothing. Do not flatten and redraw the entire photo in the lower part. On the contrary, an independent display desktop felt travel doll can be made. It mainly adopts a half-body or small sitting posture. The doll occupies 55% to 75% of the width of the lower half and 58% to 82% of the height. It is placed on a warm white paper stand, light-colored fabric or a simple soft base. Maintain a continuous gap of approximately 30% to 45% around. Only include one easily recognizable environmental prompt - do not create complex rooms or complete toy displays. Depict the characters with genuine handcrafted materials: felted skin tones, fine beaded eyes, simplified felted noses and mouths, knitted or yarn clothing, and shape curly hair, bangs or hair segments with richly thick and fine yarn loops, with visible stitches. Retain the fiber fluff, suede direction, seams, soft body depressions, slight asymmetries, handcrafted flaws, and the genuine soft shadows cast on the paper frame. Facial features should not pursue realism but should be recognizable at a glance through hairstyles, expressions, clothing, gestures and accessories. Extract all the colors from the above photo, soften the skin tone, hair color, main garment color and one ambient tone to form four to six fiber colors. The color should be gentle and long-lasting, with the light-absorbing properties of yarn and wool - avoid plastic luster, highly saturated toy colors or fixed color palette that is irrelevant to the original image. Add a small amount of figurative text to the continuous blank Spaces or the edge of the doll's base. Extract 1 to 3 English word titles from the real content of the photo; The main title should be similar to a small woven label, hand-embroidered text or low-pile line font. Add the \"FELT NOTE 01\" field and attach a 5-12 Inglis observation sentence H. If the specific location cannot be confirmed, please use the title \"SOFT JOURNEY\" and the observation sentence \"A companion guards the warmth of the road\". The text must be clear and legible, consistent with the stitching and fabric structure - do not superimpose smooth digital fonts",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1790105406787.jpg",
         "htmlCode": ""
     }
 ];
