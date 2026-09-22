@@ -238,7 +238,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
     const validResolutions = ['1K', '2K', '4K'];
     const targetResolution = validResolutions.includes((resolution || '').toUpperCase()) 
         ? resolution.toUpperCase() 
-        : '2K';
+        : '1K';
 
     if (!publicPhotoUrl && !templateImgUrl) {
         console.warn('[Kie.ai] Отсутствуют изображения для обработки, вызов Kie.ai отменен для защиты баланса.');
@@ -412,7 +412,7 @@ CRITICAL MANDATORY INSTRUCTIONS:
             const startTime = Date.now();
 
             while (Date.now() - startTime < maxWaitMs) {
-                await new Promise(r => setTimeout(r, 2500));
+                await new Promise(r => setTimeout(r, 1500));
 
                 // Прямой опрос Kie.ai recordInfo
                 const recordRes = await fetch(`${KIE_RECORD_URL}?taskId=${encodeURIComponent(taskId)}`, {

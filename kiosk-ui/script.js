@@ -18,7 +18,7 @@ let currentCategory = 'ФОТО';
 let activeTemplateIndex = 0;
 
 // УПРАВЛЕНИЕ РАЗРЕШЕНИЕМ ГЕНЕРАЦИИ (1K, 2K HD, 4K ULTRA)
-let currentAiResolution = localStorage.getItem('kiosk_ai_resolution') || '2K';
+let currentAiResolution = localStorage.getItem('kiosk_ai_resolution') || '1K';
 
 function setAiResolution(res) {
     let cleanRes = (res || '2K').toUpperCase();
@@ -1009,25 +1009,24 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentAiProgress = 0;
     let targetAiProgress = 0;
 
-    function resetAiProgress(titleText = 'СОЗДАНИЕ ПОРТРЕТА', modelName = 'chatgpt-2.5', res = '2K') {
+    function resetAiProgress(titleText = 'СОЗДАНИЕ ПОРТРЕТА', modelName = 'chatgpt-2.5', res = '1K') {
         if (aiProgressTimer) {
             clearInterval(aiProgressTimer);
             aiProgressTimer = null;
         }
         currentAiProgress = 0;
-        targetAiProgress = 6;
+        targetAiProgress = 8;
 
         if (aiProcessingMainTitle) aiProcessingMainTitle.textContent = titleText;
         if (aiProgressFill) aiProgressFill.style.width = '0%';
         if (aiProgressPercent) aiProgressPercent.textContent = '0%';
-        if (aiStatusText) aiStatusText.textContent = 'Инициализация генерации...';
+        if (aiStatusText) aiStatusText.textContent = 'Подготовка кадра...';
 
         if (aiProgressModelBadge) {
-            const isTryOn = isTryOnMode || modelName === 'nano-banana-2';
-            aiProgressModelBadge.textContent = isTryOn ? '🍌 Nano Banana (Примерка)' : '⚡ GPT Image 2';
+            aiProgressModelBadge.style.display = 'none';
         }
         if (aiProgressResBadge) {
-            aiProgressResBadge.textContent = `✨ ${res || currentAiResolution || '2K'} HD`;
+            aiProgressResBadge.style.display = 'none';
         }
 
         // Плавный интерполятор прогресса с частотой обновления 30ms (плавные 33 fps)
@@ -2271,10 +2270,10 @@ document.addEventListener('DOMContentLoaded', () => {
             resetAiProgress('СТЕНДАП-ПРОЖАРКА', 'chatgpt-2.5', '2K');
             const roastStatuses = [
                 `Анализ лука и позы перед камерой...`,
-                `Сканирование брендов с Дордоя и ЦУМа...`,
-                `Сверка харизмы с базами MBank и Kaspi...`,
-                `Генерация карикатуры в GPT Image 2.5...`,
-                `Стендапер разминает связки в ElevenLabs...`
+                `Сканирование стиля и настроения...`,
+                `Подбор остроумного монолога...`,
+                `Создание комического шаржа...`,
+                `Запись голоса стендап-комика...`
             ];
             let rIdx = 0;
             setAiProgress(15, roastStatuses[0]);
@@ -2350,15 +2349,15 @@ document.addEventListener('DOMContentLoaded', () => {
         resetAiProgress(genTitle, selectedStyleModel, currentAiResolution);
 
         const statuses = isTryOnMode ? [
-            `Анализ силуэта и позы гостя...`,
-            `Подбор размера и примерка одежды...`,
+            `Анализ силуэта и позы...`,
+            `Подбор размера и примерка кроя...`,
             `Сохранение черт лица и индивидуальности...`,
-            `Генерация складок ткани и освещения...`
+            `Прорисовка складок ткани и реалистичного света...`
         ] : [
-            `Анализ кадра и ракурса...`,
-            `Стилизация портрета в нейросети...`,
-            `Применение художественного освещения...`,
-            `Цветокоррекция и сохранение сходства...`
+            `Анализ кадра и освещения...`,
+            `Создание художественного стиля...`,
+            `Прорисовка деталей портрета...`,
+            `Финальная цветокоррекция...`
         ];
 
         let idx = 0;
@@ -2411,28 +2410,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.pending && data.taskId) {
                         clearInterval(interval);
                         console.log(`[AI Polling] Задача ${data.taskId} в процессе генерации, запускаем поллинг...`);
-                        const chatGptStatuses = [
-                            `Нейросеть ChatGPT генерирует портрет в качестве ${currentAiResolution}...`,
-                            `OpenAI прорисовывает фотореалистичные черты лица...`,
+                        const photoPollStatuses = [
+                            `Обработка портрета в высоком качестве...`,
+                            `Прорисовка фотореалистичных черт лица...`,
                             `Художественная стилизация и сохранение сходства...`,
-                            `Шлифовка реалистичной текстуры и студийного света...`,
-                            `Финальный рендеринг высокого разрешения...`
+                            `Шлифовка реалистичной текстуры и света...`,
+                            `Финальная подготовка кадра...`
                         ];
-                        const nanoBananaStatuses = [
-                            `🍌 ИИ Nano Banana выполняет примерку одежды...`,
-                            `👗 Точная посадка кроя по вашей фигуре и позе...`,
-                            `👤 Сохранение вашего пола, лица и индивидуальности...`,
-                            `✨ Прорисовка реалистичной ткани и теней...`,
-                            `🎉 Финальный рендеринг готового образа...`
+                        const tryOnPollStatuses = [
+                            `Примерка одежды на фото...`,
+                            `Точная посадка кроя по вашей фигуре...`,
+                            `Сохранение черт лица и позы...`,
+                            `Прорисовка реалистичной ткани и теней...`,
+                            `Финальная подготовка образа...`
                         ];
-                        const activePollStatuses = (isTryOnMode || selectedStyleModel === 'nano-banana-2') ? nanoBananaStatuses : chatGptStatuses;
+                        const activePollStatuses = (isTryOnMode || selectedStyleModel === 'nano-banana-2') ? tryOnPollStatuses : photoPollStatuses;
                         let pollIdx = 0;
                         let pollAttempts = 0;
                         const maxPollAttempts = 45; // ~110 секунд
                         setAiProgress(34, activePollStatuses[0]);
 
                         while (pollAttempts < maxPollAttempts) {
-                            await new Promise(r => setTimeout(r, 2500));
+                            await new Promise(r => setTimeout(r, 1500));
                             pollAttempts++;
 
                             // Плавный рост прогресса на каждом шаге поллинга
