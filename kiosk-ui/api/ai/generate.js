@@ -33,12 +33,37 @@ async function uploadImageToCDN(photoBase64OrUrl, prefix = 'guests', orderId) {
 
     const cleanBase64 = photoBase64OrUrl.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(cleanBase64, 'base64');
+    const safeFilename = `${prefix}_${orderId || Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
 
-    // 1. Быстрая загрузка через Catbox CDN (прямые постоянные ссылки)
+    // 1. ПРИОРИТЕТ: Собственное хранилище Supabase Storage (100% прямое оригинальное качество, всегда доступно, без редиректов и HTML)
+    try {
+        const filePath = `${prefix}/${safeFilename}`;
+        const supaRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filePath}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'image/jpeg',
+                'x-upsert': 'true'
+            },
+            body: buffer
+        });
+
+        if (supaRes.ok) {
+            const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${filePath}`;
+            console.log(`[CDN Supabase] ${prefix} успешно загружено в оригинальном качестве:`, publicUrl);
+            return publicUrl;
+        } else {
+            console.warn(`[CDN Supabase Warning (${prefix})] Status:`, supaRes.status);
+        }
+    } catch (e) {
+        console.warn(`[CDN Supabase Error (${prefix})]`, e.message);
+    }
+
+    // 2. Резервный Catbox CDN (только прямые ссылки)
     try {
         const form = new FormData();
         form.append('reqtype', 'fileupload');
-        form.append('fileToUpload', new Blob([buffer], { type: 'image/jpeg' }), `${prefix}_${Date.now()}.jpg`);
+        form.append('fileToUpload', new Blob([buffer], { type: 'image/jpeg' }), safeFilename);
         const catRes = await fetch('https://catbox.moe/user/api.php', {
             method: 'POST',
             body: form
@@ -50,28 +75,8 @@ async function uploadImageToCDN(photoBase64OrUrl, prefix = 'guests', orderId) {
                 return catUrl;
             }
         }
-    } catch (e) {
-        console.warn(`[CDN Catbox Error (${prefix})]`, e.message);
-    }
-
-    // 2. Резервный CDN tmpfiles.org
-    try {
-        const tForm = new FormData();
-        tForm.append('file', new Blob([buffer], { type: 'image/jpeg' }), `${prefix}_${Date.now()}.jpg`);
-        const tRes = await fetch('https://tmpfiles.org/api/v1/upload', {
-            method: 'POST',
-            body: tForm
-        });
-        if (tRes.ok) {
-            const tData = await tRes.json();
-            if (tData && tData.data && tData.data.url) {
-                const dlUrl = tData.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
-                console.log(`[CDN Tmpfiles] ${prefix} успешно загружено:`, dlUrl);
-                return dlUrl;
-            }
-        }
     } catch (e2) {
-        console.warn(`[CDN Tmpfiles Error (${prefix})]`, e2.message);
+        console.warn(`[CDN Catbox Error (${prefix})]`, e2.message);
     }
 
     return photoBase64OrUrl;
@@ -335,16 +340,27 @@ CRITICAL MANDATORY INSTRUCTIONS:
    - Apply ONLY the artistic visual style, lighting, color palette, background, and textures (${cleanStyleText || 'vibrant artistic aesthetic'}) directly onto this existing photograph.
    - Blend the original person seamlessly into the chosen style without modifying their personal facial identity.`;
 
-        inputPayload = {
-            prompt: styleDirective,
-            input_urls: [publicPhotoUrl],
-            image_urls: [publicPhotoUrl],
-            image_url: publicPhotoUrl,
-            inputImage: publicPhotoUrl,
-            output_format: 'png',
-            aspect_ratio: '3:4',
-            resolution: targetResolution
-        };
+        if (kieModel.includes('gpt-image')) {
+            // Строго официальный payload для GPT Image 2.5 (Sunburst / Flare Image-to-Image) на Kie.ai
+            inputPayload = {
+                prompt: styleDirective,
+                input_urls: [publicPhotoUrl],
+                aspect_ratio: '3:4',
+                resolution: targetResolution,
+                background: 'auto'
+            };
+        } else {
+            inputPayload = {
+                prompt: styleDirective,
+                input_urls: [publicPhotoUrl],
+                image_urls: [publicPhotoUrl],
+                image_url: publicPhotoUrl,
+                inputImage: publicPhotoUrl,
+                output_format: 'png',
+                aspect_ratio: '3:4',
+                resolution: targetResolution
+            };
+        }
     }
 
     // Вспомогательная функция выполнения задачи с опросом статуса
