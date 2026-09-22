@@ -213,22 +213,270 @@ function isLegacyStandardTemplate(t) {
     return false;
 }
 
+const DEFAULT_KIOSK_TEMPLATES = [
+    {
+        "id": 1789208643545,
+        "category": "ОБЛОЖКИ",
+        "title": "Portrait",
+        "price": 1,
+        "model": "chatgpt-2.5",
+        "prompt": "Создай портрет, не меняя черты лица. Черно-белое художественное фото мужчины, стоящей на фоне стены, на которую спроецировано крупное число «34». Свет от проектора ярко освещает цифры и часть фигуры, создавая глубокие тени и драматичный контраст. Мужчина одет в объемную белую рубашку, и стильные солнцезащитные очки. В руке он держит виски. Атмосфера элегантной вечеринки по случаю дня рождения, эстетика минимализма, высокая контрастность, пленочное зерно.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789208643545.jpg",
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789210227800,
+        "category": "ОБЛОЖКИ",
+        "title": "2",
+        "price": 2,
+        "model": "chatgpt-2.5",
+        "prompt": "Use the uploaded photo as the ABSOLUTE IDENTITY REFERENCE for FACIAL GEOMETRY ONLY — not for lighting, not for exposure, not for colour.  IDENTITY LOCK — HIGHEST PRIORITY: reproduce this exact face. Same skull and jaw geometry, same eye shape and spacing, same eyelid crease, same nose bridge width and tip shape, same lip shape and philtrum, same cheekbone height, same ear shape, same hairline, same age. Keep the natural asymmetry of the real face — one eye slightly different from the other, the mouth not perfectly level. Do NOT beautify, slim, symmetrise, de-age or \"improve\" anything. Do not create a lookalike. A viewer who knows this person must recognise them instantly.  LIGHT INTEGRATION — THIS IS THE MOST IMPORTANT INSTRUCTION AFTER IDENTITY. The face must be lit BY THIS SCENE, not carried over from the reference photo. Ignore the lighting of the source image completely and RE-LIGHT the head from scratch to match the environment: — the same hard low sun that carves the architecture also strikes the face, from the same direction and at the same angle; — a crisp nose shadow falls across the cheek on the shadow side, with the same hard edge as the architectural shadows on the ground; — the collar of the garment casts a real shadow across the jaw and neck; — warm ochre bounce from the sunlit concrete lifts the underside of the chin and the lower lip; — cool blue skylight fills the shadow side of the face; — specular highlights sit on the forehead, nose bridge and one cheekbone, with the same intensity as the highlights on the stone; — the catchlight in the eyes comes from the same direction as the sun; — exposure, contrast, colour temperature, black level and grain on the face MATCH the rest of the frame exactly. If the face reads as evenly lit while the scene is hard-lit, the image has FAILED. The head must look photographed in this place, at this hour, in this light — one exposure, one camera, one moment.  PROPORTION — the second failure to avoid. The head must sit at natural human scale relative to the body: roughly one seventh of the standing figure, shoulders no wider than about three head-widths at the actual shoulder line. Oversized tailoring may extend far beyond the body, but it must read as fabric hanging off a normally proportioned person, not as a garment with a small head placed on top. Neck, shoulder slope and the way the coat sits on the trapezius must be anatomically believable. The face should occupy a confident share of the frame — clearly readable, not a distant detail lost in the architecture.  SKIN, EYES, HAIR — photographic realism, not rendering: visible pores across nose and cheeks, fine vellus hair along the jaw catching the sun, real micro-texture, natural unevenness, freckles and moles exactly as on the reference, subsurface scattering glowing through the earlobes against the light. Sharp iris with radial fibre detail and a defined limbal ring, sclera faintly warm with fine visible capillaries, wet reflective eye surface, individual eyelashes of uneven length. Individual hair strands with a backlit flyaway halo, visible scalp at the parting, real strand separation at the silhouette.  CAMERA AND POSE: extreme low worm's-eye angle, camera almost at ground level, 20mm wide lens close to the figure, tilted into a hard 12-degree Dutch angle. The figure towers over the lens; the architecture converges steeply overhead and closes into an impossible vault above the head. Strong vertical convergence, curving horizon, deliberate barrel distortion in the architecture — but the FACE stays geometrically undistorted and correctly proportioned, as if shot on a longer lens and composited by physics rather than by software. Chin slightly lowered, eyes looking down the barrel of the lens, calm and completely unbothered by the impossible space. One shoulder dropped, weight on the back foot, the coat swinging open along a diagonal that follows the Dutch tilt.  SCENE: full-frame experimental editorial fashion photograph. The person stands inside a brutalist architecture that physically bends, stretches and reorganises around the body. Concrete walls fold like fabric, columns repeat into impossible perspective, platforms cantilever overhead. The clothing is an extension of the architecture: sharp geometric tailoring, elongated coat, exaggerated structured shoulders, rigid sculptural folds that rhyme with the concrete planes. The distortion is physical and photographic, never a digital glitch. The person stays stable and real while the SPACE becomes impossible.  PALETTE: restrained architectural range — concrete, graphite, black, cream, muted grey — with exactly ONE saturated accent colour used sparingly and deliberately.  LIGHT AND COMPOSITION: hard directional low sun, long architectural shadows raking across the ground, sharp highlights, deep dimensional contrast. Large areas of negative space balanced against massive geometric mass.  TEXTURE: subtle vintage film grain, analog print texture, slight colour fringing, fine surface imperfections, tactile photographic depth. The grain must lie over the face at the same strength as over the concrete.  FORMAT: vertical portrait, 3:4 aspect ratio.  FORBIDDEN: beauty retouching, skin smoothing, airbrushing, waxy plastic skin, blurred pores, symmetrical doll face, evenly lit face, flat frontal fill light on the face, a face whose lighting disagrees with the scene, a face pasted or composited in, mismatched colour temperature between head and body, an undersized head, 3D render, architectural visualisation, video game scene, CGI character, cyberpunk, cartoon, generic AI fashion image, typography, text, letters, numbers, logos, watermark.  The result must read as one photograph: the same person from the source, standing in a physically impossible but convincingly photographed brutalist universe, lit by its light.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789210227800.jpg",
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789558483328,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Flowers",
+        "price": 1,
+        "location": "",
+        "model": "chatgpt-2.5",
+        "prompt": "FORMAT: vertical portrait, 3:4 aspect ratio.\n\nMEDIUM — read this first. A hand-painted gouache illustration on cream cotton paper, in the language of character design rather than portraiture. Flat opaque colour areas with only two or three tones per surface, minimal internal modelling, a confident economical contour that carries the form, visible paper tooth, slight pigment granulation. Bold readable shapes before detail. This is an illustrated character, not a painted photograph: no photographic skin, no pores, no lens blur, no 3D shading, no rendered realism.\n\nCHARACTER DESIGN — the core of this style and the thing that must not be softened. Redraw the person with stylised proportions: the head noticeably larger relative to the body than in life, roughly one sixth of the standing figure; the eyes enlarged and set as clean graphic shapes; the nose and mouth reduced to simple confident marks; hands simplified into clear anatomically believable forms; the torso and clothing built from a few large masses with a strong, instantly readable silhouette. Every surface is a shape first and a texture second.\n\nIDENTITY THROUGH EXAGGERATION — how recognition survives this stylisation. Work like a caricaturist, not like a copyist: find the two or three traits that make THIS face unmistakable — the shape of the glasses, the mass and line of the hair, the jaw, the brow, the nose profile, the set of the eyes, facial hair, the way the head sits on the neck — and push them slightly BEYOND life while everything else is simplified. Preserve the true relationships: eye spacing, the proportion of forehead to nose to chin, the width of the jaw against the cheekbones, the hairline, the age, the build, the natural asymmetry of the real face. Do NOT smooth the distinctive traits away, do NOT beautify, slim, symmetrise or de-age, do NOT replace the head with a generic illustrated face or an anime face. Smoothing kills recognition faster than exaggeration does. Someone who knows this person must name them instantly, even though nothing here is photographic.\n\nPALETTE — narrow in RANGE but full in STRENGTH. Three families only: fresh sage-to-olive green, clean rose pink, warm cream paper. Clear, luminous, confident colour — real pink that reads as pink, real green with life in it, opaque and slightly chalky like true gouache. GREEN AND PINK MUST CARRY ROUGHLY EQUAL WEIGHT in the frame: if one of them dominates and the other survives only as an accent, the image has FAILED. Push value contrast — deep greens against pale pinks against bare cream — so it reads from across a room. Do NOT desaturate, grey down, fade or wash out. Forbidden outside the three families: saturated primaries, black, brown, blue sky, rainbow.\n\nCHARACTER CONCEPT — the person is not posing, they ARE somebody. Read the uploaded photo — their energy, attitude, age, what they seem to be like — and invent a persona that takes that trait and pushes it until it is funny, sharp or slightly absurd. Give them something to DO and something to HOLD: a prop, a costume detail, a gesture that tells a whole story in one frame. The register is punk irreverence delivered in a sweet, pretty medium; the clash between the tender painting and the rude or deadpan content IS the style. Attitude in the eyes, never a polite smile. The concept must fit THIS person and be impossible to transplant onto anyone else.\n\nPOSE: waist-up, the figure large and graphic in the frame. The pose carries the attitude — arms crossed, a hand raised, leaning in, brandishing the prop. Never a passive shoulders-square photo pose.\n\nWARDROBE: take the clothing from the uploaded photo — same garments, same cut, same layers, same collar and neckline — and REBUILD it in this flat painted language, repainted in the palette above. Simplify the folds into a few decisive shapes. Do not restyle or invent new outfits; the person must recognise their own clothes.\n\nWORLD: a background and a few oversized objects belonging to the invented persona, pushing its joke further. Big simple shapes, flat colour, no clutter, generous empty cream paper. Everything quieter in value than the head — the world sets up the character, the face lands the punchline.\n\nCRAFT: subtle paper grain across the whole image, slightly uneven edges of the flat washes, one or two places where pigment pooled, a soft border of untouched paper.\n\nFORBIDDEN: realistic portrait proportions; a painted photograph; softened or averaged features; a polite neutral subject with no idea behind it; a passive pose; decorative houseplants as filler; desaturated, dusty or washed-out colour; one colour dominating the frame; any text, letters, numbers, logos or watermark; photographic skin, pores, photoreal rendering; 3D render, CGI, plastic shading; generic anime or manga face; doll-like symmetrical beauty; a face that no longer resembles the source; crowded busy composition.\n\nThe result must read as a character from a coherent illustrated series — clearly this exact person, and clearly a drawing.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789558483328.jpg",
+        "htmlCode": ""
+    },
+    {
+        "id": 1789214435565,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "МУЛЬТИКИ",
+        "title": "Anime",
+        "price": 3,
+        "model": "chatgpt-2.5",
+        "prompt": "Сделай из загруженного изображения картинку в актуальном аниме-стиле. Используй выразительную линию с легкой вариативностью и минимальный сел-шейдинг с плоскими теневыми формами. Используй яркие, насыщенные цвета и чистое, графичное освещение. Стиль строится на преувеличенных, мультяшных пропорциях персонажей, с простыми, но очень выразительными чертами лица, позволяющими передавать широкий спектр эмоций, и с заметно искаженной, растянутой анатомией. Сделай пространство слегка искаженным, с заметно нарушенной перспективой и упрощенными формами объектов. Композиция и общее настроение должны быть энергичными, живыми и комедийными, в полностью стилизованном и нереалистичном мире.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789214435565.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789214494635,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Slimes",
+        "price": 2,
+        "model": "chatgpt-2.5",
+        "prompt": "Use the uploaded photo as the PRIMARY IDENTITY REFERENCE. Preserve the person’s identity and facial appearance with maximum accuracy. Use the provided reference image as the PRIMARY VISUAL STYLE REFERENCE. Create a full-frame editorial fashion image in the exact visual language of the reference: surreal hip-hop fashion photography, extreme horizontal motion-drag distortion, stretched fabric and elongated clothing trails, bold saturated red studio background, dramatic low-angle fashion composition, oversized contemporary streetwear, strong graphic silhouette, expressive visual weirdness, cool confident attitude, retro analog print aesthetic, subtle vintage film grain, tactile photographic texture, slightly imperfect printed-surface feel. IDENTITY PRESERVATION IS THE HIGHEST PRIORITY. The person must remain immediately recognizable as the person from the source photo. Preserve the exact facial identity, facial proportions, bone structure, eye shape, eyebrows, nose, lips, jawline, cheekbones, skin tone, hairline, hairstyle, age, and all distinctive facial characteristics from the source image. Do NOT redesign, beautify, idealize, masculinize, feminize, age, de-age, or otherwise alter the person’s face. Do not turn the person into a generic fashion model. Do not create a lookalike. It must clearly be the SAME PERSON from the uploaded photo. Preserve natural facial anatomy and realistic skin texture while translating the person into the visual style of the reference. STYLE MATCH: Match the reference image as closely as possible in: - overall visual language - composition - camera perspective - low-angle fashion photography - full-body framing - subject scale - bold red background - horizontal motion streaks - stretched and smeared clothing - elongated fabric trails - distorted garment silhouettes - dynamic horizontal movement - surreal fashion editorial feeling - hip-hop / contemporary streetwear attitude - retro film grain - analog photographic texture - slightly rough printed texture - strong contrast - saturated red environment - unusual proportions created by motion distortion - clean but deliberately strange fashion-art direction The motion distortion should primarily affect the CLOTHING and parts of the silhouette, creating long horizontal streaks that extend dramatically across the frame, while the face and essential facial features remain sharp, stable, recognizable, and anatomically correct. Create the illusion that the clothing is being pulled sideways through extreme motion, producing long flowing fabric trails and repeated stretched silhouettes. The distortion should feel physical, intentional, and fashion-editorial rather than like a digital glitch. The person should stand confidently with a strong, slightly confrontational fashion pose. Preserve the recognizable physical characteristics of the source person while adapting the pose and framing to the reference style. Use a dramatic low camera angle, making the figure feel powerful and imposing. The clothing should be transformed into a bold contemporary hip-hop fashion look while remaining believable and coherent. Use oversized silhouettes, layered fabrics, exaggerated proportions, premium streetwear details and fashion-editorial styling. The composition should be visually rich but controlled. The red background should occupy most of the frame and create a strong monochromatic visual field behind the subject. Add subtle retro photographic grain, analog imperfections, fine surface texture, slight print wear and cinematic photographic depth. Keep the face crisp and highly detailed even while the clothing and body silhouette contain extreme horizontal motion distortion. No typography. No text. No letters. No numbers. No logos. No barcode. No symbols that resemble writing. No magazine captions. No graphic labels. No watermark. The final image should look like a high-budget experimental fashion campaign photographed in a studio and then transformed through sophisticated analog motion-drag techniques. It should NOT look like a generic AI image, 3D render, cartoon, illustration, digital glitch art, or random motion blur. The result should feel like the same person from the source photograph photographed in the exact same artistic universe as the reference image. Ultra-detailed, high-end fashion photography, realistic face, realistic skin, tactile fabric, dramatic perspective, sophisticated motion distortion, retro analog texture, editorial art direction, 4K detail. --ar 4:5 --raw",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789214494635.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789214593489,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Water",
+        "price": 1,
+        "model": "chatgpt-2.5",
+        "prompt": "Создай подводный портрет сверхкрупным планом в момент сразу после того, как человек нырнул в бассейн или прозрачную неглубокую воду. Создай спокойную, невесомую, почти эфемерную атмосферу с акцентом на световые отражения. Без напряжения и без ощущения срочности.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789214593489.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789214671647,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Red",
+        "price": 1,
+        "model": "chatgpt-2.5",
+        "prompt": "РОЛЬ И ЭСТЕТИКА Ты — фотограф мирового уровня, специализирующийся на редакционных портретах с драматичным, насыщенным студийным светом. Задача — создать мощный, динамичный портрет с героическим ощущением. ЯКОРЬ ИДЕНТИЧНОСТИ (КРИТИЧЕСКОЕ СТРОГОЕ ОГРАНИЧЕНИЕ) Источник: используй человека с ПРИКРЕПЛЁННОГО РЕФЕРЕНСНОГО ФОТО. Сохранение: необходимо идеально сохранить его точные черты лица, тон кожи, причёску и естественное сходство без каких-либо изменений. Универсальность: свет и ракурс должны применяться к модели независимо от пола. ОДЕЖДА И СТИЛЬ Одежда: использовать ОДЕЖДУ ТОЧНО КАК НА РЕФЕРЕНСНОМ ФОТО. Сохранение: фасон, цвет, материал и посадка одежды должны полностью соответствовать оригиналу без каких-либо изменений или стилизации. Выражение лица: серьёзное, напряжённое, сосредоточенное. Взгляд направлен не в камеру, а в пространство выше, за пределы кадра. СЦЕНА И КОМПОЗИЦИЯ Фон: насыщенный однотонный оранжево-красный задник с плавными, интенсивными цветовыми градиентами без каких-либо узоров. Атмосфера должна ощущаться «горячей». Ракурс камеры (КРИТИЧЕСКИ ВАЖНО): съёмка снизу вверх. Этот угол должен делать персонажа мощным и доминирующим. Кадрирование: средний крупный план, акцент на лице и плечах. СВЕТ (ДРАМАТИЧНЫЙ И ЦВЕТНОЙ) Цветовая палитра: доминируют яркие оранжевые и глубокие красные оттенки Основной свет: сильный направленный источник, создающий глубокие драматичные тени на лице (эффект кьяроскуро), подчёркивающий структуру лица Контровой свет: мощный, выразительный обводящий свет или цветовой ореол, отделяющий голову и плечи от яркого фона Настроение: загадочная, напряжённая, высококонтрастная студийная эстетика ТЕХНИЧЕСКОЕ КАЧЕСТВО Стиль: фотореализм, высокая детализация Текстуры: резкий фокус на лице, в контрасте с гладкими градиентами фона Кожа: сохранить естественные поры и натуральную текстуру кожи",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789214671647.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789214790740,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "МУЛЬТИКИ",
+        "title": "Carricature",
+        "price": 2,
+        "model": "chatgpt-2.5",
+        "prompt": "Вертикальный причудливый плоский карикатурный портрет [люди с прикрепленной фотографии] с высокой геометрической формой головы, длинной узкой шеей, огромными круглыми глазами, крошечным ртом и невозмутимым смехом, одетого в [ОДЕЖДУ с фотографии]. Чистый черный контур, плавная цветовая гамма, простые формы лица, редкие рисунки на меху или коже животных, игривый сюрреалистический дизайн персонажей, смелая графическая палитра [синий]. Фоновые декорации: [Уличные декорации Нью-Йорка выполнены с использованием упрощенных форм, четкой глубины, небольшого количества пейзажей из окружающей среды и четкой мультяшной перспективы. Четкая цифровая иллюстрация, вертикальное обрамление в виде плаката, никакого реализма, никакого 3D-рендеринга, никакой живописной растушевки, соотношение сторон 4:5.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789214790740.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789215941940,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Red Gradient",
+        "price": 1,
+        "model": "chatgpt-2.5",
+        "prompt": "red gradient background, confidently. The lighting is dramatic and cinematic, emphasizing his facial structure and diving a luxury fashion magazine vibe. Ultra-realistic, high-detail, editorial photography style. 4K resolution, symmetrical composition, minimal background element. 4:3 ratio.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789215941940.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789216584056,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "FullXR",
+        "price": 3,
+        "model": "chatgpt-2.5",
+        "prompt": "red gradient background, confidently. The lighting is dramatic and cinematic, emphasizing his facial structure and diving a luxury fashion magazine vibe full body. Ultra-realistic, high-detail, editorial photography style. 4K resolution, symmetrical composition, minimal background element. 4:3 ratio.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789216584056.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 99,
+        "sectionId": 1789230034964,
+        "sectionTitle": "РАЗВЛЕЧЕНИЕ",
+        "category": "ПРОЖАРКА",
+        "title": "🔥 ИИ-ПРОЖАРКА (СТЕНДАП)",
+        "img": "assets/hero_portrait.jpg",
+        "price": 190,
+        "model": "roast-standup",
+        "prompt": "Standup roast caricature with dynamic vision analysis and ElevenLabs voice",
+        "location": "",
+        "htmlCode": ""
+    },
+    {
+        "id": 102,
+        "sectionId": 4,
+        "sectionTitle": "ПРИМЕРКА",
+        "category": "ТОЛСТОВКИ",
+        "title": "Толстовка ALTYN White Classic",
+        "img": "assets/hero_portrait.jpg",
+        "price": 450,
+        "location": "Рынок Дордой, проход 3, контейнер 88",
+        "model": "nano-banana-2",
+        "prompt": "Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.",
+        "htmlCode": ""
+    },
+    {
+        "id": 103,
+        "sectionId": 4,
+        "sectionTitle": "ПРИМЕРКА",
+        "category": "ХУДИ",
+        "title": "Худи Streetwear Cyberpunk",
+        "img": "assets/hero_robot.jpg",
+        "price": 490,
+        "location": "ТРЦ Bishkek Park, 2 этаж, бутик Trendum",
+        "model": "nano-banana-2",
+        "prompt": "Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.",
+        "htmlCode": ""
+    },
+    {
+        "id": 104,
+        "sectionId": 4,
+        "sectionTitle": "ПРИМЕРКА",
+        "category": "ФУТБОЛКИ",
+        "title": "Футболка Trendum Minimalist",
+        "img": "assets/man.jpg",
+        "price": 350,
+        "location": "Рынок Дордой, контейнер 205",
+        "model": "chatgpt-2.5",
+        "prompt": "Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.",
+        "htmlCode": ""
+    },
+    {
+        "id": 1789218220360,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Samurai",
+        "price": 2,
+        "model": "chatgpt-2.5",
+        "prompt": "Redraw the person from the uploaded photo as a modern Asian illustrated poster. IDENTITY FIRST, BUT STYLIZED. The person must stay instantly recognizable — keep the proportions of the face, the shape of the nose and lips, the eye shape and spacing, the eyebrows, the skin tone, the hairstyle and the expression. Do not beautify and do not invent features. But this is an ILLUSTRATION, not a painted photograph: simplify and stylize the drawing itself. HOW TO STYLIZE THE PERSON — this is the most important part The figure must read as a DRAWN ILLUSTRATED CHARACTER, not as a photograph painted over. A viewer should say «beautifully drawn character», never «retouched photo». • the face is built from a few clean shapes: cheek, jaw and chin as smooth simple planes, no detailed modelling, no rendered bone structure; • skin is TWO OR THREE FLAT TONES with one soft transition and a coral blush — no pores, no shine, no photographic shading, no subtle wrinkles; • eyes noticeably larger than in life, drawn with a crisp confident line, clean eyelids, lashes as a few strokes, iris as a flat shape with one highlight; • nose reduced to two or three delicate lines and a soft shadow, nostrils barely indicated; • lips as one clear filled shape with a simple highlight; • eyebrows as solid graphic strokes; • the figure is elongated and graceful: longer neck, narrower sloping shoulders, slender elongated hands with long fingers; • hair is a set of large decorative ribbons of colour with a handful of drawn strands on top — never thousands of separate hairs; • clothing folds simplified into few large calm shapes with flat washes. Identity survives through PROPORTIONS and FEATURES, not through realistic rendering: same face proportions, same nose and lip shapes, same eye spacing, same brows, same hair colour and length, same expression. TECHNIQUE Hand-painted gouache and watercolour illustration with soft airbrush shading. Visible fine paper grain over the whole image. The face is painted crisply, with clean delicate linework, defined eyes and soft blush on the cheeks and nose. Clothing and body are blended softly, with gentle gradients instead of hard edges. No harsh black outlines, no cel shading, no vector look. COLOUR PALETTE — strictly limited • background: dusty cornflower blue, flat and slightly muted • accent: warm coral orange, used only for the animal, small details and the seal • secondary: muted sage-olive green, fading into the clothing • clothing and clouds: creamy off-white with pale blue shadows • skin: warm, lightly tanned, with coral blush • hair: deep navy-black with cool blue highlights Nothing outside this palette. No saturated neon, no purple, no brown. COMPOSITION Three-quarter view portrait, waist-up to knee-up, the figure turned slightly away with the head looking back at the viewer. Long hair flowing in soft strands. Oversized loose clothing taken from the uploaded photo, with wide sleeves and heavy folds, drawn in the cream-to-sage gradient. BACKGROUND Behind the figure, a large stylized SPIRIT ANIMAL. CHOOSE the animal yourself so that it fits this particular person's face and mood — a tiger, a crane, a koi carp, a fox, a wolf, a snake, a deer, a phoenix or a dragon. Do not default to a tiger. Whichever animal you choose, paint it the same way: broad flat white body with coral markings, decorative outlines, one bright amber eye, partly hidden behind the person. Around it, stylized swirling clouds in the old Asian manner: rolling spiral shapes in cream white with pale blue outlines. Everything decorative and flat, no realistic depth. POSTER FRAME The illustration sits on a warm off-white paper sheet with a visible margin around it. In the lower right corner of the artwork, a small vertical red seal stamp with white carved marks, like a traditional artist's chop. AVOID: photorealism, a painted-over photograph, realistic skin rendering, rendered bone structure, detailed facial modelling, 3D render, anime, manga, chibi, thick black outlines, harsh cel shading, glossy digital painting, extra colours outside the palette, brand logos and readable text anywhere except the red seal.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789218220360.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789561124233,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "МУЛЬТИКИ",
+        "title": "Doodle style",
+        "price": 1,
+        "location": "",
+        "model": "chatgpt-2.5",
+        "prompt": "Turn this photo into a doodle-style character that looks intentionally ugly and funny, similar to a child's crayon drawing. Use a rough black outline like crayon or pencil, with messy scribble coloring.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789561124233.jpg",
+        "htmlCode": ""
+    },
+    {
+        "id": 1789567263652,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Beauty",
+        "price": 1,
+        "location": "",
+        "model": "chatgpt-2.5",
+        "prompt": "Used uploaded photo, don’t change a face, don’t distort and keep the face exactly as in the uploaded photo and create a candid snapshot captured on a low-quality disposable camera. Photo-realistic Close-up shot,only macro face shot, black and white, Full, voluminous hair, hair slightly blown by the wind falling across the face, Chin slightly raised ,dreamy gaze, eyes is closed, and she is smiling,voluminous dress, squatting on wet, textured seaside rocks. ,voluminous dress white, The background features a dramatic, large coastal cliff face under a heavily misty, overcast and moody grey sky. The lighting is diffused and natural. The overall atmosphere is cinematic and raw. -—ar 9:16,add more cinematic photo taken on a film camera 85mm",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789567263652.jpg",
+        "htmlCode": ""
+    },
+    {
+        "id": 1789570220974,
+        "sectionId": 4,
+        "sectionTitle": "ПРИМЕРКА",
+        "category": "ТОЛСТОВКИ",
+        "title": "Men Style",
+        "price": 1,
+        "location": "Бутик 12а",
+        "model": "chatgpt-2.5",
+        "prompt": "",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789570220974.jpg",
+        "htmlCode": ""
+    },
+    {
+        "id": 1790102576781,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "МУЛЬТИКИ",
+        "title": "Draw Style",
+        "price": 1,
+        "location": "",
+        "model": "chatgpt-2.5",
+        "resolution": "1K",
+        "prompt": "Используй загруженную фотографию как референс. Сохрани узнаваемую внешность человека, причёску, выражение лица, позу, одежду, детёныша животного и исходные цвета.\n\nПерерисуй изображение в виде милого, немного неуклюжего рисунка от руки: сделай голову непропорционально большой и слегка кривоватой, тело — маленьким и забавным, глаза — в виде точек, а черты лица — максимально простыми.\n\nИспользуй тонкие, слегка дрожащие линии чёрной шариковой ручки и небрежные штрихи цветными карандашами. Стиль должен выглядеть намеренно любительским, очаровательно неловким и немного детским, но при этом аккуратным и незахламлённым.\n\nУпрости фон, оставив много свободного пространства и белой бумаги.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1790102576781.jpg",
+        "htmlCode": ""
+    }
+];
+
 let masterTemplates = [];
 try {
     const savedTpls = localStorage.getItem('kiosk_templates_v2');
     if (savedTpls !== null) {
-        masterTemplates = JSON.parse(savedTpls);
+        const parsed = JSON.parse(savedTpls);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+            masterTemplates = parsed;
+        }
     }
 } catch(e) {}
 
-if (masterTemplates === null || (masterTemplates.length === 0 && localStorage.getItem('kiosk_templates_v2') === null)) {
-    masterTemplates = [
-        { id: 99, sectionId: 3, sectionTitle: 'ТРЕНДЫ', category: 'ПРОЖАРКА', title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)', img: 'assets/hero_portrait.jpg', price: 190, model: 'roast-standup', resolution: '2K', prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice' },
-        { id: 101, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка TRENDUM Black Oversize', img: 'assets/hero_avatar.jpg', price: 450, location: 'Рынок Дордой, ряд 5, контейнер 142', model: 'nano-banana-2', resolution: '2K', prompt: 'Black oversize streetwear hoodie with realistic folds and shadows' },
-        { id: 102, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ТОЛСТОВКИ', title: 'Толстовка ALTYN White Classic', img: 'assets/hero_portrait.jpg', price: 450, location: 'Рынок Дордой, проход 3, контейнер 88', model: 'nano-banana-2', resolution: '2K', prompt: 'Stylish premium white cotton hoodie with photorealistic drape' },
-        { id: 103, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ХУДИ', title: 'Худи Streetwear Cyberpunk', img: 'assets/hero_robot.jpg', price: 490, location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum', model: 'nano-banana-2', resolution: '2K', prompt: 'Futuristic graphic streetwear hoodie with photorealistic texture' },
-        { id: 104, sectionId: 4, sectionTitle: 'ПРИМЕРКА', category: 'ФУТБОЛКИ', title: 'Футболка Trendum Minimalist', img: 'assets/man.jpg', price: 350, location: 'Рынок Дордой, контейнер 205', model: 'nano-banana-2', resolution: '2K', prompt: 'Minimalist black cotton graphic t-shirt' }
-    ];
+if (!Array.isArray(masterTemplates) || masterTemplates.length === 0) {
+    masterTemplates = JSON.parse(JSON.stringify(DEFAULT_KIOSK_TEMPLATES));
 }
 
 let activeSectionCard = mainCardsConfig.length > 0 ? mainCardsConfig[0] : null;
@@ -499,9 +747,16 @@ function openTemplateGallery(cardIdOrMode) {
     try {
         const saved = localStorage.getItem('kiosk_templates_v2');
         if (saved !== null) {
-            masterTemplates = normalizeTemplates(JSON.parse(saved), mainCardsConfig);
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                masterTemplates = normalizeTemplates(parsed, mainCardsConfig);
+            }
         }
     } catch(e) {}
+
+    if (!Array.isArray(masterTemplates) || masterTemplates.length === 0) {
+        masterTemplates = JSON.parse(JSON.stringify(DEFAULT_KIOSK_TEMPLATES));
+    }
 
     if (!masterTemplates.some(t => (t.model || '').toLowerCase() === 'roast-standup')) {
         masterTemplates.push({
@@ -2475,10 +2730,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.attract_timeout) {
                     localStorage.setItem('kiosk_attract_timeout', data.attract_timeout);
                 }
-                if (Array.isArray(data.templates)) {
+                if (Array.isArray(data.templates) && data.templates.length > 0) {
                     masterTemplates = normalizeTemplates(data.templates, mainCardsConfig);
-                    localStorage.setItem('kiosk_templates_v2', JSON.stringify(masterTemplates));
+                    try {
+                        localStorage.setItem('kiosk_templates_v2', JSON.stringify(masterTemplates));
+                    } catch (e) {
+                        console.warn('Storage quota warning:', e);
+                    }
                     renderGridTemplates();
+                    renderCategoryPillsBar();
                 }
                 if (Array.isArray(data.categories)) {
                     kioskCategories = data.categories;
