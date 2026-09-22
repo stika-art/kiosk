@@ -428,47 +428,30 @@ CRITICAL MANDATORY INSTRUCTIONS:
 
                         const finalMediaUrl = (resultUrls && resultUrls[0]) || taskInfo.video_url || taskInfo.image_url;
                         if (finalMediaUrl) {
-                            return { resultUrl: finalMediaUrl, taskId, resolution: targetResolution };
+                            return { resultUrl: finalMediaUrl, taskId, resolution: targetResolution, model: targetModel };
                         }
                     } else if (state === 'fail' || state === 'failed' || state === 'error') {
-                        console.warn(`[Kie.ai] Задача ${taskId} завершилась с ошибкой:`, taskInfo.failMsg || taskInfo.errorMessage || 'Неизвестная ошибка');
-                        return null;
+                        const errMsg = taskInfo.failMsg || taskInfo.errorMessage || 'Неизвестная ошибка генерации';
+                        console.warn(`[Kie.ai] Задача ${taskId} (${targetModel}) завершилась с ошибкой:`, errMsg);
+                        return { failed: true, error: errMsg, taskId, model: targetModel };
                     }
                 }
             }
 
             // Если задача ещё в процессе (OpenAI может генерировать до 60-80с) — возвращаем taskId для асинхронного поллинга клиентом
-            console.log(`[Kie.ai AI Hub] Задача ${taskId} всё ещё генерируется, передаем клиенту для поллинга`);
-            return { pending: true, taskId, resolution: targetResolution };
+            console.log(`[Kie.ai AI Hub] Задача ${taskId} (${targetModel}) всё ещё генерируется, передаем клиенту для поллинга`);
+            return { pending: true, taskId, resolution: targetResolution, model: targetModel };
 
         } catch (err) {
             console.warn(`[Kie.ai Task Exception for ${targetModel}]`, err.message);
+            return { failed: true, error: err.message, model: targetModel };
         }
-        return null;
     }
 
-    // Попытка 1: запуск через целевую модель (ChatGPT / Nano Banana / видео)
-    let outcome = await executeKieTask(kieModel, inputPayload);
-    if (outcome) return outcome;
-
-    // Попытка 2 (Резерв): если целевая модель дала сбой, пробуем google/nano-banana-edit
-    if (kieModel !== 'google/nano-banana-edit') {
-        console.warn('[Kie.ai] Резервная попытка генерации через google/nano-banana-edit...');
-        const fallbackPayload = {
-            prompt: inputPayload.prompt || safePrompt || 'Photorealistic cinematic studio portrait, retain facial likeness and features',
-            image_urls: inputPayload.image_urls || [publicPhotoUrl],
-            input_urls: inputPayload.input_urls || [publicPhotoUrl],
-            image_url: publicPhotoUrl,
-            inputImage: publicPhotoUrl,
-            output_format: 'png',
-            aspect_ratio: '3:4',
-            resolution: targetResolution
-        };
-        outcome = await executeKieTask('google/nano-banana-edit', fallbackPayload);
-        if (outcome) return outcome;
-    }
-
-    return null;
+    // Запуск строго через выбранную модель без скрытых подмен и фоллбэков
+    console.log(`[Kie.ai AI Hub] Запуск генерации строго в целевой модели: "${kieModel}"`);
+    const outcome = await executeKieTask(kieModel, inputPayload);
+    return outcome;
 }
 
 module.exports = async (req, res) => {
@@ -546,6 +529,19 @@ module.exports = async (req, res) => {
 
         const [generationOutcome, audioUrl] = await Promise.all([imagePromise, audioPromise]);
 
+        const effectiveModelName = generationOutcome?.model || model || (isTryOn ? 'nano-banana-2' : 'chatgpt-2.5');
+
+        // Если целевая модель вернула явную ошибку (без скрытых фоллбэков)
+        if (generationOutcome && generationOutcome.failed) {
+            console.warn(`[AI Hub] Модель ${effectiveModelName} завершилась с ошибкой:`, generationOutcome.error);
+            return res.status(200).json({
+                success: false,
+                error: generationOutcome.error || `Ошибка генерации в модели ${effectiveModelName}`,
+                model: effectiveModelName,
+                orderId
+            });
+        }
+
         // Если задача ещё в процессе (OpenAI) — возвращаем статус pending для поллинга
         if (generationOutcome && generationOutcome.pending) {
             return res.status(200).json({
@@ -555,10 +551,10 @@ module.exports = async (req, res) => {
                 taskId: generationOutcome.taskId,
                 orderId,
                 resolution: generationOutcome.resolution || targetResolution,
-                model: 'chatgpt-2.5',
+                model: effectiveModelName,
                 audioUrl: audioUrl || null,
                 speechText: speechText || '',
-                message: 'Генерация ChatGPT выполняется...'
+                message: `Генерация через ${effectiveModelName} выполняется...`
             });
         }
 
@@ -568,10 +564,10 @@ module.exports = async (req, res) => {
         return res.status(200).json({
             success: true,
             pending: false,
-            state: generatedImageUrl ? 'success' : 'fallback',
+            state: generatedImageUrl ? 'success' : 'preview',
             orderId,
             taskId: generationOutcome?.taskId || null,
-            model: 'chatgpt-2.5',
+            model: effectiveModelName,
             resolution: generationOutcome?.resolution || targetResolution,
             title: title || 'Портрет',
             prompt: prompt || '',
@@ -581,7 +577,7 @@ module.exports = async (req, res) => {
             audioUrl: audioUrl || null,
             speechText: speechText || '',
             mode: effectiveKey ? 'live' : 'preview',
-            message: generatedImageUrl ? 'Успешно сгенерировано через ChatGPT' : 'Генерация завершилась'
+            message: generatedImageUrl ? `Успешно сгенерировано через ${effectiveModelName}` : 'Генерация завершилась'
         });
     } catch (err) {
         console.error('[AI Gateway Error]', err);
