@@ -643,6 +643,7 @@ a { text-decoration: none; color: inherit; cursor: pointer; }
 #cam-fps-warning,
 .cam-info-badge,
 #open-diag-btn,
+#switch-cam-btn,
 .pay-subtext {
   display: none !important;
   visibility: hidden !important;

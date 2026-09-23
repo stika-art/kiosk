@@ -2195,7 +2195,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (switchCamBtn) {
-                switchCamBtn.style.display = (availableVideoDevices.length > 1) ? 'inline-flex' : 'none';
+                switchCamBtn.style.display = 'none';
             }
 
             if (currentTrack) {
