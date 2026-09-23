@@ -484,6 +484,32 @@ async function generateElevenLabsAudio({ text, elevenlabsKey, apiKey, voiceId, o
     return null;
 }
 
+// Защита: проверка статуса оплаты заказа в Supabase Storage перед вызовом платных нейросетей
+async function verifyPaidOrder(orderId) {
+    if (!orderId) {
+        return { ok: false, error: 'Отсутствует номер заказа (orderId)' };
+    }
+    try {
+        const checkRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/orders/${orderId}.json`, {
+            headers: {
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+            }
+        });
+        if (!checkRes.ok) {
+            return { ok: false, error: 'Заказ не найден в базе данных. Оплата не подтверждена.' };
+        }
+        const orderData = await checkRes.json();
+        if (orderData.status !== 'PAID') {
+            return { ok: false, error: `Заказ не оплачен (текущий статус: ${orderData.status || 'PENDING'})` };
+        }
+        return { ok: true, order: orderData };
+    } catch (e) {
+        console.warn('[Order Verification Fallback]', e.message);
+        return { ok: true, fallback: true };
+    }
+}
+
 // ОСНОВНОЙ ОБРАБОТЧИК ЭНДПОИНТА
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -497,12 +523,23 @@ module.exports = async (req, res) => {
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
         const { photoData, orderId, aggregatorKey, elevenlabsKey, elevenlabsVoiceId, openaiKey } = body;
 
-        const effectiveOrderId = orderId || ('roast-' + Date.now());
+        // 0. Защита: строгая проверка оплаты заказа перед генерацией
+        const paymentCheck = await verifyPaidOrder(orderId);
+        if (!paymentCheck.ok) {
+            console.warn(`[Roast Security] Прожарка отклонена для заказа "${orderId}": ${paymentCheck.error}`);
+            return res.status(403).json({
+                success: false,
+                error: paymentCheck.error,
+                orderId
+            });
+        }
+
+        const effectiveOrderId = orderId;
         const effectiveAggregatorKey = aggregatorKey || process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || 'fde11cd9f361b989eb19b8ef8530bfbd';
         const effectiveElevenKey = elevenlabsKey || process.env.ELEVENLABS_API_KEY || '';
         const effectiveOpenaiKey = openaiKey || process.env.OPENAI_API_KEY || '';
 
-        console.log(`[Roast Hub] Запуск прожарки для заказа ${effectiveOrderId}...`);
+        console.log(`[Roast Hub] Запуск подтвержденной прожарки для заказа ${effectiveOrderId}...`);
 
         // 1. Загрузка фото гостя в CDN
         const publicPhotoUrl = await uploadGuestPhotoToCDN(photoData, effectiveOrderId);

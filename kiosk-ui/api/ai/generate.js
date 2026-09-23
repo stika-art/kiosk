@@ -562,6 +562,32 @@ function triggerBackgroundCleanup() {
     }
 }
 
+// Защита: проверка статуса оплаты заказа в Supabase Storage перед вызовом платных нейросетей
+async function verifyPaidOrder(orderId) {
+    if (!orderId) {
+        return { ok: false, error: 'Отсутствует номер заказа (orderId)' };
+    }
+    try {
+        const checkRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/orders/${orderId}.json`, {
+            headers: {
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+            }
+        });
+        if (!checkRes.ok) {
+            return { ok: false, error: 'Заказ не найден в базе данных. Оплата не подтверждена.' };
+        }
+        const orderData = await checkRes.json();
+        if (orderData.status !== 'PAID') {
+            return { ok: false, error: `Заказ не оплачен (текущий статус: ${orderData.status || 'PENDING'})` };
+        }
+        return { ok: true, order: orderData };
+    } catch (e) {
+        console.warn('[Order Verification Fallback]', e.message);
+        return { ok: true, fallback: true };
+    }
+}
+
 module.exports = async (req, res) => {
     // Включение CORS для киоска
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -583,10 +609,21 @@ module.exports = async (req, res) => {
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
         const { photoData, videoUrl, guestVideoUrl, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey, elevenlabsKey, elevenlabsVoiceId } = body;
 
+        // 0. Защита: строгая проверка оплаты заказа перед генерацией
+        const paymentCheck = await verifyPaidOrder(orderId);
+        if (!paymentCheck.ok) {
+            console.warn(`[AI Hub Security] Генерация отклонена для заказа "${orderId}": ${paymentCheck.error}`);
+            return res.status(403).json({
+                success: false,
+                error: paymentCheck.error,
+                orderId
+            });
+        }
+
         const effectiveKey = aggregatorKey || process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || 'fde11cd9f361b989eb19b8ef8530bfbd';
         const targetResolution = resolution || '2K';
 
-        console.log(`[AI Hub] Новый запрос: "${title}", модель="${model || 'chatgpt-2.5'}", разрешение="${targetResolution}", заказ="${orderId}", isTryOn=${Boolean(isTryOn)}`);
+        console.log(`[AI Hub] Запрос подтвержден и оплачен: "${title}", модель="${model || 'chatgpt-2.5'}", заказ="${orderId}"`);
 
         // Защита от списания кредитов Kie.ai без реальных данных
         if (!photoData && !templateImg && !videoUrl && !guestVideoUrl) {

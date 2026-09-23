@@ -11,6 +11,20 @@ module.exports = async (req, res) => {
 
     try {
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+        
+        // Защита вебхука: проверка секретного токена вебхука, если он задан в переменных окружения
+        const configuredSecret = process.env.FINIK_WEBHOOK_SECRET;
+        if (configuredSecret) {
+            const incomingSecret = req.headers['x-webhook-secret'] || 
+                                   req.headers['x-api-key'] || 
+                                   req.query.secret || 
+                                   body.secret;
+            if (incomingSecret !== configuredSecret) {
+                console.warn('[Finik Callback Security] Отклонен неавторизованный вебхук');
+                return res.status(401).json({ success: false, error: 'Unauthorized webhook' });
+            }
+        }
+
         console.log('[Finik Callback] Получено уведомление:', JSON.stringify(body));
 
         // Извлекаем идентификатор заказа из структуры webhook Finik

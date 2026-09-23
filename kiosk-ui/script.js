@@ -3309,4 +3309,51 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('focus', () => {
         syncCloudConfig();
     });
+
+    // ============================================================
+    // KIOSK LOCKDOWN & ANTI-TAMPER SECURITY MODULE
+    // Защита физического экрана киоска от взлома и системных меню Chrome
+    // ============================================================
+
+    // 1. Блокировка контекстного меню (правый клик и долгий тап пальцем на тачскрине)
+    document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    }, { capture: true, passive: false });
+
+    // 2. Блокировка перетаскивания изображений и ссылок (drag-and-drop)
+    document.addEventListener('dragstart', (e) => {
+        e.preventDefault();
+        return false;
+    }, { capture: true });
+
+    // 3. Блокировка системных горячих клавиш и вызова DevTools
+    window.addEventListener('keydown', (e) => {
+        // F1..F12
+        if (e.key === 'F11' || e.key === 'F12' || e.keyCode === 122 || e.keyCode === 123) {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+R (Reload), Ctrl+Shift+R, Ctrl+U (View Source), Ctrl+S (Save), Ctrl+P (Print)
+        if (e.ctrlKey && ['r', 'R', 'u', 'U', 's', 'S', 'p', 'P'].includes(e.key)) {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+Shift+I / J / C (DevTools Inspect)
+        if (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) {
+            e.preventDefault();
+            return false;
+        }
+    }, { capture: true });
+
+    // 4. Защита от случайного мультитач-зума (pinch-to-zoom) на сенсорном экране
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length > 1) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    document.addEventListener('gesturestart', (e) => {
+        e.preventDefault();
+    }, { passive: false });
 });

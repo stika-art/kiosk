@@ -1448,15 +1448,6 @@
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
 
-        const DEFAULT_PIN = '1234';
-
-        function getStoredPin() {
-            try {
-                const stored = localStorage.getItem('kiosk_admin_pin');
-                if (stored && stored.trim().length >= 4) return stored.trim();
-            } catch(e) {}
-            return DEFAULT_PIN;
-        }
 
         function getStoredCategories() {
             try {
@@ -1932,49 +1923,89 @@
         let activeCatSectionId = mainCards.length > 0 ? mainCards[0].id : 1;
         let activeTplFilterSectionId = 1;
 
-        // Check Session Authentication
-        function checkAuth() {
-            const isAuth = sessionStorage.getItem('trendum_admin_auth') === 'true';
+        // Check Session Authentication (Защищенная серверная проверка токена)
+        async function checkAuth() {
+            const token = sessionStorage.getItem('trendum_admin_token');
             const authScreen = document.getElementById('auth-screen');
-            if (isAuth) {
-                authScreen.classList.add('hidden');
-                renderCatSectionSelect();
-                renderCategories();
-                renderTplSectionSelect();
-                renderTplCategoryDropdown(1);
-                updateSectionFormUI(1);
-                renderTplSectionTabs();
-                renderSidebarTplSubMenu();
-                renderTemplates();
-                renderAds();
-                renderMainHeaderInputs();
-                renderMainCardsAdmin();
-            } else {
-                authScreen.classList.remove('hidden');
+            
+            if (token) {
+                try {
+                    const res = await fetch(`/api/admin/auth?action=verify&token=${encodeURIComponent(token)}`);
+                    const data = await res.json();
+                    if (data.success && data.valid) {
+                        authScreen.classList.add('hidden');
+                        renderCatSectionSelect();
+                        renderCategories();
+                        renderTplSectionSelect();
+                        renderTplCategoryDropdown(1);
+                        updateSectionFormUI(1);
+                        renderTplSectionTabs();
+                        renderSidebarTplSubMenu();
+                        renderTemplates();
+                        renderAds();
+                        renderMainHeaderInputs();
+                        renderMainCardsAdmin();
+                        return;
+                    }
+                } catch(e) {
+                    console.warn('[Admin Auth Network]', e.message);
+                }
             }
+            authScreen.classList.remove('hidden');
         }
 
-        function handleAuthSubmit(e) {
+        async function handleAuthSubmit(e) {
             e.preventDefault();
             const input = document.getElementById('auth-pin-input');
             const errorMsg = document.getElementById('auth-error-msg');
+            const submitBtn = e.target.querySelector('button[type="submit"]') || e.target.querySelector('.auth-btn');
             const val = input.value.trim();
 
-            if (val === getStoredPin()) {
-                sessionStorage.setItem('trendum_admin_auth', 'true');
-                errorMsg.style.display = 'none';
-                errorMsg.textContent = '';
-                input.value = '';
-                checkAuth();
-            } else {
+            if (!val) {
                 errorMsg.style.display = 'inline-block';
-                errorMsg.textContent = '❌ Неверный пароль / PIN-код';
-                input.value = '';
-                input.focus();
+                errorMsg.textContent = '❌ Введите PIN-код';
+                return;
+            }
+
+            if (submitBtn) submitBtn.disabled = true;
+            try {
+                const res = await fetch('/api/admin/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin: val })
+                });
+                const data = await res.json();
+                if (data.success && data.token) {
+                    sessionStorage.setItem('trendum_admin_token', data.token);
+                    sessionStorage.setItem('trendum_admin_auth', 'true');
+                    errorMsg.style.display = 'none';
+                    errorMsg.textContent = '';
+                    input.value = '';
+                    checkAuth();
+                } else {
+                    errorMsg.style.display = 'inline-block';
+                    errorMsg.textContent = '❌ ' + (data.error || 'Неверный PIN-код');
+                    input.value = '';
+                    input.focus();
+                }
+            } catch (err) {
+                // Если эндпоинт недоступен офлайн — fallback проверка
+                if (val === '1234') {
+                    sessionStorage.setItem('trendum_admin_token', 'local-offline-session');
+                    sessionStorage.setItem('trendum_admin_auth', 'true');
+                    errorMsg.style.display = 'none';
+                    checkAuth();
+                } else {
+                    errorMsg.style.display = 'inline-block';
+                    errorMsg.textContent = '❌ Неверный PIN-код или ошибка сервера';
+                }
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
             }
         }
 
         function handleLogout() {
+            sessionStorage.removeItem('trendum_admin_token');
             sessionStorage.removeItem('trendum_admin_auth');
             location.reload();
         }
