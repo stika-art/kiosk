@@ -317,8 +317,8 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
             input_urls: [publicPhotoUrl],
             image_urls: [publicPhotoUrl],
             image_url: publicPhotoUrl,
-            video_urls: [motionVideoUrl],
-            mode: targetResolution === '4K' || targetResolution === '2K' ? '1080p' : '720p',
+            // Режим 'std' (Standard) генерируется в 2 раза быстрее, чем 'pro' (~25-35 сек вместо 60-90 сек)
+            mode: (targetResolution === '4K' || targetResolution === 'PRO') ? 'pro' : 'std',
             character_orientation: 'image'
         };
     } else if (isGeminiOmni) {
