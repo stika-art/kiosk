@@ -966,8 +966,11 @@
                         </div>
                         <div id="tpl-model-wrapper" style="flex: 1.5; min-width: 210px;">
                             <label id="tpl-model-label" style="display: block; font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 6px; letter-spacing: 0.5px;">МОДЕЛЬ ОБРАБОТКИ</label>
-                            <select id="tpl-model-select" class="admin-select" style="width: 100%;" onchange="toggleCustomModelInput(this.value)"></select>
-                            <input type="text" id="tpl-custom-model-input" class="admin-input" style="width: 100%; display: none; margin-top: 6px;" placeholder="ID модели...">
+                            <select id="tpl-model-select" class="admin-select" style="width: 100%; font-weight: 700;" onchange="toggleCustomModelInput(this.value)"></select>
+                            <div id="tpl-custom-model-box" style="display: none; margin-top: 8px;">
+                                <input type="text" id="tpl-custom-model-input" class="admin-input" style="width: 100%; border-color: var(--primary); font-weight: 700;" placeholder="Введите ID модели из Kie.ai (напр: kling-3.0/motion-control)..." oninput="toggleCustomModelInput('custom')">
+                                <span style="display: block; font-size: 11px; color: #38bdf8; margin-top: 4px; line-height: 1.4;">💡 Введите любой точный ID модели из каталога Kie.ai (например: <b>kling-3.0/motion-control</b>, <b>kling-motion</b>, <b>kling/v2-5-turbo-image-to-video</b>, <b>midjourney</b>, <b>flux-pro</b> и т.д.)</span>
+                            </div>
                         </div>
                         <div id="tpl-resolution-wrapper" style="width: 165px;">
                             <label style="display: block; font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 6px; letter-spacing: 0.5px;">КАЧЕСТВО</label>
@@ -2223,13 +2226,36 @@
         let editingTemplateId = null;
 
         function toggleCustomModelInput(val) {
+            const customBox = document.getElementById('tpl-custom-model-box');
             const customInput = document.getElementById('tpl-custom-model-input');
+            const imgLabel = document.getElementById('tpl-img-label');
+            const imgTip = document.getElementById('tpl-img-tip');
+            const promptLabel = document.getElementById('tpl-prompt-label');
+
             if (val === 'custom') {
-                customInput.style.display = 'inline-block';
-                customInput.focus();
+                if (customBox) customBox.style.display = 'block';
+                if (customInput) {
+                    customInput.style.display = 'inline-block';
+                    customInput.focus();
+                }
             } else {
-                customInput.style.display = 'none';
-                customInput.value = '';
+                if (customBox) customBox.style.display = 'none';
+                if (customInput) {
+                    customInput.style.display = 'none';
+                    customInput.value = '';
+                }
+            }
+
+            const modelSelect = document.getElementById('tpl-model-select');
+            const currentVal = (modelSelect && modelSelect.value === 'custom' && customInput && customInput.value.trim()) 
+                ? customInput.value.trim().toLowerCase() 
+                : (val || '').toLowerCase();
+
+            const isMotion = currentVal === 'kling-motion' || currentVal.includes('motion');
+            if (isMotion) {
+                if (imgLabel) imgLabel.innerHTML = '🎬 Видео-референс танца или прикола (MP4/WebM):';
+                if (imgTip) imgTip.innerHTML = '💡 <b>Загрузите видеоролик с движениями танца/прикола</b> (MP4). Гость сфотографируется у киоска, и Kling Motion Control перенесет на его фото движения из этого видеоролика!';
+                if (promptLabel) promptLabel.textContent = '🎬 Описание стиля и окружения танца (Prompt):';
             }
         }
 
@@ -2435,7 +2461,7 @@
                         <option value="omni-flash">⚡ Google Gemini Omni Flash (Video-to-Video / Анимация)</option>
                         <option value="kling-turbo">🚀 Kling Turbo (Image-to-Video — Ультра-скорость)</option>
                         <option value="kling-video">🎥 Kling 2.6 HD (Image-to-Video — Кинематограф)</option>
-                        <option value="custom">✏️ Другая модель из каталога Kie.ai...</option>
+                        <option value="custom">✏️ Ввести точный ID модели вручную (любая модель Kie.ai)...</option>
                     `;
                 }
                 if (resWrapper) resWrapper.style.display = 'none';
@@ -2447,6 +2473,39 @@
                 if (imgLabel) imgLabel.innerHTML = '🎬 Видео-референс танца или прикола (MP4/WebM):';
                 if (imgTip) imgTip.innerHTML = '💡 <b>Загрузите видеоролик с движениями танца/прикола</b> (MP4). Гость сфотографируется у киоска, и нейросеть Kling AI оживит его фото, перенеся на него движения из этого видеоролика!';
                 if (submitBtn && !editingTemplateId) submitBtn.textContent = '+ Добавить ролик в «ВИДЕО»';
+
+            } else if (secNum === 3 || titleUp.includes('ТРЕНД')) {
+                // ============================================
+                // РАЗДЕЛ 🔥 ТРЕНДЫ (ТАНЦЫ, TIKTOK, СТЕНДАП)
+                // ============================================
+                if (badgeTitle) badgeTitle.innerHTML = '<span>🔥</span> <span>Добавление шаблона в «ТРЕНДЫ»</span>';
+                if (catLabel) catLabel.textContent = 'КАТЕГОРИЯ ТРЕНДА (TIKTOK, REELS, ТАНЦЫ...)';
+                if (titleLabel) titleLabel.textContent = 'НАЗВАНИЕ ШАБЛОНА';
+                if (titleInput && !editingTemplateId) titleInput.placeholder = 'напр: Трендовый танец, Макарена, Стендап-прожарка...';
+                if (priceLabel) priceLabel.textContent = 'ЦЕНА (СОМ)';
+
+                if (locWrapper) locWrapper.style.display = 'none';
+                if (modelWrapper) modelWrapper.style.display = 'block';
+                if (modelSelect) {
+                    modelSelect.innerHTML = `
+                        <option value="kling-motion" selected>🕺 Kling Motion Control (Танцы и приколы — перенос движений на фото)</option>
+                        <option value="roast-standup">🔥 Стендап-Прожарка (Карикатура + Голос комика)</option>
+                        <option value="chatgpt-2">🎨 GPT Image 2 (Фото-портреты и обложки)</option>
+                        <option value="chatgpt-2.5-sunburst">☀️ GPT Image 2.5 Sunburst (Высокая детализация)</option>
+                        <option value="kling-turbo">🚀 Kling Turbo (Image-to-Video — Ультра-скорость)</option>
+                        <option value="omni-flash">⚡ Google Gemini Omni Flash (Video-to-Video)</option>
+                        <option value="custom">✏️ Ввести точный ID модели вручную (любая модель Kie.ai)...</option>
+                    `;
+                }
+                if (resWrapper) resWrapper.style.display = 'none';
+
+                if (promptLabel) promptLabel.textContent = '🎬 Описание стиля или танца (Prompt):';
+                if (promptInput && !editingTemplateId && !promptInput.value.trim()) {
+                    promptInput.placeholder = 'A person dancing energetically, seamless natural motion, cinematic lighting, high quality...';
+                }
+                if (imgLabel) imgLabel.innerHTML = '🎬 Видео-референс танца (MP4) или Обложка стиля (JPG):';
+                if (imgTip) imgTip.innerHTML = '💡 <b>Для танцев Kling Motion Control загрузите видеоролик MP4</b> с движениями танца. Гость сфотографируется у киоска, и нейросеть перенесет движения из видео на его фото!';
+                if (submitBtn && !editingTemplateId) submitBtn.textContent = '+ Добавить шаблон в «ТРЕНДЫ»';
 
             } else {
                 // ============================================
@@ -2468,10 +2527,12 @@
                         <option value="chatgpt-2" selected>🎨 GPT Image 2 (Обычный базовый — По умолчанию)</option>
                         <option value="chatgpt-2.5-sunburst">☀️ GPT Image 2.5 Sunburst (Высокая детализация)</option>
                         <option value="chatgpt-2.5-flare">🔥 GPT Image 2.5 Flare (Быстрый рендеринг)</option>
-                        <option value="custom">✏️ Другая модель из агрегатора...</option>
+                        <option value="kling-motion">🕺 Kling Motion Control (Танцы и приколы — перенос движений)</option>
+                        <option value="kling-turbo">🚀 Kling Turbo (Image-to-Video)</option>
+                        <option value="custom">✏️ Ввести точный ID модели вручную (любая модель Kie.ai)...</option>
                     `;
                 }
-                if (resWrapper) resWrapper.style.display = 'block';
+                if (resWrapper) resWrapper.style.display = 'none';
 
                 if (promptLabel) promptLabel.textContent = '📝 Промпт художественного стиля портрета (Prompt):';
                 if (promptInput && !editingTemplateId) {
@@ -2944,23 +3005,34 @@
 
             const modelVal = tpl.model || 'chatgpt-2';
             const modelSelect = document.getElementById('tpl-model-select');
+            const customBox = document.getElementById('tpl-custom-model-box');
             const customModelInput = document.getElementById('tpl-custom-model-input');
             if (modelSelect) {
                 const exists = Array.from(modelSelect.options).some(o => o.value === modelVal);
                 if (exists) {
                     modelSelect.value = modelVal;
+                    if (customBox) customBox.style.display = 'none';
                     if (customModelInput) {
                         customModelInput.style.display = 'none';
                         customModelInput.value = '';
                     }
                 } else if (modelVal === 'chatgpt-2.5' || modelVal === 'gpt-image-2') {
                     modelSelect.value = 'chatgpt-2';
+                    if (customBox) customBox.style.display = 'none';
+                    if (customModelInput) {
+                        customModelInput.style.display = 'none';
+                        customModelInput.value = '';
+                    }
+                } else if (modelVal === 'kling-3.0/motion-control' || modelVal === 'kling-2.6/motion-control' || modelVal === 'kling-motion-control') {
+                    modelSelect.value = 'kling-motion';
+                    if (customBox) customBox.style.display = 'none';
                     if (customModelInput) {
                         customModelInput.style.display = 'none';
                         customModelInput.value = '';
                     }
                 } else {
                     modelSelect.value = 'custom';
+                    if (customBox) customBox.style.display = 'block';
                     if (customModelInput) {
                         customModelInput.style.display = 'inline-block';
                         customModelInput.value = modelVal;
