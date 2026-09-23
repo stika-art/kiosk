@@ -367,11 +367,6 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
             character_orientation: 'image'
         };
     } else if (isGeminiOmni) {
-        // Google Gemini Omni Flash: Video-to-Video (трансформация живого видеоролика гостя по промпту шаблона)
-        const v2vPrompt = (safePrompt && safePrompt.trim().length > 3)
-            ? safePrompt.trim()
-            : 'Smooth natural cinematic video transformation, seamlessly integrate person face and identity into the scene, fluid motion, high quality render';
-
         const isTemplateVideo = templateImgUrl && (
             templateImgUrl.endsWith('.mp4') || 
             templateImgUrl.endsWith('.webm') || 
@@ -379,6 +374,14 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
             templateImgUrl.includes('.webm?') || 
             templateImgUrl.includes('/video/')
         );
+
+        const defaultPrompt = isTemplateVideo
+            ? 'The person from the reference image accurately performs the exact dance movements, choreography, and rhythm from the reference video, keeping natural fluid motion, preserving facial identity and likeness, realistic body anatomy, cinematic lighting, 1080p high quality render'
+            : 'Smooth natural cinematic video transformation, seamlessly integrate person face and identity into the scene, fluid motion, high quality render';
+
+        const v2vPrompt = (safePrompt && safePrompt.trim().length > 3)
+            ? safePrompt.trim()
+            : defaultPrompt;
 
         // Исходное видео для трансформации:
         // ПРИОРИТЕТ 1: Записанное гостем видео прямо перед экраном киоска

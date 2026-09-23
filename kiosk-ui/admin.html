@@ -2653,6 +2653,23 @@
             }
 
             if (isVideoFile) {
+                // Предупреждение о длительности видео и списании кредитов
+                try {
+                    const videoProbe = document.createElement('video');
+                    videoProbe.preload = 'metadata';
+                    videoProbe.src = URL.createObjectURL(file);
+                    videoProbe.onloadedmetadata = function() {
+                        URL.revokeObjectURL(videoProbe.src);
+                        const dur = Math.round(videoProbe.duration || 0);
+                        if (dur > 8) {
+                            const estCredits = dur * 20;
+                            alert(`⚠️ ВНИМАНИЕ: Длительность загружаемого видео — ${dur} секунд!\n\n• Нейросеть Kling AI генерирует только первые 5–6 секунд танца.\n• При этом сервис Kie.ai спишет за это видео ~${estCredits} кредитов (${dur} сек × 20 кр/сек)!\n\n💡 Рекомендация:\nОбрежьте видео в редакторе до 5–6 секунд (это сохранит кредиты: спишется всего 100-120 кр вместо ${estCredits}).\nИли используйте модель «Google Gemini Omni Flash», у которой фиксированная цена 168 кредитов.`);
+                        }
+                    };
+                } catch (probeErr) {
+                    console.warn('Не удалось проверить длительность видео:', probeErr);
+                }
+
                 // Прямая загрузка видеофайла без сжатия в Canvas
                 (async () => {
                     try {
