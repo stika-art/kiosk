@@ -634,3 +634,19 @@ a { text-decoration: none; color: inherit; cursor: pointer; }
 @media (min-width: 1920px) {
   .slide { height: 460px; }
 }
+
+/* ══════════════════════════════════════════════════════
+   СКРЫТИЕ ТЕХНИЧЕСКИХ ЭЛЕМЕНТОВ ДЛЯ ГОСТЕЙ ТЕРМИНАЛА
+══════════════════════════════════════════════════════ */
+#cam-settings-bar,
+#cam-info-badge,
+#cam-fps-warning,
+.cam-info-badge,
+#open-diag-btn,
+.pay-subtext {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
