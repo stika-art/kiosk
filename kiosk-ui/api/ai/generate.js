@@ -108,6 +108,51 @@ async function uploadAudioToCDN(audioBuffer, orderId) {
     return null;
 }
 
+// 2b. Перенос готового результата генерации из сторонних CDN (Kie.ai/aiquickdraw) в собственный чистый Supabase CDN
+// Полностью исключает домены "aiquickdraw" и "chatgpt", гарантируя брендированные чистые ссылки и вечное хранение
+async function persistResultToSupabase(mediaUrl, orderId, isVideo = false) {
+    if (!mediaUrl || typeof mediaUrl !== 'string') return mediaUrl;
+    if (mediaUrl.includes('supabase.co')) return mediaUrl;
+
+    try {
+        console.log(`[CDN Supabase] Скачивание готового результата из внешнего источника (${mediaUrl.slice(0, 50)}...) в Supabase Storage...`);
+        const resp = await fetch(mediaUrl);
+        if (!resp.ok) {
+            console.warn(`[CDN Supabase] Не удалось скачать результат: HTTP ${resp.status}`);
+            return mediaUrl;
+        }
+
+        const arrayBuffer = await resp.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const isVid = isVideo || mediaUrl.includes('.mp4') || mediaUrl.includes('.webm') || (resp.headers.get('content-type') || '').includes('video');
+        const ext = isVid ? 'mp4' : 'png';
+        const mimeType = isVid ? 'video/mp4' : 'image/png';
+        const safeOrder = (orderId || Date.now()).toString().replace(/[^a-zA-Z0-9_-]/g, '_');
+        const filename = `results/trendum_${safeOrder}_${Math.random().toString(36).substring(7)}.${ext}`;
+
+        const supaRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': mimeType,
+                'x-upsert': 'true'
+            },
+            body: buffer
+        });
+
+        if (supaRes.ok) {
+            const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${filename}`;
+            console.log(`[CDN Supabase] Результат сохранен в чистый Supabase CDN:`, publicUrl);
+            return publicUrl;
+        } else {
+            console.warn(`[CDN Supabase Warning] Ошибка сохранения результата:`, supaRes.status);
+        }
+    } catch (e) {
+        console.warn(`[CDN Supabase Persistence Error]`, e.message);
+    }
+    return mediaUrl;
+}
+
 // 3. Генерация озвучки через Kie.ai (ElevenLabs Multilingual V2)
 async function generateElevenLabsViaKie({ text, apiKey, voiceId, orderId }) {
     if (!apiKey) return null;
@@ -235,7 +280,7 @@ function sanitizeForOpenAI(p) {
 }
 
 // 5. Вызов Kie.ai API и ожидание результата задачи генерации изображения
-async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution }) {
+async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution, orderId }) {
     if (!apiKey || (!publicPhotoUrl && !guestVideoUrl)) return null;
 
     // Разрешение: строго 1K для ультра-быстрой генерации 5-8 сек на киоске
@@ -573,7 +618,8 @@ CRITICAL MANDATORY INSTRUCTIONS:
                                               taskInfo.url;
 
                         if (finalMediaUrl) {
-                            return { resultUrl: finalMediaUrl, taskId, resolution: targetResolution, model: targetModel, isVideo: isVideoTask };
+                            const cleanFinalUrl = await persistResultToSupabase(finalMediaUrl, orderId, isVideoTask);
+                            return { resultUrl: cleanFinalUrl, taskId, resolution: targetResolution, model: targetModel, isVideo: isVideoTask };
                         }
                     } else if (state === 'fail' || state === 'failed' || state === 'error') {
                         const errMsg = taskInfo.failMsg || taskInfo.errorMessage || 'Неизвестная ошибка генерации';
@@ -716,7 +762,8 @@ module.exports = async (req, res) => {
             guestVideoUrl: publicGuestVideoUrl,
             templateImgUrl: publicTemplateUrl,
             isTryOn: Boolean(isTryOn),
-            resolution: targetResolution
+            resolution: targetResolution,
+            orderId
         }) : Promise.resolve(null);
 
         const audioPromise = (speechText && (effectiveKey || elevenlabsKey)) ? generateElevenLabsAudio({
@@ -759,7 +806,10 @@ module.exports = async (req, res) => {
             });
         }
 
-        const generatedImageUrl = generationOutcome?.resultUrl || null;
+        let generatedImageUrl = generationOutcome?.resultUrl || null;
+        if (generatedImageUrl && !generatedImageUrl.includes('supabase.co')) {
+            generatedImageUrl = await persistResultToSupabase(generatedImageUrl, orderId, Boolean(generationOutcome?.isVideo));
+        }
         const resultUrl = generatedImageUrl || templateImg;
 
         return res.status(200).json({

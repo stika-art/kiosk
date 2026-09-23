@@ -7,6 +7,46 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const SUPABASE_BUCKET = 'kiosk-media';
 const KIE_RECORD_URL = 'https://api.kie.ai/api/v1/jobs/recordInfo';
 
+// Перенос готового результата генерации из сторонних CDN (Kie.ai/aiquickdraw) в собственный чистый Supabase CDN
+// Полностью исключает домены "aiquickdraw" и "chatgpt", гарантируя брендированные чистые ссылки и вечное хранение
+async function persistResultToSupabase(mediaUrl, orderId, isVideo = false) {
+    if (!mediaUrl || typeof mediaUrl !== 'string') return mediaUrl;
+    if (mediaUrl.includes('supabase.co')) return mediaUrl;
+
+    try {
+        console.log(`[Status Supabase CDN] Скачивание готового результата (${mediaUrl.slice(0, 50)}...) в Supabase Storage...`);
+        const resp = await fetch(mediaUrl);
+        if (!resp.ok) return mediaUrl;
+
+        const arrayBuffer = await resp.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const isVid = isVideo || mediaUrl.includes('.mp4') || mediaUrl.includes('.webm') || (resp.headers.get('content-type') || '').includes('video');
+        const ext = isVid ? 'mp4' : 'png';
+        const mimeType = isVid ? 'video/mp4' : 'image/png';
+        const safeOrder = (orderId || Date.now()).toString().replace(/[^a-zA-Z0-9_-]/g, '_');
+        const filename = `results/trendum_${safeOrder}_${Math.random().toString(36).substring(7)}.${ext}`;
+
+        const supaRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': mimeType,
+                'x-upsert': 'true'
+            },
+            body: buffer
+        });
+
+        if (supaRes.ok) {
+            const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${filename}`;
+            console.log(`[Status Supabase CDN] Результат сохранен в чистый Supabase CDN:`, publicUrl);
+            return publicUrl;
+        }
+    } catch (e) {
+        console.warn(`[Status Supabase CDN Error]`, e.message);
+    }
+    return mediaUrl;
+}
+
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -57,11 +97,15 @@ module.exports = async (req, res) => {
                     if (resp.url) resultUrls.push(resp.url);
                 }
 
-                const resultUrl = resultUrls.find(u => Boolean(u)) || 
+                let resultUrl = resultUrls.find(u => Boolean(u)) || 
                                   taskInfo.video_url || 
                                   taskInfo.videoUrl || 
                                   taskInfo.image_url || 
                                   taskInfo.url;
+                if (resultUrl) {
+                    const isVid = Boolean(taskInfo.video_url || taskInfo.videoUrl || (taskInfo.videos && taskInfo.videos.length > 0) || resultUrl.includes('.mp4') || resultUrl.includes('.webm'));
+                    resultUrl = await persistResultToSupabase(resultUrl, req.query.orderId, isVid);
+                }
                 return res.status(200).json({
                     success: true,
                     state: 'success',

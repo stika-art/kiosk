@@ -2707,7 +2707,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             pollIdx++;
 
                             try {
-                                const sRes = await fetch(`/api/ai/status?taskId=${encodeURIComponent(data.taskId)}&_t=${Date.now()}`);
+                                const sRes = await fetch(`/api/ai/status?taskId=${encodeURIComponent(data.taskId)}&orderId=${encodeURIComponent(currentOrderId || '')}&_t=${Date.now()}`);
                                 if (sRes.ok) {
                                     const sData = await sRes.json();
                                     if (sData.state === 'success' && sData.resultUrl) {
@@ -2758,15 +2758,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Формирование QR-кода для скачивания результата на смартфон
+        // Формирование брендированного QR-кода для скачивания результата на смартфон
         const resultQrEl = document.getElementById('result-qr-img');
         const targetResultUrl = finalResultUrl || selectedStylePhoto || window.location.href;
         if (resultQrEl) {
-            const absoluteDownloadUrl = targetResultUrl.startsWith('http') 
-                ? targetResultUrl 
-                : (window.location.origin + (targetResultUrl.startsWith('/') ? '' : '/') + targetResultUrl);
-            console.log('📱 Формирование QR-кода результата для загрузки:', absoluteDownloadUrl);
-            renderInstantQR(resultQrEl, absoluteDownloadUrl, 260);
+            let qrDownloadUrl = '';
+            if (targetResultUrl && targetResultUrl.startsWith('http')) {
+                const query = new URLSearchParams({
+                    file: targetResultUrl,
+                    title: selectedStyle || 'Фото',
+                    loc: selectedStyleLocation || '',
+                    price: selectedStylePrice || ''
+                });
+                qrDownloadUrl = `${window.location.origin}/download?${query.toString()}`;
+            } else {
+                qrDownloadUrl = window.location.href;
+            }
+            console.log('📱 Формирование брендированного QR-кода TRENDUM для загрузки:', qrDownloadUrl);
+            renderInstantQR(resultQrEl, qrDownloadUrl, 260);
         }
 
         // Отображение карточки локации примерки одежды (где купить вещь)

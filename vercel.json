@@ -12,6 +12,8 @@
     }
   ],
   "rewrites": [
+    { "source": "/download", "destination": "/kiosk-ui/download" },
+    { "source": "/download/", "destination": "/kiosk-ui/download" },
     { "source": "/admin", "destination": "/kiosk-ui/admin" },
     { "source": "/admin/", "destination": "/kiosk-ui/admin" },
     { "source": "/", "destination": "/kiosk-ui/" },

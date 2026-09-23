@@ -7,7 +7,7 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIs
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'kiosk-media';
 
 // Папки, содержащие исключительно временные файлы гостей
-const TEMPORARY_FOLDERS = ['guests', 'phone-cam', 'tryon', 'diag', 'tasks'];
+const TEMPORARY_FOLDERS = ['guests', 'results', 'phone-cam', 'tryon', 'diag', 'tasks'];
 
 async function cleanupStorage(maxAgeHours = 12) {
     const maxAgeMs = maxAgeHours * 60 * 60 * 1000;
@@ -47,12 +47,13 @@ async function cleanupStorage(maxAgeHours = 12) {
             }
 
             // 2. Отбираем файлы старше порога (по умолчанию 12 часов)
+            const folderThresholdMs = (folder === 'results') ? Math.max(maxAgeMs, 24 * 60 * 60 * 1000) : maxAgeMs;
             const expiredFiles = items.filter(item => {
                 if (!item || !item.name) return false;
                 const createdAt = item.created_at || item.updated_at;
                 if (!createdAt) return false;
                 const fileAge = now - new Date(createdAt).getTime();
-                return fileAge > maxAgeMs;
+                return fileAge > folderThresholdMs;
             });
 
             if (expiredFiles.length === 0) {
