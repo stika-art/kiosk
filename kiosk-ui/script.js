@@ -17,17 +17,16 @@ let isAttractClosing = false;
 let currentCategory = 'ФОТО';
 let activeTemplateIndex = 0;
 
-// УПРАВЛЕНИЕ РАЗРЕШЕНИЕМ ГЕНЕРАЦИИ (1K, 2K HD, 4K ULTRA)
-let currentAiResolution = localStorage.getItem('kiosk_ai_resolution') || '1K';
+// УПРАВЛЕНИЕ РАЗРЕШЕНИЕМ ГЕНЕРАЦИИ (СТРОГО 1K ДЛЯ МАКСИМАЛЬНОЙ СКОРОСТИ 5-8 СЕК)
+let currentAiResolution = '1K';
+try { localStorage.setItem('kiosk_ai_resolution', '1K'); } catch(e) {}
 
 function setAiResolution(res) {
-    let cleanRes = (res || '2K').toUpperCase();
-    if (!['1K', '2K', '4K'].includes(cleanRes)) cleanRes = '2K';
-    currentAiResolution = cleanRes;
-    localStorage.setItem('kiosk_ai_resolution', currentAiResolution);
+    currentAiResolution = '1K';
+    try { localStorage.setItem('kiosk_ai_resolution', '1K'); } catch(e) {}
     
     document.querySelectorAll('.ai-res-pill').forEach(btn => {
-        if (btn.dataset.res === currentAiResolution) {
+        if (btn.dataset.res === '1K') {
             btn.classList.add('active');
         } else {
             btn.classList.remove('active');
@@ -36,7 +35,7 @@ function setAiResolution(res) {
 
     const badge = document.getElementById('pay-res-indicator');
     if (badge) {
-        badge.textContent = currentAiResolution + (currentAiResolution === '2K' ? ' HD' : currentAiResolution === '4K' ? ' Ultra' : '');
+        badge.textContent = '1K';
     }
 }
 window.setAiResolution = setAiResolution;
@@ -518,8 +517,7 @@ function normalizeTemplates(tplList, cardsList) {
             modelNorm = 'chatgpt-2.5';
         }
 
-        let resNorm = (t.resolution || '2K').toUpperCase();
-        if (!['1K', '2K', '4K'].includes(resNorm)) resNorm = '2K';
+        let resNorm = '1K';
 
         let tTitle = (t.title || '').trim();
         if (tTitle.includes('ИИ-ПРОЖАРКА') || modelNorm === 'roast-standup') {
@@ -1510,14 +1508,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const paySubtext = document.querySelector('.pay-subtext');
         if (paySubtext) {
-            const resLabel = currentAiResolution + (currentAiResolution === '2K' ? ' HD' : currentAiResolution === '4K' ? ' Ultra' : '');
             const isVideoMode = isVid || (selectedStyleModel && (selectedStyleModel.includes('omni') || selectedStyleModel.includes('gemini') || selectedStyleModel.includes('kling')));
             if (isVideoMode) {
                 paySubtext.innerHTML = `Создание персонального видеоролика`;
             } else if (isTryOnMode) {
-                paySubtext.innerHTML = `Виртуальная примерка в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">${resLabel}</span>`;
+                paySubtext.innerHTML = `Виртуальная примерка в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">1K</span>`;
             } else {
-                paySubtext.innerHTML = `Финальное фото в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">${resLabel}</span>`;
+                paySubtext.innerHTML = `Финальное фото в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">1K</span>`;
             }
         }
 
@@ -2660,7 +2657,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     orderId: currentOrderId,
                     location: selectedStyleLocation,
                     isTryOn: isTryOnMode,
-                    resolution: currentAiResolution || '2K',
+                    resolution: '1K',
                     aggregatorUrl,
                     aggregatorKey,
                     elevenlabsKey,

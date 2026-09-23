@@ -2075,21 +2075,13 @@
                 <video id="video-preview-confirm" src="" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: contain; display: none;"></video>
             </div>
 
-            <!-- ВЫБОР РАЗРЕШЕНИЯ (1K, 2K, 4K) -->
-            <div class="ai-res-control-box" id="ai-res-control-box">
+            <!-- ВЫБОР РАЗРЕШЕНИЯ (СКРЫТ: ТОЛЬКО 1K ДЛЯ МАКСИМАЛЬНОЙ СКОРОСТИ СТУДИИ) -->
+            <div class="ai-res-control-box" id="ai-res-control-box" style="display: none !important;">
                 <span class="ai-res-label">⚡ КАЧЕСТВО СЪЕМКИ:</span>
                 <div class="ai-res-pills" id="ai-res-pills">
-                    <button type="button" class="ai-res-pill" data-res="1K">
+                    <button type="button" class="ai-res-pill active" data-res="1K">
                         <span class="pill-res">1K</span>
                         <span class="pill-sub">Быстро</span>
-                    </button>
-                    <button type="button" class="ai-res-pill active" data-res="2K">
-                        <span class="pill-res">2K HD</span>
-                        <span class="pill-sub">Рекомендуется</span>
-                    </button>
-                    <button type="button" class="ai-res-pill" data-res="4K">
-                        <span class="pill-res">4K Ultra</span>
-                        <span class="pill-sub">Максимум</span>
                     </button>
                 </div>
             </div>
@@ -2119,7 +2111,7 @@
                     <div class="pay-details">
                         <span class="pay-label">ВЫБРАННЫЙ ШАБЛОН:</span>
                         <div id="pay-style-title" class="pay-title">ВЫБРАННЫЙ СТИЛЬ</div>
-                        <div class="pay-subtext">Финальное фото в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">2K HD</span></div>
+                        <div class="pay-subtext">Финальное фото в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">1K</span></div>
                     </div>
                 </div>
                 <div class="pay-summary-right">
@@ -2390,6 +2382,6 @@
 </div>
 
 <script src="qrcode.min.js"></script>
-<script src="script.js?v=clean_ui_v2"></script>
+<script src="script.js?v=res_1k_v1"></script>
 </body>
 </html>

@@ -238,11 +238,8 @@ function sanitizeForOpenAI(p) {
 async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution }) {
     if (!apiKey || (!publicPhotoUrl && !guestVideoUrl)) return null;
 
-    // Выбор разрешения (1K, 2K, 4K)
-    const validResolutions = ['1K', '2K', '4K'];
-    const targetResolution = validResolutions.includes((resolution || '').toUpperCase()) 
-        ? resolution.toUpperCase() 
-        : '1K';
+    // Разрешение: строго 1K для ультра-быстрой генерации 5-8 сек на киоске
+    const targetResolution = '1K';
 
     if (!publicPhotoUrl && !templateImgUrl && !guestVideoUrl) {
         console.warn('[Kie.ai] Отсутствуют изображения/видео для обработки, вызов Kie.ai отменен для защиты баланса.');
@@ -671,7 +668,7 @@ module.exports = async (req, res) => {
         }
 
         const effectiveKey = aggregatorKey || process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || 'fde11cd9f361b989eb19b8ef8530bfbd';
-        const targetResolution = resolution || '2K';
+        const targetResolution = '1K';
 
         console.log(`[AI Hub] Запрос подтвержден и оплачен: "${title}", модель="${model || 'chatgpt-2.5'}", заказ="${orderId}"`);
 
