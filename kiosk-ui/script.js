@@ -2297,11 +2297,19 @@ document.addEventListener('DOMContentLoaded', () => {
     snapBtn.addEventListener('click', () => {
         snapBtn.disabled = true;
 
-        const isVideoMode = isVideoTemplate({
-            model: selectedStyleModel,
-            category: (selectedTemplateId && masterTemplates.find(t => t.id === selectedTemplateId)?.category) || '',
-            img: selectedStylePhoto
-        }) || (selectedStyleModel && (selectedStyleModel.includes('omni') || selectedStyleModel.includes('gemini') || selectedStyleModel.includes('video')));
+        const isMotionControl = (selectedStyleModel && (selectedStyleModel.includes('motion') || selectedStyleModel === 'kling-motion')) ||
+                                (selectedStyle && selectedStyle.toLowerCase().includes('танец')) ||
+                                (selectedStyle && selectedStyle.toLowerCase().includes('прикол'));
+
+        // Для Motion Control гость СНИМАЕТ ФОТО (а не видео)! Движения берутся из видео-шаблона
+        const isVideoMode = !isMotionControl && (
+            (selectedStyleModel && (selectedStyleModel.includes('omni') || selectedStyleModel.includes('gemini') || selectedStyleModel === 'kling-video-record')) ||
+            (isVideoTemplate({
+                model: selectedStyleModel,
+                category: (selectedTemplateId && masterTemplates.find(t => t.id === selectedTemplateId)?.category) || '',
+                img: selectedStylePhoto
+            }) && selectedStyleModel !== 'kling-turbo' && selectedStyleModel !== 'kling-video' && !isMotionControl)
+        );
 
         if (isVideoMode) {
             // Режим видеосъемки: быстрый отсчет 3.. 2.. 1.. и запись живого видео гостя
@@ -2321,7 +2329,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Режим обычной фотосъемки
+        // Режим фотосъемки (включая Kling Motion Control, примерку и фото-портреты)
         let count = selectedCaptureDuration;
         countdownOverlay.textContent = count;
 
@@ -2337,8 +2345,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     stopWebcam();
                     snapBtn.disabled = false;
                     countdownOverlay.textContent = '';
-                    if (confirmModalTitle) confirmModalTitle.textContent = 'ОТЛИЧНЫЙ КАДР?';
-                    if (confirmModalSubtitle) confirmModalSubtitle.textContent = 'Проверьте снимок перед отправкой на создание портрета';
+                    if (confirmModalTitle) confirmModalTitle.textContent = isMotionControl ? 'ОТЛИЧНЫЙ КАДР ДЛЯ ТАНЦА?' : 'ОТЛИЧНЫЙ КАДР?';
+                    if (confirmModalSubtitle) confirmModalSubtitle.textContent = isMotionControl ? 'Проверьте снимок перед переносом движений танца' : 'Проверьте снимок перед отправкой на создание портрета';
                     if (photoPreviewConfirm) {
                         photoPreviewConfirm.src = capturedPhotoData;
                         photoPreviewConfirm.style.display = 'block';
@@ -2538,7 +2546,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const isVideoSelection = selectedStyleModel === 'omni-flash' ||
+        const isMotionControl = selectedStyleModel === 'kling-motion' || 
+                                (selectedStyleModel && selectedStyleModel.includes('motion')) ||
+                                (selectedStyle && selectedStyle.toLowerCase().includes('танец')) ||
+                                (selectedStyle && selectedStyle.toLowerCase().includes('прикол'));
+
+        const isVideoSelection = isMotionControl ||
+                                selectedStyleModel === 'omni-flash' ||
                                 selectedStyleModel.includes('omni') ||
                                 selectedStyleModel.includes('gemini') ||
                                 selectedStyleModel === 'kling-turbo' ||
@@ -2546,15 +2560,21 @@ document.addEventListener('DOMContentLoaded', () => {
                                 selectedStyleModel.includes('kling') || 
                                 selectedStyleModel.includes('video');
 
-        const genTitle = isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
+        const genTitle = isMotionControl ? 'ТАНЕЦ KLING AI' : isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
         resetAiProgress(genTitle, selectedStyleModel, currentAiResolution);
 
+        const motionInitialStatuses = [
+            `Анализ позы и силуэта на вашем фото...`,
+            `Загрузка хореографии из видео-референса...`,
+            `Синхронизация пластики и движений...`,
+            `Генерация танцевального видео Kling AI...`
+        ];
         const videoInitialStatuses = [
             `Анализ кадра и карты глубины...`,
             `Генерация динамики и траектории движения...`,
             `Подготовка видеопотока...`
         ];
-        const statuses = isVideoSelection ? videoInitialStatuses : isTryOnMode ? [
+        const statuses = isMotionControl ? motionInitialStatuses : isVideoSelection ? videoInitialStatuses : isTryOnMode ? [
             `Анализ силуэта и позы...`,
             `Подбор размера и примерка кроя...`,
             `Сохранение черт лица и индивидуальности...`,
@@ -2660,6 +2680,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             `Прорисовка реалистичной ткани и теней...`,
                             `Финальная подготовка образа...`
                         ];
+                        const motionPollStatuses = [
+                            `Анализ пластики и ритма движений...`,
+                            `Перенос хореографии танца на ваше фото...`,
+                            `Прорисовка реалистичной мимики и света...`,
+                            `Рендеринг танцевального видеопотока Kling AI...`,
+                            `Финальная сборка видеоролика...`
+                        ];
                         const videoPollStatuses = [
                             `Анализ кадра и построение карты глубины...`,
                             `Генерация динамики и плавных движений...`,
@@ -2667,11 +2694,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             `Цветокоррекция и сглаживание анимации...`,
                             `Финальная сборка видеоролика...`
                         ];
-                        const activePollStatuses = isVideoTask 
-                            ? videoPollStatuses 
-                            : (isTryOnMode || selectedStyleModel === 'nano-banana-2') 
-                                ? tryOnPollStatuses 
-                                : photoPollStatuses;
+                        const activePollStatuses = isMotionControl
+                            ? motionPollStatuses
+                            : isVideoTask 
+                                ? videoPollStatuses 
+                                : (isTryOnMode || selectedStyleModel === 'nano-banana-2') 
+                                    ? tryOnPollStatuses 
+                                    : photoPollStatuses;
 
                         let pollIdx = 0;
                         let pollAttempts = 0;

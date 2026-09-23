@@ -268,6 +268,9 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'gemini-omni-video' || model === 'google/gemini-omni-flash-1-1' || model === 'google/gemini-omni-1.1-flash' || (typeof model === 'string' && (model.includes('omni') || model.includes('gemini')))) {
         // Google Gemini Omni Flash — Video-to-Video (официальная модель в Kie.ai: gemini-omni-video)
         kieModel = 'gemini-omni-video';
+    } else if (model === 'kling-motion' || model === 'kling-motion-control' || model === 'kling-3.0/motion-control' || model === 'kling-2.6/motion-control' || (typeof model === 'string' && model.includes('motion'))) {
+        // Kling Motion Control: перенос движений танца/прикола из видео-референса на фото гостя
+        kieModel = 'kling-3.0/motion-control';
     } else if (model === 'kling-turbo' || model === 'kling-v2-5-turbo' || (typeof model === 'string' && model.includes('turbo'))) {
         // Ультра-быстрая генерация видео Kling Turbo (высокая скорость для киоска, ~25-35 сек)
         kieModel = 'kling/v2-5-turbo-image-to-video';
@@ -282,20 +285,43 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     }
 
     const isGeminiOmni = kieModel === 'gemini-omni-video' || kieModel.includes('gemini') || kieModel.includes('omni');
+    const isKlingMotion = kieModel === 'kling-motion' || 
+                          kieModel === 'kling-3.0/motion-control' || 
+                          kieModel === 'kling-2.6/motion-control' || 
+                          kieModel.includes('motion');
     const isVideoModel = isGeminiOmni || 
+                         isKlingMotion ||
                          kieModel.includes('kling') || 
                          kieModel.includes('video') || 
                          kieModel.includes('runway') || 
                          kieModel.includes('luma') || 
                          kieModel.includes('hailuo');
 
-    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isGeminiOmni=${isGeminiOmni}, isTryOn=${Boolean(isTryOn)})...`);
+    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isKlingMotion=${isKlingMotion}, isGeminiOmni=${isGeminiOmni}, isTryOn=${Boolean(isTryOn)})...`);
 
     const safePrompt = sanitizeForOpenAI(prompt);
 
     // Формирование входных данных под выбранный тип модели
     let inputPayload = {};
-    if (isGeminiOmni) {
+    if (isKlingMotion) {
+        // Kling Motion Control: фото гостя + видео-референс танца/прикола из шаблона
+        const cleanMotionPrompt = (safePrompt && safePrompt.trim().length > 3)
+            ? safePrompt.trim()
+            : 'The person in the photo accurately performs the dance movements from the reference video, seamless natural motion, cinematic lighting, high quality, preserve facial likeness and features';
+
+        // Видео-референс танца берется из загруженного в шаблон файла (templateImgUrl)
+        const motionVideoUrl = templateImgUrl || guestVideoUrl || 'https://kiosk394.vercel.app/kiosk-ui/assets/card_loop.mp4';
+
+        inputPayload = {
+            prompt: cleanMotionPrompt,
+            input_urls: [publicPhotoUrl],
+            image_urls: [publicPhotoUrl],
+            image_url: publicPhotoUrl,
+            video_urls: [motionVideoUrl],
+            mode: targetResolution === '4K' || targetResolution === '2K' ? '1080p' : '720p',
+            character_orientation: 'image'
+        };
+    } else if (isGeminiOmni) {
         // Google Gemini Omni Flash: Video-to-Video (трансформация живого видеоролика гостя по промпту шаблона)
         const v2vPrompt = (safePrompt && safePrompt.trim().length > 3)
             ? safePrompt.trim()
@@ -456,6 +482,30 @@ CRITICAL MANDATORY INSTRUCTIONS:
             let taskId = (createData && createData.code === 200 && createData.data) 
                 ? (createData.data.taskId || createData.data.id || createData.data.recordId) 
                 : null;
+
+            // Если модель kling-3.0/motion-control вернула ошибку — пробуем kling-2.6/motion-control
+            if (!taskId && isKlingMotion && targetModel === 'kling-3.0/motion-control') {
+                console.warn('[Kie.ai Kling Motion] Kling 3.0 вернул ошибку, переключаемся на Kling 2.6 Motion Control...');
+                targetModel = 'kling-2.6/motion-control';
+                createRes = await fetch(DEFAULT_KIE_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: targetModel,
+                        callBackUrl: 'https://kiosk394.vercel.app/api/ai/kie-callback',
+                        input: targetPayload
+                    })
+                });
+                try {
+                    createData = await createRes.json();
+                    if (createData && createData.code === 200 && createData.data) {
+                        taskId = createData.data.taskId || createData.data.id || createData.data.recordId;
+                    }
+                } catch(e2) {}
+            }
 
             if (!taskId) {
                 console.warn(`[Kie.ai Create Task Error for ${targetModel}]`, createData || createRes.status);
