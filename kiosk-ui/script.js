@@ -514,12 +514,17 @@ function normalizeTemplates(tplList, cardsList) {
             modelNorm = 'nano-banana-2';
         } else if (sid === 2 || stUp.includes('ВИДЕО') || catUp.includes('ВИДЕО')) {
             modelNorm = modelNorm || 'omni-flash';
-        } else if (modelNorm !== 'omni-flash' && modelNorm !== 'kling-turbo' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2') {
+        } else if (modelNorm !== 'omni-flash' && modelNorm !== 'kling-turbo' && modelNorm !== 'kling-video' && modelNorm !== 'kling-motion' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2') {
             modelNorm = 'chatgpt-2.5';
         }
 
         let resNorm = (t.resolution || '2K').toUpperCase();
         if (!['1K', '2K', '4K'].includes(resNorm)) resNorm = '2K';
+
+        let tTitle = (t.title || '').trim();
+        if (tTitle.includes('ИИ-ПРОЖАРКА') || modelNorm === 'roast-standup') {
+            tTitle = '🔥 СТЕНДАП-ПРОЖАРКА';
+        }
 
         return {
             ...t,
@@ -527,6 +532,7 @@ function normalizeTemplates(tplList, cardsList) {
             sectionId: Number(sid),
             sectionTitle: stitle || 'ФОТО',
             category: cat,
+            title: tTitle,
             model: modelNorm,
             resolution: resNorm,
             location: t.location || '',
@@ -545,13 +551,16 @@ if (!masterTemplates.some(t => (t.model || '').toLowerCase() === 'roast-standup'
         sectionId: 3,
         sectionTitle: 'ТРЕНДЫ',
         category: 'ПРОЖАРКА',
-        title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)',
+        title: '🔥 СТЕНДАП-ПРОЖАРКА',
         img: 'assets/hero_portrait.jpg',
         price: 190,
         model: 'roast-standup',
         resolution: '2K',
         prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice'
     });
+} else {
+    const roastTpl = masterTemplates.find(t => (t.model || '').toLowerCase() === 'roast-standup');
+    if (roastTpl) roastTpl.title = '🔥 СТЕНДАП-ПРОЖАРКА';
 }
 
 try {
@@ -693,12 +702,15 @@ function openTemplateGallery(cardIdOrMode) {
             sectionId: 3,
             sectionTitle: 'ТРЕНДЫ',
             category: 'ПРОЖАРКА',
-            title: '🔥 ИИ-ПРОЖАРКА (СТЕНДАП)',
+            title: '🔥 СТЕНДАП-ПРОЖАРКА',
             img: 'assets/hero_portrait.jpg',
             price: 190,
             model: 'roast-standup',
             prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice'
         });
+    } else {
+        const rTpl = masterTemplates.find(t => (t.model || '').toLowerCase() === 'roast-standup');
+        if (rTpl) rTpl.title = '🔥 СТЕНДАП-ПРОЖАРКА';
     }
 
     try {
@@ -1501,11 +1513,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const resLabel = currentAiResolution + (currentAiResolution === '2K' ? ' HD' : currentAiResolution === '4K' ? ' Ultra' : '');
             const isVideoMode = isVid || (selectedStyleModel && (selectedStyleModel.includes('omni') || selectedStyleModel.includes('gemini') || selectedStyleModel.includes('kling')));
             if (isVideoMode) {
-                paySubtext.innerHTML = `Генерация живого видео <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">Omni Flash (Video-to-Video)</span>`;
+                paySubtext.innerHTML = `Создание персонального видеоролика`;
             } else if (isTryOnMode) {
-                paySubtext.innerHTML = `Виртуальная примерка в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">${resLabel}</span> (ChatGPT)`;
+                paySubtext.innerHTML = `Виртуальная примерка в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">${resLabel}</span>`;
             } else {
-                paySubtext.innerHTML = `Финальное фото в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">${resLabel}</span> (ChatGPT)`;
+                paySubtext.innerHTML = `Финальное фото в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">${resLabel}</span>`;
             }
         }
 
@@ -2396,7 +2408,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (camRecBadge) camRecBadge.style.display = 'none';
 
             if (confirmModalTitle) confirmModalTitle.textContent = 'ОТЛИЧНЫЙ РОЛИК?';
-            if (confirmModalSubtitle) confirmModalSubtitle.textContent = 'Проверьте видео перед отправкой в нейросеть';
+            if (confirmModalSubtitle) confirmModalSubtitle.textContent = 'Проверьте видео перед созданием клипа';
             if (videoPreviewConfirm) {
                 videoPreviewConfirm.src = capturedVideoUrl;
                 videoPreviewConfirm.style.display = 'block';
@@ -2560,14 +2572,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 selectedStyleModel.includes('kling') || 
                                 selectedStyleModel.includes('video');
 
-        const genTitle = isMotionControl ? 'ТАНЕЦ KLING AI' : isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
+        const genTitle = isMotionControl ? 'СОЗДАНИЕ ТАНЦА' : isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
         resetAiProgress(genTitle, selectedStyleModel, currentAiResolution);
 
         const motionInitialStatuses = [
             `Анализ позы и силуэта на вашем фото...`,
             `Загрузка хореографии из видео-референса...`,
             `Синхронизация пластики и движений...`,
-            `Генерация танцевального видео Kling AI...`
+            `Создание танцевального клипа...`
         ];
         const videoInitialStatuses = [
             `Анализ кадра и карты глубины...`,
@@ -2603,7 +2615,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Если гостем было записано живое видео — сначала загружаем его в Supabase Storage
         let guestVideoUrl = null;
         if (capturedVideoBlob) {
-            setAiProgress(8, 'Загрузка вашего видео в облако Supabase...');
+            setAiProgress(8, 'Подготовка видеоматериала...');
             try {
                 const ext = (capturedVideoBlob.type && capturedVideoBlob.type.includes('mp4')) ? 'mp4' : 'webm';
                 const vidFileName = `guests/guest_vid_${currentOrderId || Date.now()}.${ext}`;
@@ -2684,7 +2696,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             `Анализ пластики и ритма движений...`,
                             `Перенос хореографии танца на ваше фото...`,
                             `Прорисовка реалистичной мимики и света...`,
-                            `Рендеринг танцевального видеопотока Kling AI...`,
+                            `Создание плавного видеоролика...`,
                             `Финальная сборка видеоролика...`
                         ];
                         const videoPollStatuses = [
