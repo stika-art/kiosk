@@ -2582,9 +2582,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 1300);
 
-        let finalResultUrl = selectedStylePhoto;
+        let finalResultUrl = null;
         let tryonAudioUrl = null;
         let tryonSpeechText = null;
+        let generationError = null;
 
         // Если гостем было записано живое видео — сначала загружаем его в Supabase Storage
         let guestVideoUrl = null;
@@ -2716,6 +2717,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         break;
                                     } else if (sData.state === 'fail') {
                                         console.warn('[AI Polling] Ошибка генерации:', sData.error);
+                                        generationError = sData.error || 'Ошибка при генерации нейросетью';
                                         break;
                                     }
                                 }
@@ -2726,14 +2728,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else if (data.resultUrl) {
                         finalResultUrl = data.resultUrl;
                     }
+                } else {
+                    generationError = data.error || 'Ошибка при запуске генерации';
                 }
+            } else {
+                generationError = `Ошибка сервера генерации (HTTP ${resp.status})`;
             }
         } catch (err) {
-            console.warn('[AI Pipeline] Ошибка генерации, переключаем на превью стиля:', err);
+            console.warn('[AI Pipeline] Ошибка генерации:', err);
+            generationError = err.message || 'Ошибка генерации';
             stopAiProgress();
         }
 
         clearInterval(interval);
+
+        // Если результат не получен — не показываем шаблон под видом результата!
+        if (!finalResultUrl) {
+            stopAiProgress();
+            console.error('[AI Pipeline] Результат не получен:', generationError);
+            alert(generationError || 'Не удалось завершить создание видео/фото. Пожалуйста, попробуйте еще раз.');
+            showStep(stepConfirm);
+            return;
+        }
+
         // Завершаем заполнение прогресс-бара до 100% с неоновым свечением
         await finishAiProgress();
         const isVideoResult = typeof finalResultUrl === 'string' && (

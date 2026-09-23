@@ -81,11 +81,20 @@ module.exports = async (req, res) => {
                         if (parsed) {
                             if (Array.isArray(parsed.resultUrls)) resultUrls.push(...parsed.resultUrls);
                             if (Array.isArray(parsed.urls)) resultUrls.push(...parsed.urls);
-                            if (Array.isArray(parsed.videos)) resultUrls.push(...parsed.videos);
+                            if (Array.isArray(parsed.videos)) {
+                                parsed.videos.forEach(v => {
+                                    if (typeof v === 'string') resultUrls.push(v);
+                                    else if (v && (v.url || v.video_url || v.videoUrl)) resultUrls.push(v.url || v.video_url || v.videoUrl);
+                                });
+                            }
                             if (parsed.video_url) resultUrls.push(parsed.video_url);
                             if (parsed.videoUrl) resultUrls.push(parsed.videoUrl);
                             if (parsed.url) resultUrls.push(parsed.url);
-                            if (parsed.output && parsed.output.video_url) resultUrls.push(parsed.output.video_url);
+                            if (parsed.output) {
+                                if (typeof parsed.output === 'string') resultUrls.push(parsed.output);
+                                else if (parsed.output.video_url) resultUrls.push(parsed.output.video_url);
+                                else if (parsed.output.url) resultUrls.push(parsed.output.url);
+                            }
                         }
                     } catch(e) {}
                 }
@@ -95,6 +104,11 @@ module.exports = async (req, res) => {
                     if (resp.video_url) resultUrls.push(resp.video_url);
                     if (resp.videoUrl) resultUrls.push(resp.videoUrl);
                     if (resp.url) resultUrls.push(resp.url);
+                }
+                if (taskInfo.output) {
+                    if (typeof taskInfo.output === 'string') resultUrls.push(taskInfo.output);
+                    else if (taskInfo.output.video_url) resultUrls.push(taskInfo.output.video_url);
+                    else if (taskInfo.output.url) resultUrls.push(taskInfo.output.url);
                 }
 
                 let resultUrl = resultUrls.find(u => Boolean(u)) || 

@@ -2267,6 +2267,8 @@
             if (m === 'roast-standup') return '<span class="model-badge" style="background: rgba(255,69,58,0.18); border-color: #ff453a; color: #ff453a;">🔥 Прожарка + Голос</span>';
             if (m === 'nano-banana-2') return '<span class="model-badge">🍌 Nano Banana 2</span>';
             if (m === 'omni-flash' || m === 'gemini-omni-video' || m.includes('omni')) return '<span class="model-badge" style="background: rgba(66,133,244,0.18); border-color: #4285F4; color: #4285F4; font-weight: 800;">⚡ Gemini Omni Flash (V2V)</span>';
+            if (m === 'kling-3.0/motion-control') return '<span class="model-badge" style="background: rgba(16,185,129,0.18); border-color: #10b981; color: #34d399; font-weight: 800;">🕺 Kling 3.0 Motion</span>';
+            if (m === 'kling-2.6/motion-control') return '<span class="model-badge" style="background: rgba(16,185,129,0.18); border-color: #10b981; color: #34d399; font-weight: 800;">🕺 Kling 2.6 Motion</span>';
             if (m === 'kling-motion' || m.includes('motion')) return '<span class="model-badge" style="background: rgba(16,185,129,0.18); border-color: #10b981; color: #34d399; font-weight: 800;">🕺 Kling Motion Control</span>';
             if (m === 'kling-turbo' || m.includes('turbo')) return '<span class="model-badge" style="background: rgba(59,130,246,0.18); border-color: #3b82f6; color: #60a5fa; font-weight: 800;">🚀 Kling Turbo</span>';
             if (m === 'kling-video' || m.includes('kling')) return '<span class="model-badge" style="background: rgba(168,85,247,0.18); border-color: #a855f7; color: #c084fc; font-weight: 800;">🎥 Kling 2.6 HD</span>';
@@ -2457,7 +2459,8 @@
                 if (modelWrapper) modelWrapper.style.display = 'block';
                 if (modelSelect) {
                     modelSelect.innerHTML = `
-                        <option value="kling-motion" selected>🕺 Kling Motion Control (Танцы и приколы — перенос движений на фото гостя)</option>
+                        <option value="kling-3.0/motion-control" selected>🕺 Kling 3.0 Motion Control (Танцы и приколы — перенос движений 3.0)</option>
+                        <option value="kling-2.6/motion-control">🕺 Kling 2.6 Motion Control (Танцы и приколы — версия 2.6)</option>
                         <option value="omni-flash">⚡ Google Gemini Omni Flash (Video-to-Video / Анимация)</option>
                         <option value="kling-turbo">🚀 Kling Turbo (Image-to-Video — Ультра-скорость)</option>
                         <option value="kling-video">🎥 Kling 2.6 HD (Image-to-Video — Кинематограф)</option>
@@ -2488,7 +2491,8 @@
                 if (modelWrapper) modelWrapper.style.display = 'block';
                 if (modelSelect) {
                     modelSelect.innerHTML = `
-                        <option value="kling-motion" selected>🕺 Kling Motion Control (Танцы и приколы — перенос движений на фото)</option>
+                        <option value="kling-3.0/motion-control" selected>🕺 Kling 3.0 Motion Control (Танцы и приколы — перенос движений 3.0)</option>
+                        <option value="kling-2.6/motion-control">🕺 Kling 2.6 Motion Control (Танцы и приколы — версия 2.6)</option>
                         <option value="roast-standup">🔥 Стендап-Прожарка (Карикатура + Голос комика)</option>
                         <option value="chatgpt-2">🎨 GPT Image 2 (Фото-портреты и обложки)</option>
                         <option value="chatgpt-2.5-sunburst">☀️ GPT Image 2.5 Sunburst (Высокая детализация)</option>
@@ -2527,7 +2531,8 @@
                         <option value="chatgpt-2.5-sunburst" selected>☀️ GPT Image 2.5 Sunburst (Флагман ChatGPT — Максимальное качество и сохранение лица)</option>
                         <option value="chatgpt-2.5-flare">🔥 GPT Image 2.5 Flare (Скоростная версия)</option>
                         <option value="chatgpt-2">🎨 GPT Image 2 (Предыдущее поколение)</option>
-                        <option value="kling-motion">🕺 Kling Motion Control (Танцы и приколы — перенос движений)</option>
+                        <option value="kling-3.0/motion-control">🕺 Kling 3.0 Motion Control (Танцы и приколы)</option>
+                        <option value="kling-2.6/motion-control">🕺 Kling 2.6 Motion Control (Танцы и приколы)</option>
                         <option value="kling-turbo">🚀 Kling Turbo (Image-to-Video)</option>
                         <option value="custom">✏️ Ввести точный ID модели вручную (любая модель Kie.ai)...</option>
                     `;

@@ -312,7 +312,9 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'gemini-omni-video' || model === 'google/gemini-omni-flash-1-1' || model === 'google/gemini-omni-1.1-flash' || (typeof model === 'string' && (model.includes('omni') || model.includes('gemini')))) {
         // Google Gemini Omni Flash — Video-to-Video (официальная модель в Kie.ai: gemini-omni-video)
         kieModel = 'gemini-omni-video';
-    } else if (model === 'kling-motion' || model === 'kling-motion-control' || model === 'kling-3.0/motion-control' || model === 'kling-2.6/motion-control' || (typeof model === 'string' && model.includes('motion'))) {
+    } else if (model === 'kling-2.6/motion-control' || model === 'kling-motion-2.6') {
+        kieModel = 'kling-2.6/motion-control';
+    } else if (model === 'kling-motion' || model === 'kling-motion-control' || model === 'kling-3.0/motion-control' || (typeof model === 'string' && model.includes('motion'))) {
         // Kling Motion Control: перенос движений танца/прикола из видео-референса на фото гостя
         kieModel = 'kling-3.0/motion-control';
     } else if (model === 'kling-turbo' || model === 'kling-v2-5-turbo' || (typeof model === 'string' && model.includes('turbo'))) {
@@ -356,15 +358,14 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
         // Видео-референс танца берется из загруженного в шаблон файла (templateImgUrl)
         const motionVideoUrl = templateImgUrl || guestVideoUrl || 'https://kiosk394.vercel.app/kiosk-ui/assets/card_loop.mp4';
 
+        // В Kie.ai для Kling Motion Control параметр mode строго '720p' или '1080p' (значение 'std' вызывает ошибку 500!)
+        const motionMode = (targetResolution === '1080p' || targetResolution === '4K' || targetResolution === 'PRO') ? '1080p' : '720p';
+
         inputPayload = {
             prompt: cleanMotionPrompt,
             input_urls: [publicPhotoUrl],
-            image_urls: [publicPhotoUrl],
-            image_url: publicPhotoUrl,
-            video_url: motionVideoUrl,
             video_urls: [motionVideoUrl],
-            // Режим 'std' (Standard) генерируется в 2 раза быстрее, чем 'pro' (~25-35 сек вместо 60-90 сек)
-            mode: (targetResolution === '4K' || targetResolution === 'PRO') ? 'pro' : 'std',
+            mode: motionMode,
             character_orientation: 'image'
         };
     } else if (isGeminiOmni) {
@@ -553,11 +554,6 @@ CRITICAL MANDATORY INSTRUCTIONS:
                 } catch(e2) {}
             }
 
-            if (!taskId) {
-                console.warn(`[Kie.ai Create Task Error for ${targetModel}]`, createData || createRes.status);
-                return null;
-            }
-
             const isVideoTask = targetModel.includes('gemini') ||
                                 targetModel.includes('omni') ||
                                 targetModel.includes('kling') || 
@@ -565,6 +561,14 @@ CRITICAL MANDATORY INSTRUCTIONS:
                                 targetModel.includes('runway') || 
                                 targetModel.includes('luma') || 
                                 targetModel.includes('hailuo');
+
+            if (!taskId) {
+                const failReason = (createData && (createData.msg || createData.message)) 
+                    ? (createData.msg || createData.message) 
+                    : `HTTP ${createRes.status}`;
+                console.warn(`[Kie.ai Create Task Error for ${targetModel}]`, createData || createRes.status);
+                return { failed: true, error: `Kie.ai: ${failReason}`, model: targetModel, isVideo: isVideoTask };
+            }
 
             console.log(`[Kie.ai Hub] Задача создана (${targetModel}), taskId: ${taskId}, isVideo: ${isVideoTask}. Ожидание результата...`);
 
@@ -597,11 +601,20 @@ CRITICAL MANDATORY INSTRUCTIONS:
                                 if (parsed) {
                                     if (Array.isArray(parsed.resultUrls)) resultUrls.push(...parsed.resultUrls);
                                     if (Array.isArray(parsed.urls)) resultUrls.push(...parsed.urls);
-                                    if (Array.isArray(parsed.videos)) resultUrls.push(...parsed.videos);
+                                    if (Array.isArray(parsed.videos)) {
+                                        parsed.videos.forEach(v => {
+                                            if (typeof v === 'string') resultUrls.push(v);
+                                            else if (v && (v.url || v.video_url || v.videoUrl)) resultUrls.push(v.url || v.video_url || v.videoUrl);
+                                        });
+                                    }
                                     if (parsed.video_url) resultUrls.push(parsed.video_url);
                                     if (parsed.videoUrl) resultUrls.push(parsed.videoUrl);
                                     if (parsed.url) resultUrls.push(parsed.url);
-                                    if (parsed.output && parsed.output.video_url) resultUrls.push(parsed.output.video_url);
+                                    if (parsed.output) {
+                                        if (typeof parsed.output === 'string') resultUrls.push(parsed.output);
+                                        else if (parsed.output.video_url) resultUrls.push(parsed.output.video_url);
+                                        else if (parsed.output.url) resultUrls.push(parsed.output.url);
+                                    }
                                 }
                             } catch(e) {}
                         }
@@ -611,6 +624,11 @@ CRITICAL MANDATORY INSTRUCTIONS:
                             if (resp.video_url) resultUrls.push(resp.video_url);
                             if (resp.videoUrl) resultUrls.push(resp.videoUrl);
                             if (resp.url) resultUrls.push(resp.url);
+                        }
+                        if (taskInfo.output) {
+                            if (typeof taskInfo.output === 'string') resultUrls.push(taskInfo.output);
+                            else if (taskInfo.output.video_url) resultUrls.push(taskInfo.output.video_url);
+                            else if (taskInfo.output.url) resultUrls.push(taskInfo.output.url);
                         }
 
                         const finalMediaUrl = resultUrls.find(u => Boolean(u)) || 
@@ -812,12 +830,22 @@ module.exports = async (req, res) => {
         if (generatedImageUrl && !generatedImageUrl.includes('supabase.co')) {
             generatedImageUrl = await persistResultToSupabase(generatedImageUrl, orderId, Boolean(generationOutcome?.isVideo));
         }
-        const resultUrl = generatedImageUrl || templateImg;
+
+        // Защита: ни при каких обстоятельствах не подменять результат видео/фото шаблоном!
+        if (!generatedImageUrl) {
+            console.warn(`[AI Hub] Модель ${effectiveModelName} не вернула результат генерации`);
+            return res.status(200).json({
+                success: false,
+                error: generationOutcome?.error || `Не удалось сгенерировать медиа через ${effectiveModelName}. Пожалуйста, попробуйте еще раз.`,
+                model: effectiveModelName,
+                orderId
+            });
+        }
 
         return res.status(200).json({
             success: true,
             pending: false,
-            state: generatedImageUrl ? 'success' : 'preview',
+            state: 'success',
             orderId,
             taskId: generationOutcome?.taskId || null,
             model: effectiveModelName,
@@ -826,11 +854,11 @@ module.exports = async (req, res) => {
             prompt: prompt || '',
             location: location || '',
             isTryOn: Boolean(isTryOn),
-            resultUrl,
+            resultUrl: generatedImageUrl,
             audioUrl: audioUrl || null,
             speechText: speechText || '',
             mode: effectiveKey ? 'live' : 'preview',
-            message: generatedImageUrl ? `Успешно сгенерировано через ${effectiveModelName}` : 'Генерация завершилась'
+            message: `Успешно сгенерировано через ${effectiveModelName}`
         });
     } catch (err) {
         console.error('[AI Gateway Error]', err);
