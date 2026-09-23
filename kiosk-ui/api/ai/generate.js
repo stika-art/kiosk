@@ -292,20 +292,22 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     }
 
     // Сопоставление моделей:
-    // По умолчанию для всех фото-шаблонов используется обычный базовый GPT Image 2 (gpt-image-2-image-to-image),
+    // По умолчанию для всех фото-шаблонов используется флагман сайта ChatGPT — GPT Image 2.5 Sunburst (gpt-image-2-5-sunburst-image-to-image),
     // а для виртуальной примерки одежды — google/nano-banana-edit.
-    let kieModel = 'gpt-image-2-image-to-image';
+    let kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     if (isTryOn) {
         // Виртуальная примерка одежды -> Nano Banana (Google Image Edit)
         kieModel = 'google/nano-banana-edit';
     } else if (model === 'nano-banana-2' || model === 'google/nano-banana-edit') {
         kieModel = 'google/nano-banana-edit';
-    } else if (model === 'gpt-image-2-5-sunburst' || model === 'chatgpt-2.5-sunburst' || model === 'gpt-image-2-5-sunburst-image-to-image') {
+    } else if (model === 'gpt-image-2-5-sunburst' || model === 'chatgpt-2.5-sunburst' || model === 'gpt-image-2-5-sunburst-image-to-image' || model === 'chatgpt-2.5') {
+        // Официальный флагман сайта ChatGPT с максимальной точностью лица — GPT Image 2.5 Sunburst
         kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     } else if (model === 'gpt-image-2-5-flare' || model === 'chatgpt-2.5-flare' || model === 'gpt-image-2-5-flare-image-to-image') {
+        // Скоростная версия GPT Image 2.5 Flare
         kieModel = 'gpt-image-2-5-flare-image-to-image';
-    } else if (model === 'gpt-image-2' || model === 'chatgpt-2' || model === 'chatgpt-2.5' || model === 'gpt-image-2-image-to-image') {
-        // Обычный базовый GPT Image 2 (без Sunburst и без Flare)
+    } else if (model === 'gpt-image-2' || model === 'chatgpt-2' || model === 'gpt-image-2-image-to-image') {
+        // Предыдущее поколение GPT Image 2 (если выбрано явно)
         kieModel = 'gpt-image-2-image-to-image';
     } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'gemini-omni-video' || model === 'google/gemini-omni-flash-1-1' || model === 'google/gemini-omni-1.1-flash' || (typeof model === 'string' && (model.includes('omni') || model.includes('gemini')))) {
         // Google Gemini Omni Flash — Video-to-Video (официальная модель в Kie.ai: gemini-omni-video)
@@ -322,8 +324,8 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     } else if (model && model !== 'default') {
         kieModel = model;
     } else {
-        // Обычный базовый GPT Image 2 (без Sunburst и Flare)
-        kieModel = 'gpt-image-2-image-to-image';
+        // Официальный флагман сайта ChatGPT — GPT Image 2.5 Sunburst
+        kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     }
 
     const isGeminiOmni = kieModel === 'gemini-omni-video' || kieModel.includes('gemini') || kieModel.includes('omni');
