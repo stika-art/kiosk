@@ -235,8 +235,8 @@ function sanitizeForOpenAI(p) {
 }
 
 // 5. Вызов Kie.ai API и ожидание результата задачи генерации изображения
-async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateImgUrl, isTryOn, resolution }) {
-    if (!apiKey || !publicPhotoUrl) return null;
+async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution }) {
+    if (!apiKey || (!publicPhotoUrl && !guestVideoUrl)) return null;
 
     // Выбор разрешения (1K, 2K, 4K)
     const validResolutions = ['1K', '2K', '4K'];
@@ -244,8 +244,8 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         ? resolution.toUpperCase() 
         : '1K';
 
-    if (!publicPhotoUrl && !templateImgUrl) {
-        console.warn('[Kie.ai] Отсутствуют изображения для обработки, вызов Kie.ai отменен для защиты баланса.');
+    if (!publicPhotoUrl && !templateImgUrl && !guestVideoUrl) {
+        console.warn('[Kie.ai] Отсутствуют изображения/видео для обработки, вызов Kie.ai отменен для защиты баланса.');
         return null;
     }
 
@@ -296,7 +296,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
     // Формирование входных данных под выбранный тип модели
     let inputPayload = {};
     if (isGeminiOmni) {
-        // Google Gemini Omni Flash: Video-to-Video (трансформация видео под внешность и образ гостя)
+        // Google Gemini Omni Flash: Video-to-Video (трансформация живого видеоролика гостя по промпту шаблона)
         const v2vPrompt = (safePrompt && safePrompt.trim().length > 3)
             ? safePrompt.trim()
             : 'Smooth natural cinematic video transformation, seamlessly integrate person face and identity into the scene, fluid motion, high quality render';
@@ -309,21 +309,26 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
             templateImgUrl.includes('/video/')
         );
 
-        // Исходное видео для трансформации (видео шаблона из каталога или базовый ролик киоска)
-        const sourceVideoUrl = isTemplateVideo 
+        // Исходное видео для трансформации:
+        // ПРИОРИТЕТ 1: Записанное гостем видео прямо перед экраном киоска
+        // ПРИОРИТЕТ 2: Видео шаблона из каталога (если было загружено)
+        // ПРИОРИТЕТ 3: Базовый ролик киоска
+        const sourceVideoUrl = guestVideoUrl || (isTemplateVideo 
             ? templateImgUrl 
-            : 'https://kiosk394.vercel.app/kiosk-ui/assets/card_loop.mp4';
+            : 'https://kiosk394.vercel.app/kiosk-ui/assets/card_loop.mp4');
 
         inputPayload = {
             prompt: v2vPrompt,
-            // Фотография гостя для внедрения лица/образа (1 юнит квоты в Kie.ai)
-            image_urls: publicPhotoUrl ? [publicPhotoUrl] : [],
             // Исходное видео для Video-to-Video трансформации (2 юнита квоты в Kie.ai)
             video_list: [
                 {
                     url: sourceVideoUrl
                 }
-            ]
+            ],
+            // Референс стиля (фото обложки шаблона) или стоп-кадр лица гостя (1 юнит квоты в Kie.ai)
+            image_urls: (templateImgUrl && !isTemplateVideo) 
+                ? [templateImgUrl] 
+                : (publicPhotoUrl ? [publicPhotoUrl] : [])
         };
     } else if (isVideoModel) {
         // Оптимизированный промпт движения лица и позы
@@ -561,7 +566,7 @@ module.exports = async (req, res) => {
 
     try {
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-        const { photoData, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey, elevenlabsKey, elevenlabsVoiceId } = body;
+        const { photoData, videoUrl, guestVideoUrl, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey, elevenlabsKey, elevenlabsVoiceId } = body;
 
         const effectiveKey = aggregatorKey || process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || 'fde11cd9f361b989eb19b8ef8530bfbd';
         const targetResolution = resolution || '2K';
@@ -569,21 +574,23 @@ module.exports = async (req, res) => {
         console.log(`[AI Hub] Новый запрос: "${title}", модель="${model || 'chatgpt-2.5'}", разрешение="${targetResolution}", заказ="${orderId}", isTryOn=${Boolean(isTryOn)}`);
 
         // Защита от списания кредитов Kie.ai без реальных данных
-        if (!photoData && !templateImg) {
-            console.log('[AI Hub] Входные изображения отсутствуют. Обращение к Kie.ai пропущено для защиты кредитов.');
+        if (!photoData && !templateImg && !videoUrl && !guestVideoUrl) {
+            console.log('[AI Hub] Входные медиаданные отсутствуют. Обращение к Kie.ai пропущено для защиты кредитов.');
             return res.status(200).json({
                 success: true,
                 pending: false,
                 state: 'fallback',
-                message: 'Изображения отсутствуют, генерация пропущена'
+                message: 'Медиаданные отсутствуют, генерация пропущена'
             });
         }
 
-        // 1. Получаем публичный URL фото гостя и шаблона одежды через CDN Supabase
+        // 1. Получаем публичный URL фото гостя, шаблона и записанного видео гостя через CDN Supabase
         const publicPhotoUrl = await uploadImageToCDN(photoData, 'guests', orderId);
         const publicTemplateUrl = await uploadImageToCDN(templateImg, 'clothes', orderId);
+        const rawGuestVideo = guestVideoUrl || videoUrl;
+        const publicGuestVideoUrl = rawGuestVideo ? await uploadImageToCDN(rawGuestVideo, 'guests', orderId) : null;
 
-        if (!publicPhotoUrl && !publicTemplateUrl) {
+        if (!publicPhotoUrl && !publicTemplateUrl && !publicGuestVideoUrl) {
             console.log('[AI Hub] Изображения не загружены в CDN. Обращение к Kie.ai отменено для защиты кредитов.');
             return res.status(200).json({
                 success: true,
@@ -605,6 +612,7 @@ module.exports = async (req, res) => {
             model: model || 'chatgpt-2.5',
             prompt,
             publicPhotoUrl,
+            guestVideoUrl: publicGuestVideoUrl,
             templateImgUrl: publicTemplateUrl,
             isTryOn: Boolean(isTryOn),
             resolution: targetResolution

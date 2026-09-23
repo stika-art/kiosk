@@ -1971,7 +1971,7 @@
         
         <!-- STEP 1: CAMERA PREVIEW -->
         <div id="step-camera" class="step-view">
-            <h2 class="modal-title">СЪЁМКА ФОТО</h2>
+            <h2 class="modal-title" id="cam-modal-title">СЪЁМКА ФОТО</h2>
             <p class="modal-subtitle" id="cam-subtitle">Встаньте по центру и смотрите в камеру</p>
 
             <!-- ПЕРЕКЛЮЧАТЕЛЬ ИСТОЧНИКА КАМЕРЫ -->
@@ -2016,6 +2016,10 @@
                 <canvas id="photo-canvas" style="display:none;"></canvas>
                 <div class="webcam-hud">
                     <div id="cam-info-badge" class="cam-info-badge">1080p Full HD</div>
+                    <div id="cam-rec-badge" style="display: none; position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(220, 38, 38, 0.95); color: #fff; padding: 7px 20px; border-radius: 24px; font-size: 14px; font-weight: 800; letter-spacing: 0.5px; z-index: 25; box-shadow: 0 0 25px rgba(220, 38, 38, 0.7); align-items: center; gap: 9px; border: 1px solid rgba(255,255,255,0.4);">
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background: #ffffff; display: inline-block;"></span>
+                        <span>ИДЁТ ЗАПИСЬ: <span id="cam-rec-countdown">4</span> СЕК</span>
+                    </div>
                     <div class="hud-corner top-left"></div>
                     <div class="hud-corner top-right"></div>
                     <div class="hud-corner bottom-left"></div>
@@ -2043,8 +2047,8 @@
 
             <!-- ВЫБОР ТАЙМЕРА ДЛЯ СЪЁМКИ (3, 5, 8, 10 СЕКУНД) -->
             <div class="timer-select-wrapper" id="timer-select-wrapper">
-                <span class="timer-select-label">ТАЙМЕР СЪЁМКИ:</span>
-                <div class="timer-options">
+                <span class="timer-select-label" id="timer-select-label">ТАЙМЕР СЪЁМКИ:</span>
+                <div class="timer-options" id="timer-options-container">
                     <button type="button" class="timer-btn active" data-timer="3">3 СЕК</button>
                     <button type="button" class="timer-btn" data-timer="5">5 СЕК</button>
                     <button type="button" class="timer-btn" data-timer="8">8 СЕК</button>
@@ -2054,20 +2058,21 @@
 
             <div class="modal-actions">
                 <button id="snap-btn" class="action-btn primary-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                    <span>СДЕЛАТЬ ФОТО</span>
+                    <span id="snap-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg></span>
+                    <span id="snap-btn-text">СДЕЛАТЬ ФОТО</span>
                 </button>
             </div>
         </div>
 
 
-        <!-- STEP 1.5: CONFIRM & RETAKE PHOTO -->
+        <!-- STEP 1.5: CONFIRM & RETAKE PHOTO / VIDEO -->
         <div id="step-confirm" class="step-view" style="display:none;">
-            <h2 class="modal-title">ОТЛИЧНЫЙ КАДР?</h2>
-            <p class="modal-subtitle">Проверьте снимок перед отправкой на создание портрета</p>
+            <h2 class="modal-title" id="confirm-modal-title">ОТЛИЧНЫЙ КАДР?</h2>
+            <p class="modal-subtitle" id="confirm-modal-subtitle">Проверьте снимок перед отправкой на создание портрета</p>
 
             <div class="webcam-box" id="confirm-photo-box" style="position: relative; background: #000;">
                 <img id="photo-preview-confirm" src="" alt="Ваш снимок" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+                <video id="video-preview-confirm" src="" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: contain; display: none;"></video>
             </div>
 
             <!-- ВЫБОР РАЗРЕШЕНИЯ CHATGPT (1K, 2K, 4K) -->

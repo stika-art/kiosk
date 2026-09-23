@@ -913,6 +913,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const retakeBtn = document.getElementById('retake-btn');
     const confirmPhotoBtn = document.getElementById('confirm-photo-btn');
 
+    // Video Recording DOM Elements & State
+    const camModalTitle = document.getElementById('cam-modal-title');
+    const camRecBadge = document.getElementById('cam-rec-badge');
+    const camRecCountdown = document.getElementById('cam-rec-countdown');
+    const timerSelectLabel = document.getElementById('timer-select-label');
+    const timerOptionsContainer = document.getElementById('timer-options-container');
+    const snapBtnIcon = document.getElementById('snap-btn-icon');
+    const snapBtnText = document.getElementById('snap-btn-text');
+    const confirmModalTitle = document.getElementById('confirm-modal-title');
+    const confirmModalSubtitle = document.getElementById('confirm-modal-subtitle');
+    const videoPreviewConfirm = document.getElementById('video-preview-confirm');
+
+    let capturedVideoBlob = null;
+    let capturedVideoUrl = null;
+    let mediaRecorder = null;
+    let recordedVideoChunks = [];
+    let isRecordingVideo = false;
+    let selectedVideoDuration = 4; // по умолчанию 4 секунды записи видео
+
+    function getSupportedVideoMimeType() {
+        if (typeof MediaRecorder === 'undefined') return '';
+        const types = [
+            'video/mp4;codecs=avc1',
+            'video/mp4',
+            'video/webm;codecs=vp9',
+            'video/webm;codecs=vp8',
+            'video/webm'
+        ];
+        for (const t of types) {
+            if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) {
+                return t;
+            }
+        }
+        return '';
+    }
+
     // ВЫБОР РАЗРЕШЕНИЯ CHATGPT (1K, 2K HD, 4K ULTRA)
     document.querySelectorAll('.ai-res-pill').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -1145,6 +1181,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (retakeBtn) {
         retakeBtn.addEventListener('click', () => {
+            if (capturedVideoUrl) {
+                URL.revokeObjectURL(capturedVideoUrl);
+                capturedVideoUrl = null;
+            }
+            capturedVideoBlob = null;
+            if (videoPreviewConfirm) {
+                videoPreviewConfirm.pause();
+                videoPreviewConfirm.src = '';
+                videoPreviewConfirm.style.display = 'none';
+            }
+            resetCameraStep();
             showStep(stepCamera);
             // Если был режим телефона — восстановим его UI
             if (phoneCamMode) {
@@ -1166,6 +1213,19 @@ document.addEventListener('DOMContentLoaded', () => {
         stopPaymentPolling();
         stopWebcam();
         stopPhoneCamPolling();
+        if (capturedVideoUrl) {
+            URL.revokeObjectURL(capturedVideoUrl);
+            capturedVideoUrl = null;
+        }
+        capturedVideoBlob = null;
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            try { mediaRecorder.stop(); } catch(e) {}
+        }
+        if (videoPreviewConfirm) {
+            videoPreviewConfirm.pause();
+            videoPreviewConfirm.src = '';
+            videoPreviewConfirm.style.display = 'none';
+        }
         // Удаляем файл телефонной сессии из Supabase при выходе
         if (phoneCamSessionId) {
             fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/phone-cam/${phoneCamSessionId}.jpg`, {
@@ -1329,12 +1389,81 @@ document.addEventListener('DOMContentLoaded', () => {
         if (webcamLiveBox) webcamLiveBox.style.display = '';
         if (phoneCamPanel) phoneCamPanel.classList.remove('visible');
         if (timerSelectWrap) timerSelectWrap.style.display = '';
-        if (snapBtnEl) snapBtnEl.style.display = '';
-        if (camSubtitle) {
-            if (isTryOnMode) {
-                camSubtitle.textContent = 'Встаньте по центру в полный рост или по пояс, чтобы примерить вещь';
-            } else {
-                camSubtitle.textContent = 'Встаньте по центру и смотрите в камеру';
+        if (snapBtnEl) {
+            snapBtnEl.style.display = '';
+            snapBtnEl.disabled = false;
+        }
+        if (camRecBadge) camRecBadge.style.display = 'none';
+
+        const isVideoMode = isVideoTemplate({
+            model: selectedStyleModel,
+            category: (selectedTemplateId && masterTemplates.find(t => t.id === selectedTemplateId)?.category) || '',
+            img: selectedStylePhoto
+        }) || (selectedStyleModel && (selectedStyleModel.includes('omni') || selectedStyleModel.includes('gemini') || selectedStyleModel.includes('video')));
+
+        if (isVideoMode) {
+            if (camModalTitle) camModalTitle.textContent = 'ЗАПИСЬ ВИДЕО';
+            if (camSubtitle) camSubtitle.textContent = 'Помашите рукой, улыбнитесь или примите позу — запишем короткий ролик';
+            if (timerSelectLabel) timerSelectLabel.textContent = 'ДЛИТЕЛЬНОСТЬ РОЛИКА:';
+            if (timerOptionsContainer) {
+                timerOptionsContainer.innerHTML = `
+                    <button type="button" class="timer-btn" data-timer="3">3 СЕК</button>
+                    <button type="button" class="timer-btn active" data-timer="4">4 СЕК</button>
+                    <button type="button" class="timer-btn" data-timer="5">5 СЕК</button>
+                `;
+                selectedVideoDuration = 4;
+                timerOptionsContainer.querySelectorAll('.timer-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        timerOptionsContainer.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        selectedVideoDuration = parseInt(btn.getAttribute('data-timer'), 10) || 4;
+                        if (snapBtnText) snapBtnText.textContent = `НАЧАТЬ ЗАПИСЬ (${selectedVideoDuration} СЕК)`;
+                    });
+                });
+            }
+            if (snapBtnIcon) {
+                snapBtnIcon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7" fill="#ef4444" stroke="none"/><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>`;
+            }
+            if (snapBtnText) snapBtnText.textContent = `НАЧАТЬ ЗАПИСЬ (${selectedVideoDuration || 4} СЕК)`;
+            if (snapBtnEl) {
+                snapBtnEl.style.background = 'linear-gradient(135deg, #e11d48 0%, #b91c1c 100%)';
+                snapBtnEl.style.color = '#ffffff';
+                snapBtnEl.style.boxShadow = '0 0 25px rgba(225, 29, 72, 0.4)';
+            }
+        } else {
+            if (camModalTitle) camModalTitle.textContent = 'СЪЁМКА ФОТО';
+            if (camSubtitle) {
+                if (isTryOnMode) {
+                    camSubtitle.textContent = 'Встаньте по центру в полный рост или по пояс, чтобы примерить вещь';
+                } else {
+                    camSubtitle.textContent = 'Встаньте по центру и смотрите в камеру';
+                }
+            }
+            if (timerSelectLabel) timerSelectLabel.textContent = 'ТАЙМЕР СЪЁМКИ:';
+            if (timerOptionsContainer) {
+                timerOptionsContainer.innerHTML = `
+                    <button type="button" class="timer-btn active" data-timer="3">3 СЕК</button>
+                    <button type="button" class="timer-btn" data-timer="5">5 СЕК</button>
+                    <button type="button" class="timer-btn" data-timer="8">8 СЕК</button>
+                    <button type="button" class="timer-btn" data-timer="10">10 СЕК</button>
+                `;
+                selectedCaptureDuration = 3;
+                timerOptionsContainer.querySelectorAll('.timer-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        timerOptionsContainer.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        selectedCaptureDuration = parseInt(btn.getAttribute('data-timer'), 10) || 3;
+                    });
+                });
+            }
+            if (snapBtnIcon) {
+                snapBtnIcon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>`;
+            }
+            if (snapBtnText) snapBtnText.textContent = 'СДЕЛАТЬ ФОТО';
+            if (snapBtnEl) {
+                snapBtnEl.style.background = '';
+                snapBtnEl.style.color = '';
+                snapBtnEl.style.boxShadow = '';
             }
         }
     }
@@ -2164,9 +2293,35 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 3. SNAP PHOTO, COUNTDOWN И ПОДТВЕРЖДЕНИЕ ГОСТЕМ
+    // 3. SNAP PHOTO / RECORD VIDEO, COUNTDOWN И ПОДТВЕРЖДЕНИЕ ГОСТЕМ
     snapBtn.addEventListener('click', () => {
         snapBtn.disabled = true;
+
+        const isVideoMode = isVideoTemplate({
+            model: selectedStyleModel,
+            category: (selectedTemplateId && masterTemplates.find(t => t.id === selectedTemplateId)?.category) || '',
+            img: selectedStylePhoto
+        }) || (selectedStyleModel && (selectedStyleModel.includes('omni') || selectedStyleModel.includes('gemini') || selectedStyleModel.includes('video')));
+
+        if (isVideoMode) {
+            // Режим видеосъемки: быстрый отсчет 3.. 2.. 1.. и запись живого видео гостя
+            let count = 3;
+            countdownOverlay.textContent = count;
+
+            const preTimer = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownOverlay.textContent = count;
+                } else {
+                    clearInterval(preTimer);
+                    countdownOverlay.textContent = '';
+                    startGuestVideoRecording();
+                }
+            }, 1000);
+            return;
+        }
+
+        // Режим обычной фотосъемки
         let count = selectedCaptureDuration;
         countdownOverlay.textContent = count;
 
@@ -2182,14 +2337,86 @@ document.addEventListener('DOMContentLoaded', () => {
                     stopWebcam();
                     snapBtn.disabled = false;
                     countdownOverlay.textContent = '';
+                    if (confirmModalTitle) confirmModalTitle.textContent = 'ОТЛИЧНЫЙ КАДР?';
+                    if (confirmModalSubtitle) confirmModalSubtitle.textContent = 'Проверьте снимок перед отправкой на создание портрета';
                     if (photoPreviewConfirm) {
                         photoPreviewConfirm.src = capturedPhotoData;
+                        photoPreviewConfirm.style.display = 'block';
+                    }
+                    if (videoPreviewConfirm) {
+                        videoPreviewConfirm.pause();
+                        videoPreviewConfirm.src = '';
+                        videoPreviewConfirm.style.display = 'none';
                     }
                     showStep(stepConfirm);
                 }, 400);
             }
         }, 1000);
     });
+
+    // Запись живого видеоролика гостя через MediaRecorder
+    function startGuestVideoRecording() {
+        isRecordingVideo = true;
+        recordedVideoChunks = [];
+
+        // Делаем стоп-кадр лица для превью/постера
+        takeSnapshot();
+
+        const mime = getSupportedVideoMimeType();
+        try {
+            mediaRecorder = mime ? new MediaRecorder(mediaStream, { mimeType: mime }) : new MediaRecorder(mediaStream);
+        } catch(err) {
+            console.warn('Fallback к стандартному MediaRecorder:', err);
+            mediaRecorder = new MediaRecorder(mediaStream);
+        }
+
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) {
+                recordedVideoChunks.push(e.data);
+            }
+        };
+
+        mediaRecorder.onstop = () => {
+            isRecordingVideo = false;
+            const finalMime = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'video/mp4';
+            capturedVideoBlob = new Blob(recordedVideoChunks, { type: finalMime });
+            if (capturedVideoUrl) URL.revokeObjectURL(capturedVideoUrl);
+            capturedVideoUrl = URL.createObjectURL(capturedVideoBlob);
+
+            stopWebcam();
+            snapBtn.disabled = false;
+            if (camRecBadge) camRecBadge.style.display = 'none';
+
+            if (confirmModalTitle) confirmModalTitle.textContent = 'ОТЛИЧНЫЙ РОЛИК?';
+            if (confirmModalSubtitle) confirmModalSubtitle.textContent = 'Проверьте видео перед отправкой в нейросеть';
+            if (videoPreviewConfirm) {
+                videoPreviewConfirm.src = capturedVideoUrl;
+                videoPreviewConfirm.style.display = 'block';
+                videoPreviewConfirm.play().catch(e => console.warn('Preview play err:', e));
+            }
+            if (photoPreviewConfirm) {
+                photoPreviewConfirm.style.display = 'none';
+            }
+            showStep(stepConfirm);
+        };
+
+        mediaRecorder.start(250);
+
+        let durationLeft = selectedVideoDuration || 4;
+        if (camRecBadge) camRecBadge.style.display = 'inline-flex';
+        if (camRecCountdown) camRecCountdown.textContent = durationLeft;
+
+        const recTimer = setInterval(() => {
+            durationLeft--;
+            if (camRecCountdown) camRecCountdown.textContent = durationLeft;
+            if (durationLeft <= 0) {
+                clearInterval(recTimer);
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+            }
+        }, 1000);
+    }
 
     function takeSnapshot() {
         const rawW = webcamEl.videoWidth || 1920;
@@ -2353,6 +2580,33 @@ document.addEventListener('DOMContentLoaded', () => {
         let tryonAudioUrl = null;
         let tryonSpeechText = null;
 
+        // Если гостем было записано живое видео — сначала загружаем его в Supabase Storage
+        let guestVideoUrl = null;
+        if (capturedVideoBlob) {
+            setAiProgress(8, 'Загрузка вашего видео в облако Supabase...');
+            try {
+                const ext = (capturedVideoBlob.type && capturedVideoBlob.type.includes('mp4')) ? 'mp4' : 'webm';
+                const vidFileName = `guests/guest_vid_${currentOrderId || Date.now()}.${ext}`;
+                const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${vidFileName}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                        'Content-Type': capturedVideoBlob.type || 'video/mp4',
+                        'x-upsert': 'true'
+                    },
+                    body: capturedVideoBlob
+                });
+                if (uploadRes.ok) {
+                    guestVideoUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${vidFileName}`;
+                    console.log('[Kiosk Video] Записанное видео гостя успешно загружено в Supabase:', guestVideoUrl);
+                } else {
+                    console.warn('[Kiosk Video] Ошибка загрузки видео в Supabase:', uploadRes.status);
+                }
+            } catch(e) {
+                console.warn('[Kiosk Video] Ошибка при загрузке видео гостя:', e);
+            }
+        }
+
         try {
             const aggregatorUrl = localStorage.getItem('kiosk_aggregator_url') || '';
             const aggregatorKey = localStorage.getItem('kiosk_aggregator_key') || '';
@@ -2364,6 +2618,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     photoData: capturedPhotoData,
+                    videoUrl: guestVideoUrl,
+                    guestVideoUrl: guestVideoUrl,
                     templateImg: selectedStylePhoto,
                     prompt: selectedStylePrompt,
                     model: selectedStyleModel || 'chatgpt-2',

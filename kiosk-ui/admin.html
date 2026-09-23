@@ -2402,12 +2402,12 @@
                 }
                 if (resWrapper) resWrapper.style.display = 'none';
 
-                if (promptLabel) promptLabel.textContent = '🎬 Промпт трансформации видео / движения (Prompt):';
+                if (promptLabel) promptLabel.textContent = '🎬 Промпт трансформации видео гостя (Prompt):';
                 if (promptInput && !editingTemplateId && !promptInput.value.trim()) {
-                    promptInput.placeholder = 'Smooth subtle cinematic motion, natural breathing, soft hair movement, gentle dynamic lighting...';
+                    promptInput.placeholder = 'Smooth cinematic video transformation, seamlessly integrate person into cyberpunk neon city, natural dynamic motion, fluid lighting...';
                 }
-                if (imgLabel) imgLabel.innerHTML = '🎞️ Обложка или исходный видеоролик (MP4 / WebM):';
-                if (imgTip) imgTip.textContent = 'Для Video-to-Video нейросеть берет этот исходный видеоролик и трансформирует под гостя.';
+                if (imgLabel) imgLabel.innerHTML = '🎞️ Обложка стиля для каталога (Фото или MP4):';
+                if (imgTip) imgTip.innerHTML = '💡 Гость перед экраном киоска <b>записывает живое видео (3-5 сек)</b>. Нейросеть трансформирует видеоролик гостя по указанному выше промпту. Обложка — это визуальный пример стиля для каталога киоска.';
                 if (submitBtn && !editingTemplateId) submitBtn.textContent = '+ Добавить ролик в «ВИДЕО»';
 
             } else {
