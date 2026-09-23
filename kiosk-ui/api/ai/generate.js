@@ -31,9 +31,13 @@ async function uploadImageToCDN(photoBase64OrUrl, prefix = 'guests', orderId) {
         return `https://kiosk394.vercel.app/kiosk-ui/${cleanPath}`;
     }
 
-    const cleanBase64 = photoBase64OrUrl.replace(/^data:image\/\w+;base64,/, '');
+    const isVideo = photoBase64OrUrl.startsWith('data:video/') || prefix === 'videos';
+    const mimeType = isVideo ? 'video/mp4' : 'image/jpeg';
+    const ext = isVideo ? 'mp4' : 'jpg';
+
+    const cleanBase64 = photoBase64OrUrl.replace(/^data:(image|video)\/\w+;base64,/, '');
     const buffer = Buffer.from(cleanBase64, 'base64');
-    const safeFilename = `${prefix}_${orderId || Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+    const safeFilename = `${prefix}_${orderId || Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
 
     // 1. ПРИОРИТЕТ: Собственное хранилище Supabase Storage (100% прямое оригинальное качество, всегда доступно, без редиректов и HTML)
     try {
@@ -42,7 +46,7 @@ async function uploadImageToCDN(photoBase64OrUrl, prefix = 'guests', orderId) {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Content-Type': 'image/jpeg',
+                'Content-Type': mimeType,
                 'x-upsert': 'true'
             },
             body: buffer
@@ -63,7 +67,7 @@ async function uploadImageToCDN(photoBase64OrUrl, prefix = 'guests', orderId) {
     try {
         const form = new FormData();
         form.append('reqtype', 'fileupload');
-        form.append('fileToUpload', new Blob([buffer], { type: 'image/jpeg' }), safeFilename);
+        form.append('fileToUpload', new Blob([buffer], { type: mimeType }), safeFilename);
         const catRes = await fetch('https://catbox.moe/user/api.php', {
             method: 'POST',
             body: form

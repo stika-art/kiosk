@@ -561,7 +561,7 @@ try {
 // Preload all template images into memory for instant rendering
 function preloadMasterImages() {
     masterTemplates.forEach(item => {
-        if (item.img) {
+        if (item.img && !item.img.endsWith('.mp4') && !item.img.endsWith('.webm') && !item.img.includes('.mp4?') && !item.img.includes('.webm?')) {
             const img = new Image();
             img.src = item.img;
         }
@@ -574,9 +574,17 @@ function isVideoTemplate(tpl) {
     if (!tpl) return false;
     const m = (tpl.model || '').toLowerCase();
     const c = (tpl.category || '').toUpperCase();
+    const img = (tpl.img || '').toLowerCase();
     return c === 'ВИДЕО' || 
            m.includes('kling') || 
-           m.includes('video');
+           m.includes('omni') || 
+           m.includes('gemini') || 
+           m.includes('video') ||
+           img.endsWith('.mp4') ||
+           img.endsWith('.webm') ||
+           img.endsWith('.mov') ||
+           img.includes('.mp4?') ||
+           img.includes('.webm?');
 }
 
 function isTrendsTemplate(tpl) {
@@ -811,10 +819,28 @@ function renderGridTemplates() {
         const card = document.createElement('div');
         card.className = 'tile-card';
 
-        const img = document.createElement('img');
-        img.src = item.img;
-        img.alt = item.title;
-        img.loading = 'eager';
+        const isVid = typeof item.img === 'string' && (
+            item.img.endsWith('.mp4') || item.img.endsWith('.webm') || item.img.endsWith('.mov') ||
+            item.img.includes('.mp4?') || item.img.includes('.webm?')
+        );
+
+        let mediaEl;
+        if (isVid) {
+            mediaEl = document.createElement('video');
+            mediaEl.src = item.img;
+            mediaEl.autoplay = true;
+            mediaEl.loop = true;
+            mediaEl.muted = true;
+            mediaEl.playsInline = true;
+            mediaEl.style.width = '100%';
+            mediaEl.style.height = '100%';
+            mediaEl.style.objectFit = 'cover';
+        } else {
+            mediaEl = document.createElement('img');
+            mediaEl.src = item.img;
+            mediaEl.alt = item.title;
+            mediaEl.loading = 'eager';
+        }
 
         // Плашка с ценой в сомах
         const itemPrice = item.price || 290;
@@ -822,7 +848,7 @@ function renderGridTemplates() {
         priceBadge.className = 'tile-price-badge';
         priceBadge.innerHTML = `${itemPrice} <span>СОМ</span>`;
 
-        card.appendChild(img);
+        card.appendChild(mediaEl);
         card.appendChild(priceBadge);
 
         // При клике на карточку — сразу переходим к экрану оплаты Finik ELQR!
@@ -1318,13 +1344,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // ИНИЦИАЛИЗАЦИЯ ЗАКАЗА И QR-КОДА OBUSINESS ELQR
     async function initiatePaymentOrder() {
         if (payStyleTitle) payStyleTitle.textContent = selectedStyle;
-        if (paySelectedThumb) paySelectedThumb.src = selectedStylePhoto;
+
+        const isVid = typeof selectedStylePhoto === 'string' && (
+            selectedStylePhoto.endsWith('.mp4') || selectedStylePhoto.endsWith('.webm') || selectedStylePhoto.endsWith('.mov') ||
+            selectedStylePhoto.includes('.mp4?') || selectedStylePhoto.includes('.webm?')
+        );
+        const paySelectedVideo = document.getElementById('pay-selected-video');
+        if (isVid && paySelectedVideo) {
+            paySelectedVideo.src = selectedStylePhoto;
+            paySelectedVideo.style.display = 'block';
+            if (paySelectedThumb) paySelectedThumb.style.display = 'none';
+        } else {
+            if (paySelectedThumb) {
+                paySelectedThumb.src = selectedStylePhoto;
+                paySelectedThumb.style.display = 'block';
+            }
+            if (paySelectedVideo) {
+                paySelectedVideo.pause();
+                paySelectedVideo.style.display = 'none';
+            }
+        }
+
         if (payAmountVal) payAmountVal.textContent = selectedStylePrice || 290;
         
         const paySubtext = document.querySelector('.pay-subtext');
         if (paySubtext) {
             const resLabel = currentAiResolution + (currentAiResolution === '2K' ? ' HD' : currentAiResolution === '4K' ? ' Ultra' : '');
-            if (isTryOnMode) {
+            const isVideoMode = isVid || (selectedStyleModel && (selectedStyleModel.includes('omni') || selectedStyleModel.includes('gemini') || selectedStyleModel.includes('kling')));
+            if (isVideoMode) {
+                paySubtext.innerHTML = `Генерация живого видео <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">Omni Flash (Video-to-Video)</span>`;
+            } else if (isTryOnMode) {
                 paySubtext.innerHTML = `Виртуальная примерка в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">${resLabel}</span> (ChatGPT)`;
             } else {
                 paySubtext.innerHTML = `Финальное фото в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">${resLabel}</span> (ChatGPT)`;
