@@ -261,12 +261,18 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
     } else if (model === 'gpt-image-2' || model === 'chatgpt-2' || model === 'chatgpt-2.5' || model === 'gpt-image-2-image-to-image') {
         // Обычный базовый GPT Image 2 (без Sunburst и без Flare)
         kieModel = 'gpt-image-2-image-to-image';
-    } else if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5') {
-        kieModel = 'bytedance/seedance-2-5';
-    } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'google/gemini-omni-flash-1-1' || model === 'gemini-omni-video') {
-        kieModel = 'google/gemini-omni-flash-1-1';
-    } else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6') {
-        kieModel = 'kwaivgi/kling-v1-6';
+    } else if (model === 'kling-turbo' || model === 'kling-v2-5-turbo' || (typeof model === 'string' && model.includes('turbo'))) {
+        // Ультра-быстрая генерация видео Kling Turbo (высокая скорость для киоска)
+        kieModel = 'kling/v2-5-turbo-image-to-video';
+    } else if (model === 'seedance-fast' || model === 'bytedance/seedance-2-fast' || model === 'omni-flash' || model === 'google-omni-flash') {
+        // Быстрая анимация Seedance Fast (Bytedance)
+        kieModel = 'bytedance/seedance-2-fast';
+    } else if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5' || model === 'bytedance/seedance-2' || (typeof model === 'string' && model.includes('seedance'))) {
+        // Кинематографичный Seedance 2
+        kieModel = 'bytedance/seedance-2';
+    } else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6' || (typeof model === 'string' && model.includes('kling'))) {
+        // Kling 2.6 Image-to-Video
+        kieModel = 'kling-2.6/image-to-video';
     } else if (model && model !== 'default') {
         kieModel = model;
     } else {
@@ -274,23 +280,38 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         kieModel = 'gpt-image-2-image-to-image';
     }
 
-    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isTryOn=${Boolean(isTryOn)})...`);
+    const isVideoModel = kieModel.includes('seedance') || 
+                         kieModel.includes('kling') || 
+                         kieModel.includes('video') || 
+                         kieModel.includes('runway') || 
+                         kieModel.includes('luma') || 
+                         kieModel.includes('hailuo');
+
+    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isTryOn=${Boolean(isTryOn)})...`);
 
     const safePrompt = sanitizeForOpenAI(prompt);
 
     // Формирование входных данных под выбранный тип модели
     let inputPayload = {};
-    if (kieModel.includes('omni-flash') || kieModel.includes('gemini-omni')) {
+    if (isVideoModel) {
+        // Оптимизированный промпт движения лица и позы
+        let rawVideoPrompt = (safePrompt && safePrompt.trim().length > 3)
+            ? safePrompt.trim()
+            : 'Smooth subtle cinematic motion, natural breathing, soft hair movement, gentle dynamic lighting, photorealistic high quality portrait animation';
+        // Убираем 4K маркеры, замедляющие диффузию
+        let cleanVideoPrompt = rawVideoPrompt.replace(/\b(4k|8k|ultra hd|4k resolution)\b/gi, '').trim();
+
+        // Универсальный вход под все ревизии Kie.ai (Seedance, Kling, Luma)
         inputPayload = {
-            prompt: prompt || 'Cinematic video portrait, smooth natural motion, 4k high quality',
+            prompt: cleanVideoPrompt || 'Smooth subtle cinematic motion, natural breathing, soft hair movement, gentle dynamic lighting',
             image_url: publicPhotoUrl,
-            duration: '6'
-        };
-    } else if (kieModel.includes('seedance') || kieModel.includes('kling')) {
-        inputPayload = {
-            prompt: prompt || 'Cinematic movement, 4k resolution, seamless motion',
-            image_url: publicPhotoUrl,
-            duration: 5
+            image_urls: [publicPhotoUrl],
+            first_frame_url: publicPhotoUrl,
+            // УСКОРЕНИЕ 1: Оптимальная длительность 4 секунды (генерируется в 2 раза быстрее, чем 6-10 сек, зацикливается)
+            duration: 4,
+            // УСКОРЕНИЕ 2: 720p вертикально (рендерится в 2.5 раза быстрее и идеально выглядит на экране киоска и смартфонах)
+            resolution: '720p',
+            camera_fixed: true
         };
     } else if (isTryOn) {
         // Виртуальная примерка одежды / товаров на гостя через Nano Banana (2 фото: гость + вещь)
@@ -405,10 +426,19 @@ CRITICAL MANDATORY INSTRUCTIONS:
                 return null;
             }
 
-            console.log(`[Kie.ai ChatGPT] Задача создана (${targetModel}), taskId: ${taskId}, разрешение: ${targetResolution}. Ожидание результата...`);
+            const isVideoTask = targetModel.includes('seedance') || 
+                                targetModel.includes('kling') || 
+                                targetModel.includes('video') || 
+                                targetModel.includes('runway') || 
+                                targetModel.includes('luma') || 
+                                targetModel.includes('hailuo');
 
-            // Опрос статуса до 45 секунд (в пределах лимита Vercel)
-            const maxWaitMs = 45000;
+            console.log(`[Kie.ai Hub] Задача создана (${targetModel}), taskId: ${taskId}, isVideo: ${isVideoTask}. Ожидание результата...`);
+
+            // Для видеомоделей: делаем 1 быстрый опрос (1.5 сек). Если задача еще не завершена —
+            // СРАЗУ возвращаем taskId клиенту для асинхронного поллинга со шкалой прогресса.
+            // Это исключает 504 таймауты Vercel и зависания экрана на киоске.
+            const maxWaitMs = isVideoTask ? 3000 : 45000;
             const startTime = Date.now();
 
             while (Date.now() - startTime < maxWaitMs) {
@@ -431,28 +461,45 @@ CRITICAL MANDATORY INSTRUCTIONS:
                         if (taskInfo.resultJson) {
                             try {
                                 const parsed = typeof taskInfo.resultJson === 'string' ? JSON.parse(taskInfo.resultJson) : taskInfo.resultJson;
-                                resultUrls = parsed.resultUrls || parsed.urls || [parsed.url || parsed.video_url];
+                                if (parsed) {
+                                    if (Array.isArray(parsed.resultUrls)) resultUrls.push(...parsed.resultUrls);
+                                    if (Array.isArray(parsed.urls)) resultUrls.push(...parsed.urls);
+                                    if (Array.isArray(parsed.videos)) resultUrls.push(...parsed.videos);
+                                    if (parsed.video_url) resultUrls.push(parsed.video_url);
+                                    if (parsed.videoUrl) resultUrls.push(parsed.videoUrl);
+                                    if (parsed.url) resultUrls.push(parsed.url);
+                                    if (parsed.output && parsed.output.video_url) resultUrls.push(parsed.output.video_url);
+                                }
                             } catch(e) {}
                         }
-                        if ((!resultUrls || resultUrls.length === 0) && taskInfo.response) {
-                            resultUrls = taskInfo.response.resultUrls || [taskInfo.response.url];
+                        if (taskInfo.response) {
+                            const resp = taskInfo.response;
+                            if (Array.isArray(resp.resultUrls)) resultUrls.push(...resp.resultUrls);
+                            if (resp.video_url) resultUrls.push(resp.video_url);
+                            if (resp.videoUrl) resultUrls.push(resp.videoUrl);
+                            if (resp.url) resultUrls.push(resp.url);
                         }
 
-                        const finalMediaUrl = (resultUrls && resultUrls[0]) || taskInfo.video_url || taskInfo.image_url;
+                        const finalMediaUrl = resultUrls.find(u => Boolean(u)) || 
+                                              taskInfo.video_url || 
+                                              taskInfo.videoUrl || 
+                                              taskInfo.image_url || 
+                                              taskInfo.url;
+
                         if (finalMediaUrl) {
-                            return { resultUrl: finalMediaUrl, taskId, resolution: targetResolution, model: targetModel };
+                            return { resultUrl: finalMediaUrl, taskId, resolution: targetResolution, model: targetModel, isVideo: isVideoTask };
                         }
                     } else if (state === 'fail' || state === 'failed' || state === 'error') {
                         const errMsg = taskInfo.failMsg || taskInfo.errorMessage || 'Неизвестная ошибка генерации';
                         console.warn(`[Kie.ai] Задача ${taskId} (${targetModel}) завершилась с ошибкой:`, errMsg);
-                        return { failed: true, error: errMsg, taskId, model: targetModel };
+                        return { failed: true, error: errMsg, taskId, model: targetModel, isVideo: isVideoTask };
                     }
                 }
             }
 
-            // Если задача ещё в процессе (OpenAI может генерировать до 60-80с) — возвращаем taskId для асинхронного поллинга клиентом
-            console.log(`[Kie.ai AI Hub] Задача ${taskId} (${targetModel}) всё ещё генерируется, передаем клиенту для поллинга`);
-            return { pending: true, taskId, resolution: targetResolution, model: targetModel };
+            // Если задача ещё в процессе — возвращаем taskId для асинхронного поллинга клиентом
+            console.log(`[Kie.ai AI Hub] Задача ${taskId} (${targetModel}) в процессе, передаем клиенту для поллинга`);
+            return { pending: true, taskId, resolution: targetResolution, model: targetModel, isVideo: isVideoTask };
 
         } catch (err) {
             console.warn(`[Kie.ai Task Exception for ${targetModel}]`, err.message);
@@ -564,6 +611,7 @@ module.exports = async (req, res) => {
                 orderId,
                 resolution: generationOutcome.resolution || targetResolution,
                 model: effectiveModelName,
+                isVideo: Boolean(generationOutcome && generationOutcome.isVideo),
                 audioUrl: audioUrl || null,
                 speechText: speechText || '',
                 message: `Генерация через ${effectiveModelName} выполняется...`

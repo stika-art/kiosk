@@ -512,7 +512,9 @@ function normalizeTemplates(tplList, cardsList) {
         let modelNorm = (t.model || '').trim();
         if (sid === 4 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || Boolean(t.location)) {
             modelNorm = 'nano-banana-2';
-        } else if (modelNorm !== 'seedance-2.5' && modelNorm !== 'omni-flash' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2') {
+        } else if (sid === 2 || stUp.includes('ВИДЕО') || catUp.includes('ВИДЕО')) {
+            modelNorm = modelNorm || 'seedance-fast';
+        } else if (modelNorm !== 'seedance-fast' && modelNorm !== 'kling-turbo' && modelNorm !== 'seedance-2.5' && modelNorm !== 'omni-flash' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2') {
             modelNorm = 'chatgpt-2.5';
         }
 
@@ -2262,10 +2264,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const genTitle = isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
+        const isVideoSelection = selectedStyleModel === 'seedance-fast' ||
+                                selectedStyleModel === 'kling-turbo' ||
+                                selectedStyleModel === 'seedance-2.5' || 
+                                selectedStyleModel.includes('seedance') || 
+                                selectedStyleModel.includes('kling') || 
+                                selectedStyleModel.includes('video') || 
+                                selectedStyleModel === 'omni-flash';
+
+        const genTitle = isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
         resetAiProgress(genTitle, selectedStyleModel, currentAiResolution);
 
-        const statuses = isTryOnMode ? [
+        const videoInitialStatuses = [
+            `Анализ кадра и карты глубины...`,
+            `Генерация динамики и траектории движения...`,
+            `Подготовка видеопотока...`
+        ];
+        const statuses = isVideoSelection ? videoInitialStatuses : isTryOnMode ? [
             `Анализ силуэта и позы...`,
             `Подбор размера и примерка кроя...`,
             `Сохранение черт лица и индивидуальности...`,
@@ -2327,6 +2342,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.pending && data.taskId) {
                         clearInterval(interval);
                         console.log(`[AI Polling] Задача ${data.taskId} в процессе генерации, запускаем поллинг...`);
+                        const isVideoTask = Boolean(data.isVideo) || isVideoSelection;
                         const photoPollStatuses = [
                             `Обработка портрета в высоком качестве...`,
                             `Прорисовка фотореалистичных черт лица...`,
@@ -2341,18 +2357,34 @@ document.addEventListener('DOMContentLoaded', () => {
                             `Прорисовка реалистичной ткани и теней...`,
                             `Финальная подготовка образа...`
                         ];
-                        const activePollStatuses = (isTryOnMode || selectedStyleModel === 'nano-banana-2') ? tryOnPollStatuses : photoPollStatuses;
+                        const videoPollStatuses = [
+                            `Анализ кадра и построение карты глубины...`,
+                            `Генерация динамики и плавных движений...`,
+                            `Рендеринг кадров видеопотока...`,
+                            `Цветокоррекция и сглаживание анимации...`,
+                            `Финальная сборка видеоролика...`
+                        ];
+                        const activePollStatuses = isVideoTask 
+                            ? videoPollStatuses 
+                            : (isTryOnMode || selectedStyleModel === 'nano-banana-2') 
+                                ? tryOnPollStatuses 
+                                : photoPollStatuses;
+
                         let pollIdx = 0;
                         let pollAttempts = 0;
-                        const maxPollAttempts = 45; // ~110 секунд
-                        setAiProgress(34, activePollStatuses[0]);
+                        // Для видео опрос до 160 сек (80 шагов по 2 сек), для фото 45 шагов по 1.5 сек
+                        const maxPollAttempts = isVideoTask ? 80 : 45;
+                        const pollDelay = isVideoTask ? 2000 : 1500;
+                        setAiProgress(30, activePollStatuses[0]);
 
                         while (pollAttempts < maxPollAttempts) {
-                            await new Promise(r => setTimeout(r, 1500));
+                            await new Promise(r => setTimeout(r, pollDelay));
                             pollAttempts++;
 
                             // Плавный рост прогресса на каждом шаге поллинга
-                            const pollTarget = Math.min(94, 34 + Math.floor(pollAttempts * 7.5));
+                            const pollTarget = isVideoTask
+                                ? Math.min(95, 30 + Math.floor((pollAttempts / 35) * 65))
+                                : Math.min(94, 34 + Math.floor(pollAttempts * 7.5));
                             setAiProgress(pollTarget, activePollStatuses[pollIdx % activePollStatuses.length]);
                             pollIdx++;
 
@@ -2386,11 +2418,18 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(interval);
         // Завершаем заполнение прогресс-бара до 100% с неоновым свечением
         await finishAiProgress();
-        const isVideo = finalResultUrl.endsWith('.mp4') || finalResultUrl.endsWith('.webm') || finalResultUrl.includes('/video/') || selectedStyleModel === 'seedance-2.5' || selectedStyleModel === 'omni-flash' || selectedStyleModel === 'kling-video' || selectedStyleModel.includes('omni') || selectedStyleModel.includes('video');
-        if (isVideo && resultVideo) {
+        const isVideoResult = typeof finalResultUrl === 'string' && (
+            finalResultUrl.endsWith('.mp4') || 
+            finalResultUrl.endsWith('.webm') || 
+            finalResultUrl.includes('/video/') || 
+            finalResultUrl.includes('.mp4?') ||
+            finalResultUrl.includes('.webm?')
+        );
+        if (isVideoResult && resultVideo) {
             resultVideo.src = finalResultUrl;
+            resultVideo.muted = true;
             resultVideo.style.display = 'block';
-            resultVideo.play().catch(() => {});
+            resultVideo.play().catch(e => console.warn('Video play error:', e));
             if (resultImg) resultImg.style.display = 'none';
         } else if (resultImg) {
             resultImg.src = finalResultUrl;

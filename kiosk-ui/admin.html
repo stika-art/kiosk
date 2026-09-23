@@ -2203,9 +2203,11 @@
             if (m === 'chatgpt-2.5-flare' || m === 'gpt-image-2-5-flare') return '<span class="model-badge" style="background: rgba(255,149,0,0.18); border-color: #ff9500; color: #ff9500; font-weight: 800;">🔥 GPT 2.5 Flare</span>';
             if (m === 'roast-standup') return '<span class="model-badge" style="background: rgba(255,69,58,0.18); border-color: #ff453a; color: #ff453a;">🔥 Прожарка + Голос</span>';
             if (m === 'nano-banana-2') return '<span class="model-badge">🍌 Nano Banana 2</span>';
-            if (m === 'seedance-2.5') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">🎬 Seedance 2.5</span>';
-            if (m === 'omni-flash' || m === 'google-omni-flash' || m === 'google/gemini-omni-flash-1-1') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">⚡ Omni Flash</span>';
-            if (m === 'kling-video') return '<span class="model-badge">🎥 Kling AI</span>';
+            if (m === 'seedance-fast' || m === 'bytedance/seedance-2-fast') return '<span class="model-badge" style="background: rgba(34,197,94,0.18); border-color: #22c55e; color: #22c55e; font-weight: 800;">⚡ Seedance Fast</span>';
+            if (m === 'kling-turbo' || m.includes('turbo')) return '<span class="model-badge" style="background: rgba(59,130,246,0.18); border-color: #3b82f6; color: #60a5fa; font-weight: 800;">🚀 Kling Turbo</span>';
+            if (m === 'seedance-2.5' || m.includes('seedance')) return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">🎬 Seedance 2</span>';
+            if (m === 'kling-video' || m.includes('kling')) return '<span class="model-badge">🎥 Kling AI</span>';
+            if (m === 'omni-flash') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">⚡ Omni Flash</span>';
             return `<span class="model-badge">${m}</span>`;
         }
 
@@ -2393,17 +2395,18 @@
                 if (modelWrapper) modelWrapper.style.display = 'block';
                 if (modelSelect) {
                     modelSelect.innerHTML = `
-                        <option value="seedance-2.5" selected>🎬 Seedance 2.5 (Bytedance — Кинематограф)</option>
-                        <option value="omni-flash">⚡ Google Omni Flash (Быстрая анимация)</option>
-                        <option value="kling-video">🎥 Kling AI 1.6 (Высокое качество)</option>
-                        <option value="custom">✏️ Другая модель...</option>
+                        <option value="seedance-fast" selected>⚡ Seedance Fast (Bytedance — Быстрая анимация 20-30с)</option>
+                        <option value="kling-turbo">🚀 Kling Turbo (Ультра-скорость и плавность лица)</option>
+                        <option value="seedance-2.5">🎬 Seedance 2.0 (Кинематографичная глубина)</option>
+                        <option value="kling-video">🎥 Kling 2.6 HD (Высокая детализация)</option>
+                        <option value="custom">✏️ Другая модель из каталога Kie.ai...</option>
                     `;
                 }
                 if (resWrapper) resWrapper.style.display = 'none';
 
                 if (promptLabel) promptLabel.textContent = '🎬 Промпт динамики и движения камеры (Prompt):';
                 if (promptInput && !editingTemplateId && !promptInput.value.trim()) {
-                    promptInput.placeholder = 'Cinematic slow motion camera panning, natural fluid movement, 4k ultra realistic...';
+                    promptInput.placeholder = 'Smooth subtle cinematic motion, natural breathing, soft hair movement, gentle dynamic lighting...';
                 }
                 if (imgLabel) imgLabel.innerHTML = '🎞️ Обложка / превью видеоролика:';
                 if (imgTip) imgTip.textContent = 'Изображение для карточки каталога на киоске.';

@@ -38,14 +38,30 @@ module.exports = async (req, res) => {
                 if (taskInfo.resultJson) {
                     try {
                         const parsed = typeof taskInfo.resultJson === 'string' ? JSON.parse(taskInfo.resultJson) : taskInfo.resultJson;
-                        resultUrls = parsed.resultUrls || parsed.urls || [parsed.url || parsed.video_url];
+                        if (parsed) {
+                            if (Array.isArray(parsed.resultUrls)) resultUrls.push(...parsed.resultUrls);
+                            if (Array.isArray(parsed.urls)) resultUrls.push(...parsed.urls);
+                            if (Array.isArray(parsed.videos)) resultUrls.push(...parsed.videos);
+                            if (parsed.video_url) resultUrls.push(parsed.video_url);
+                            if (parsed.videoUrl) resultUrls.push(parsed.videoUrl);
+                            if (parsed.url) resultUrls.push(parsed.url);
+                            if (parsed.output && parsed.output.video_url) resultUrls.push(parsed.output.video_url);
+                        }
                     } catch(e) {}
                 }
-                if ((!resultUrls || resultUrls.length === 0) && taskInfo.response) {
-                    resultUrls = taskInfo.response.resultUrls || [taskInfo.response.url];
+                if (taskInfo.response) {
+                    const resp = taskInfo.response;
+                    if (Array.isArray(resp.resultUrls)) resultUrls.push(...resp.resultUrls);
+                    if (resp.video_url) resultUrls.push(resp.video_url);
+                    if (resp.videoUrl) resultUrls.push(resp.videoUrl);
+                    if (resp.url) resultUrls.push(resp.url);
                 }
 
-                const resultUrl = (resultUrls && resultUrls[0]) || taskInfo.video_url || taskInfo.image_url;
+                const resultUrl = resultUrls.find(u => Boolean(u)) || 
+                                  taskInfo.video_url || 
+                                  taskInfo.videoUrl || 
+                                  taskInfo.image_url || 
+                                  taskInfo.url;
                 return res.status(200).json({
                     success: true,
                     state: 'success',
