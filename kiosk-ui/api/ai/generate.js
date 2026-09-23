@@ -3,9 +3,10 @@
 // Models supported:
 // 1. 'nano-banana-2'  -> google/nano-banana-edit (Фото с сохранением лица / Примерка одежды)
 // 2. 'chatgpt-2.5'    -> gpt-image-2-image-to-image (Базовый GPT Image 2)
-// 3. 'kling-turbo'    -> kling/v2-5-turbo-image-to-video (Ультра-быстрая генерация видео из фото)
-// 4. 'kling-video'    -> kling-2.6/image-to-video (Высокодетализированное видео из фото)
-// 5. 'elevenlabs'     -> голосовая озвучка бутика/контейнера при выдаче результата
+// 3. 'omni-flash'     -> gemini-omni-video (Google Gemini Omni Flash — Video-to-Video)
+// 4. 'kling-turbo'    -> kling/v2-5-turbo-image-to-video (Ультра-быстрая генерация видео из фото)
+// 5. 'kling-video'    -> kling-2.6/image-to-video (Высокодетализированное видео из фото)
+// 6. 'elevenlabs'     -> голосовая озвучка бутика/контейнера при выдаче результата
 // ============================================================
 
 const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
@@ -260,6 +261,9 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
     } else if (model === 'gpt-image-2' || model === 'chatgpt-2' || model === 'chatgpt-2.5' || model === 'gpt-image-2-image-to-image') {
         // Обычный базовый GPT Image 2 (без Sunburst и без Flare)
         kieModel = 'gpt-image-2-image-to-image';
+    } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'gemini-omni-video' || model === 'google/gemini-omni-flash-1-1' || model === 'google/gemini-omni-1.1-flash' || (typeof model === 'string' && (model.includes('omni') || model.includes('gemini')))) {
+        // Google Gemini Omni Flash — Video-to-Video (официальная модель в Kie.ai: gemini-omni-video)
+        kieModel = 'gemini-omni-video';
     } else if (model === 'kling-turbo' || model === 'kling-v2-5-turbo' || (typeof model === 'string' && model.includes('turbo'))) {
         // Ультра-быстрая генерация видео Kling Turbo (высокая скорость для киоска, ~25-35 сек)
         kieModel = 'kling/v2-5-turbo-image-to-video';
@@ -273,19 +277,51 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         kieModel = 'gpt-image-2-image-to-image';
     }
 
-    const isVideoModel = kieModel.includes('kling') || 
+    const isGeminiOmni = kieModel === 'gemini-omni-video' || kieModel.includes('gemini') || kieModel.includes('omni');
+    const isVideoModel = isGeminiOmni || 
+                         kieModel.includes('kling') || 
                          kieModel.includes('video') || 
                          kieModel.includes('runway') || 
                          kieModel.includes('luma') || 
                          kieModel.includes('hailuo');
 
-    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isTryOn=${Boolean(isTryOn)})...`);
+    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isGeminiOmni=${isGeminiOmni}, isTryOn=${Boolean(isTryOn)})...`);
 
     const safePrompt = sanitizeForOpenAI(prompt);
 
     // Формирование входных данных под выбранный тип модели
     let inputPayload = {};
-    if (isVideoModel) {
+    if (isGeminiOmni) {
+        // Google Gemini Omni Flash: Video-to-Video (трансформация видео под внешность и образ гостя)
+        const v2vPrompt = (safePrompt && safePrompt.trim().length > 3)
+            ? safePrompt.trim()
+            : 'Smooth natural cinematic video transformation, seamlessly integrate person face and identity into the scene, fluid motion, high quality render';
+
+        const isTemplateVideo = templateImgUrl && (
+            templateImgUrl.endsWith('.mp4') || 
+            templateImgUrl.endsWith('.webm') || 
+            templateImgUrl.includes('.mp4?') || 
+            templateImgUrl.includes('.webm?') || 
+            templateImgUrl.includes('/video/')
+        );
+
+        // Исходное видео для трансформации (видео шаблона из каталога или базовый ролик киоска)
+        const sourceVideoUrl = isTemplateVideo 
+            ? templateImgUrl 
+            : 'https://kiosk394.vercel.app/kiosk-ui/assets/card_loop.mp4';
+
+        inputPayload = {
+            prompt: v2vPrompt,
+            // Фотография гостя для внедрения лица/образа (1 юнит квоты в Kie.ai)
+            image_urls: publicPhotoUrl ? [publicPhotoUrl] : [],
+            // Исходное видео для Video-to-Video трансформации (2 юнита квоты в Kie.ai)
+            video_list: [
+                {
+                    url: sourceVideoUrl
+                }
+            ]
+        };
+    } else if (isVideoModel) {
         // Оптимизированный промпт движения лица и позы
         let rawVideoPrompt = (safePrompt && safePrompt.trim().length > 3)
             ? safePrompt.trim()
@@ -417,7 +453,9 @@ CRITICAL MANDATORY INSTRUCTIONS:
                 return null;
             }
 
-            const isVideoTask = targetModel.includes('kling') || 
+            const isVideoTask = targetModel.includes('gemini') ||
+                                targetModel.includes('omni') ||
+                                targetModel.includes('kling') || 
                                 targetModel.includes('video') || 
                                 targetModel.includes('runway') || 
                                 targetModel.includes('luma') || 

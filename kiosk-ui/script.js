@@ -513,8 +513,8 @@ function normalizeTemplates(tplList, cardsList) {
         if (sid === 4 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || Boolean(t.location)) {
             modelNorm = 'nano-banana-2';
         } else if (sid === 2 || stUp.includes('ВИДЕО') || catUp.includes('ВИДЕО')) {
-            modelNorm = modelNorm || 'kling-turbo';
-        } else if (modelNorm !== 'kling-turbo' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2') {
+            modelNorm = modelNorm || 'omni-flash';
+        } else if (modelNorm !== 'omni-flash' && modelNorm !== 'kling-turbo' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2') {
             modelNorm = 'chatgpt-2.5';
         }
 
@@ -2262,7 +2262,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const isVideoSelection = selectedStyleModel === 'kling-turbo' ||
+        const isVideoSelection = selectedStyleModel === 'omni-flash' ||
+                                selectedStyleModel.includes('omni') ||
+                                selectedStyleModel.includes('gemini') ||
+                                selectedStyleModel === 'kling-turbo' ||
                                 selectedStyleModel === 'kling-video' ||
                                 selectedStyleModel.includes('kling') || 
                                 selectedStyleModel.includes('video');
