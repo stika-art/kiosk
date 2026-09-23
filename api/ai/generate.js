@@ -550,6 +550,18 @@ CRITICAL MANDATORY INSTRUCTIONS:
     return outcome;
 }
 
+let lastCleanupTimestamp = 0;
+function triggerBackgroundCleanup() {
+    const now = Date.now();
+    if (now - lastCleanupTimestamp > 2 * 3600 * 1000) {
+        lastCleanupTimestamp = now;
+        try {
+            const { cleanupStorage } = require('../cron/cleanup');
+            cleanupStorage(12).catch(e => console.warn('[Background Cleanup Error]', e.message));
+        } catch(e) {}
+    }
+}
+
 module.exports = async (req, res) => {
     // Включение CORS для киоска
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -565,6 +577,9 @@ module.exports = async (req, res) => {
     }
 
     try {
+        // Фоновая автоматическая очистка временных медиа старше 12 часов
+        triggerBackgroundCleanup();
+
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
         const { photoData, videoUrl, guestVideoUrl, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey, elevenlabsKey, elevenlabsVoiceId } = body;
 

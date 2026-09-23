@@ -922,9 +922,14 @@
                             <h2 class="card-title">🖼️ Управление шаблонами</h2>
                             <p class="card-subtitle">Чёткое разделение по разделам: Фото-портреты, Примерка одежды, Видео</p>
                         </div>
-                        <button type="button" class="btn-upload" onclick="syncAllToCloudManual('tpl-status')" title="Сохранить и отправить шаблоны в киоск">
-                            ☁️ Синхронизировать с киоском
-                        </button>
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <button type="button" class="btn-upload" onclick="triggerManualStorageCleanup()" title="Удалить временные фото и видео гостей старше 12 часов">
+                                🧹 Очистить медиа (>12 ч)
+                            </button>
+                            <button type="button" class="btn-upload" onclick="syncAllToCloudManual('tpl-status')" title="Сохранить и отправить шаблоны в киоск">
+                                ☁️ Синхронизировать с киоском
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -4324,6 +4329,32 @@
                 status.textContent = '✅ Данные успешно сохранены и синхронизированы с киоском!';
                 status.className = 'status-msg success';
                 setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3500);
+            }
+        }
+
+        async function triggerManualStorageCleanup() {
+            const status = document.getElementById('tpl-status');
+            if (status) {
+                status.textContent = '⏳ Очистка временных фото и видео гостей старше 12 часов...';
+                status.className = 'status-msg';
+            }
+            try {
+                const res = await fetch('/api/cron/cleanup?hours=12');
+                const data = await res.json();
+                if (data.success) {
+                    if (status) {
+                        status.textContent = `✅ Успешно очищено ${data.result.deletedTotal} временных файлов гостей старше 12 часов! (Шаблоны не затронуты)`;
+                        status.className = 'status-msg success';
+                        setTimeout(() => { if (status.textContent.includes('очищено')) status.textContent = ''; }, 6000);
+                    }
+                } else {
+                    throw new Error(data.error || 'Ошибка очистки');
+                }
+            } catch (e) {
+                if (status) {
+                    status.textContent = '⚠️ Ошибка очистки хранилища: ' + e.message;
+                    status.className = 'status-msg';
+                }
             }
         }
 

@@ -5,6 +5,12 @@
       "maxDuration": 60
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "0 */4 * * *"
+    }
+  ],
   "rewrites": [
     { "source": "/admin", "destination": "/kiosk-ui/admin" },
     { "source": "/admin/", "destination": "/kiosk-ui/admin" },
