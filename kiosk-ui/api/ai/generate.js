@@ -358,14 +358,12 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
         // Видео-референс танца берется из загруженного в шаблон файла (templateImgUrl)
         const motionVideoUrl = templateImgUrl || guestVideoUrl || 'https://kiosk394.vercel.app/kiosk-ui/assets/card_loop.mp4';
 
-        // В Kie.ai для Kling Motion Control параметр mode строго '720p' или '1080p' (значение 'std' вызывает ошибку 500!)
-        const motionMode = (targetResolution === '1080p' || targetResolution === '4K' || targetResolution === 'PRO') ? '1080p' : '720p';
-
+        // Видео строго в HD (720p), а не Full HD (1080p) для высокой скорости генерации (~25 сек) и легкого воспроизведения
         inputPayload = {
             prompt: cleanMotionPrompt,
             input_urls: [publicPhotoUrl],
             video_urls: [motionVideoUrl],
-            mode: motionMode,
+            mode: '720p',
             character_orientation: 'image'
         };
     } else if (isGeminiOmni) {
@@ -639,7 +637,7 @@ CRITICAL MANDATORY INSTRUCTIONS:
 
                         if (finalMediaUrl) {
                             const cleanFinalUrl = await persistResultToSupabase(finalMediaUrl, orderId, isVideoTask);
-                            return { resultUrl: cleanFinalUrl, taskId, resolution: targetResolution, model: targetModel, isVideo: isVideoTask };
+                            return { resultUrl: cleanFinalUrl, taskId, resolution: isVideoTask ? 'HD' : targetResolution, model: targetModel, isVideo: isVideoTask };
                         }
                     } else if (state === 'fail' || state === 'failed' || state === 'error') {
                         const errMsg = taskInfo.failMsg || taskInfo.errorMessage || 'Неизвестная ошибка генерации';
@@ -651,7 +649,7 @@ CRITICAL MANDATORY INSTRUCTIONS:
 
             // Если задача ещё в процессе — возвращаем taskId для асинхронного поллинга клиентом
             console.log(`[Kie.ai AI Hub] Задача ${taskId} (${targetModel}) в процессе, передаем клиенту для поллинга`);
-            return { pending: true, taskId, resolution: targetResolution, model: targetModel, isVideo: isVideoTask };
+            return { pending: true, taskId, resolution: isVideoTask ? 'HD' : targetResolution, model: targetModel, isVideo: isVideoTask };
 
         } catch (err) {
             console.warn(`[Kie.ai Task Exception for ${targetModel}]`, err.message);

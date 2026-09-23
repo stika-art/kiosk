@@ -2276,7 +2276,8 @@
         }
 
         function getResolutionBadge(resolution) {
-            const res = (resolution || '2K').toUpperCase();
+            const res = (resolution || '1K').toUpperCase();
+            if (res === 'HD' || res === '720P') return '<span class="model-badge" style="background: rgba(16,185,129,0.18); border-color: #10b981; color: #34d399; font-weight: 800;">🎬 HD</span>';
             if (res === '1K') return '<span class="model-badge" style="background: rgba(59,130,246,0.18); border-color: #3b82f6; color: #60a5fa; font-weight: 800;">⚡ 1K</span>';
             if (res === '4K') return '<span class="model-badge" style="background: rgba(168,85,247,0.18); border-color: #a855f7; color: #c084fc; font-weight: 800;">💎 4K Ultra</span>';
             return '<span class="model-badge" style="background: rgba(212,160,67,0.18); border-color: #d4a043; color: #d4a043; font-weight: 800;">🌟 2K HD</span>';
@@ -2890,14 +2891,14 @@
                 const tr = document.createElement('tr');
                 const priceVal = tpl.price || 290;
                 const modelBadge = getModelBadge(tpl.model);
-                const resBadge = getResolutionBadge(tpl.resolution);
                 const promptText = tpl.prompt ? tpl.prompt.trim() : '—';
                 const promptEscaped = promptText.replace(/"/g, '&quot;');
-
                 const isVid = typeof tpl.img === 'string' && (
                     tpl.img.endsWith('.mp4') || tpl.img.endsWith('.webm') || tpl.img.endsWith('.mov') ||
                     tpl.img.includes('.mp4?') || tpl.img.includes('.webm?')
                 );
+                const isVidModel = Boolean(tpl.model && (tpl.model.includes('kling') || tpl.model.includes('motion') || tpl.model.includes('video') || tpl.model.includes('omni')));
+                const resBadge = (isVid || isVidModel) ? '<span class="model-badge" style="background: rgba(16,185,129,0.18); border-color: #10b981; color: #34d399; font-weight: 800;">🎬 HD</span>' : getResolutionBadge(tpl.resolution);
                 const thumbHtml = isVid 
                     ? `<video src="${tpl.img}" class="tpl-preview-thumb" autoplay loop muted playsinline></video>`
                     : `<img src="${tpl.img}" alt="${tpl.title}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'">`;
