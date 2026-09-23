@@ -1592,58 +1592,6 @@
         "location": ""
     },
     {
-        "id": 99,
-        "sectionId": 1789230034964,
-        "sectionTitle": "РАЗВЛЕЧЕНИЕ",
-        "category": "ПРОЖАРКА",
-        "title": "🔥 ИИ-ПРОЖАРКА (СТЕНДАП)",
-        "img": "assets/hero_portrait.jpg",
-        "price": 190,
-        "model": "roast-standup",
-        "prompt": "Standup roast caricature with dynamic vision analysis and ElevenLabs voice",
-        "location": "",
-        "htmlCode": ""
-    },
-    {
-        "id": 102,
-        "sectionId": 4,
-        "sectionTitle": "ПРИМЕРКА",
-        "category": "ТОЛСТОВКИ",
-        "title": "Толстовка ALTYN White Classic",
-        "img": "assets/hero_portrait.jpg",
-        "price": 450,
-        "location": "Рынок Дордой, проход 3, контейнер 88",
-        "model": "nano-banana-2",
-        "prompt": "Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.",
-        "htmlCode": ""
-    },
-    {
-        "id": 103,
-        "sectionId": 4,
-        "sectionTitle": "ПРИМЕРКА",
-        "category": "ХУДИ",
-        "title": "Худи Streetwear Cyberpunk",
-        "img": "assets/hero_robot.jpg",
-        "price": 490,
-        "location": "ТРЦ Bishkek Park, 2 этаж, бутик Trendum",
-        "model": "nano-banana-2",
-        "prompt": "Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.",
-        "htmlCode": ""
-    },
-    {
-        "id": 104,
-        "sectionId": 4,
-        "sectionTitle": "ПРИМЕРКА",
-        "category": "ФУТБОЛКИ",
-        "title": "Футболка Trendum Minimalist",
-        "img": "assets/man.jpg",
-        "price": 350,
-        "location": "Рынок Дордой, контейнер 205",
-        "model": "chatgpt-2.5",
-        "prompt": "Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.",
-        "htmlCode": ""
-    },
-    {
         "id": 1789218220360,
         "sectionId": 1,
         "sectionTitle": "ФОТО",
@@ -1938,62 +1886,6 @@
                     htmlCode: t.htmlCode || ''
                 };
             });
-
-            // Если в шаблонах нет товаров примерки — добавляем образцы толстовок
-            if (!normalized.some(t => t.sectionId === 4 || (t.sectionTitle && t.sectionTitle.includes('ПРИМЕР')))) {
-                normalized.push({
-                    id: 101,
-                    sectionId: 4,
-                    sectionTitle: 'ПРИМЕРКА',
-                    category: 'ТОЛСТОВКИ',
-                    title: 'Толстовка TRENDUM Black Oversize',
-                    img: 'assets/hero_avatar.jpg',
-                    price: 450,
-                    location: 'Рынок Дордой, ряд 5, контейнер 142',
-                    model: 'nano-banana-2',
-                    prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.',
-                    htmlCode: ''
-                });
-                normalized.push({
-                    id: 102,
-                    sectionId: 4,
-                    sectionTitle: 'ПРИМЕРКА',
-                    category: 'ТОЛСТОВКИ',
-                    title: 'Толстовка ALTYN White Classic',
-                    img: 'assets/hero_portrait.jpg',
-                    price: 450,
-                    location: 'Рынок Дордой, проход 3, контейнер 88',
-                    model: 'nano-banana-2',
-                    prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.',
-                    htmlCode: ''
-                });
-                normalized.push({
-                    id: 103,
-                    sectionId: 4,
-                    sectionTitle: 'ПРИМЕРКА',
-                    category: 'ХУДИ',
-                    title: 'Худи Streetwear Cyberpunk',
-                    img: 'assets/hero_robot.jpg',
-                    price: 490,
-                    location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum',
-                    model: 'nano-banana-2',
-                    prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.',
-                    htmlCode: ''
-                });
-                normalized.push({
-                    id: 104,
-                    sectionId: 4,
-                    sectionTitle: 'ПРИМЕРКА',
-                    category: 'ФУТБОЛКИ',
-                    title: 'Футболка Trendum Minimalist',
-                    img: 'assets/man.jpg',
-                    price: 350,
-                    location: 'Рынок Дордой, контейнер 205',
-                    model: 'nano-banana-2',
-                    prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.',
-                    htmlCode: ''
-                });
-            }
 
             return normalized;
         }
@@ -3150,12 +3042,44 @@
             setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
         }
 
-        function deleteTemplate(id) {
-            if (!confirm('Удалить этот шаблон?')) return;
-            if (editingTemplateId === id) cancelTemplateEdit();
-            templates = templates.filter(t => t.id !== id);
-            localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
-            syncAllToCloud();
+        async function deleteTemplate(id) {
+            const targetTpl = templates.find(t => String(t.id) === String(id) || Number(t.id) === Number(id));
+            const title = targetTpl ? targetTpl.title : 'шаблон';
+            if (!confirm(`Удалить шаблон "${title}" навсегда со всех киосков?`)) return;
+
+            if (editingTemplateId && (String(editingTemplateId) === String(id) || Number(editingTemplateId) === Number(id))) {
+                cancelTemplateEdit();
+            }
+
+            templates = templates.filter(t => String(t.id) !== String(id) && Number(t.id) !== Number(id));
+
+            try {
+                localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
+            } catch (e) {
+                console.warn('LocalStorage save error:', e);
+            }
+
+            const status = document.getElementById('tpl-status');
+            if (status) {
+                status.textContent = `⏳ Удаление "${title}" из облака Supabase...`;
+                status.className = 'status-msg';
+            }
+
+            try {
+                await syncAllToCloud();
+                if (status) {
+                    status.textContent = `✅ Шаблон "${title}" успешно удалён со всех киосков!`;
+                    status.className = 'status-msg success';
+                    setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3500);
+                }
+            } catch (err) {
+                console.error('Ошибка облачного удаления:', err);
+                if (status) {
+                    status.textContent = '⚠️ Шаблон удалён локально, но произошла ошибка связи с облаком';
+                    status.className = 'status-msg error';
+                }
+            }
+
             renderTplSectionTabs();
             renderSidebarTplSubMenu();
             renderTemplates();
@@ -3564,21 +3488,34 @@
             document.getElementById('main-card-cancel-btn').style.display = 'none';
         }
 
-        function deleteMainCard(id) {
+        async function deleteMainCard(id) {
             if (mainCards.length <= 1) {
                 alert('На главном экране должна оставаться хотя бы 1 карточка!');
                 return;
             }
-            if (!confirm('Удалить эту карточку с главного экрана?')) return;
-            if (editingMainCardId === id) cancelMainCardEdit();
-            mainCards = mainCards.filter(c => c.id !== id);
-            localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
-            syncAllToCloud();
+            const card = mainCards.find(c => String(c.id) === String(id) || Number(c.id) === Number(id));
+            const title = card ? card.title : 'карточку';
+            if (!confirm(`Удалить кнопку "${title}" с главного экрана?`)) return;
+
+            if (editingMainCardId && (String(editingMainCardId) === String(id) || Number(editingMainCardId) === Number(id))) {
+                cancelMainCardEdit();
+            }
+
+            mainCards = mainCards.filter(c => String(c.id) !== String(id) && Number(c.id) !== Number(id));
+
+            try {
+                localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards));
+            } catch (e) {}
+
+            await syncAllToCloud();
             renderMainCardsAdmin();
             renderCatSectionSelect();
             renderCategories();
             renderTplSectionSelect();
             renderTplCategoryDropdown();
+            renderTplSectionTabs();
+            renderSidebarTplSubMenu();
+            renderTemplates();
         }
 
         function moveMainCard(idx, dir) {

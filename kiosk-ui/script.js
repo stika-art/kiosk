@@ -345,58 +345,6 @@ const DEFAULT_KIOSK_TEMPLATES = [
         "location": ""
     },
     {
-        "id": 99,
-        "sectionId": 1789230034964,
-        "sectionTitle": "РАЗВЛЕЧЕНИЕ",
-        "category": "ПРОЖАРКА",
-        "title": "🔥 ИИ-ПРОЖАРКА (СТЕНДАП)",
-        "img": "assets/hero_portrait.jpg",
-        "price": 190,
-        "model": "roast-standup",
-        "prompt": "Standup roast caricature with dynamic vision analysis and ElevenLabs voice",
-        "location": "",
-        "htmlCode": ""
-    },
-    {
-        "id": 102,
-        "sectionId": 4,
-        "sectionTitle": "ПРИМЕРКА",
-        "category": "ТОЛСТОВКИ",
-        "title": "Толстовка ALTYN White Classic",
-        "img": "assets/hero_portrait.jpg",
-        "price": 450,
-        "location": "Рынок Дордой, проход 3, контейнер 88",
-        "model": "nano-banana-2",
-        "prompt": "Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.",
-        "htmlCode": ""
-    },
-    {
-        "id": 103,
-        "sectionId": 4,
-        "sectionTitle": "ПРИМЕРКА",
-        "category": "ХУДИ",
-        "title": "Худи Streetwear Cyberpunk",
-        "img": "assets/hero_robot.jpg",
-        "price": 490,
-        "location": "ТРЦ Bishkek Park, 2 этаж, бутик Trendum",
-        "model": "nano-banana-2",
-        "prompt": "Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.",
-        "htmlCode": ""
-    },
-    {
-        "id": 104,
-        "sectionId": 4,
-        "sectionTitle": "ПРИМЕРКА",
-        "category": "ФУТБОЛКИ",
-        "title": "Футболка Trendum Minimalist",
-        "img": "assets/man.jpg",
-        "price": 350,
-        "location": "Рынок Дордой, контейнер 205",
-        "model": "chatgpt-2.5",
-        "prompt": "Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.",
-        "htmlCode": ""
-    },
-    {
         "id": 1789218220360,
         "sectionId": 1,
         "sectionTitle": "ФОТО",
@@ -583,65 +531,6 @@ function normalizeTemplates(tplList, cardsList) {
             htmlCode: t.htmlCode || ''
         };
     });
-
-    if (!normalized.some(t => t.sectionId === 4 || (t.sectionTitle && t.sectionTitle.includes('ПРИМЕР')))) {
-        normalized.push({
-            id: 101,
-            sectionId: 4,
-            sectionTitle: 'ПРИМЕРКА',
-            category: 'ТОЛСТОВКИ',
-            title: 'Толстовка TRENDUM Black Oversize',
-            img: 'assets/hero_avatar.jpg',
-            price: 450,
-            location: 'Рынок Дордой, ряд 5, контейнер 142',
-            model: 'nano-banana-2',
-            resolution: '2K',
-            prompt: 'Virtual clothing try-on: Dress the person in this black oversize streetwear hoodie. Keep the person face, facial features, hair, identity, expression and background from the input photo completely intact. Realistic garment folds and shadows.',
-            htmlCode: ''
-        });
-        normalized.push({
-            id: 102,
-            sectionId: 4,
-            sectionTitle: 'ПРИМЕРКА',
-            category: 'ТОЛСТОВКИ',
-            title: 'Толстовка ALTYN White Classic',
-            img: 'assets/hero_portrait.jpg',
-            price: 450,
-            location: 'Рынок Дордой, проход 3, контейнер 88',
-            model: 'nano-banana-2',
-            resolution: '2K',
-            prompt: 'Virtual try-on: Dress the person in this stylish premium white cotton hoodie. Keep original face, hair, and pose with photorealistic garment drape and natural lighting.',
-            htmlCode: ''
-        });
-        normalized.push({
-            id: 103,
-            sectionId: 4,
-            sectionTitle: 'ПРИМЕРКА',
-            category: 'ХУДИ',
-            title: 'Худи Streetwear Cyberpunk',
-            img: 'assets/hero_robot.jpg',
-            price: 490,
-            location: 'ТРЦ Bishkek Park, 2 этаж, бутик Trendum',
-            model: 'nano-banana-2',
-            resolution: '2K',
-            prompt: 'Virtual try-on: Fit the futuristic graphic hoodie on the person in the photo. Photorealistic texture, preserve facial likeness.',
-            htmlCode: ''
-        });
-        normalized.push({
-            id: 104,
-            sectionId: 4,
-            sectionTitle: 'ПРИМЕРКА',
-            category: 'ФУТБОЛКИ',
-            title: 'Футболка Trendum Minimalist',
-            img: 'assets/man.jpg',
-            price: 350,
-            location: 'Рынок Дордой, контейнер 205',
-            model: 'nano-banana-2',
-            resolution: '2K',
-            prompt: 'Virtual try-on: Dress the person in the minimalist black cotton graphic t-shirt. Preserve exact facial likeness and natural body fit.',
-            htmlCode: ''
-        });
-    }
 
     return normalized;
 }
