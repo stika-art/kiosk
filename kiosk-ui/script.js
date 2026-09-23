@@ -1405,50 +1405,64 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (camRecBadge) camRecBadge.style.display = 'none';
 
-        const isVideoMode = isVideoTemplate({
-            model: selectedStyleModel,
-            category: (selectedTemplateId && masterTemplates.find(t => t.id === selectedTemplateId)?.category) || '',
-            img: selectedStylePhoto
-        }) || (selectedStyleModel && (selectedStyleModel.includes('omni') || selectedStyleModel.includes('gemini') || selectedStyleModel.includes('video')));
+        const isMotionControl = (selectedStyleModel && (selectedStyleModel.includes('motion') || selectedStyleModel === 'kling-motion')) ||
+                                (selectedStyle && selectedStyle.toLowerCase().includes('танец')) ||
+                                (selectedStyle && selectedStyle.toLowerCase().includes('прикол'));
+
+        const isVideoMode = !isMotionControl && (
+            (selectedStyleModel && (selectedStyleModel.includes('omni') || selectedStyleModel.includes('gemini') || selectedStyleModel === 'kling-video-record')) ||
+            (isVideoTemplate({
+                model: selectedStyleModel,
+                category: (selectedTemplateId && masterTemplates.find(t => t.id === selectedTemplateId)?.category) || '',
+                img: selectedStylePhoto
+            }) && selectedStyleModel !== 'kling-turbo' && selectedStyleModel !== 'kling-video' && !isMotionControl)
+        );
 
         if (isVideoMode) {
+            // Длительность берется строго из видео-референса шаблона
+            selectedVideoDuration = 5;
+            if (selectedStylePhoto) {
+                const probe = document.createElement('video');
+                probe.preload = 'metadata';
+                probe.src = selectedStylePhoto;
+                probe.onloadedmetadata = () => {
+                    if (probe.duration && !isNaN(probe.duration) && probe.duration > 0) {
+                        const exactDur = Math.round(probe.duration);
+                        selectedVideoDuration = Math.max(2, Math.min(15, exactDur));
+                        console.log(`[Video Reference] Длительность из референса: ${selectedVideoDuration} сек`);
+                        if (snapBtnText) snapBtnText.textContent = `НАЧАТЬ ЗАПИСЬ (${selectedVideoDuration} СЕК)`;
+                    }
+                };
+            }
+
             if (camModalTitle) camModalTitle.textContent = 'ЗАПИСЬ ВИДЕО';
             if (camSubtitle) camSubtitle.textContent = 'Помашите рукой, улыбнитесь или примите позу — запишем короткий ролик';
-            if (timerSelectLabel) timerSelectLabel.textContent = 'ДЛИТЕЛЬНОСТЬ РОЛИКА:';
-            if (timerOptionsContainer) {
-                timerOptionsContainer.innerHTML = `
-                    <button type="button" class="timer-btn" data-timer="3">3 СЕК</button>
-                    <button type="button" class="timer-btn active" data-timer="4">4 СЕК</button>
-                    <button type="button" class="timer-btn" data-timer="5">5 СЕК</button>
-                `;
-                selectedVideoDuration = 4;
-                timerOptionsContainer.querySelectorAll('.timer-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        timerOptionsContainer.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
-                        btn.classList.add('active');
-                        selectedVideoDuration = parseInt(btn.getAttribute('data-timer'), 10) || 4;
-                        if (snapBtnText) snapBtnText.textContent = `НАЧАТЬ ЗАПИСЬ (${selectedVideoDuration} СЕК)`;
-                    });
-                });
-            }
+            
+            // Кнопки длительности видео полностью убраны: длительность совпадает с референсом
+            if (timerSelectWrap) timerSelectWrap.style.display = 'none';
+            if (timerOptionsContainer) timerOptionsContainer.innerHTML = '';
+
             if (snapBtnIcon) {
                 snapBtnIcon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7" fill="#ef4444" stroke="none"/><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>`;
             }
-            if (snapBtnText) snapBtnText.textContent = `НАЧАТЬ ЗАПИСЬ (${selectedVideoDuration || 4} СЕК)`;
+            if (snapBtnText) snapBtnText.textContent = `НАЧАТЬ ЗАПИСЬ (${selectedVideoDuration || 5} СЕК)`;
             if (snapBtnEl) {
                 snapBtnEl.style.background = 'linear-gradient(135deg, #e11d48 0%, #b91c1c 100%)';
                 snapBtnEl.style.color = '#ffffff';
                 snapBtnEl.style.boxShadow = '0 0 25px rgba(225, 29, 72, 0.4)';
             }
         } else {
-            if (camModalTitle) camModalTitle.textContent = 'СЪЁМКА ФОТО';
+            if (camModalTitle) camModalTitle.textContent = isMotionControl ? 'СЪЁМКА ДЛЯ ТАНЦА' : 'СЪЁМКА ФОТО';
             if (camSubtitle) {
-                if (isTryOnMode) {
+                if (isMotionControl) {
+                    camSubtitle.textContent = 'Встаньте по центру и смотрите в камеру — нейросеть перенесет движения из видео на ваше фото';
+                } else if (isTryOnMode) {
                     camSubtitle.textContent = 'Встаньте по центру в полный рост или по пояс, чтобы примерить вещь';
                 } else {
                     camSubtitle.textContent = 'Встаньте по центру и смотрите в камеру';
                 }
             }
+            if (timerSelectWrap) timerSelectWrap.style.display = '';
             if (timerSelectLabel) timerSelectLabel.textContent = 'ТАЙМЕР СЪЁМКИ:';
             if (timerOptionsContainer) {
                 timerOptionsContainer.innerHTML = `
@@ -1469,7 +1483,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (snapBtnIcon) {
                 snapBtnIcon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>`;
             }
-            if (snapBtnText) snapBtnText.textContent = 'СДЕЛАТЬ ФОТО';
+            if (snapBtnText) snapBtnText.textContent = isMotionControl ? 'СДЕЛАТЬ ФОТО ДЛЯ ТАНЦА' : 'СДЕЛАТЬ ФОТО';
             if (snapBtnEl) {
                 snapBtnEl.style.background = '';
                 snapBtnEl.style.color = '';
