@@ -1508,14 +1508,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const paySubtext = document.querySelector('.pay-subtext');
         if (paySubtext) {
-            const isVideoMode = isVid || (selectedStyleModel && (selectedStyleModel.includes('omni') || selectedStyleModel.includes('gemini') || selectedStyleModel.includes('kling')));
-            if (isVideoMode) {
-                paySubtext.innerHTML = `Создание персонального видеоролика`;
-            } else if (isTryOnMode) {
-                paySubtext.innerHTML = `Виртуальная примерка в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">1K</span>`;
-            } else {
-                paySubtext.innerHTML = `Финальное фото в качестве <span id="pay-res-indicator" style="color: #d4a043; font-weight: 800;">1K</span>`;
-            }
+            paySubtext.style.display = 'none';
+            paySubtext.innerHTML = '';
         }
 
         // БРЕНДИРОВАННЫЙ ОФИЦИАЛЬНЫЙ FINIK ELQR (0мс):
@@ -2009,14 +2003,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateCamBadge(track, camFps = 30) {
         if (!camInfoBadge) return;
-        const w = webcamEl ? (webcamEl.videoWidth || (currentCamResolution === '720p' ? 1280 : 1920)) : 1920;
-        const h = webcamEl ? (webcamEl.videoHeight || (currentCamResolution === '720p' ? 720 : 1080)) : 1080;
-        const label = (track && track.label) ? track.label.replace(/\(.*?\)/g, '').trim() : 'Камера';
-        const isFHD = (w >= 1920 && h >= 1080) || (w >= 1080 && h >= 1920);
-        const resText = isFHD ? 'Full HD' : (w >= 1280 ? '720p HD' : `${w}×${h}`);
-        const fpsColor = camFps >= 24 ? '#4ade80' : (camFps >= 15 ? '#f59e0b' : '#ef4444');
-
-        camInfoBadge.innerHTML = `⚡ <b>${w}×${h}</b> ${resText} <span id="cam-fps-val" style="color:${fpsColor};margin-left:4px;font-weight:800;">• ${camFps} FPS</span> <span style="color:#94a3b8;font-size:11px;margin-left:4px;">(Экран: ${currentUiFps})</span> • ${label}`;
+        camInfoBadge.style.display = 'none';
     }
 
     function startFpsCounter() {
@@ -2048,18 +2035,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const track = mediaStream ? mediaStream.getVideoTracks()[0] : null;
                 updateCamBadge(track, fps);
 
-                // Детектор узкого горла (когда камера выдает <= 7 FPS)
-                if (fps <= 7) {
-                    lowFpsStreak++;
-                    if (lowFpsStreak >= 2 && camFpsWarning) {
-                        if (warnFpsVal) warnFpsVal.textContent = fps;
-                        camFpsWarning.style.display = 'block';
-                    }
-                } else {
-                    if (fps >= 15 && camFpsWarning) {
-                        camFpsWarning.style.display = 'none';
-                    }
-                    lowFpsStreak = 0;
+                if (camFpsWarning) {
+                    camFpsWarning.style.display = 'none';
                 }
 
                 fpsFrameCount = 0;
