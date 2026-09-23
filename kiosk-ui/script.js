@@ -490,7 +490,7 @@ function normalizeTemplates(tplList, cardsList) {
             sid = 4;
             stitle = 'ПРИМЕРКА';
         } else if (!sid) {
-            if (catUp === 'ВИДЕО' || modelUp.includes('seedance') || modelUp.includes('omni') || modelUp.includes('kling') || modelUp.includes('video')) {
+            if (catUp === 'ВИДЕО' || modelUp.includes('kling') || modelUp.includes('video')) {
                 sid = 2;
                 stitle = 'ВИДЕО';
                 if (catUp === 'ВИДЕО') cat = 'НЕОН';
@@ -513,8 +513,8 @@ function normalizeTemplates(tplList, cardsList) {
         if (sid === 4 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || Boolean(t.location)) {
             modelNorm = 'nano-banana-2';
         } else if (sid === 2 || stUp.includes('ВИДЕО') || catUp.includes('ВИДЕО')) {
-            modelNorm = modelNorm || 'seedance-fast';
-        } else if (modelNorm !== 'seedance-fast' && modelNorm !== 'kling-turbo' && modelNorm !== 'seedance-2.5' && modelNorm !== 'omni-flash' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2') {
+            modelNorm = modelNorm || 'kling-turbo';
+        } else if (modelNorm !== 'kling-turbo' && modelNorm !== 'kling-video' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2') {
             modelNorm = 'chatgpt-2.5';
         }
 
@@ -575,8 +575,6 @@ function isVideoTemplate(tpl) {
     const m = (tpl.model || '').toLowerCase();
     const c = (tpl.category || '').toUpperCase();
     return c === 'ВИДЕО' || 
-           m.includes('seedance') || 
-           m.includes('omni') || 
            m.includes('kling') || 
            m.includes('video');
 }
@@ -2264,13 +2262,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        const isVideoSelection = selectedStyleModel === 'seedance-fast' ||
-                                selectedStyleModel === 'kling-turbo' ||
-                                selectedStyleModel === 'seedance-2.5' || 
-                                selectedStyleModel.includes('seedance') || 
+        const isVideoSelection = selectedStyleModel === 'kling-turbo' ||
+                                selectedStyleModel === 'kling-video' ||
                                 selectedStyleModel.includes('kling') || 
-                                selectedStyleModel.includes('video') || 
-                                selectedStyleModel === 'omni-flash';
+                                selectedStyleModel.includes('video');
 
         const genTitle = isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
         resetAiProgress(genTitle, selectedStyleModel, currentAiResolution);

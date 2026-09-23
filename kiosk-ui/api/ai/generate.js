@@ -2,11 +2,10 @@
 // TRENDUM KIOSK — UNIVERSAL AI GATEWAY (KIE.AI & CUSTOM AGGREGATORS)
 // Models supported:
 // 1. 'nano-banana-2'  -> google/nano-banana-edit (Фото с сохранением лица / Примерка одежды)
-// 2. 'chatgpt-2.5'    -> openai/gpt-4o-image (GPT Image 2.5 с фоллбэком на nano-banana-edit)
-// 3. 'seedance-2.5'   -> bytedance/seedance-2-5 (Кинематографичное видео из фото)
-// 4. 'omni-flash'     -> google/gemini-omni-flash-1-1 (Анимация лица и видео)
-// 5. 'kling-video'    -> kwaivgi/kling-v1-6
-// 6. 'elevenlabs'     -> голосовая озвучка бутика/контейнера при выдаче результата
+// 2. 'chatgpt-2.5'    -> gpt-image-2-image-to-image (Базовый GPT Image 2)
+// 3. 'kling-turbo'    -> kling/v2-5-turbo-image-to-video (Ультра-быстрая генерация видео из фото)
+// 4. 'kling-video'    -> kling-2.6/image-to-video (Высокодетализированное видео из фото)
+// 5. 'elevenlabs'     -> голосовая озвучка бутика/контейнера при выдаче результата
 // ============================================================
 
 const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
@@ -262,16 +261,10 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         // Обычный базовый GPT Image 2 (без Sunburst и без Flare)
         kieModel = 'gpt-image-2-image-to-image';
     } else if (model === 'kling-turbo' || model === 'kling-v2-5-turbo' || (typeof model === 'string' && model.includes('turbo'))) {
-        // Ультра-быстрая генерация видео Kling Turbo (высокая скорость для киоска)
+        // Ультра-быстрая генерация видео Kling Turbo (высокая скорость для киоска, ~25-35 сек)
         kieModel = 'kling/v2-5-turbo-image-to-video';
-    } else if (model === 'seedance-fast' || model === 'bytedance/seedance-2-fast' || model === 'omni-flash' || model === 'google-omni-flash') {
-        // Быстрая анимация Seedance Fast (Bytedance)
-        kieModel = 'bytedance/seedance-2-fast';
-    } else if (model === 'seedance-2.5' || model === 'bytedance/seedance-2-5' || model === 'bytedance/seedance-2' || (typeof model === 'string' && model.includes('seedance'))) {
-        // Кинематографичный Seedance 2
-        kieModel = 'bytedance/seedance-2';
     } else if (model === 'kling-video' || model === 'kwaivgi/kling-v1-6' || (typeof model === 'string' && model.includes('kling'))) {
-        // Kling 2.6 Image-to-Video
+        // Kling 2.6 Image-to-Video (высокая детализация)
         kieModel = 'kling-2.6/image-to-video';
     } else if (model && model !== 'default') {
         kieModel = model;
@@ -280,8 +273,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         kieModel = 'gpt-image-2-image-to-image';
     }
 
-    const isVideoModel = kieModel.includes('seedance') || 
-                         kieModel.includes('kling') || 
+    const isVideoModel = kieModel.includes('kling') || 
                          kieModel.includes('video') || 
                          kieModel.includes('runway') || 
                          kieModel.includes('luma') || 
@@ -301,15 +293,14 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, templateI
         // Убираем 4K маркеры, замедляющие диффузию
         let cleanVideoPrompt = rawVideoPrompt.replace(/\b(4k|8k|ultra hd|4k resolution)\b/gi, '').trim();
 
-        // Универсальный вход под все ревизии Kie.ai (Seedance, Kling, Luma)
+        // Универсальный вход для моделей Kling Image-to-Video на Kie.ai
         inputPayload = {
             prompt: cleanVideoPrompt || 'Smooth subtle cinematic motion, natural breathing, soft hair movement, gentle dynamic lighting',
             image_url: publicPhotoUrl,
             image_urls: [publicPhotoUrl],
             first_frame_url: publicPhotoUrl,
-            // УСКОРЕНИЕ 1: Оптимальная длительность 4 секунды (генерируется в 2 раза быстрее, чем 6-10 сек, зацикливается)
-            duration: 4,
-            // УСКОРЕНИЕ 2: 720p вертикально (рендерится в 2.5 раза быстрее и идеально выглядит на экране киоска и смартфонах)
+            duration: '5',
+            sound: false,
             resolution: '720p',
             camera_fixed: true
         };
@@ -426,8 +417,7 @@ CRITICAL MANDATORY INSTRUCTIONS:
                 return null;
             }
 
-            const isVideoTask = targetModel.includes('seedance') || 
-                                targetModel.includes('kling') || 
+            const isVideoTask = targetModel.includes('kling') || 
                                 targetModel.includes('video') || 
                                 targetModel.includes('runway') || 
                                 targetModel.includes('luma') || 

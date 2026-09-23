@@ -1236,7 +1236,7 @@
             <div class="admin-card">
                 <div class="card-header">
                     <h2 class="card-title">🤖 Настройки агрегатора генерации</h2>
-                    <p class="card-subtitle">Подключение внешнего шлюза/агрегатора (Kie.ai, Nano Banana 2, Seedance 2.5, ChatGPT 2.5)</p>
+                    <p class="card-subtitle">Подключение внешнего шлюза/агрегатора (Kie.ai, ChatGPT 2.5, Nano Banana 2, Kling Turbo)</p>
                 </div>
 
                 <div style="max-width: 600px;">
@@ -1857,7 +1857,7 @@
                     sid = 4;
                     stitle = 'ПРИМЕРКА';
                 } else if (!sid) {
-                    if (catUp === 'ВИДЕО' || modelUp.includes('seedance') || modelUp.includes('omni') || modelUp.includes('kling') || modelUp.includes('video')) {
+                    if (catUp === 'ВИДЕО' || modelUp.includes('kling') || modelUp.includes('video')) {
                         sid = 2;
                         stitle = 'ВИДЕО';
                         if (catUp === 'ВИДЕО') cat = 'НЕОН';
@@ -2203,11 +2203,8 @@
             if (m === 'chatgpt-2.5-flare' || m === 'gpt-image-2-5-flare') return '<span class="model-badge" style="background: rgba(255,149,0,0.18); border-color: #ff9500; color: #ff9500; font-weight: 800;">🔥 GPT 2.5 Flare</span>';
             if (m === 'roast-standup') return '<span class="model-badge" style="background: rgba(255,69,58,0.18); border-color: #ff453a; color: #ff453a;">🔥 Прожарка + Голос</span>';
             if (m === 'nano-banana-2') return '<span class="model-badge">🍌 Nano Banana 2</span>';
-            if (m === 'seedance-fast' || m === 'bytedance/seedance-2-fast') return '<span class="model-badge" style="background: rgba(34,197,94,0.18); border-color: #22c55e; color: #22c55e; font-weight: 800;">⚡ Seedance Fast</span>';
             if (m === 'kling-turbo' || m.includes('turbo')) return '<span class="model-badge" style="background: rgba(59,130,246,0.18); border-color: #3b82f6; color: #60a5fa; font-weight: 800;">🚀 Kling Turbo</span>';
-            if (m === 'seedance-2.5' || m.includes('seedance')) return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">🎬 Seedance 2</span>';
-            if (m === 'kling-video' || m.includes('kling')) return '<span class="model-badge">🎥 Kling AI</span>';
-            if (m === 'omni-flash') return '<span class="model-badge" style="background: rgba(212,160,67,0.15); border-color: #D4A043; color: #D4A043;">⚡ Omni Flash</span>';
+            if (m === 'kling-video' || m.includes('kling')) return '<span class="model-badge" style="background: rgba(168,85,247,0.18); border-color: #a855f7; color: #c084fc; font-weight: 800;">🎥 Kling 2.6 HD</span>';
             return `<span class="model-badge">${m}</span>`;
         }
 
@@ -2395,10 +2392,8 @@
                 if (modelWrapper) modelWrapper.style.display = 'block';
                 if (modelSelect) {
                     modelSelect.innerHTML = `
-                        <option value="seedance-fast" selected>⚡ Seedance Fast (Bytedance — Быстрая анимация 20-30с)</option>
-                        <option value="kling-turbo">🚀 Kling Turbo (Ультра-скорость и плавность лица)</option>
-                        <option value="seedance-2.5">🎬 Seedance 2.0 (Кинематографичная глубина)</option>
-                        <option value="kling-video">🎥 Kling 2.6 HD (Высокая детализация)</option>
+                        <option value="kling-turbo" selected>🚀 Kling Turbo (Ультра-скорость и естественное лицо — По умолчанию)</option>
+                        <option value="kling-video">🎥 Kling 2.6 HD (Высокая детализация и кинематограф)</option>
                         <option value="custom">✏️ Другая модель из каталога Kie.ai...</option>
                     `;
                 }
