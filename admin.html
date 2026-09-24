@@ -989,7 +989,7 @@
                         </label>
                         <input type="text" id="tpl-location-input" class="admin-input" placeholder="напр: ТРЦ Bishkek Park, 2 этаж, бутик Trendum или Рынок Дордой, ряд 5, контейнер 142" style="width: 100%;">
                         <span style="display: block; font-size: 12px; color: var(--text-dim); margin-top: 6px;">
-                            🎙️ Голосовой ассистент киоска в конце примерки вслух назовёт гостю этот адрес и покажет карточку на экране!
+                            📍 Карточка с этим адресом появится на экране киоска и на странице скачивания!
                         </span>
                     </div>
 
@@ -1296,56 +1296,6 @@
                         </div>
                         <button type="button" class="btn-primary" style="padding: 9px 18px; font-size: 13px;" onclick="checkKieBalance()">🔄 Проверить баланс</button>
                     </div>
-                </div>
-            </div>
-
-            <!-- STANDUP ROAST & ELEVENLABS SETTINGS CARD -->
-            <div class="admin-card">
-                <div class="card-header">
-                    <h2 class="card-title">🎙️ Настройки Стендап-Прожарки & ElevenLabs</h2>
-                    <p class="card-subtitle">Живая дерзкая озвучка комика (со вздохами, смешками и паузами) + карикатуры GPT Image 2.5</p>
-                </div>
-
-                <div style="max-width: 620px;">
-                    <div style="margin-bottom: 14px;">
-                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
-                            🔑 Прямой ElevenLabs API Key (Необязательно):
-                        </label>
-                        <input type="password" id="elevenlabs-key-input" class="admin-input" style="width: 100%;" placeholder="sk_... (оставьте пустым для списания с Kie.ai)">
-                        <span class="cloud-tip" style="margin-top: 4px; display: block;">💡 <strong>Если оставить пустым</strong> — озвучка будет автоматически списываться с вашего баланса <strong>Kie.ai</strong> (модель <em>elevenlabs/text-to-speech-multilingual-v2</em>)!</span>
-                    </div>
-
-                    <div style="margin-bottom: 14px;">
-                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
-                            🗣️ Голос стендапера (Voice ID):
-                        </label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="text" id="elevenlabs-voice-input" class="admin-input" style="flex: 1;" placeholder="XNrB7jz2HCkpU5yK08kP или random">
-                            <select class="admin-select" style="max-width: 250px;" onchange="document.getElementById('elevenlabs-voice-input').value = this.value">
-                                <option value="XNrB7jz2HCkpU5yK08kP" selected>🔥 Фирменный (XNrB...)</option>
-                                <option value="ErXwobaYiN019PkySvjV">🎙️ Antoni (Дерзкий)</option>
-                                <option value="pNInz6obpgDQGcFmaJgB">🎙️ Adam (Саркастичный)</option>
-                                <option value="21m00Tcm4TlvDq8ikWAM">🎙️ Rachel (Девушка)</option>
-                                <option value="EXAVITQu4vr4xnSDxMaL">🎙️ Bella (Эмоциональная)</option>
-                                <option value="yoZ06aMxZJJ28mfd3POQ">🎙️ Sam (Ведущий)</option>
-                                <option value="random">🎲 Случайный каждый раз</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 16px;">
-                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;">
-                            🧠 OpenAI API Key (для GPT-4o-mini Vision):
-                        </label>
-                        <input type="password" id="openai-key-input" class="admin-input" style="width: 100%;" placeholder="sk-proj-... (для генерации шуток и промптов карикатуры)">
-                        <span class="cloud-tip" style="margin-top: 4px; display: block;">Если не указан — задействуется встроенный пул остроумных шуток про ТЦ и кредиты.</span>
-                    </div>
-
-                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                        <button class="btn-primary" onclick="saveRoastSettings()">Сохранить настройки прожарки</button>
-                        <button type="button" class="btn-upload" onclick="testElevenLabsSpeech()">🔊 Тест голоса комика</button>
-                    </div>
-                    <div id="roast-settings-status" class="status-msg" style="margin-top: 10px;"></div>
                 </div>
             </div>
 
@@ -2264,7 +2214,6 @@
             if (m === 'chatgpt-2' || m === 'chatgpt-2.5' || m === 'gpt-image-2') return '<span class="model-badge" style="background: rgba(212,160,67,0.18); border-color: #D4A043; color: #D4A043; font-weight: 800;">🎨 GPT Image 2</span>';
             if (m === 'chatgpt-2.5-sunburst' || m === 'gpt-image-2-5-sunburst') return '<span class="model-badge" style="background: rgba(212,160,67,0.18); border-color: #D4A043; color: #D4A043; font-weight: 800;">☀️ GPT 2.5 Sunburst</span>';
             if (m === 'chatgpt-2.5-flare' || m === 'gpt-image-2-5-flare') return '<span class="model-badge" style="background: rgba(255,149,0,0.18); border-color: #ff9500; color: #ff9500; font-weight: 800;">🔥 GPT 2.5 Flare</span>';
-            if (m === 'roast-standup') return '<span class="model-badge" style="background: rgba(255,69,58,0.18); border-color: #ff453a; color: #ff453a;">🔥 Прожарка + Голос</span>';
             if (m === 'nano-banana-2') return '<span class="model-badge">🍌 Nano Banana 2</span>';
             if (m === 'omni-flash' || m === 'gemini-omni-video' || m.includes('omni')) return '<span class="model-badge" style="background: rgba(66,133,244,0.18); border-color: #4285F4; color: #4285F4; font-weight: 800;">⚡ Gemini Omni Flash (V2V)</span>';
             if (m === 'kling-3.0/motion-control') return '<span class="model-badge" style="background: rgba(16,185,129,0.18); border-color: #10b981; color: #34d399; font-weight: 800;">🕺 Kling 3.0 Motion</span>';
@@ -2494,7 +2443,6 @@
                     modelSelect.innerHTML = `
                         <option value="kling-3.0/motion-control" selected>🕺 Kling 3.0 Motion Control (Танцы и приколы — перенос движений 3.0)</option>
                         <option value="kling-2.6/motion-control">🕺 Kling 2.6 Motion Control (Танцы и приколы — версия 2.6)</option>
-                        <option value="roast-standup">🔥 Стендап-Прожарка (Карикатура + Голос комика)</option>
                         <option value="chatgpt-2">🎨 GPT Image 2 (Фото-портреты и обложки)</option>
                         <option value="chatgpt-2.5-sunburst">☀️ GPT Image 2.5 Sunburst (Высокая детализация)</option>
                         <option value="kling-turbo">🚀 Kling Turbo (Image-to-Video — Ультра-скорость)</option>
@@ -4050,23 +3998,6 @@
             setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
         }
 
-        // STANDUP ROAST & ELEVENLABS SETTINGS LOGIC
-        function loadRoastSettings() {
-            try {
-                const elKey = localStorage.getItem('kiosk_elevenlabs_key') || '';
-                const elVoice = localStorage.getItem('kiosk_elevenlabs_voice_id') || 'XNrB7jz2HCkpU5yK08kP';
-                const openaiKey = localStorage.getItem('kiosk_openai_key') || '';
-
-                const elKeyInput = document.getElementById('elevenlabs-key-input');
-                const elVoiceInput = document.getElementById('elevenlabs-voice-input');
-                const openaiKeyInput = document.getElementById('openai-key-input');
-
-                if (elKeyInput) elKeyInput.value = elKey;
-                if (elVoiceInput) elVoiceInput.value = elVoice;
-                if (openaiKeyInput) openaiKeyInput.value = openaiKey;
-            } catch(e) {}
-        }
-
         // PAYMENT & FINIK ELQR SETTINGS LOGIC
         function loadPaymentSettings() {
             try {
@@ -4115,153 +4046,6 @@
             }
         }
 
-        function saveRoastSettings() {
-            const elKeyInput = document.getElementById('elevenlabs-key-input');
-            const elVoiceInput = document.getElementById('elevenlabs-voice-input');
-            const openaiKeyInput = document.getElementById('openai-key-input');
-            const status = document.getElementById('roast-settings-status');
-
-            const elKey = elKeyInput ? elKeyInput.value.trim() : '';
-            const elVoice = elVoiceInput ? elVoiceInput.value.trim() : 'XNrB7jz2HCkpU5yK08kP';
-            const openaiKey = openaiKeyInput ? openaiKeyInput.value.trim() : '';
-
-            localStorage.setItem('kiosk_elevenlabs_key', elKey);
-            localStorage.setItem('kiosk_elevenlabs_voice_id', elVoice);
-            localStorage.setItem('kiosk_openai_key', openaiKey);
-
-            syncAllToCloud();
-            if (status) {
-                status.textContent = '✅ Настройки Стендап-Прожарки и ElevenLabs успешно сохранены!';
-                status.className = 'status-msg success';
-                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
-            }
-        }
-
-        async function testElevenLabsSpeech() {
-            const elKey = (document.getElementById('elevenlabs-key-input')?.value || localStorage.getItem('kiosk_elevenlabs_key') || '').trim();
-            const kieKey = (document.getElementById('aggregator-key-input')?.value || localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd').trim();
-            let elVoice = (document.getElementById('elevenlabs-voice-input')?.value || localStorage.getItem('kiosk_elevenlabs_voice_id') || 'XNrB7jz2HCkpU5yK08kP').trim();
-            if (elVoice.toLowerCase() === 'random') elVoice = 'XNrB7jz2HCkpU5yK08kP';
-            const status = document.getElementById('roast-settings-status');
-
-            if (!elKey && !kieKey) {
-                alert('Пожалуйста, укажите ключ ElevenLabs или ключ Kie.ai для проверки озвучки');
-                return;
-            }
-
-            if (status) {
-                status.textContent = elKey ? '⏳ Генерация через прямой ElevenLabs API...' : '⏳ Генерация через баланс Kie.ai (ElevenLabs Multilingual)...';
-                status.className = 'status-msg';
-            }
-
-            const sampleText = "Так... [sigh] взгляд человека, который зашёл в молл за бесплатным вайфаем... [chuckle] Уверенность на миллион!";
-
-            try {
-                if (elKey) {
-                    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${elVoice}?output_format=mp3_44100_128`, {
-                        method: 'POST',
-                        headers: {
-                            'xi-api-key': elKey,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            text: sampleText,
-                            model_id: 'eleven_multilingual_v2',
-                            voice_settings: { stability: 0.35, similarity_boost: 0.85, style: 0.55, use_speaker_boost: true }
-                        })
-                    });
-
-                    if (res.ok) {
-                        const blob = await res.blob();
-                        const audio = new Audio(URL.createObjectURL(blob));
-                        audio.play();
-                        if (status) {
-                            status.textContent = '🔊 Воспроизведение голоса ElevenLabs!';
-                            status.className = 'status-msg success';
-                            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
-                        }
-                    } else {
-                        const err = await res.text();
-                        if (status) {
-                            status.textContent = '❌ Ошибка ElevenLabs: ' + err;
-                            status.className = 'status-msg error';
-                        }
-                    }
-                } else {
-                    // Генерация через Kie.ai createTask
-                    const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${kieKey}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            model: 'elevenlabs/text-to-speech-multilingual-v2',
-                            input: {
-                                text: sampleText,
-                                voice: elVoice
-                            }
-                        })
-                    });
-
-                    const createData = await createRes.json();
-                    if (createData.code !== 200) {
-                        if (status) {
-                            status.textContent = '❌ Ответ Kie.ai: ' + (createData.msg || JSON.stringify(createData));
-                            status.className = 'status-msg error';
-                        }
-                        return;
-                    }
-
-                    const taskId = createData.data?.taskId || createData.taskId;
-                    if (status) status.textContent = '⏳ Задача создана на Kie.ai, ожидаем аудио...';
-
-                    let audioUrl = null;
-                    for (let i = 0; i < 15; i++) {
-                        await new Promise(r => setTimeout(r, 1500));
-                        const checkRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
-                            headers: { 'Authorization': `Bearer ${kieKey}` }
-                        });
-                        const checkData = await checkRes.json();
-                        const tInfo = checkData.data || checkData;
-                        const state = tInfo.state || tInfo.status;
-                        if (state === 'success' || state === 'SUCCESS' || state === 'completed') {
-                            if (tInfo.resultJson) {
-                                try {
-                                    const parsed = typeof tInfo.resultJson === 'string' ? JSON.parse(tInfo.resultJson) : tInfo.resultJson;
-                                    audioUrl = (parsed.resultUrls && parsed.resultUrls[0]) || parsed.url;
-                                } catch(e) {}
-                            }
-                            if (!audioUrl) audioUrl = tInfo.audio_url || tInfo.url;
-                            break;
-                        } else if (state === 'failed' || state === 'FAILED') {
-                            break;
-                        }
-                    }
-
-                    if (audioUrl) {
-                        const audio = new Audio(audioUrl);
-                        audio.play();
-                        if (status) {
-                            status.textContent = '🔊 Воспроизведение тестового голоса через Kie.ai!';
-                            status.className = 'status-msg success';
-                            setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
-                        }
-                    } else {
-                        if (status) {
-                            status.textContent = '⚠️ Не удалось получить аудио от Kie.ai. Проверьте баланс кредитов.';
-                            status.className = 'status-msg error';
-                        }
-                    }
-                }
-            } catch(e) {
-                if (status) {
-                    status.textContent = '❌ Ошибка запроса: ' + e.message;
-                    status.className = 'status-msg error';
-                }
-            }
-        }
-
         async function checkKieBalance() {
             const key = localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd';
             const balEl = document.getElementById('kie-balance-val');
@@ -4298,8 +4082,6 @@
                     templates: templates,
                     categories: categories,
                     attract_timeout: localStorage.getItem('kiosk_attract_timeout') || '5',
-                    elevenlabs_key: localStorage.getItem('kiosk_elevenlabs_key') || '',
-                    elevenlabs_voice_id: localStorage.getItem('kiosk_elevenlabs_voice_id') || 'ErXwobaYiN019PkySvjV',
                     openai_key: localStorage.getItem('kiosk_openai_key') || '',
                     finik_account_id: localStorage.getItem('kiosk_finik_account_id') || '',
                     finik_pos_id: localStorage.getItem('kiosk_finik_pos_id') || '',
@@ -4401,16 +4183,6 @@
                         try { localStorage.setItem('kiosk_attract_timeout', data.attract_timeout); } catch(e){}
                         const input = document.getElementById('attract-timeout-input');
                         if (input) input.value = data.attract_timeout;
-                    }
-                    if (data.elevenlabs_key) {
-                        try { localStorage.setItem('kiosk_elevenlabs_key', data.elevenlabs_key); } catch(e){}
-                        const input = document.getElementById('elevenlabs-key-input');
-                        if (input && !input.value) input.value = data.elevenlabs_key;
-                    }
-                    if (data.elevenlabs_voice_id) {
-                        try { localStorage.setItem('kiosk_elevenlabs_voice_id', data.elevenlabs_voice_id); } catch(e){}
-                        const input = document.getElementById('elevenlabs-voice-input');
-                        if (input && !input.value) input.value = data.elevenlabs_voice_id;
                     }
                     if (data.openai_key) {
                         try { localStorage.setItem('kiosk_openai_key', data.openai_key); } catch(e){}
@@ -4533,7 +4305,6 @@
         checkAuth();
         loadKioskSettings();
         loadAggregatorSettings();
-        loadRoastSettings();
         loadPaymentSettings();
         checkKieBalance();
         checkSupabaseStatus();

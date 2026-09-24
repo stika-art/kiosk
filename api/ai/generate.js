@@ -6,7 +6,6 @@
 // 3. 'omni-flash'     -> gemini-omni-video (Google Gemini Omni Flash — Video-to-Video)
 // 4. 'kling-turbo'    -> kling/v2-5-turbo-image-to-video (Ультра-быстрая генерация видео из фото)
 // 5. 'kling-video'    -> kling-2.6/image-to-video (Высокодетализированное видео из фото)
-// 6. 'elevenlabs'     -> голосовая озвучка бутика/контейнера при выдаче результата
 // ============================================================
 
 const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
@@ -153,116 +152,7 @@ async function persistResultToSupabase(mediaUrl, orderId, isVideo = false) {
     return mediaUrl;
 }
 
-// 3. Генерация озвучки через Kie.ai (ElevenLabs Multilingual V2)
-async function generateElevenLabsViaKie({ text, apiKey, voiceId, orderId }) {
-    if (!apiKey) return null;
-    const targetVoiceId = (voiceId && voiceId.length > 3) ? voiceId : 'XNrB7jz2HCkpU5yK08kP';
 
-    try {
-        console.log(`[Kie.ai ElevenLabs Try-On] Создание задачи озвучки (голос: ${targetVoiceId})...`);
-        const createRes = await fetch(DEFAULT_KIE_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: 'elevenlabs/text-to-speech-multilingual-v2',
-                input: {
-                    text: text,
-                    voice: targetVoiceId
-                }
-            })
-        });
-
-        if (!createRes.ok) return null;
-        const createData = await createRes.json();
-        const taskId = createData.data?.taskId || createData.taskId || createData.id;
-        if (!taskId) return null;
-
-        const startTime = Date.now();
-        while (Date.now() - startTime < 20000) {
-            await new Promise(r => setTimeout(r, 1500));
-            const recordRes = await fetch(`${KIE_RECORD_URL}?taskId=${taskId}`, {
-                headers: { 'Authorization': `Bearer ${apiKey}` }
-            });
-            if (recordRes.ok) {
-                const recordData = await recordRes.json();
-                const taskInfo = recordData.data || recordData;
-                const state = taskInfo.state || taskInfo.status;
-                if (state === 'success' || state === 'SUCCESS' || state === 'completed') {
-                    let audioUrl = null;
-                    if (taskInfo.resultJson) {
-                        try {
-                            const parsed = typeof taskInfo.resultJson === 'string' ? JSON.parse(taskInfo.resultJson) : taskInfo.resultJson;
-                            const urls = parsed.resultUrls || parsed.urls || [parsed.url || parsed.audio_url];
-                            audioUrl = urls && urls[0];
-                        } catch(e) {}
-                    }
-                    if (!audioUrl) audioUrl = taskInfo.audio_url || taskInfo.url;
-                    if (audioUrl) {
-                        try {
-                            const aResp = await fetch(audioUrl);
-                            if (aResp.ok) {
-                                const arrBuf = await aResp.arrayBuffer();
-                                const cdnUrl = await uploadAudioToCDN(Buffer.from(arrBuf), orderId);
-                                if (cdnUrl) return cdnUrl;
-                            }
-                        } catch(e) {}
-                        return audioUrl;
-                    }
-                } else if (state === 'failed' || state === 'FAILED') {
-                    break;
-                }
-            }
-        }
-    } catch (e) {
-        console.warn('[Kie.ai ElevenLabs Try-On Exception]', e.message);
-    }
-    return null;
-}
-
-// 4. Универсальная озвучка: прямой ElevenLabs или через Kie.ai
-async function generateElevenLabsAudio({ text, elevenlabsKey, apiKey, voiceId, orderId }) {
-    const targetVoiceId = (voiceId && voiceId.length > 3) ? voiceId : 'XNrB7jz2HCkpU5yK08kP';
-
-    if (elevenlabsKey) {
-        try {
-            const url = `https://api.elevenlabs.io/v1/text-to-speech/${targetVoiceId}?output_format=mp3_44100_128`;
-            const resp = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'xi-api-key': elevenlabsKey,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    text: text,
-                    model_id: 'eleven_multilingual_v2',
-                    voice_settings: {
-                        stability: 0.5,
-                        similarity_boost: 0.85,
-                        style: 0.35,
-                        use_speaker_boost: true
-                    }
-                })
-            });
-
-            if (resp.ok) {
-                const arrayBuffer = await resp.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
-                const audioUrl = await uploadAudioToCDN(buffer, orderId);
-                if (audioUrl) return audioUrl;
-            }
-        } catch(e) {
-            console.warn('[ElevenLabs Direct Exception]', e.message);
-        }
-    }
-
-    if (apiKey) {
-        return await generateElevenLabsViaKie({ text, apiKey, voiceId: targetVoiceId, orderId });
-    }
-    return null;
-}
 
 // Функция очистки промптов от товарных знаков, блокируемых фильтрами OpenAI (Forbes, Roblox, Pixar и др.)
 function sanitizeForOpenAI(p) {
@@ -723,7 +613,7 @@ module.exports = async (req, res) => {
         triggerBackgroundCleanup();
 
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-        const { photoData, videoUrl, guestVideoUrl, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey, elevenlabsKey, elevenlabsVoiceId } = body;
+        const { photoData, videoUrl, guestVideoUrl, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey } = body;
 
         // 0. Защита: строгая проверка оплаты заказа перед генерацией
         const paymentCheck = await verifyPaidOrder(orderId);
@@ -768,14 +658,8 @@ module.exports = async (req, res) => {
             });
         }
 
-        // 2. Формируем текст голосовой озвучки (в каком бутике продается)
-        let speechText = '';
-        if (location) {
-            speechText = `Вам очень идёт ${title || 'эта одежда'}! Её можно приобрести: ${location}. Стоимость — ${price || 450} сом. Покажите это фото продавцу!`;
-        }
-
-        // 3. Запуск генерации через ChatGPT (Kie.ai) и озвучки ElevenLabs
-        const imagePromise = effectiveKey ? generateViaKie({
+        // 2. Запуск генерации через выбранную модель (Kie.ai)
+        const generationOutcome = effectiveKey ? await generateViaKie({
             apiKey: effectiveKey,
             model: model || 'chatgpt-2.5',
             prompt,
@@ -785,17 +669,7 @@ module.exports = async (req, res) => {
             isTryOn: Boolean(isTryOn),
             resolution: targetResolution,
             orderId
-        }) : Promise.resolve(null);
-
-        const audioPromise = (speechText && (effectiveKey || elevenlabsKey)) ? generateElevenLabsAudio({
-            text: speechText,
-            elevenlabsKey,
-            apiKey: effectiveKey,
-            voiceId: elevenlabsVoiceId || 'XNrB7jz2HCkpU5yK08kP',
-            orderId: `tryon_voice_${orderId || Date.now()}`
-        }).catch(e => null) : Promise.resolve(null);
-
-        const [generationOutcome, audioUrl] = await Promise.all([imagePromise, audioPromise]);
+        }) : null;
 
         const effectiveModelName = generationOutcome?.model || model || (isTryOn ? 'nano-banana-2' : 'chatgpt-2.5');
 
@@ -821,8 +695,8 @@ module.exports = async (req, res) => {
                 resolution: generationOutcome.resolution || targetResolution,
                 model: effectiveModelName,
                 isVideo: Boolean(generationOutcome && generationOutcome.isVideo),
-                audioUrl: audioUrl || null,
-                speechText: speechText || '',
+                audioUrl: null,
+                speechText: '',
                 message: `Генерация через ${effectiveModelName} выполняется...`
             });
         }
@@ -856,8 +730,8 @@ module.exports = async (req, res) => {
             location: location || '',
             isTryOn: Boolean(isTryOn),
             resultUrl: generatedImageUrl,
-            audioUrl: audioUrl || null,
-            speechText: speechText || '',
+            audioUrl: null,
+            speechText: '',
             mode: effectiveKey ? 'live' : 'preview',
             message: `Успешно сгенерировано через ${effectiveModelName}`
         });

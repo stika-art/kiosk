@@ -2,7 +2,6 @@
 // TRENDUM KIOSK — ROAST & STANDUP COMIC ENGINE
 // 1. GPT Vision: остроумный стендап-анализ фото + генерация промпта
 // 2. GPT Image 2.5: генерация гротескной карикатуры (Kie.ai chatgpt-2.5)
-// 3. ElevenLabs: живая эмоциональная озвучка со вздохами и смешками
 // ============================================================
 
 const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
@@ -11,9 +10,6 @@ const SUPABASE_BUCKET = 'kiosk-media';
 
 const DEFAULT_KIE_URL = 'https://api.kie.ai/api/v1/jobs/createTask';
 const KIE_RECORD_URL = 'https://api.kie.ai/api/v1/jobs/recordInfo';
-
-// Дефолтный Voice ID в ElevenLabs для фирменного голоса стендапера
-const DEFAULT_ELEVEN_VOICE_ID = 'XNrB7jz2HCkpU5yK08kP';
 
 // 1. Загрузка фото гостя в CDN Supabase Storage
 async function uploadGuestPhotoToCDN(photoBase64OrUrl, orderId) {
@@ -45,29 +41,7 @@ async function uploadGuestPhotoToCDN(photoBase64OrUrl, orderId) {
     return photoBase64OrUrl;
 }
 
-// 2. Сохранение сгенерированного ElevenLabs аудио в CDN
-async function uploadAudioToCDN(audioBuffer, orderId) {
-    try {
-        const filename = `roasts/audio_${orderId || Date.now()}_${Math.random().toString(36).substring(7)}.mp3`;
-        const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Content-Type': 'audio/mpeg',
-                'x-upsert': 'true'
-            },
-            body: audioBuffer
-        });
-        if (res.ok) {
-            return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${filename}`;
-        }
-    } catch (e) {
-        console.warn('[Roast Audio Upload Error]', e.message);
-    }
-    return null;
-}
-
-// 3. Fallback пул остроумных шуток с локальным колоритом (если OpenAI ключ не задан)
+// 2. Fallback пул остроумных шуток с локальным колоритом (если OpenAI ключ не задан)
 function getFallbackRoast(publicPhotoUrl) {
     const fallbacks = [
         {
@@ -121,20 +95,13 @@ async function analyzePhotoWithGptVision({ photoUrl, openaiKey }) {
 - КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО шутить про: здоровье, инвалидность, дефекты тела, зубы, кожу, вес, рост, расу, национальность или религию.
 - Шути ТОЛЬКО про: позу, выражение лица («взгляд потерявшегося в молле», пафосный прищур перед камерой), одежду (оверсайз, бренды, капюшон в тепле), шопинг в ТЦ, кредиты/рассрочки (MBank, Kaspi, Optima), фудкорт, бесцельные прогулки.
 
-ВАЖНО ДЛЯ ОЗВУЧКИ ELEVENLABS:
-В тексте обязательно расставляй маркеры живых эмоций комика:
-- Паузы троеточиями: "..."
-- Вздохи: "[sigh]"
-- Смешки и усмешки: "[chuckle]" или "[laugh]"
-Это заставит синтезатор речи звучать максимально живо и эмоционально!
-
 ПРАВИЛО РАЗНООБРАЗИЯ:
 Всегда создавай полностью уникальный текст и уникальный английский промпт для карикатуры! Не повторяй шаблонные фразы.
 
 ФОРМАТ ВЫВОДА — СТРОГО ВАЛИДНЫЙ JSON:
 {
   "roast_title": "Короткий панч-заголовок (до 4 слов)",
-  "roast_text": "Текст прожарки со вздохами и смешками (2-3 предложения, до 220 знаков)",
+  "roast_text": "Текст прожарки (2-3 предложения, до 220 знаков)",
   "charisma_percent": целое_число_от_5_до_45,
   "main_flaw": "Шуточный грех лука (до 5 слов)",
   "mall_status": "Шуточный статус в ТЦ (до 5 слов)",
@@ -330,160 +297,6 @@ async function generateCaricatureViaGptImage({ apiKey, publicPhotoUrl, caricatur
     return publicPhotoUrl;
 }
 
-// Разрешение Voice ID (поддержка случайного выбора и кастомных голосов)
-const KNOWN_STANDUP_VOICES = [
-    'XNrB7jz2HCkpU5yK08kP', // Фирменный стендап-голос
-    'ErXwobaYiN019PkySvjV', // Antoni (дерзкий парень-стендапер)
-    'pNInz6obpgDQGcFmaJgB', // Adam (саркастичный комик)
-    '21m00Tcm4TlvDq8ikWAM', // Rachel (ироничная девушка)
-    'EXAVITQu4vr4xnSDxMaL'  // Bella (эмоциональная девушка)
-];
-
-function resolveVoiceId(voiceId) {
-    if (!voiceId || voiceId.toLowerCase() === 'random' || voiceId.toLowerCase() === 'случайный') {
-        const picked = KNOWN_STANDUP_VOICES[Math.floor(Math.random() * KNOWN_STANDUP_VOICES.length)];
-        console.log(`[Roast Voice] Случайно выбран голос: ${picked}`);
-        return picked;
-    }
-    return voiceId;
-}
-
-// 6. Генерация эмоциональной озвучки через Kie.ai (ElevenLabs Multilingual V2)
-async function generateElevenLabsViaKie({ text, apiKey, voiceId, orderId }) {
-    if (!apiKey) return null;
-    const targetVoiceId = resolveVoiceId(voiceId);
-
-    try {
-        console.log(`[Kie.ai ElevenLabs] Создание задачи озвучки (голос: ${targetVoiceId})...`);
-
-        const createRes = await fetch(DEFAULT_KIE_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: 'elevenlabs/text-to-speech-multilingual-v2',
-                input: {
-                    text: text,
-                    voice: targetVoiceId
-                }
-            })
-        });
-
-        if (!createRes.ok) {
-            console.warn('[Kie.ai ElevenLabs Create Error]', await createRes.text());
-            return null;
-        }
-
-        const createData = await createRes.json();
-        const taskId = createData.data?.taskId || createData.taskId || createData.id;
-        if (!taskId) {
-            console.warn('[Kie.ai ElevenLabs] taskId не получен:', createData);
-            return null;
-        }
-
-        console.log(`[Kie.ai ElevenLabs] Задача запущена, taskId: ${taskId}`);
-
-        // Опрос статуса до 25 секунд (генерация аудио обычно 2-4 секунды)
-        const startTime = Date.now();
-        while (Date.now() - startTime < 25000) {
-            await new Promise(r => setTimeout(r, 1500));
-            const recordRes = await fetch(`${KIE_RECORD_URL}?taskId=${taskId}`, {
-                headers: { 'Authorization': `Bearer ${apiKey}` }
-            });
-
-            if (recordRes.ok) {
-                const recordData = await recordRes.json();
-                const taskInfo = recordData.data || recordData;
-                const state = taskInfo.state || taskInfo.status;
-
-                if (state === 'success' || state === 'SUCCESS' || state === 'completed') {
-                    let audioUrl = null;
-                    if (taskInfo.resultJson) {
-                        try {
-                            const parsed = typeof taskInfo.resultJson === 'string' ? JSON.parse(taskInfo.resultJson) : taskInfo.resultJson;
-                            const urls = parsed.resultUrls || parsed.urls || [parsed.url || parsed.audio_url];
-                            audioUrl = urls && urls[0];
-                        } catch(e) {}
-                    }
-                    if (!audioUrl) audioUrl = taskInfo.audio_url || taskInfo.url;
-
-                    if (audioUrl) {
-                        console.log('[Kie.ai ElevenLabs] Аудио успешно сгенерировано:', audioUrl);
-                        try {
-                            const aResp = await fetch(audioUrl);
-                            if (aResp.ok) {
-                                const arrBuf = await aResp.arrayBuffer();
-                                const cdnUrl = await uploadAudioToCDN(Buffer.from(arrBuf), orderId);
-                                if (cdnUrl) return cdnUrl;
-                            }
-                        } catch(e) {}
-                        return audioUrl;
-                    }
-                } else if (state === 'failed' || state === 'FAILED') {
-                    console.warn('[Kie.ai ElevenLabs] Ошибка задачи:', taskInfo);
-                    break;
-                }
-            }
-        }
-    } catch (e) {
-        console.warn('[Kie.ai ElevenLabs Exception]', e.message);
-    }
-
-    return null;
-}
-
-// 7. Универсальная озвучка: прямой ElevenLabs или через баланс Kie.ai
-async function generateElevenLabsAudio({ text, elevenlabsKey, apiKey, voiceId, orderId }) {
-    const targetVoiceId = resolveVoiceId(voiceId);
-
-    // 1. Если задан прямой ключ ElevenLabs — пробуем прямой вызов API
-    if (elevenlabsKey) {
-        try {
-            console.log(`[ElevenLabs Direct] Генерация озвучки для голоса ${targetVoiceId}...`);
-            const url = `https://api.elevenlabs.io/v1/text-to-speech/${targetVoiceId}?output_format=mp3_44100_128`;
-
-            const resp = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'xi-api-key': elevenlabsKey,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    text: text,
-                    model_id: 'eleven_multilingual_v2',
-                    voice_settings: {
-                        stability: 0.35,        // Низкая стабильность = максимальная экспрессия и эмоции
-                        similarity_boost: 0.85, // Четкость тембра
-                        style: 0.55,            // Стилизация под естественную разговорную речь
-                        use_speaker_boost: true
-                    }
-                })
-            });
-
-            if (resp.ok) {
-                const arrayBuffer = await resp.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
-                const audioUrl = await uploadAudioToCDN(buffer, orderId);
-                console.log('[ElevenLabs Direct] Аудио успешно сгенерировано и сохранено:', audioUrl);
-                return audioUrl;
-            } else {
-                console.warn('[ElevenLabs Direct Error]', resp.status, await resp.text());
-            }
-        } catch (e) {
-            console.warn('[ElevenLabs Direct Exception]', e.message);
-        }
-    }
-
-    // 2. Если прямого ключа нет (или он выдал ошибку) — генерируем через единый баланс Kie.ai!
-    if (apiKey) {
-        return await generateElevenLabsViaKie({ text, apiKey, voiceId: targetVoiceId, orderId });
-    }
-
-    return null;
-}
-
 // Защита: проверка статуса оплаты заказа в Supabase Storage перед вызовом платных нейросетей
 async function verifyPaidOrder(orderId) {
     if (!orderId) {
@@ -521,7 +334,7 @@ module.exports = async (req, res) => {
 
     try {
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-        const { photoData, orderId, aggregatorKey, elevenlabsKey, elevenlabsVoiceId, openaiKey } = body;
+        const { photoData, orderId, aggregatorKey, openaiKey } = body;
 
         // 0. Защита: строгая проверка оплаты заказа перед генерацией
         const paymentCheck = await verifyPaidOrder(orderId);
@@ -536,7 +349,6 @@ module.exports = async (req, res) => {
 
         const effectiveOrderId = orderId;
         const effectiveAggregatorKey = aggregatorKey || process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || 'fde11cd9f361b989eb19b8ef8530bfbd';
-        const effectiveElevenKey = elevenlabsKey || process.env.ELEVENLABS_API_KEY || '';
         const effectiveOpenaiKey = openaiKey || process.env.OPENAI_API_KEY || '';
 
         console.log(`[Roast Hub] Запуск подтвержденной прожарки для заказа ${effectiveOrderId}...`);
@@ -551,21 +363,12 @@ module.exports = async (req, res) => {
             apiKey: effectiveAggregatorKey
         });
 
-        // 3. Параллельный запуск генерации карикатуры (GPT Image 2.5) и озвучки (ElevenLabs)
-        const [caricatureUrl, audioUrl] = await Promise.all([
-            generateCaricatureViaGptImage({
-                apiKey: effectiveAggregatorKey,
-                publicPhotoUrl,
-                caricaturePrompt: roastData.caricature_prompt
-            }),
-            generateElevenLabsAudio({
-                text: roastData.roast_text,
-                elevenlabsKey: effectiveElevenKey,
-                apiKey: effectiveAggregatorKey,
-                voiceId: elevenlabsVoiceId,
-                orderId: effectiveOrderId
-            })
-        ]);
+        // 3. Генерация гротескной карикатуры (GPT Image 2.5)
+        const caricatureUrl = await generateCaricatureViaGptImage({
+            apiKey: effectiveAggregatorKey,
+            publicPhotoUrl,
+            caricaturePrompt: roastData.caricature_prompt
+        });
 
         return res.status(200).json({
             success: true,
@@ -578,8 +381,8 @@ module.exports = async (req, res) => {
             caricaturePrompt: roastData.caricature_prompt,
             imageUrl: caricatureUrl || publicPhotoUrl,
             originalPhotoUrl: publicPhotoUrl,
-            audioUrl: audioUrl,
-            hasAudio: Boolean(audioUrl)
+            audioUrl: null,
+            hasAudio: false
         });
     } catch (err) {
         console.error('[Roast Server Error]', err);

@@ -554,7 +554,7 @@ if (!masterTemplates.some(t => (t.model || '').toLowerCase() === 'roast-standup'
         price: 190,
         model: 'roast-standup',
         resolution: '2K',
-        prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice'
+        prompt: 'Standup roast caricature with dynamic vision analysis'
     });
 } else {
     const roastTpl = masterTemplates.find(t => (t.model || '').toLowerCase() === 'roast-standup');
@@ -704,7 +704,7 @@ function openTemplateGallery(cardIdOrMode) {
             img: 'assets/hero_portrait.jpg',
             price: 190,
             model: 'roast-standup',
-            prompt: 'Standup roast caricature with dynamic vision analysis and ElevenLabs voice'
+            prompt: 'Standup roast caricature with dynamic vision analysis'
         });
     } else {
         const rTpl = masterTemplates.find(t => (t.model || '').toLowerCase() === 'roast-standup');
@@ -903,15 +903,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const roastCaricatureImg = document.getElementById('roast-caricature-img');
     const roastPunchTitle = document.getElementById('roast-punch-title');
     const roastSpeechBody = document.getElementById('roast-speech-body');
-    const roastAudioEl = document.getElementById('roast-audio-el');
-    const roastAudioTrigger = document.getElementById('roast-audio-trigger');
-    const roastAudioIcon = document.getElementById('roast-audio-icon');
     const roastCharismaVal = document.getElementById('roast-charisma-val');
     const roastCharismaBar = document.getElementById('roast-charisma-bar');
     const roastFlawVal = document.getElementById('roast-flaw-val');
     const roastMallVal = document.getElementById('roast-mall-val');
     const roastQrImg = document.getElementById('roast-qr-img');
-    const roastReplayBtn = document.getElementById('roast-replay-btn');
     const roastFinishBtn = document.getElementById('roast-finish-btn');
 
     // Camera & Confirm Elements
@@ -1066,17 +1062,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Try-On Location Info Card Elements & Voice Audio
+    // Try-On Location Info Card Elements
     const tryonLocationInfoCard = document.getElementById('tryon-location-info-card');
     const tryonLocPriceVal = document.getElementById('tryon-loc-price-val');
     const tryonLocTitleVal = document.getElementById('tryon-loc-title-val');
     const tryonLocPlaceVal = document.getElementById('tryon-loc-place-val');
-    const tryonVoiceReplayBtn = document.getElementById('tryon-voice-replay-btn');
-    const tryonVoiceAnimIcon = document.getElementById('tryon-voice-anim-icon');
-    const tryonVoiceBtnText = document.getElementById('tryon-voice-btn-text');
-    const tryonAudioElement = document.getElementById('tryon-audio-element');
-    let currentTryOnAudioUrl = null;
-    let currentTryOnVoiceText = '';
 
     let mediaStream = null;
     let capturedPhotoData = null;
@@ -1252,24 +1242,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultVideo.src = '';
             } catch(e) {}
         }
-        if (roastAudioEl) {
-            try {
-                roastAudioEl.pause();
-                roastAudioEl.src = '';
-            } catch(e) {}
-        }
-        if (tryonAudioElement) {
-            try {
-                tryonAudioElement.pause();
-                tryonAudioElement.currentTime = 0;
-                tryonAudioElement.src = '';
-            } catch(e) {}
-        }
-        if ('speechSynthesis' in window) {
-            try { window.speechSynthesis.cancel(); } catch(e) {}
-        }
-        if (tryonVoiceReplayBtn) tryonVoiceReplayBtn.classList.remove('speaking');
-        if (tryonVoiceBtnText) tryonVoiceBtnText.textContent = 'Послушать где купить';
         if (tryonLocationInfoCard) tryonLocationInfoCard.style.display = 'none';
         modal.style.display = 'none';
         resetState();
@@ -2487,8 +2459,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const aggregatorKey = localStorage.getItem('kiosk_aggregator_key') || '';
-                const elevenlabsKey = localStorage.getItem('kiosk_elevenlabs_key') || '';
-                const elevenlabsVoiceId = localStorage.getItem('kiosk_elevenlabs_voice_id') || 'XNrB7jz2HCkpU5yK08kP';
                 const openaiKey = localStorage.getItem('kiosk_openai_key') || '';
 
                 const resp = await fetch('/api/ai/roast', {
@@ -2498,8 +2468,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         photoData: capturedPhotoData,
                         orderId: currentOrderId,
                         aggregatorKey,
-                        elevenlabsKey,
-                        elevenlabsVoiceId,
                         openaiKey
                     })
                 });
@@ -2527,12 +2495,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (roastQrImg) {
                             const dlUrl = data.imageUrl || data.originalPhotoUrl || window.location.href;
                             renderInstantQR(roastQrImg, dlUrl, 220);
-                        }
-
-                        // Запуск озвучки ElevenLabs
-                        if (data.audioUrl && roastAudioEl) {
-                            roastAudioEl.src = data.audioUrl;
-                            roastAudioEl.play().catch(() => {});
                         }
 
                         showStep(stepRoastResult);
@@ -2597,8 +2559,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1300);
 
         let finalResultUrl = null;
-        let tryonAudioUrl = null;
-        let tryonSpeechText = null;
         let generationError = null;
 
         // Если гостем было записано живое видео — сначала загружаем его в Supabase Storage
@@ -2631,8 +2591,6 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const aggregatorUrl = localStorage.getItem('kiosk_aggregator_url') || '';
             const aggregatorKey = localStorage.getItem('kiosk_aggregator_key') || '';
-            const elevenlabsKey = localStorage.getItem('kiosk_elevenlabs_key') || '';
-            const elevenlabsVoiceId = localStorage.getItem('kiosk_elevenlabs_voice_id') || 'XNrB7jz2HCkpU5yK08kP';
 
             const resp = await fetch('/api/ai/generate', {
                 method: 'POST',
@@ -2651,17 +2609,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     isTryOn: isTryOnMode,
                     resolution: '1K',
                     aggregatorUrl,
-                    aggregatorKey,
-                    elevenlabsKey,
-                    elevenlabsVoiceId
+                    aggregatorKey
                 })
             });
 
             if (resp.ok) {
                 const data = await resp.json();
                 if (data.success) {
-                    if (data.audioUrl) tryonAudioUrl = data.audioUrl;
-                    if (data.speechText) tryonSpeechText = data.speechText;
 
                     if (data.pending && data.taskId) {
                         clearInterval(interval);
@@ -2822,85 +2776,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         showStep(stepResult);
-
-        // КОГДА ИИ НАДЕЛ ОДЕЖДУ И ВЫДАЛ РЕЗУЛЬТАТ — ГОЛОСОМ ГОВОРИМ В КАКОМ БУТИКЕ ПРОДАЕТСЯ!
-        if (isTryOnMode && selectedStyleLocation) {
-            const phrase = tryonSpeechText || `Вам очень идёт ${selectedStyle || 'эта одежда'}! Её можно приобрести: ${selectedStyleLocation}. Стоимость — ${selectedStylePrice || 450} сом. Покажите это фото продавцу!`;
-            setTimeout(() => {
-                playTryOnVoice(tryonAudioUrl, phrase);
-            }, 350);
-        }
-    }
-
-    // ГОЛОСОВОЕ ОЗВУЧИВАНИЕ МЕСТА ПРОДАЖИ (ELEVENLABS + ВСТРОЕННЫЙ WEB SPEECH API FALLBACK)
-    function playTryOnVoice(audioUrl, text) {
-        currentTryOnAudioUrl = audioUrl;
-        currentTryOnVoiceText = text;
-
-        if (tryonAudioElement) {
-            tryonAudioElement.pause();
-            tryonAudioElement.currentTime = 0;
-        }
-        if ('speechSynthesis' in window) {
-            try { window.speechSynthesis.cancel(); } catch(e) {}
-        }
-
-        if (audioUrl) {
-            tryonAudioElement.src = audioUrl;
-            if (tryonVoiceReplayBtn) tryonVoiceReplayBtn.classList.add('speaking');
-            if (tryonVoiceBtnText) tryonVoiceBtnText.textContent = 'Озвучивание адреса...';
-
-            const playPromise = tryonAudioElement.play();
-            if (playPromise) {
-                playPromise.catch(() => {
-                    // Если автоплей заблокирован политикой браузера — произносим через SpeechSynthesis
-                    speakWithBrowserTts(text);
-                });
-            }
-
-            tryonAudioElement.onended = () => {
-                if (tryonVoiceReplayBtn) tryonVoiceReplayBtn.classList.remove('speaking');
-                if (tryonVoiceBtnText) tryonVoiceBtnText.textContent = 'Послушать где купить';
-            };
-            tryonAudioElement.onerror = () => {
-                speakWithBrowserTts(text);
-            };
-        } else {
-            speakWithBrowserTts(text);
-        }
-    }
-
-    function speakWithBrowserTts(text) {
-        if (!('speechSynthesis' in window) || !text) return;
-        try { window.speechSynthesis.cancel(); } catch(e) {}
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'ru-RU';
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-
-        const voices = window.speechSynthesis.getVoices();
-        const ruVoice = voices.find(v => v.lang && (v.lang.includes('ru') || v.lang.includes('RU')));
-        if (ruVoice) utterance.voice = ruVoice;
-
-        if (tryonVoiceReplayBtn) tryonVoiceReplayBtn.classList.add('speaking');
-        if (tryonVoiceBtnText) tryonVoiceBtnText.textContent = 'Озвучивание адреса...';
-
-        utterance.onend = () => {
-            if (tryonVoiceReplayBtn) tryonVoiceReplayBtn.classList.remove('speaking');
-            if (tryonVoiceBtnText) tryonVoiceBtnText.textContent = 'Послушать где купить';
-        };
-        utterance.onerror = () => {
-            if (tryonVoiceReplayBtn) tryonVoiceReplayBtn.classList.remove('speaking');
-            if (tryonVoiceBtnText) tryonVoiceBtnText.textContent = 'Послушать где купить';
-        };
-        window.speechSynthesis.speak(utterance);
-    }
-
-    if (tryonVoiceReplayBtn) {
-        tryonVoiceReplayBtn.addEventListener('click', () => {
-            playTryOnVoice(currentTryOnAudioUrl, currentTryOnVoiceText);
-        });
     }
 
     // 5. FINISH & TEMPLATE SELECTION
@@ -2908,29 +2783,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (roastFinishBtn) {
         roastFinishBtn.addEventListener('click', closeKioskFlow);
-    }
-    if (roastReplayBtn && roastAudioEl) {
-        roastReplayBtn.addEventListener('click', () => {
-            roastAudioEl.currentTime = 0;
-            roastAudioEl.play().catch(() => {});
-        });
-    }
-    if (roastAudioTrigger && roastAudioEl) {
-        roastAudioTrigger.addEventListener('click', () => {
-            if (roastAudioEl.paused) {
-                roastAudioEl.play().catch(() => {});
-            } else {
-                roastAudioEl.pause();
-            }
-        });
-        roastAudioEl.addEventListener('play', () => {
-            if (roastAudioIcon) roastAudioIcon.textContent = '🔊';
-            document.querySelectorAll('.wave-col').forEach(w => w.style.animationPlayState = 'running');
-        });
-        roastAudioEl.addEventListener('pause', () => {
-            if (roastAudioIcon) roastAudioIcon.textContent = '🔈';
-            document.querySelectorAll('.wave-col').forEach(w => w.style.animationPlayState = 'paused');
-        });
     }
 
     // 3D Cover Flow Gallery Controls & Touch Swiping
