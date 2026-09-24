@@ -2660,16 +2660,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         let pollIdx = 0;
                         let pollAttempts = 0;
                         const effectiveApiKey = data.apiKey || aggregatorKey || '';
-                        // Увеличенный таймаут: до 360 сек (180 шагов по 2 сек) для надежного захвата результатов даже при пиковых очередях на Kie.ai
-                        const maxPollAttempts = isVideoTask ? 180 : 150;
                         const pollDelay = 2000;
                         setAiProgress(30, activePollStatuses[0]);
 
-                        while (pollAttempts < maxPollAttempts) {
+                        // Бесконечный цикл — выходим ТОЛЬКО при явном успехе или ошибке от Kie.ai
+                        // Никогда не прерываем по таймауту/счётчику — ждём сколько нужно
+                        while (true) {
                             await new Promise(r => setTimeout(r, pollDelay));
                             pollAttempts++;
 
-                            // Плавный и непрерывный рост шкалы прогресса без застревания на 94%
+                            // Плавный и непрерывный рост шкалы прогресса
                             const elapsedSec = pollAttempts * (pollDelay / 1000);
                             let pollTarget;
                             if (elapsedSec < 30) {
@@ -2678,15 +2678,19 @@ document.addEventListener('DOMContentLoaded', () => {
                                 pollTarget = Math.floor(60 + ((elapsedSec - 30) / 60) * 22); // 60% -> 82%
                             } else if (elapsedSec < 180) {
                                 pollTarget = Math.floor(82 + ((elapsedSec - 90) / 90) * 11); // 82% -> 93%
+                            } else if (elapsedSec < 360) {
+                                pollTarget = Math.min(96, Math.floor(93 + ((elapsedSec - 180) / 180) * 3)); // 93% -> 96%
                             } else {
-                                pollTarget = Math.min(97, Math.floor(93 + ((elapsedSec - 180) / 120) * 4)); // 93% -> 97%
+                                pollTarget = 97; // держим 97% сколько угодно долго
                             }
 
-                            // Динамический статус в зависимости от времени генерации в очереди Kie.ai
+                            // Динамический статус в зависимости от времени ожидания
                             let currentStatusText = activePollStatuses[pollIdx % activePollStatuses.length];
-                            if (elapsedSec > 40 && elapsedSec <= 100) {
+                            if (elapsedSec > 40 && elapsedSec <= 120) {
                                 currentStatusText = `Обработка в очереди нейросетей, ожидаем...`;
-                            } else if (elapsedSec > 100) {
+                            } else if (elapsedSec > 120 && elapsedSec <= 240) {
+                                currentStatusText = `Нейросеть работает над вашим изображением...`;
+                            } else if (elapsedSec > 240) {
                                 currentStatusText = `Финальный рендеринг и улучшение качества...`;
                             }
 
@@ -2699,17 +2703,19 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (sRes.ok) {
                                     const sData = await sRes.json();
                                     if (sData.state === 'success' && sData.resultUrl) {
-                                        console.log(`[AI Polling] Успех! Результат получен:`, sData.resultUrl);
+                                        console.log(`[AI Polling] Успех за ${elapsedSec}с! Результат:`, sData.resultUrl);
                                         finalResultUrl = sData.resultUrl;
                                         break;
                                     } else if (sData.state === 'fail') {
-                                        console.warn('[AI Polling] Ошибка генерации:', sData.error);
+                                        console.warn('[AI Polling] Явная ошибка от Kie.ai:', sData.error);
                                         generationError = sData.error || 'Ошибка при генерации нейросетью';
                                         break;
                                     }
+                                    // Любой другой статус (pending/running/queue) — продолжаем ждать
                                 }
                             } catch (pollErr) {
-                                console.warn('[AI Polling] Ошибка запроса статуса:', pollErr);
+                                // Сетевая ошибка — не прерываем, продолжаем опрос
+                                console.warn(`[AI Polling] Сетевая ошибка (попытка ${pollAttempts}):`, pollErr.message);
                             }
                         }
                     } else if (data.resultUrl) {
