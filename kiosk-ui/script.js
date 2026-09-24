@@ -2561,9 +2561,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const interval = setInterval(() => {
             idx++;
             if (idx < statuses.length) {
-                setAiProgress(Math.min(28, 14 + idx * 5), statuses[idx]);
+                // Плавно растём от 14 до ~26%, не застреваем на одном значении
+                setAiProgress(14 + idx * 4, statuses[idx]);
+            } else {
+                // Статусы закончились — показываем последний, медленно ползём к 29%
+                const extraTarget = Math.min(29, 14 + idx * 2);
+                setAiProgress(extraTarget, statuses[statuses.length - 1]);
             }
-        }, 1300);
+        }, 1500);
 
         let finalResultUrl = null;
         let generationError = null;
