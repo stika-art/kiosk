@@ -63,7 +63,39 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // Прямой опрос Kie.ai recordInfo
+        // 1. Быстрая двухканальная проверка: сначала проверяем Supabase Storage
+        // Если Kie.ai уже завершил генерацию и прислал webhook callback на /api/ai/kie-callback,
+        // результат мгновенно считывается отсюда без ожидания и без риска ошибок API ключа.
+        try {
+            const supaTaskRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/tasks/${encodeURIComponent(taskId)}.json?_t=${Date.now()}`);
+            if (supaTaskRes.ok) {
+                const supaTaskData = await supaTaskRes.json();
+                if (supaTaskData && supaTaskData.state === 'success' && supaTaskData.mediaUrl) {
+                    console.log(`[Status Webhook Hit] Результат задачи ${taskId} мгновенно получен из Supabase Webhook кэша!`);
+                    let cleanUrl = supaTaskData.mediaUrl;
+                    const isVid = cleanUrl.includes('.mp4') || cleanUrl.includes('.webm');
+                    cleanUrl = await persistResultToSupabase(cleanUrl, req.query.orderId, isVid);
+                    return res.status(200).json({
+                        success: true,
+                        state: 'success',
+                        taskId,
+                        resultUrl: cleanUrl,
+                        fromCache: true
+                    });
+                } else if (supaTaskData && (supaTaskData.state === 'fail' || supaTaskData.state === 'failed' || supaTaskData.state === 'error')) {
+                    return res.status(200).json({
+                        success: false,
+                        state: 'fail',
+                        taskId,
+                        error: supaTaskData.error || 'Ошибка генерации'
+                    });
+                }
+            }
+        } catch (supaErr) {
+            // Игнорируем и переходим к прямому опросу Kie.ai
+        }
+
+        // 2. Прямой опрос Kie.ai recordInfo
         const recordRes = await fetch(`${KIE_RECORD_URL}?taskId=${encodeURIComponent(taskId)}`, {
             headers: { 'Authorization': `Bearer ${apiKey}` }
         });

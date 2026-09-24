@@ -692,6 +692,7 @@ module.exports = async (req, res) => {
                 state: 'generating',
                 taskId: generationOutcome.taskId,
                 orderId,
+                apiKey: effectiveKey,
                 resolution: generationOutcome.resolution || targetResolution,
                 model: effectiveModelName,
                 isVideo: Boolean(generationOutcome && generationOutcome.isVideo),

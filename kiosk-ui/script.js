@@ -2659,24 +2659,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         let pollIdx = 0;
                         let pollAttempts = 0;
-                        // Для видео опрос до 160 сек (80 шагов по 2 сек), для фото 45 шагов по 1.5 сек
-                        const maxPollAttempts = isVideoTask ? 80 : 45;
-                        const pollDelay = isVideoTask ? 2000 : 1500;
+                        const effectiveApiKey = data.apiKey || aggregatorKey || '';
+                        // Увеличенный таймаут: до 360 сек (180 шагов по 2 сек) для надежного захвата результатов даже при пиковых очередях на Kie.ai
+                        const maxPollAttempts = isVideoTask ? 180 : 150;
+                        const pollDelay = 2000;
                         setAiProgress(30, activePollStatuses[0]);
 
                         while (pollAttempts < maxPollAttempts) {
                             await new Promise(r => setTimeout(r, pollDelay));
                             pollAttempts++;
 
-                            // Плавный рост прогресса на каждом шаге поллинга
-                            const pollTarget = isVideoTask
-                                ? Math.min(95, 30 + Math.floor((pollAttempts / 35) * 65))
-                                : Math.min(94, 34 + Math.floor(pollAttempts * 7.5));
-                            setAiProgress(pollTarget, activePollStatuses[pollIdx % activePollStatuses.length]);
+                            // Плавный и непрерывный рост шкалы прогресса без застревания на 94%
+                            const elapsedSec = pollAttempts * (pollDelay / 1000);
+                            let pollTarget;
+                            if (elapsedSec < 30) {
+                                pollTarget = Math.floor(30 + (elapsedSec / 30) * 30); // 30% -> 60%
+                            } else if (elapsedSec < 90) {
+                                pollTarget = Math.floor(60 + ((elapsedSec - 30) / 60) * 22); // 60% -> 82%
+                            } else if (elapsedSec < 180) {
+                                pollTarget = Math.floor(82 + ((elapsedSec - 90) / 90) * 11); // 82% -> 93%
+                            } else {
+                                pollTarget = Math.min(97, Math.floor(93 + ((elapsedSec - 180) / 120) * 4)); // 93% -> 97%
+                            }
+
+                            // Динамический статус в зависимости от времени генерации в очереди Kie.ai
+                            let currentStatusText = activePollStatuses[pollIdx % activePollStatuses.length];
+                            if (elapsedSec > 40 && elapsedSec <= 100) {
+                                currentStatusText = `Обработка в очереди нейросетей, ожидаем...`;
+                            } else if (elapsedSec > 100) {
+                                currentStatusText = `Финальный рендеринг и улучшение качества...`;
+                            }
+
+                            setAiProgress(pollTarget, currentStatusText);
                             pollIdx++;
 
                             try {
-                                const sRes = await fetch(`/api/ai/status?taskId=${encodeURIComponent(data.taskId)}&orderId=${encodeURIComponent(currentOrderId || '')}&_t=${Date.now()}`);
+                                const apiKeyParam = effectiveApiKey ? `&apiKey=${encodeURIComponent(effectiveApiKey)}` : '';
+                                const sRes = await fetch(`/api/ai/status?taskId=${encodeURIComponent(data.taskId)}&orderId=${encodeURIComponent(currentOrderId || '')}${apiKeyParam}&_t=${Date.now()}`);
                                 if (sRes.ok) {
                                     const sData = await sRes.json();
                                     if (sData.state === 'success' && sData.resultUrl) {
