@@ -190,14 +190,14 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
         kieModel = 'google/nano-banana-edit';
     } else if (model === 'nano-banana-2' || model === 'google/nano-banana-edit') {
         kieModel = 'google/nano-banana-edit';
-    } else if (model === 'gpt-image-2-5-sunburst' || model === 'chatgpt-2.5-sunburst' || model === 'gpt-image-2-5-sunburst-image-to-image' || model === 'chatgpt-2.5') {
-        // GPT Image 2.5 Sunburst — максимальная детализация (медленнее)
+    } else if (model === 'gpt-image-2-5-sunburst' || model === 'chatgpt-2.5-sunburst' || model === 'gpt-image-2-5-sunburst-image-to-image') {
+        // GPT Image 2.5 Sunburst — максимальная детализация (медленнее), только при явном выборе
         kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     } else if (model === 'gpt-image-2-5-flare' || model === 'chatgpt-2.5-flare' || model === 'gpt-image-2-5-flare-image-to-image') {
         // GPT Image 2.5 Flare — скоростная версия 2.5
         kieModel = 'gpt-image-2-5-flare-image-to-image';
-    } else if (model === 'gpt-image-2' || model === 'chatgpt-2' || model === 'gpt-image-2-image-to-image') {
-        // GPT Image 2 — быстрая генерация (дефолт)
+    } else if (model === 'gpt-image-2' || model === 'chatgpt-2' || model === 'chatgpt-2.5' || model === 'gpt-image-2-image-to-image') {
+        // GPT Image 2 — быстрая генерация (дефолт для всех карточек с chatgpt-2 / chatgpt-2.5)
         kieModel = 'gpt-image-2-image-to-image';
     } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'gemini-omni-video' || model === 'google/gemini-omni-flash-1-1' || model === 'google/gemini-omni-1.1-flash' || (typeof model === 'string' && (model.includes('omni') || model.includes('gemini')))) {
         // Google Gemini Omni Flash — Video-to-Video (официальная модель в Kie.ai: gemini-omni-video)
