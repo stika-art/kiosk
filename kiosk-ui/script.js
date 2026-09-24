@@ -2399,6 +2399,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function takeSnapshot() {
+        // Белая вспышка — имитация затвора
+        const flashEl = document.getElementById('camera-flash');
+        if (flashEl) {
+            flashEl.classList.add('active');
+            setTimeout(() => flashEl.classList.remove('active'), 180);
+        }
+
         const rawW = webcamEl.videoWidth || 1920;
         const rawH = webcamEl.videoHeight || 1080;
 

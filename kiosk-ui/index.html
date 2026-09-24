@@ -1238,6 +1238,45 @@
             border-top: 1px solid rgba(255, 255, 255, 0.06);
         }
 
+        /* Подсказка времени ожидания */
+        .ai-wait-hint {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 10px 16px;
+            background: rgba(212, 160, 67, 0.08);
+            border: 1px solid rgba(212, 160, 67, 0.22);
+            border-radius: 12px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.65);
+            text-align: center;
+            line-height: 1.4;
+        }
+        .ai-wait-hint strong {
+            color: #FFE082;
+            font-weight: 700;
+        }
+        .ai-wait-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        /* Вспышка камеры при снимке */
+        #camera-flash {
+            position: fixed;
+            inset: 0;
+            background: #ffffff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.05s ease-in;
+        }
+        #camera-flash.active {
+            opacity: 1;
+        }
+
         .ai-meta-tag {
             font-size: 11px;
             font-weight: 700;
@@ -2132,6 +2171,11 @@
                         </div>
                     </div>
 
+                    <!-- Подсказка времени ожидания -->
+                    <div class="ai-wait-hint">
+                        <span class="ai-wait-icon">⏳</span>
+                        <span>Обычно занимает от <strong>1 до 3 минут</strong> — пожалуйста, не уходите</span>
+                    </div>
 
                 </div>
             </div>
@@ -2324,5 +2368,9 @@
 
 <script src="qrcode.min.js"></script>
 <script src="script.js?v=clean_cam_v3"></script>
+
+<!-- Белая вспышка при съёмке -->
+<div id="camera-flash"></div>
+
 </body>
 </html>
