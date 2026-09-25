@@ -2409,22 +2409,18 @@
                 if (modelWrapper) modelWrapper.style.display = 'block';
                 if (modelSelect) {
                     modelSelect.innerHTML = `
-                        <option value="kling-3.0/motion-control" selected>🕺 Kling 3.0 Motion Control (Танцы и приколы — перенос движений 3.0)</option>
-                        <option value="kling-2.6/motion-control">🕺 Kling 2.6 Motion Control (Танцы и приколы — версия 2.6)</option>
-                        <option value="omni-flash">⚡ Google Gemini Omni Flash (Video-to-Video / Анимация)</option>
-                        <option value="kling-turbo">🚀 Kling Turbo (Image-to-Video — Ультра-скорость)</option>
-                        <option value="kling-video">🎥 Kling 2.6 HD (Image-to-Video — Кинематограф)</option>
+                        <option value="omni-flash" selected>⚡ Google Gemini Omni Flash (Video-to-Video / Анимация)</option>
                         <option value="custom">✏️ Ввести точный ID модели вручную (любая модель Kie.ai)...</option>
                     `;
                 }
                 if (resWrapper) resWrapper.style.display = 'none';
 
-                if (promptLabel) promptLabel.textContent = '🎬 Описание стиля и окружения танца (Prompt):';
+                if (promptLabel) promptLabel.textContent = '🎬 Описание стиля и окружения (Prompt):';
                 if (promptInput && !editingTemplateId && !promptInput.value.trim()) {
-                    promptInput.placeholder = 'A person dancing energetically, seamless natural motion, cinematic lighting, high quality, preserve facial likeness and features...';
+                    promptInput.placeholder = 'Smooth natural cinematic video transformation, preserve facial identity, fluid motion, high quality render...';
                 }
-                if (imgLabel) imgLabel.innerHTML = '🎬 Видео-референс танца или прикола (MP4/WebM):';
-                if (imgTip) imgTip.innerHTML = '💡 <b>Загрузите видеоролик с движениями танца/прикола</b> (MP4). Гость сфотографируется у киоска, и нейросеть Kling AI оживит его фото, перенеся на него движения из этого видеоролика!';
+                if (imgLabel) imgLabel.innerHTML = '🎬 Видео-референс для трансформации (MP4/WebM):';
+                if (imgTip) imgTip.innerHTML = '💡 <b>Загрузите видеоролик</b> (MP4). Гость запишет себя у киоска, и Gemini Omni Flash вставит его лицо в этот видеоролик!';
                 if (submitBtn && !editingTemplateId) submitBtn.textContent = '+ Добавить ролик в «ВИДЕО»';
 
             } else if (secNum === 3 || titleUp.includes('ТРЕНД')) {
@@ -2441,12 +2437,9 @@
                 if (modelWrapper) modelWrapper.style.display = 'block';
                 if (modelSelect) {
                     modelSelect.innerHTML = `
-                        <option value="kling-3.0/motion-control" selected>🕺 Kling 3.0 Motion Control (Танцы и приколы — перенос движений 3.0)</option>
-                        <option value="kling-2.6/motion-control">🕺 Kling 2.6 Motion Control (Танцы и приколы — версия 2.6)</option>
                         <option value="chatgpt-2.5-flare">🔥 GPT Image 2.5 Flare (Скоростная версия — 10-15 сек)</option>
                         <option value="chatgpt-2.5-sunburst">☀️ GPT Image 2.5 Sunburst (Высокая детализация)</option>
-                        <option value="chatgpt-2">🎨 GPT Image 2 (Фото-портреты и обложки)</option>
-                        <option value="kling-turbo">🚀 Kling Turbo (Image-to-Video — Ультра-скорость)</option>
+                        <option value="chatgpt-2" selected>🎨 GPT Image 2 (Быстрые фото-портреты)</option>
                         <option value="omni-flash">⚡ Google Gemini Omni Flash (Video-to-Video)</option>
                         <option value="custom">✏️ Ввести точный ID модели вручную (любая модель Kie.ai)...</option>
                     `;
@@ -2480,10 +2473,7 @@
                     modelSelect.innerHTML = `
                         <option value="chatgpt-2.5-sunburst" selected>☀️ GPT Image 2.5 Sunburst (Флагман ChatGPT — Максимальное качество и сохранение лица)</option>
                         <option value="chatgpt-2.5-flare">🔥 GPT Image 2.5 Flare (Скоростная версия)</option>
-                        <option value="chatgpt-2">🎨 GPT Image 2 (Предыдущее поколение)</option>
-                        <option value="kling-3.0/motion-control">🕺 Kling 3.0 Motion Control (Танцы и приколы)</option>
-                        <option value="kling-2.6/motion-control">🕺 Kling 2.6 Motion Control (Танцы и приколы)</option>
-                        <option value="kling-turbo">🚀 Kling Turbo (Image-to-Video)</option>
+                        <option value="chatgpt-2">🎨 GPT Image 2 (Быстрое поколение)</option>
                         <option value="custom">✏️ Ввести точный ID модели вручную (любая модель Kie.ai)...</option>
                     `;
                 }
@@ -2863,7 +2853,7 @@
                     tpl.img.endsWith('.mp4') || tpl.img.endsWith('.webm') || tpl.img.endsWith('.mov') ||
                     tpl.img.includes('.mp4?') || tpl.img.includes('.webm?')
                 );
-                const isVidModel = Boolean(tpl.model && (tpl.model.includes('kling') || tpl.model.includes('motion') || tpl.model.includes('video') || tpl.model.includes('omni')));
+                const isVidModel = Boolean(tpl.model && (tpl.model.includes('video') || tpl.model.includes('omni')));
                 const resBadge = (isVid || isVidModel) ? '<span class="model-badge" style="background: rgba(16,185,129,0.18); border-color: #10b981; color: #34d399; font-weight: 800;">🎬 HD</span>' : getResolutionBadge(tpl.resolution);
                 const thumbHtml = isVid 
                     ? `<video src="${tpl.img}" class="tpl-preview-thumb" autoplay loop muted playsinline></video>`
