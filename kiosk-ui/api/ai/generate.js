@@ -183,11 +183,13 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
 
     // Сопоставление моделей:
     // По умолчанию GPT Image 2 — быстрая генерация 5-15 сек для киоска.
-    // Для виртуальной примерки одежды — google/nano-banana-edit.
+    // Для виртуальной примерки одежды — тоже GPT Image 2 (лучше понимает промпт на русском).
     let kieModel = 'gpt-image-2-image-to-image';
     if (isTryOn) {
-        // Виртуальная примерка одежды -> Nano Banana (Google Image Edit)
-        kieModel = 'google/nano-banana-edit';
+        // Виртуальная примерка одежды -> GPT Image 2 (понимает "Одень одежду с первой фото")
+        kieModel = model === 'nano-banana-2' || model === 'google/nano-banana-edit'
+            ? 'google/nano-banana-edit'
+            : 'gpt-image-2-image-to-image';
     } else if (model === 'nano-banana-2' || model === 'google/nano-banana-edit') {
         kieModel = 'google/nano-banana-edit';
     } else if (model === 'gpt-image-2-5-sunburst' || model === 'chatgpt-2.5-sunburst' || model === 'gpt-image-2-5-sunburst-image-to-image') {
@@ -261,34 +263,28 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
                 : (publicPhotoUrl ? [publicPhotoUrl] : [])
         };
     } else if (isTryOn) {
-        // Виртуальная примерка одежды / товаров на гостя через Nano Banana (2 фото: гость + вещь)
-        const cleanTryOn = (safePrompt || '')
-            .replace(/\b(девушка|девушки|девушку|девушке|женщина|женщины|женщину|парень|парня|парню|мужчина|мужчины|мужчину|девочка|девочки|девочку|мальчик|мальчика|человек|человека|модель|персонаж|портрет)\b/gi, '')
-            .replace(/\b(girl|woman|female|lady|man|male|guy|boy|person|human|model|character|portrait)\b/gi, '')
-            .replace(/\s+/g, ' ')
-            .trim();
+        // Виртуальная примерка одежды: Image 1 = одежда (шаблон), Image 2 = гость
+        // Порядок важен: ИИ берёт одежду с первого фото и надевает на человека со второго
 
-        const imageUrls = [publicPhotoUrl];
+        const imageUrls = [];
+        // ПЕРВЫМ идёт фото одежды (шаблон карточки)
         if (templateImgUrl && templateImgUrl.startsWith('http')) {
             imageUrls.push(templateImgUrl);
         }
+        // ВТОРЫМ идёт фото гостя
+        imageUrls.push(publicPhotoUrl);
 
-        const tryOnDirective = `IMAGE EDITING DIRECTIVE — DO NOT GENERATE FROM SCRATCH:
-Two source images provided:
-Image 1: The original photograph of the person.
-Image 2: The clothing item to try on.
-
-CRITICAL MANDATORY INSTRUCTIONS:
-1. DO NOT GENERATE A NEW PERSON OR FACE FROM SCRATCH.
-2. ABSOLUTE IDENTITY & FACE PRESERVATION: Keep the real person from Image 1 100% intact. Retain their exact face, facial features, facial structure, eyes, nose, mouth, skin tone, facial hair (beard/mustache if present), hair color, hairstyle, body build, gender, age, and natural expression identical to Image 1. Do NOT alter their facial identity under any circumstances.
-3. CLOTHING REPLACEMENT ONLY: Remove only the clothes worn by the person in Image 1 and dress them in the exact garment from Image 2. Drape the clothing realistically onto their body, matching their pose and lighting with photorealistic fabric texture and natural folds. ${cleanTryOn ? 'Garment details: ' + cleanTryOn : ''}`;
+        // Простой и эффективный промпт — как в примере пользователя
+        const extraDetails = (safePrompt || '').trim();
+        const tryOnDirective = extraDetails.length > 3
+            ? `Одень одежду с первой фото на человека со второй фото. ${extraDetails}`
+            : `Одень одежду с первой фото на человека со второй фото. Сохрани лицо, причёску и телосложение человека точно как на второй фото. Замени только одежду на ту что на первой фото.`;
 
         inputPayload = {
             prompt: tryOnDirective,
             image_urls: imageUrls,
             input_urls: imageUrls,
-            image_url: publicPhotoUrl,
-            inputImage: publicPhotoUrl,
+            image_url: templateImgUrl || publicPhotoUrl,
             output_format: 'png',
             aspect_ratio: '3:4',
             resolution: targetResolution
