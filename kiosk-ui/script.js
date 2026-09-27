@@ -436,6 +436,248 @@ const DEFAULT_KIOSK_TEMPLATES = [
         "prompt": "Please create a high-end fiber art editing poster for each character travel photo I upload. Do not collage multiple images - each photo should be output independently. The overall 3:4 vertical diptyl composition is adopted: the upper part retains the clearly visible original image, while the lower part reconstructs the same character of the \"woolen curly felt Doll\". Ensure that the boundary between the upper and lower parts is clear, smooth and restricted to prevent felt material from contaminating the photography area. The upper part should occupy approximately 45% to 50% of the frame, faithfully preserving the original photo. Accurately maintain the character's identity, number, facial features, hair volume, hat or scarf, expression, posture, hand contact, main clothing color, travel items, and the true relationship between the character and the environment. Just use fine independent magazina-style color grading and extremely light film grain processing, while ensuring it is clear and distinguishable as real photography. To fit the picture, you can naturally extend the simple background, but do not redraw the character, change the face, stretch, distort, mirror or change the clothing. Do not flatten and redraw the entire photo in the lower part. On the contrary, an independent display desktop felt travel doll can be made. It mainly adopts a half-body or small sitting posture. The doll occupies 55% to 75% of the width of the lower half and 58% to 82% of the height. It is placed on a warm white paper stand, light-colored fabric or a simple soft base. Maintain a continuous gap of approximately 30% to 45% around. Only include one easily recognizable environmental prompt - do not create complex rooms or complete toy displays. Depict the characters with genuine handcrafted materials: felted skin tones, fine beaded eyes, simplified felted noses and mouths, knitted or yarn clothing, and shape curly hair, bangs or hair segments with richly thick and fine yarn loops, with visible stitches. Retain the fiber fluff, suede direction, seams, soft body depressions, slight asymmetries, handcrafted flaws, and the genuine soft shadows cast on the paper frame. Facial features should not pursue realism but should be recognizable at a glance through hairstyles, expressions, clothing, gestures and accessories. Extract all the colors from the above photo, soften the skin tone, hair color, main garment color and one ambient tone to form four to six fiber colors. The color should be gentle and long-lasting, with the light-absorbing properties of yarn and wool - avoid plastic luster, highly saturated toy colors or fixed color palette that is irrelevant to the original image. Add a small amount of figurative text to the continuous blank Spaces or the edge of the doll's base. Extract 1 to 3 English word titles from the real content of the photo; The main title should be similar to a small woven label, hand-embroidered text or low-pile line font. Add the \"FELT NOTE 01\" field and attach a 5-12 Inglis observation sentence H. If the specific location cannot be confirmed, please use the title \"SOFT JOURNEY\" and the observation sentence \"A companion guards the warmth of the road\". The text must be clear and legible, consistent with the stitching and fabric structure - do not superimpose smooth digital fonts",
         "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1790105406787.jpg",
         "htmlCode": ""
+    },
+
+    // ==========================================
+    // РАЗДЕЛ: СТИЛИСТ (sectionId: 4)
+    // ==========================================
+    {
+        "id": 1790600000001,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "ДЕЛОВОЙ",
+        "title": "CEO Style",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Transform the person in the uploaded photo into a powerful CEO / business executive portrait. Keep the face, facial features and identity 100% identical. Dress them in a sharp tailored dark navy or charcoal suit with a crisp white shirt and a subtle luxury tie. Background: a sleek modern office with floor-to-ceiling glass windows overlooking a city skyline at golden hour. Cinematic dramatic lighting, confident posture, slight upward gaze, photorealistic, editorial quality, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000002,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "STREETWEAR",
+        "title": "Street Style",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Редизайн образа человека с фото в современный уличный стиль. Сохрани лицо и черты лица без изменений. Одень в стильный оверсайз худи, карго-штаны, кроссовки Supreme или Off-White, кепку snapback. Фон: граффити-стена в Нью-Йорке, золотой закатный час. Фотореалистично, editorial streetwear fashion, 3:4 портрет.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000003,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "LUXURY",
+        "title": "Luxury Look",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Transform the person into a high-fashion luxury editorial look. Preserve the face and identity completely. Dress them in Gucci or Louis Vuitton monogram outfit, designer sunglasses, gold jewelry. Background: white minimalist studio with soft dramatic lighting. Ultra-luxury fashion magazine cover quality, Vogue editorial style, 3:4 portrait, photorealistic.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000004,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "CASUAL",
+        "title": "Smart Casual",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Преобразуй образ человека с фото в стиль smart casual. Лицо и черты — строго без изменений. Одень в светлую льняную рубашку, узкие брюки светло-бежевого цвета, белые кожаные кроссовки. Фон: кафе в Милане, мягкий дневной свет через большие окна. Фотореалистично, lifestyle editorial, 3:4 портрет.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000005,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "СПОРТ",
+        "title": "Sport Style",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Преобразуй образ человека в спортивный стиль от Nike или Adidas. Сохрани лицо без изменений. Одень в спортивный костюм, кроссовки Jordan или Yeezy. Фон: современный тренажерный зал или стадион с подсветкой. Динамичная поза, уверенный взгляд, фотореалистично, 3:4 портрет.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000006,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "LUXURY",
+        "title": "Black Suit",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Transform the person into an all-black luxury suit editorial. Preserve face and identity exactly. Sharp black tuxedo or slim-fit black suit, black turtleneck underneath, minimal silver accessories. Background: dark moody studio with a single dramatic spotlight. Cinematic noir fashion, editorial quality, 3:4 portrait, photorealistic.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000007,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "STREETWEAR",
+        "title": "Cyberpunk Style",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Преобразуй человека с фото в киберпанк-стиль будущего. Лицо — без изменений. Одень в светящиеся неоновые элементы одежды, тактическую куртку, голографические детали. Фон: ночной город в дожде с неоновыми вывесками. Фотореалистично, cinematic cyberpunk, 3:4 портрет.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000008,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "ДЕЛОВОЙ",
+        "title": "Magazine Cover",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Place the person from the uploaded photo on the cover of Forbes Magazine Central Asia. Keep the face 100% identical. Dress them in a sharp business suit. Add Forbes logo at the top, headline text 'PERSON OF THE YEAR', subheadings in English, professional studio lighting. Photorealistic magazine cover, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+
+    // ==========================================
+    // РАЗДЕЛ: ПАРИКМАХЕР (sectionId: 5)
+    // ==========================================
+    {
+        "id": 1790600000101,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "МУЖСКИЕ",
+        "title": "Undercut Classic",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change ONLY the hairstyle of the person in the uploaded photo. Keep the face, skin tone, eyes, nose, lips and all facial features 100% identical — do not alter anything except the hair. Apply a classic men's undercut hairstyle: shaved sides faded from skin to short, longer hair on top styled back with a slight wave. Natural dark hair color matching the person's skin tone. Photorealistic, studio portrait lighting, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000102,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "МУЖСКИЕ",
+        "title": "Buzz Cut",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change ONLY the hairstyle of the person. Face must remain identical — same eyes, nose, lips, bone structure, skin tone, age. Apply a clean buzz cut / military style: very short all over, uniform length 2-3mm, perfectly faded at the temples and neckline. Natural hair color. Photorealistic, clean studio lighting, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000103,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "МУЖСКИЕ",
+        "title": "Textured Crop",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change ONLY the hairstyle of the person. Preserve the face and all facial features exactly as in the uploaded photo. Apply a modern textured crop hairstyle: short faded sides with a slightly longer top that has visible texture and messy natural movement, fringe pushed slightly forward. Natural hair color. Photorealistic, editorial lighting, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000104,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "МУЖСКИЕ",
+        "title": "Long Waves",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Измени ТОЛЬКО прическу человека с фото. Лицо, черты, тон кожи — без изменений. Добавь мужскую длинную прическу: волнистые волосы до плеч, небрежно зачёсанные назад, лёгкая небрежность и текстура. Натуральный цвет волос под тон кожи. Фотореалистично, студийный свет, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000105,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "ЖЕНСКИЕ",
+        "title": "Bob Cut",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change ONLY the hairstyle. Keep the face and all facial features completely identical to the uploaded photo. Apply a sleek modern bob hairstyle: chin-length, smooth, straight or slightly wavy, with a clean blunt cut at the ends. Glossy healthy hair, natural dark color. Photorealistic, beauty editorial lighting, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000106,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "ЖЕНСКИЕ",
+        "title": "Long Straight",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Измени ТОЛЬКО прическу человека. Лицо — строго без изменений. Добавь длинные прямые шелковистые волосы до середины спины, идеально ровные с блеском. Чёрный или тёмно-каштановый цвет. Фотореалистично, beauty editorial, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000107,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "ЖЕНСКИЕ",
+        "title": "Curly Volume",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change ONLY the hairstyle. The face must remain 100% identical. Apply voluminous curly hair: big bouncy curls or loose waves, full body and volume, medium length to shoulders. Shiny healthy curls. Natural color. Photorealistic, glamour lighting, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000108,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "ЦВЕТ",
+        "title": "Platinum Blonde",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change ONLY the hair color and style of the person. Keep the face and all facial features exactly the same. Apply platinum blonde / ice white hair color with a sleek modern blowout style. High-gloss, salon-perfect finish. Photorealistic beauty portrait, studio lighting, 3:4.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000109,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "ЦВЕТ",
+        "title": "Red Hot",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Измени ТОЛЬКО цвет волос человека. Лицо — без изменений. Покрась волосы в насыщенный медно-красный / огненно-рыжий цвет с блеском. Стиль волос оставь как на фото или сделай лёгкие волны. Фотореалистично, beauty editorial, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000110,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "МУЖСКИЕ",
+        "title": "French Crop + Beard",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change the hairstyle and add or refine facial hair. Keep the face 100% identical. Apply a sharp French crop haircut: short faded sides, short textured top with a slight fringe forward. Add a neatly trimmed short beard or stubble that frames the jaw well. Photorealistic, clean studio lighting, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
     }
 ];
 
@@ -452,6 +694,16 @@ try {
 
 if (!Array.isArray(masterTemplates) || masterTemplates.length === 0) {
     masterTemplates = JSON.parse(JSON.stringify(DEFAULT_KIOSK_TEMPLATES));
+} else {
+    // Автоматическое добавление всех новых стандартных шаблонов (например, СТИЛИСТ и ПАРИКМАХЕР)
+    const existingIds = new Set(masterTemplates.map(t => Number(t.id)));
+    const missing = DEFAULT_KIOSK_TEMPLATES.filter(dt => !existingIds.has(Number(dt.id)));
+    if (missing.length > 0) {
+        masterTemplates = masterTemplates.concat(missing);
+        try {
+            localStorage.setItem('kiosk_templates_v2', JSON.stringify(masterTemplates));
+        } catch(e) {}
+    }
 }
 
 let activeSectionCard = mainCardsConfig.length > 0 ? mainCardsConfig[0] : null;
@@ -692,6 +944,12 @@ function openTemplateGallery(cardIdOrMode) {
 
     if (!Array.isArray(masterTemplates) || masterTemplates.length === 0) {
         masterTemplates = JSON.parse(JSON.stringify(DEFAULT_KIOSK_TEMPLATES));
+    } else {
+        const existingIds = new Set(masterTemplates.map(t => Number(t.id)));
+        const missing = DEFAULT_KIOSK_TEMPLATES.filter(dt => !existingIds.has(Number(dt.id)));
+        if (missing.length > 0) {
+            masterTemplates = masterTemplates.concat(missing);
+        }
     }
 
     if (!masterTemplates.some(t => (t.model || '').toLowerCase() === 'roast-standup')) {

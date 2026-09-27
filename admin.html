@@ -1884,7 +1884,19 @@
                 const tpls = localStorage.getItem('kiosk_templates_v2');
                 if (tpls) {
                     const parsed = JSON.parse(tpls);
-                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        // Автоматически добавляем любые новые стандартные шаблоны, которых ещё нет в списке
+                        const existingIds = new Set(parsed.map(t => Number(t.id)));
+                        const missingDefaults = DEFAULT_KIOSK_TEMPLATES.filter(dt => !existingIds.has(Number(dt.id)));
+                        if (missingDefaults.length > 0) {
+                            const merged = parsed.concat(missingDefaults);
+                            try {
+                                localStorage.setItem('kiosk_templates_v2', JSON.stringify(merged));
+                            } catch(e) {}
+                            return merged;
+                        }
+                        return parsed;
+                    }
                 }
             } catch(e) {}
             return JSON.parse(JSON.stringify(DEFAULT_KIOSK_TEMPLATES));
@@ -3375,7 +3387,7 @@
                 }
                 cancelTemplateEdit();
             } else {
-                // РЕЖИМ ДОБАВЛЕНИЯ НОВОГО ШАБЛОНА (добавляем на ПЕРВОЕ место, чтобы сразу было видно!)
+                // РЕЖИМ ДОБАВЛЕНИЯ НОВОГО ШАБЛОНА (добавляем в КОНЕЦ списка по просьбе пользователя)
                 const newId = Date.now();
                 const newTpl = {
                     id: newId,
@@ -3391,7 +3403,7 @@
                     img,
                     htmlCode
                 };
-                templates.unshift(newTpl);
+                templates.push(newTpl);
 
                 titleInput.value = '';
                 priceInput.value = '';
