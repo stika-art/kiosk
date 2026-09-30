@@ -294,13 +294,6 @@
     <!-- Контейнер для настоящей 3D WebAR сцены MindAR -->
     <div id="ar-scene-container"></div>
 
-    <!-- Резервный видеопоток и плоскость (для режима QR трекинга) -->
-    <video id="camera-video" autoplay playsinline muted></video>
-    <canvas id="qr-canvas"></canvas>
-    <div id="qr-overlay-plane">
-        <video id="qr-video-player" playsinline loop muted></video>
-        <img id="qr-img-player" style="display:none;" alt="QR Media">
-    </div>
 
     <!-- HUD Поверх AR -->
     <div class="ar-hud">
@@ -372,12 +365,6 @@
             const directMedia  = params.get('media') || params.get('file') || '';
 
             const sceneContainer = document.getElementById('ar-scene-container');
-            const videoEl        = document.getElementById('camera-video');
-            const qrCanvas       = document.getElementById('qr-canvas');
-            const qrCtx          = qrCanvas.getContext('2d', { willReadFrequently: true });
-            const qrPlane        = document.getElementById('qr-overlay-plane');
-            const qrVid          = document.getElementById('qr-video-player');
-            const qrImg          = document.getElementById('qr-img-player');
             const scannerFrame   = document.getElementById('scanner-frame');
             const scanHint       = document.getElementById('scan-hint');
             const markerChip     = document.getElementById('marker-chip');
@@ -398,79 +385,174 @@
                 offsetY: 0
             };
 
+            let markerAspect = 1.333; // отношение высоты к ширине
             let isMuted = false;
             let activeVideoEl = null;
 
-            // 1. Загрузка параметров проекта
+            // 1. Загрузка параметров AR проекта
             async function loadArConfig() {
-                if (!arId) return;
-                try {
-                    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/ar/${arId}.json?_t=${Date.now()}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        arConfig.markerUrl = data.markerUrl || arConfig.markerUrl;
-                        arConfig.mediaUrl  = data.mediaUrl || data.contentUrl || arConfig.mediaUrl;
-                        arConfig.mindUrl   = data.mindUrl || '';
-                        arConfig.isVideo   = data.isVideo !== false && !arConfig.mediaUrl.match(/\.(jpg|jpeg|png|webp)$/i);
-                        arConfig.scale     = Number(data.scale) || 1.0;
-                        arConfig.offsetX   = Number(data.offsetX) || 0;
-                        arConfig.offsetY   = Number(data.offsetY) || 0;
+                if (arId) {
+                    try {
+                        const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/ar/${arId}.json?_t=${Date.now()}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            arConfig.markerUrl = data.markerUrl || arConfig.markerUrl;
+                            arConfig.mediaUrl  = data.mediaUrl || data.contentUrl || arConfig.mediaUrl;
+                            arConfig.mindUrl   = data.mindUrl || '';
+                            arConfig.isVideo   = data.isVideo !== false && !arConfig.mediaUrl.match(/\.(jpg|jpeg|png|webp)$/i);
+                            arConfig.scale     = Number(data.scale) || 1.0;
+                            arConfig.offsetX   = Number(data.offsetX) || 0;
+                            arConfig.offsetY   = Number(data.offsetY) || 0;
+                        }
+                    } catch(e) {
+                        console.warn('[AR] Ошибка загрузки манифеста:', e);
                     }
-                } catch(e) {
-                    console.warn('[AR] Ошибка загрузки манифеста:', e);
+
+                    // Если mindUrl не был в json, проверяем наличие target.mind в бакете
+                    if (!arConfig.mindUrl) {
+                        const testMindUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/ar/${arId}/target.mind`;
+                        try {
+                            const chk = await fetch(testMindUrl, { method: 'HEAD' });
+                            if (chk.ok) {
+                                arConfig.mindUrl = testMindUrl;
+                            }
+                        } catch(e) {}
+                    }
                 }
 
+                // Загружаем миниатюру маркера и вычисляем пропорции
                 if (arConfig.markerUrl) {
                     markerThumbImg.src = arConfig.markerUrl;
                     markerChip.style.display = 'flex';
+
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        if (img.width > 0 && img.height > 0) {
+                            markerAspect = img.height / img.width;
+                        }
+                    };
+                    img.src = arConfig.markerUrl;
                 }
             }
 
-            // 2. Запуск AR после нажатия кнопки
+            // Компиляция маркера на клиенте (если mindUrl отсутствует)
+            async function compileMarkerOnClient(markerImgUrl) {
+                if (!window.MINDAR || !window.MINDAR.IMAGE || !window.MINDAR.IMAGE.Compiler) {
+                    throw new Error('MindAR Compiler недоступен');
+                }
+                scanHint.innerHTML = '<span>⚡</span><span>Калибровка AR-трекера: 0%...</span>';
+                
+                const compiler = new window.MINDAR.IMAGE.Compiler();
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.src = markerImgUrl;
+                await new Promise((res, rej) => {
+                    img.onload = res;
+                    img.onerror = () => rej(new Error('Не удалось загрузить фото маркера'));
+                });
+
+                if (img.width > 0 && img.height > 0) {
+                    markerAspect = img.height / img.width;
+                }
+
+                await compiler.compileImageTargets([img], (p) => {
+                    const pct = Math.round(p * 100);
+                    scanHint.innerHTML = `<span>⚡</span><span>Калибровка AR-трекера: ${pct}%...</span>`;
+                });
+
+                const exportedBuffer = await compiler.exportData();
+                const mindBlob = new Blob([exportedBuffer], { type: 'application/octet-stream' });
+                const blobUrl = URL.createObjectURL(mindBlob);
+
+                // Сохраняем в Supabase в фоне, чтобы в следующий раз не компилировать заново
+                if (arId) {
+                    (async () => {
+                        try {
+                            const mindPath = `ar/${arId}/target.mind`;
+                            const up = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${mindPath}`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${SUPABASE_ANON}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
+                                body: mindBlob
+                            });
+                            if (up.ok) {
+                                arConfig.mindUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${mindPath}`;
+                                // Обновляем манифест
+                                fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/ar/${arId}.json`, {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${SUPABASE_ANON}`, 'Content-Type': 'application/json', 'x-upsert': 'true' },
+                                    body: JSON.stringify(arConfig)
+                                }).catch(() => {});
+                            }
+                        } catch(e) {
+                            console.warn('[MindAR] Фоновая выгрузка в облако:', e);
+                        }
+                    })();
+                }
+
+                return blobUrl;
+            }
+
+            // 2. Запуск AR сессии по кнопке пользователя
             async function initArSession() {
                 permScreen.style.display = 'none';
 
-                // Если есть скомпилированный 3D маркер MindAR — запускаем настоящий MindAR
-                if (arConfig.mindUrl) {
-                    initMindArScene();
-                } else {
-                    // Фолбэк: QR-гомография
-                    initQrTracking();
+                let targetMindSrc = arConfig.mindUrl;
+
+                if (!targetMindSrc && arConfig.markerUrl) {
+                    try {
+                        targetMindSrc = await compileMarkerOnClient(arConfig.markerUrl);
+                    } catch(err) {
+                        console.error('[AR] Ошибка компиляции на клиенте:', err);
+                        alert('Не удалось скомпилировать трекер маркера. Убедитесь в стабильности интернета.');
+                        return;
+                    }
                 }
+
+                if (!targetMindSrc) {
+                    alert('Маркер AR не найден. Пожалуйста, откройте ссылку из QR-кода заказа.');
+                    return;
+                }
+
+                initMindArScene(targetMindSrc);
             }
 
-            // ── РЕЖИМ 1: НАСТОЯЩИЙ MINDAR 3D NATURAL FEATURE TRACKING ──
-            function initMindArScene() {
+            // ── ЗАПУСК НАСТОЯЩЕГО 3D NATURAL FEATURE TRACKING (MindAR + A-Frame) ──
+            function initMindArScene(mindSrc) {
                 const userScale = arConfig.scale || 1.0;
-                // Нормализация сдвига для 3D координат A-Frame (где ширина маркера = 1 метр)
+                // Нормализация сдвига для 3D координат A-Frame
                 const posX = (arConfig.offsetX / 160).toFixed(3);
                 const posY = (-arConfig.offsetY / 160).toFixed(3);
                 const planeW = (1.0 * userScale).toFixed(3);
-                const planeH = (1.0 * userScale).toFixed(3);
+                const planeH = (markerAspect * userScale).toFixed(3);
+
+                scanHint.innerHTML = '<span>🎯</span><span>Наведите камеру на фото-маркер</span>';
 
                 const sceneHtml = `
                     <a-scene 
                         id="mindar-scene"
-                        mindar-image="imageTargetSrc: ${arConfig.mindUrl}; autoStart: true; uiLoading: no; uiError: no; uiScanning: no; filterMinCF: 0.001; filterBeta: 0.01;" 
+                        mindar-image="imageTargetSrc: ${mindSrc}; autoStart: true; uiLoading: no; uiError: no; uiScanning: no;" 
                         embedded
                         color-space="sRGB" 
                         renderer="colorManagement: true, physicallyCorrectLights: true" 
                         vr-mode-ui="enabled: false" 
                         device-orientation-permission-ui="enabled: false">
                         
-                        <a-assets>
+                        <a-assets timeout="12000">
                             ${arConfig.isVideo ? `
                                 <video id="ar-main-video" src="${arConfig.mediaUrl}" preload="auto" loop crossorigin="anonymous" playsinline webkit-playsinline></video>
-                            ` : ''}
+                            ` : `
+                                <img id="ar-main-img" src="${arConfig.mediaUrl}" crossorigin="anonymous">
+                            `}
                         </a-assets>
 
                         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
                         <a-entity mindar-image-target="targetIndex: 0" id="ar-target-entity">
                             ${arConfig.isVideo ? `
-                                <a-plane id="ar-plane" src="#ar-main-video" position="${posX} ${posY} 0" width="${planeW}" height="${planeH}" rotation="0 0 0"></a-plane>
+                                <a-video id="ar-video-mesh" src="#ar-main-video" position="${posX} ${posY} 0" width="${planeW}" height="${planeH}"></a-video>
                             ` : `
-                                <a-plane id="ar-plane" src="${arConfig.mediaUrl}" position="${posX} ${posY} 0" width="${planeW}" height="${planeH}" rotation="0 0 0"></a-plane>
+                                <a-plane id="ar-img-mesh" src="#ar-main-img" position="${posX} ${posY} 0" width="${planeW}" height="${planeH}"></a-plane>
                             `}
                         </a-entity>
                     </a-scene>
@@ -478,152 +560,79 @@
 
                 sceneContainer.innerHTML = sceneHtml;
 
-                setTimeout(() => {
+                const checkInterval = setInterval(() => {
                     const targetEntity = document.getElementById('ar-target-entity');
-                    const videoEl = document.getElementById('ar-main-video');
-                    activeVideoEl = videoEl;
+                    const videoElement = document.getElementById('ar-main-video');
 
-                    if (videoEl) {
-                        videoEl.muted = isMuted;
+                    if (targetEntity && (!arConfig.isVideo || videoElement)) {
+                        clearInterval(checkInterval);
+                        setupArTrackingEvents(targetEntity, videoElement);
                     }
+                }, 100);
 
-                    if (targetEntity) {
-                        // 1. Событие: маркер обнаружен в пространстве
-                        targetEntity.addEventListener('targetFound', () => {
-                            console.log('[MindAR] ✨ Маркер найден в кадре!');
-                            scannerFrame.classList.add('tracking-active');
-                            scanHint.innerHTML = '<span>✨</span><span>ОЖИВАНИЕ АКТИВНО!</span>';
-
-                            if (videoEl && videoEl.paused) {
-                                videoEl.play().catch(e => console.warn('Play error:', e));
-                            }
-                            if (navigator.vibrate) {
-                                try { navigator.vibrate(60); } catch(e) {}
-                            }
-                        });
-
-                        // 2. Событие: маркер вышел из кадра
-                        targetEntity.addEventListener('targetLost', () => {
-                            console.log('[MindAR] Маркер потерян');
-                            scannerFrame.classList.remove('tracking-active');
-                            scanHint.innerHTML = '<span>🎯</span><span>Наведите камеру на фото-маркер</span>';
-
-                            if (videoEl && !videoEl.paused) {
-                                videoEl.pause();
-                            }
-                        });
-                    }
-                }, 300);
+                setTimeout(() => clearInterval(checkInterval), 10000);
             }
 
-            // ── РЕЖИМ 2: QR SPATIAL HOMOGRAPHY (0% ЛОЖНЫХ СРАБАТЫВАНИЙ) ──
-            async function initQrTracking() {
-                videoEl.style.display = 'block';
+            function setupArTrackingEvents(targetEntity, videoElement) {
+                if (videoElement) {
+                    activeVideoEl = videoElement;
+                    videoElement.muted = isMuted;
 
-                if (arConfig.isVideo) {
-                    qrVid.src = arConfig.mediaUrl;
-                    qrVid.style.display = 'block';
-                    qrImg.style.display = 'none';
-                    activeVideoEl = qrVid;
-                    qrVid.muted = isMuted;
-                    qrVid.load();
-                } else {
-                    qrImg.src = arConfig.mediaUrl;
-                    qrImg.style.display = 'block';
-                    qrVid.style.display = 'none';
-                }
-
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
-                        audio: false
+                    // Предварительный прогрев видео для обхода блокировок iOS Safari / Chrome Android
+                    videoElement.play().then(() => {
+                        videoElement.pause();
+                    }).catch(() => {
+                        // Если браузер заблокировал звук, форсируем muted: true для гарантии автоплея
+                        isMuted = true;
+                        videoElement.muted = true;
+                        iconMuted.style.display = 'block';
+                        iconOn.style.display = 'none';
                     });
-                    videoEl.srcObject = stream;
-                    await videoEl.play();
-                    requestAnimationFrame(qrLoop);
-                } catch(e) {
-                    alert('Не удалось запустить камеру');
                 }
-            }
 
-            let lastQrFound = 0;
-            function qrLoop() {
-                if (videoEl.readyState === videoEl.HAVE_ENOUGH_DATA) {
-                    const vw = videoEl.videoWidth;
-                    const vh = videoEl.videoHeight;
-                    const scale = 0.5;
+                // 1. Событие: физический маркер найден в кадре камеры
+                targetEntity.addEventListener('targetFound', () => {
+                    console.log('[MindAR] ✨ Маркер распознан в кадре!');
+                    scannerFrame.classList.add('tracking-active');
+                    scanHint.innerHTML = '<span>✨</span><span>ОЖИВАНИЕ АКТИВНО!</span>';
 
-                    qrCanvas.width  = Math.floor(vw * scale);
-                    qrCanvas.height = Math.floor(vh * scale);
-                    qrCtx.drawImage(videoEl, 0, 0, qrCanvas.width, qrCanvas.height);
-                    const imgData = qrCtx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
-
-                    // Ищем настоящий QR-код
-                    const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "dontInvert" });
-
-                    if (code && code.location) {
-                        lastQrFound = performance.now();
-                        applyQrHomography(code.location, scale);
-                    } else {
-                        // Если QR вышел из кадра — мгновенно скрываем! Никакого летания по экрану!
-                        if (performance.now() - lastQrFound > 250) {
-                            qrPlane.style.display = 'none';
-                            scannerFrame.classList.remove('tracking-active');
-                            scanHint.innerHTML = '<span>🎯</span><span>Наведите камеру на маркер</span>';
-                            if (qrVid && !qrVid.paused) qrVid.pause();
-                        }
+                    if (videoElement) {
+                        videoElement.play().catch(e => {
+                            console.warn('[Video] Play fallback:', e);
+                            videoElement.muted = true;
+                            isMuted = true;
+                            iconMuted.style.display = 'block';
+                            iconOn.style.display = 'none';
+                            videoElement.play().catch(() => {});
+                        });
                     }
-                }
-                requestAnimationFrame(qrLoop);
-            }
 
-            function applyQrHomography(loc, scale) {
-                const sTL = { x: loc.topLeftCorner.x / scale, y: loc.topLeftCorner.y / scale };
-                const sTR = { x: loc.topRightCorner.x / scale, y: loc.topRightCorner.y / scale };
-                const sBL = { x: loc.bottomLeftCorner.x / scale, y: loc.bottomLeftCorner.y / scale };
+                    if (navigator.vibrate) {
+                        try { navigator.vibrate(60); } catch(e) {}
+                    }
+                });
 
-                const screenW = window.innerWidth;
-                const screenH = window.innerHeight;
-                const vidW = videoEl.videoWidth || 1280;
-                const vidH = videoEl.videoHeight || 720;
+                // 2. Событие: маркер вышел из поля зрения камеры
+                targetEntity.addEventListener('targetLost', () => {
+                    console.log('[MindAR] Маркер потерян');
+                    scannerFrame.classList.remove('tracking-active');
+                    scanHint.innerHTML = '<span>🎯</span><span>Наведите камеру на фото-маркер</span>';
 
-                const renderW = screenW;
-                const renderH = screenW * (vidH / vidW);
-                const offsetY = (screenH - renderH) / 2;
-
-                const toScreen = (pt) => ({ x: (pt.x / vidW) * renderW, y: (pt.y / vidH) * renderH + offsetY });
-                const pTL = toScreen(sTL);
-                const pTR = toScreen(sTR);
-                const pBL = toScreen(sBL);
-
-                const userScale = arConfig.scale || 1.0;
-                const userOffX  = arConfig.offsetX || 0;
-                const userOffY  = arConfig.offsetY || 0;
-
-                const baseW = Math.hypot(pTR.x - pTL.x, pTR.y - pTL.y) * 1.5;
-                const baseH = Math.hypot(pBL.x - pTL.x, pBL.y - pTL.y) * 1.5;
-                const angleRad = Math.atan2(pTR.y - pTL.y, pTR.x - pTL.x);
-
-                const finalW = baseW * userScale;
-                const finalH = baseH * userScale;
-
-                qrPlane.style.display = 'block';
-                qrPlane.style.width   = `${finalW}px`;
-                qrPlane.style.height  = `${finalH}px`;
-                qrPlane.style.transform = `translate3d(${pTL.x + userOffX}px, ${pTL.y + userOffY}px, 0) rotate(${angleRad}rad)`;
-
-                scannerFrame.classList.add('tracking-active');
-                scanHint.innerHTML = '<span>✨</span><span>ОЖИВАНИЕ АКТИВНО!</span>';
-
-                if (arConfig.isVideo && qrVid && qrVid.paused) {
-                    qrVid.play().catch(() => {});
-                }
+                    if (videoElement && !videoElement.paused) {
+                        videoElement.pause();
+                    }
+                });
             }
 
             // Управление звуком
             btnSound.addEventListener('click', () => {
                 isMuted = !isMuted;
-                if (activeVideoEl) activeVideoEl.muted = isMuted;
+                if (activeVideoEl) {
+                    activeVideoEl.muted = isMuted;
+                    if (!isMuted && activeVideoEl.paused) {
+                        activeVideoEl.play().catch(() => {});
+                    }
+                }
                 iconMuted.style.display = isMuted ? 'block' : 'none';
                 iconOn.style.display = isMuted ? 'none' : 'block';
             });
