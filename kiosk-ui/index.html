@@ -18,6 +18,16 @@
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+
+        *::-webkit-scrollbar,
+        ::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            background: transparent !important;
         }
 
         :root {
@@ -586,11 +596,18 @@
             width: min(96vw, 980px);
             max-height: 94vh;
             overflow-y: auto;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
             padding: 36px 32px;
             border-radius: 28px;
             position: relative;
             color: #fff;
             text-align: center;
+        }
+        .modal-content::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
         }
 
         .modal-close-btn {
