@@ -71,16 +71,19 @@ module.exports = async (req, res) => {
             const supaTaskRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/tasks/${encodeURIComponent(taskId)}.json?_t=${Date.now()}`);
             if (supaTaskRes.ok) {
                 const supaTaskData = await supaTaskRes.json();
-                if (supaTaskData && supaTaskData.state === 'success' && supaTaskData.mediaUrl) {
+                if (supaTaskData && supaTaskData.state === 'success' && (supaTaskData.mediaUrl || supaTaskData.resultUrl || supaTaskData.audioUrls)) {
                     console.log(`[Status Webhook Hit] Результат задачи ${taskId} мгновенно получен из Supabase Webhook кэша!`);
-                    let cleanUrl = supaTaskData.mediaUrl;
+                    let cleanUrl = supaTaskData.mediaUrl || supaTaskData.resultUrl || (supaTaskData.audioUrls && supaTaskData.audioUrls[0]);
                     const isVid = cleanUrl.includes('.mp4') || cleanUrl.includes('.webm');
+                    const isAud = Boolean(supaTaskData.isAudio || cleanUrl.includes('.mp3') || cleanUrl.includes('.wav') || supaTaskData.audioUrls);
                     cleanUrl = await persistResultToSupabase(cleanUrl, req.query.orderId, isVid);
                     return res.status(200).json({
                         success: true,
                         state: 'success',
                         taskId,
                         resultUrl: cleanUrl,
+                        audioUrls: supaTaskData.audioUrls || [cleanUrl],
+                        isAudio: isAud,
                         fromCache: true
                     });
                 } else if (supaTaskData && (supaTaskData.state === 'fail' || supaTaskData.state === 'failed' || supaTaskData.state === 'error')) {
@@ -158,6 +161,23 @@ module.exports = async (req, res) => {
                     else if (taskInfo.output.url) resultUrls.push(taskInfo.output.url);
                 }
 
+                const allAudioUrls = [...new Set(resultUrls.filter(u => typeof u === 'string' && (u.includes('.mp3') || u.includes('.wav') || u.includes('audio') || u.includes('suno') || Boolean(taskInfo.audio_url || taskInfo.audioUrl || taskInfo.audios))))];
+                const isAudio = allAudioUrls.length > 0;
+
+                if (isAudio) {
+                    const cleanAudioUrls = await Promise.all(
+                        allAudioUrls.slice(0, 2).map((url, idx) => persistResultToSupabase(url, `${req.query.orderId || taskId}_track${idx + 1}`, false))
+                    );
+                    return res.status(200).json({
+                        success: true,
+                        state: 'success',
+                        taskId,
+                        resultUrl: cleanAudioUrls[0],
+                        audioUrls: cleanAudioUrls,
+                        isAudio: true
+                    });
+                }
+
                 let resultUrl = resultUrls.find(u => Boolean(u)) || 
                                   taskInfo.audio_url || 
                                   taskInfo.audioUrl || 
@@ -173,7 +193,8 @@ module.exports = async (req, res) => {
                     success: true,
                     state: 'success',
                     taskId,
-                    resultUrl
+                    resultUrl,
+                    isAudio: false
                 });
             } else if (state === 'fail' || state === 'failed' || state === 'error') {
                 return res.status(200).json({

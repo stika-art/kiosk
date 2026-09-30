@@ -3617,6 +3617,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1500);
 
         let finalResultUrl = null;
+        let finalAudioUrls = [];
         let generationError = null;
 
         // Если гостем было записано живое видео — сначала загружаем его в Supabase Storage
@@ -3776,6 +3777,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     if (sData.state === 'success' && sData.resultUrl) {
                                         console.log(`[AI Polling] Успех за ${elapsedSec}с! Результат:`, sData.resultUrl);
                                         finalResultUrl = sData.resultUrl;
+                                        if (sData.audioUrls && sData.audioUrls.length > 0) finalAudioUrls = sData.audioUrls;
                                         break;
                                     } else if (sData.state === 'fail') {
                                         console.warn('[AI Polling] Явная ошибка от Kie.ai:', sData.error);
@@ -3791,6 +3793,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     } else if (data.resultUrl) {
                         finalResultUrl = data.resultUrl;
+                        if (data.audioUrls && data.audioUrls.length > 0) finalAudioUrls = data.audioUrls;
                     }
                 } else {
                     generationError = data.error || 'Ошибка при запуске генерации';
@@ -3862,6 +3865,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     : `🎵 ${selectedStyleCategory || 'МУЗЫКА'} • Персональный хит`;
             }
             resultAudioPlayer.play().catch(e => console.warn('Audio play error:', e));
+
+            // Показываем переключатель вариантов если Suno вернул 2 трека
+            const variantSwitcher = document.getElementById('audio-variants-switcher');
+            const btnVar1 = document.getElementById('btn-audio-var-1');
+            const btnVar2 = document.getElementById('btn-audio-var-2');
+            if (variantSwitcher && finalAudioUrls.length >= 2) {
+                variantSwitcher.style.display = 'flex';
+                const setVariant = (idx) => {
+                    resultAudioPlayer.src = finalAudioUrls[idx];
+                    resultAudioPlayer.play().catch(e => {});
+                    const activeStyle = 'linear-gradient(135deg, #a855f7, #ec4899)';
+                    btnVar1.style.background = idx === 0 ? activeStyle : 'transparent';
+                    btnVar1.style.color = idx === 0 ? '#fff' : '#aaa';
+                    btnVar1.style.boxShadow = idx === 0 ? '0 4px 15px rgba(168,85,247,0.4)' : 'none';
+                    btnVar2.style.background = idx === 1 ? activeStyle : 'transparent';
+                    btnVar2.style.color = idx === 1 ? '#fff' : '#aaa';
+                    btnVar2.style.boxShadow = idx === 1 ? '0 4px 15px rgba(168,85,247,0.4)' : 'none';
+                };
+                btnVar1.onclick = () => setVariant(0);
+                btnVar2.onclick = () => setVariant(1);
+                setVariant(0);
+            } else if (variantSwitcher) {
+                variantSwitcher.style.display = 'none';
+            }
+
         } else if (isVideoResult && resultVideo) {
             if (resultAudioBox) {
                 if (resultAudioPlayer) resultAudioPlayer.pause();
@@ -3897,6 +3925,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     loc: selectedStyleLocation || '',
                     price: selectedStylePrice || ''
                 });
+                // Если музыка — добавляем второй трек и режим
+                if (isAudioResult && finalAudioUrls.length >= 2) {
+                    query.set('file2', finalAudioUrls[1]);
+                    query.set('mode', 'audio');
+                }
                 qrDownloadUrl = `${window.location.origin}/download?${query.toString()}`;
             } else {
                 qrDownloadUrl = window.location.href;
@@ -3904,6 +3937,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('📱 Формирование брендированного QR-кода TRENDUM для загрузки:', qrDownloadUrl);
             renderInstantQR(resultQrEl, qrDownloadUrl, 260);
         }
+
 
         // Отображение карточки локации примерки одежды (где купить вещь)
         if (tryonLocationInfoCard) {

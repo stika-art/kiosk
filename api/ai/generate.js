@@ -476,6 +476,24 @@ CRITICAL MANDATORY INSTRUCTIONS:
                             else if (taskInfo.output.url) resultUrls.push(taskInfo.output.url);
                         }
 
+                        if (isAudioTask) {
+                            const allAudio = [...new Set(resultUrls.filter(u => typeof u === 'string' && Boolean(u.trim())))];
+                            if (allAudio.length > 0) {
+                                const cleanAudioUrls = await Promise.all(
+                                    allAudio.slice(0, 2).map((url, idx) => persistResultToSupabase(url, `${orderId}_track${idx + 1}`, false))
+                                );
+                                return {
+                                    resultUrl: cleanAudioUrls[0],
+                                    audioUrls: cleanAudioUrls,
+                                    taskId,
+                                    resolution: 'HD',
+                                    model: targetModel,
+                                    isVideo: false,
+                                    isAudio: true
+                                };
+                            }
+                        }
+
                         const finalMediaUrl = resultUrls.find(u => Boolean(u)) || 
                                               taskInfo.audio_url ||
                                               taskInfo.audioUrl ||
