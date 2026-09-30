@@ -1856,6 +1856,168 @@
                 bottom: 22px;
             }
         }
+
+        /* ЭКРАН ВЫБОРА ТЕМЫ И ПОСВЯЩЕНИЯ ПЕСНИ (SUNO AI) */
+        .music-theme-chips-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+            text-align: left;
+        }
+        .music-chips-label {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: 0.8px;
+            display: block;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .music-theme-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-start;
+        }
+        .theme-chip {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #f1f5f9;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .theme-chip:hover, .theme-chip:active {
+            background: rgba(236, 72, 153, 0.22);
+            border-color: #ec4899;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+        .theme-chip.active {
+            background: #ec4899 !important;
+            border-color: #f472b6 !important;
+            color: #fff !important;
+            box-shadow: 0 0 12px rgba(236, 72, 153, 0.5);
+        }
+        .music-input-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 680px;
+            margin: 0 auto 12px auto;
+        }
+        .kiosk-touch-input {
+            width: 100%;
+            padding: 14px 46px 14px 18px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.55);
+            border: 2px solid rgba(212, 160, 67, 0.55);
+            border-radius: 14px;
+            outline: none;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s ease;
+        }
+        .kiosk-touch-input:focus {
+            border-color: #ec4899;
+            box-shadow: 0 0 16px rgba(236, 72, 153, 0.35);
+        }
+        .kiosk-touch-input::placeholder {
+            color: rgba(255, 255, 255, 0.35);
+            font-weight: 500;
+            font-size: 16px;
+        }
+        .input-clear-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+        .input-clear-btn:hover, .input-clear-btn:active {
+            background: rgba(239, 68, 68, 0.8);
+        }
+        .virtual-keyboard-box {
+            width: 100%;
+            max-width: 720px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            user-select: none;
+            background: rgba(15, 15, 25, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 12px 8px;
+        }
+        .vk-row {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+        .vk-key {
+            height: 44px;
+            min-width: 36px;
+            flex: 1;
+            max-width: 52px;
+            padding: 0 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.08s ease;
+            touch-action: manipulation;
+        }
+        .vk-key:hover {
+            background: rgba(255, 255, 255, 0.18);
+        }
+        .vk-key:active {
+            background: #ec4899;
+            color: #fff;
+            transform: scale(0.94);
+        }
+        .vk-key-special {
+            background: rgba(212, 160, 67, 0.18);
+            border-color: rgba(212, 160, 67, 0.4);
+            color: #D4A043;
+            max-width: 76px;
+            font-size: 13px;
+        }
+        .vk-key-special:hover {
+            background: rgba(212, 160, 67, 0.3);
+        }
+        .vk-key-space {
+            flex: 4;
+            max-width: 240px;
+            font-size: 13px;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.8);
+        }
     </style>
 </head>
 
@@ -1970,7 +2132,57 @@
 <div id="kiosk-modal" class="modal-overlay" style="display:none;">
     <div class="modal-content">
         <button id="modal-close" class="modal-close-btn">&times;</button>
-        
+        <!-- STEP 0.5: MUSIC THEME & DEDICATION (ДЛЯ РАЗДЕЛА СОЗДАЙ СВОЙ ТРЕК) -->
+        <div id="step-music-theme" class="step-view" style="display:none;">
+            <div style="text-align: center; margin-bottom: 10px;">
+                <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(236, 72, 153, 0.15); border: 1px solid rgba(236, 72, 153, 0.4); color: #f472b6; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 800; letter-spacing: 0.5px;">
+                    <span>🎵</span>
+                    <span id="music-theme-genre-badge">СТИЛЬ: МЕДЛЯК О ЛЮБВИ</span>
+                </div>
+            </div>
+            <h2 class="modal-title" style="margin-top: 0; text-align: center;">О ЧЁМ БУДЕТ ВАША ПЕСНЯ?</h2>
+            <p class="modal-subtitle" style="text-align: center; max-width: 580px; margin: 0 auto 16px auto;">
+                Укажите имя человека, повод или кому посвятить трек. Нейросеть сочинит слова песни персонально для него!
+            </p>
+
+            <!-- Быстрые варианты в 1 клик -->
+            <div class="music-theme-chips-box">
+                <span class="music-chips-label">💡 БЫСТРЫЕ ВАРИАНТЫ (НАЖМИТЕ ДЛЯ ВЫБОРА):</span>
+                <div class="music-theme-chips" id="music-theme-chips">
+                    <button type="button" class="theme-chip" data-prefix="Любимой жене ">💍 Любимой жене</button>
+                    <button type="button" class="theme-chip" data-prefix="Любимому мужу ">👑 Любимому мужу</button>
+                    <button type="button" class="theme-chip" data-prefix="С Днём Рождения, ">🎂 С Днём Рождения</button>
+                    <button type="button" class="theme-chip" data-prefix="Любимой девушке ">❤️ Любимой девушке</button>
+                    <button type="button" class="theme-chip" data-prefix="Любимому парню ">🔥 Любимому парню</button>
+                    <button type="button" class="theme-chip" data-prefix="Брату ">🤝 Брату</button>
+                    <button type="button" class="theme-chip" data-prefix="Сестре ">🌸 Сестре</button>
+                    <button type="button" class="theme-chip" data-prefix="Лучшему другу ">⚡ Лучшему другу</button>
+                    <button type="button" class="theme-chip" data-prefix="Лучшей подруге ">✨ Лучшей подруге</button>
+                    <button type="button" class="theme-chip" data-prefix="Для любимой мамы ">💐 Для мамы</button>
+                    <button type="button" class="theme-chip" data-prefix="На свадьбу молодожёнам ">💒 На свадьбу</button>
+                    <button type="button" class="theme-chip" data-prefix="Про меня и мой успех">💎 Про меня и успех</button>
+                </div>
+            </div>
+
+            <!-- Поле ввода с кнопкой очистки -->
+            <div class="music-input-wrap">
+                <input type="text" id="music-theme-input" class="kiosk-touch-input" placeholder="Например: Любимой жене Айдай..." maxlength="100" autocomplete="off">
+                <button type="button" id="music-theme-clear-btn" class="input-clear-btn" title="Очистить">&times;</button>
+            </div>
+
+            <!-- Сенсорная клавиатура на экране -->
+            <div id="kiosk-virtual-keyboard" class="virtual-keyboard-box"></div>
+
+            <div class="modal-actions" style="margin-top: 18px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                <button type="button" id="music-theme-skip-btn" class="action-btn cancel-btn" style="min-width: 190px;">
+                    ПРОПУСТИТЬ (БЕЗ ИМЕНИ)
+                </button>
+                <button type="button" id="music-theme-continue-btn" class="action-btn primary-btn" style="min-width: 230px; font-weight: 800;">
+                    ПРОДОЛЖИТЬ К ОПЛАТЕ ➔
+                </button>
+            </div>
+        </div>
+
         <!-- STEP 1: CAMERA PREVIEW -->
         <div id="step-camera" class="step-view">
             <h2 class="modal-title" id="cam-modal-title">СЪЁМКА ФОТО</h2>

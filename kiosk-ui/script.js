@@ -68,7 +68,7 @@ function normalizeMainCards(cards) {
             { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
             { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'] },
             { id: 4, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] },
-            { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 НЕЙРОСЕТЬ SUNO AI • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА'] }
+            { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 НЕЙРОСЕТЬ SUNO AI • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] }
         ];
     } else {
         let tryOnCard = list.find(c => c.id === 4 || c.id === 5 || (c.title && c.title.toUpperCase().includes('ПРИМЕР')));
@@ -99,7 +99,7 @@ function normalizeMainCards(cards) {
                 filter: 'MUSIC',
                 category: 'МУЗЫКА',
                 img: 'images/photo2.jpg',
-                categories: ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА']
+                categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК']
             });
         }
     }
@@ -117,7 +117,7 @@ function normalizeMainCards(cards) {
             } else if (c.id === 4 || c.id === 5 || titleUp.includes('ПРИМЕР') || titleUp.includes('ОДЕЖД')) {
                 cats = ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'];
             } else if (c.id === 6 || titleUp.includes('ТРЕК') || titleUp.includes('МУЗЫК')) {
-                cats = ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА'];
+                cats = ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'];
             } else {
                 cats = [c.title || 'ОБЩЕЕ'];
             }
@@ -705,10 +705,10 @@ const DEFAULT_KIOSK_TEMPLATES = [
         "sectionId": 6,
         "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
         "category": "РЭП",
-        "title": "Trap & Rap Hit",
+        "title": "Trap & 808 Bass",
         "price": 290,
         "model": "suno",
-        "prompt": "Качающий стильный трек в стиле современный трэп и хип-хоп, плотный бас 808, динамичный ритмичный флоу, запоминающийся припев, качественный русский вокал, студийный мастеринг",
+        "prompt": "Качающий стильный трек в стиле современный трэп и хип-хоп, глубокий и плотный бас 808, динамичный ритмичный флоу, запоминающийся припев, качественный русский вокал с легким автотюном, студийный мастеринг",
         "img": "images/photo1.jpg",
         "htmlCode": "",
         "location": ""
@@ -718,10 +718,10 @@ const DEFAULT_KIOSK_TEMPLATES = [
         "sectionId": 6,
         "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
         "category": "ПОП",
-        "title": "Club Dance",
+        "title": "Радио Поп-Хит",
         "price": 290,
         "model": "suno",
-        "prompt": "Энергичный танцевальный поп-хит для клубов и радиостанций, зажигательный прямой бит, яркий выразительный вокал, позитивное настроение, мощный фестивальный дроп",
+        "prompt": "Зажигательный танцевальный поп-хит для клубов и радиостанций, ультра-цепляющий припев, прямой танцевальный бит, яркий выразительный вокал, позитивное эйфорическое настроение, мощный фестивальный дроп",
         "img": "images/photo2.jpg",
         "htmlCode": "",
         "location": ""
@@ -731,10 +731,10 @@ const DEFAULT_KIOSK_TEMPLATES = [
         "sectionId": 6,
         "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
         "category": "ФОНК",
-        "title": "Drift Phonk",
+        "title": "Drift Phonk Beast",
         "price": 290,
         "model": "suno",
-        "prompt": "Агрессивный дрифт-фонк, cowbell мелодия, мощнейший дисторшн-бас, драйвовый ночной вайб, underground rap vocal, быстрый темп, идеальный трек для авто",
+        "prompt": "Агрессивный ночной дрифт-фонк, cowbell мелодия, мощнейший перегруженный дисторшн-бас, драйвовый ночной вайб, underground rap vocal, быстрый темп, идеальный трек для авто",
         "img": "images/photo3.jpg",
         "htmlCode": "",
         "location": ""
@@ -744,10 +744,10 @@ const DEFAULT_KIOSK_TEMPLATES = [
         "sectionId": 6,
         "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
         "category": "ПОЗДРАВЛЕНИЯ",
-        "title": "С Днём Рождения!",
+        "title": "С Днём Рождения, Бро!",
         "price": 290,
         "model": "suno",
-        "prompt": "Праздничная душевная песня с Днем Рождения, радостное теплое настроение, добрые поздравления с праздником, торжественный красивый припев, звонкий вокал",
+        "prompt": "Драйвовый пацанский хип-хоп с поздравлениями с днём рождения, качающий бодрый бит, тёплые братские слова, пожелания фарта, побед и бабла, позитивный припев",
         "img": "assets/child.png",
         "htmlCode": "",
         "location": ""
@@ -756,12 +756,12 @@ const DEFAULT_KIOSK_TEMPLATES = [
         "id": 1790700000005,
         "sectionId": 6,
         "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
-        "category": "РОК",
-        "title": "Rock Energy",
+        "category": "ПОЗДРАВЛЕНИЯ",
+        "title": "С Днём Рождения, Королева!",
         "price": 290,
         "model": "suno",
-        "prompt": "Мощный альтернативный стадионный рок с перегруженными драйвовыми гитарами, живыми барабанами и сильным эмоциональным рок-вокалом, взрывной припев",
-        "img": "assets/hero_portrait.jpg",
+        "prompt": "Праздничный сияющий поп-хит с поздравлением прекрасной девушки с днём рождения, звонкий красивый вокал, море комплиментов, радости и цветов, танцевальный ритм",
+        "img": "assets/hero_avatar.jpg",
         "htmlCode": "",
         "location": ""
     },
@@ -769,11 +769,245 @@ const DEFAULT_KIOSK_TEMPLATES = [
         "id": 1790700000006,
         "sectionId": 6,
         "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
-        "category": "ЛИРИКА",
-        "title": "Love Melody",
+        "category": "РОК",
+        "title": "Стадионный Рок",
         "price": 290,
         "model": "suno",
-        "prompt": "Красивая трогательная романтическая песня о любви, нежное фортепиано, акустическая гитара, искренний чувственный бархатный вокал, глубокий текст",
+        "prompt": "Мощный альтернативный стадионный рок с перегруженными драйвовыми гитарами, живыми барабанами и сильным эмоциональным рок-вокалом с хрипотцой, взрывной припев",
+        "img": "assets/hero_portrait.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000007,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ЛИРИКА",
+        "title": "Медляк о Любви",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Красивая трогательная романтическая песня о любви, нежное фортепиано, акустическая гитара, искренний чувственный бархатный вокал, глубокий текст о чувствах",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000008,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "КЛУБНАЯ",
+        "title": "Slap House Night",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Плотный прыгающий слэп-хаус бас в стиле Imanbek, клубная ночная атмосфера, гипнотический танцевальный ритм, цепляющий припев, мощная энергетика для танцпола",
+        "img": "assets/hero_robot.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000009,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "КЛУБНАЯ",
+        "title": "EDM Festival Drop",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Грандиозный фестивальный EDM гимн, нарастающий разгон и мощнейший эйфорический дроп, 128 BPM, стадионный масштаб, мощные синтезаторы и вокал",
+        "img": "images/photo2.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000010,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "КЛУБНАЯ",
+        "title": "Deep House Lounge",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Стильный атмосферный дип-хаус лаунж, чувственный бархатный женский вокал, мягкий саксофон, гипнотический грув, вечерний чилл и релакс",
+        "img": "images/photo3.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000011,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "КЛУБНАЯ",
+        "title": "Synthwave 80s Retro",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Ночной неоновый ретро-вейв 80-х, аналоговые синты, атмосфера ночной трассы и огней мегаполиса, ностальгический романтический вокал, ретро-эстетика",
+        "img": "assets/1489.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000012,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "КЛУБНАЯ",
+        "title": "Cyberpunk Techno",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Тёмный пульсирующий футуристичный индастриал техно-рейв, мощнейший индустриальный бас, энергетика киберпанка, гипнотический ночной ритм",
+        "img": "assets/hero_robot.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000013,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РЭП",
+        "title": "Old School 90s Boom-Bap",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Золотая эра хип-хопа 90-х, тёплый виниловый бум-бэп бит, скретчи, напористый уличный русский рэп-флоу, честный олдскульный стиль",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000014,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РЭП",
+        "title": "UK Drill Flow",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Тёмный скоростной дрилл с характерным скользящим 808 слайд-басом, хлёсткий флоу, дерзкий ночной вайб, плотные ударные",
+        "img": "images/photo2.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000015,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РЭП",
+        "title": "Кальянный Чилл",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Дымный расслабленный кальянный рэп, восточные струнные мотивы, мелодичный автотюн, мягкий бит, романтическая ночная атмосфера",
+        "img": "images/photo3.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000016,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ФОНК",
+        "title": "Brazilian Phonk (Baile)",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Трендовый вирусный бразильский фонк из TikTok, взрывной панч, качающий ритм фавелы, агрессивный саунд, мощный уличный дроп",
+        "img": "assets/child.png",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000017,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РОК",
+        "title": "Поп-Панк 2000-х",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Бодрый задорный гитарный поп-панк в стиле 2000-х, скоростной ритм, взрывная подростковая энергетика, запоминающийся весёлый припев",
+        "img": "assets/hero_portrait.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000018,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РОК",
+        "title": "Русский Рок / Душа",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Глубокий смысловой русский рок, акустическая и электрогитара, искренний вокал с душевной хрипотцой, философский текст о жизни",
+        "img": "assets/hero_avatar.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000019,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ЛИРИКА",
+        "title": "Акустика под гитару",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Искренний душевный трек под акустическую гитару, тёплый вечер, честные простые слова от самого сердца, чистый выразительный вокал",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000020,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ЛИРИКА",
+        "title": "R&B Soul Night",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Чувственный ночной R&B и нео-соул, медленный глубокий ритм, бархатные вокальные мелизмы, романтическая интимная атмосфера при свечах",
+        "img": "images/photo2.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000021,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ПОЗДРАВЛЕНИЯ",
+        "title": "Свадебный Хит / Любовь Навек",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Торжественная красивая песня для жениха и невесты на свадьбу, романтичный вальс и современный бит, благословение любви, счастье на долгие годы",
+        "img": "assets/1489.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000022,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ПОЗДРАВЛЕНИЯ",
+        "title": "Юбилейный Тост",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Торжественная душевная застольная песня к юбилею, аккордеон, гитара, уважение, тёплые воспоминания и пожелания крепкого здоровья и долголетия",
+        "img": "images/photo3.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000023,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ШАНСОН",
+        "title": "Душевный Шансон",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Тёплый душевный шансон, семиструнная гитара, глубокий мужской баритон, верность, дружба, воспоминания и житейская мудрость",
+        "img": "assets/hero_portrait.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000024,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ВОСТОК",
+        "title": "Восточные сказки / Этно-Дэнс",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Зажигательный восточный поп-бит, колоритные восточные струнные и ударные, праздничный танцевальный вайб, яркий мелодичный припев",
         "img": "assets/hero_avatar.jpg",
         "htmlCode": "",
         "location": ""
@@ -994,6 +1228,9 @@ function isMusicTemplate(tpl) {
            c.includes('РОК') ||
            c.includes('ЛИРИК') ||
            c.includes('ПОЗДРАВЛ') ||
+           c.includes('КЛУБН') ||
+           c.includes('ШАНСОН') ||
+           c.includes('ВОСТОК') ||
            t.includes('ТРЕК') ||
            t.includes('ХИТ');
 }
@@ -1272,12 +1509,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalClose = document.getElementById('modal-close');
     
     // Steps
+    const stepMusicTheme = document.getElementById('step-music-theme');
     const stepCamera = document.getElementById('step-camera');
     const stepConfirm = document.getElementById('step-confirm');
     const stepPayment = document.getElementById('step-payment');
     const stepProcessing = document.getElementById('step-processing');
     const stepResult = document.getElementById('step-result');
     const stepRoastResult = document.getElementById('step-roast-result');
+
+    // Music Theme Elements
+    const musicThemeGenreBadge = document.getElementById('music-theme-genre-badge');
+    const musicThemeInput = document.getElementById('music-theme-input');
+    const musicThemeClearBtn = document.getElementById('music-theme-clear-btn');
+    const musicThemeSkipBtn = document.getElementById('music-theme-skip-btn');
+    const musicThemeContinueBtn = document.getElementById('music-theme-continue-btn');
+    const musicVirtualKeyboard = document.getElementById('kiosk-virtual-keyboard');
 
     // Roast Elements
     const roastCaricatureImg = document.getElementById('roast-caricature-img');
@@ -1544,11 +1790,189 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // ШАГ 1: ОТКРЫТИЕ ПОТОКА — ЭКРАН ОПЛАТЫ
+    // ============================================================
+    //  МУЗЫКАЛЬНЫЙ ШАГ: ТЕМАТИКА И ПОСВЯЩЕНИЕ ПЕСНИ (SUNO AI)
+    // ============================================================
+    let guestMusicTheme = '';
+    let vkCurrentLayout = 'RU'; // 'RU', 'EN', 'NUM'
+
+    const VK_LAYOUTS = {
+        RU: [
+            ['Й', 'Ц', 'У', 'К', 'Е', 'Н', 'Г', 'Ш', 'Щ', 'З', 'Х', 'Ъ'],
+            ['Ф', 'Ы', 'В', 'А', 'П', 'Р', 'О', 'Л', 'Д', 'Ж', 'Э'],
+            ['Я', 'Ч', 'С', 'М', 'И', 'Т', 'Ь', 'Б', 'Ю', { label: '⌫', action: 'backspace', special: true }]
+        ],
+        EN: [
+            ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+            ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+            ['Z', 'X', 'C', 'V', 'B', 'N', 'M', { label: '⌫', action: 'backspace', special: true }]
+        ],
+        NUM: [
+            ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+            ['-', '+', '=', '/', '(', ')', '"', '\'', '!', '?'],
+            [',', '.', ':', ';', '@', '#', '%', '&', { label: '⌫', action: 'backspace', special: true }]
+        ]
+    };
+
+    function renderVirtualKeyboard() {
+        if (!musicVirtualKeyboard) return;
+        musicVirtualKeyboard.innerHTML = '';
+
+        const layoutRows = vkCurrentLayout === 'RU' 
+            ? VK_LAYOUTS.RU 
+            : (vkCurrentLayout === 'EN' ? VK_LAYOUTS.EN : VK_LAYOUTS.NUM);
+
+        layoutRows.forEach(row => {
+            const rowEl = document.createElement('div');
+            rowEl.className = 'vk-row';
+            row.forEach(item => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'vk-key';
+                if (typeof item === 'object') {
+                    btn.textContent = item.label;
+                    if (item.special) btn.classList.add('vk-key-special');
+                    btn.onclick = () => handleVkAction(item.action);
+                } else {
+                    btn.textContent = item;
+                    btn.onclick = () => handleVkChar(item);
+                }
+                rowEl.appendChild(btn);
+            });
+            musicVirtualKeyboard.appendChild(rowEl);
+        });
+
+        // 4-я строка: переключение языка, ПРОБЕЛ, Очистить
+        const bottomRow = document.createElement('div');
+        bottomRow.className = 'vk-row';
+
+        // Кнопка 123 / АБВ
+        const numBtn = document.createElement('button');
+        numBtn.type = 'button';
+        numBtn.className = 'vk-key vk-key-special';
+        numBtn.textContent = vkCurrentLayout === 'NUM' ? (vkCurrentLayout === 'RU' ? 'АБВ' : 'ABC') : '123';
+        numBtn.onclick = () => {
+            vkCurrentLayout = vkCurrentLayout === 'NUM' ? 'RU' : 'NUM';
+            renderVirtualKeyboard();
+        };
+        bottomRow.appendChild(numBtn);
+
+        // Кнопка EN / RU
+        const langBtn = document.createElement('button');
+        langBtn.type = 'button';
+        langBtn.className = 'vk-key vk-key-special';
+        langBtn.textContent = vkCurrentLayout === 'RU' ? 'EN' : 'RU';
+        langBtn.onclick = () => {
+            vkCurrentLayout = vkCurrentLayout === 'RU' ? 'EN' : 'RU';
+            renderVirtualKeyboard();
+        };
+        bottomRow.appendChild(langBtn);
+
+        // ПРОБЕЛ
+        const spaceBtn = document.createElement('button');
+        spaceBtn.type = 'button';
+        spaceBtn.className = 'vk-key vk-key-space';
+        spaceBtn.textContent = 'ПРОБЕЛ';
+        spaceBtn.onclick = () => handleVkChar(' ');
+        bottomRow.appendChild(spaceBtn);
+
+        // Очистить
+        const clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'vk-key vk-key-special';
+        clearBtn.textContent = 'Сброс';
+        clearBtn.title = 'Очистить всё поле';
+        clearBtn.onclick = () => {
+            if (musicThemeInput) {
+                musicThemeInput.value = '';
+                musicThemeInput.focus();
+            }
+            document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
+        };
+        bottomRow.appendChild(clearBtn);
+
+        musicVirtualKeyboard.appendChild(bottomRow);
+    }
+
+    function handleVkChar(char) {
+        if (!musicThemeInput) return;
+        musicThemeInput.value = (musicThemeInput.value || '') + char;
+        musicThemeInput.focus();
+    }
+
+    function handleVkAction(action) {
+        if (!musicThemeInput) return;
+        if (action === 'backspace') {
+            musicThemeInput.value = (musicThemeInput.value || '').slice(0, -1);
+            musicThemeInput.focus();
+        }
+    }
+
+    function openMusicThemeStep() {
+        showStep(stepMusicTheme);
+        if (musicThemeGenreBadge) {
+            musicThemeGenreBadge.textContent = `СТИЛЬ: ${(selectedStyle || 'МУЗЫКАЛЬНЫЙ ХИТ').toUpperCase()}`;
+        }
+        if (musicThemeInput) {
+            musicThemeInput.value = guestMusicTheme || '';
+            setTimeout(() => musicThemeInput.focus(), 150);
+        }
+        renderVirtualKeyboard();
+    }
+
+    // Инициализация кликов по чипам быстрых тем
+    document.querySelectorAll('.theme-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const prefix = chip.dataset.prefix || chip.textContent.trim() + ' ';
+            document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+
+            if (musicThemeInput) {
+                musicThemeInput.value = prefix;
+                musicThemeInput.focus();
+            }
+        });
+    });
+
+    if (musicThemeClearBtn) {
+        musicThemeClearBtn.addEventListener('click', () => {
+            if (musicThemeInput) {
+                musicThemeInput.value = '';
+                musicThemeInput.focus();
+            }
+            document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
+        });
+    }
+
+    if (musicThemeSkipBtn) {
+        musicThemeSkipBtn.addEventListener('click', () => {
+            guestMusicTheme = '';
+            showStep(stepPayment);
+            initiatePaymentOrder();
+        });
+    }
+
+    if (musicThemeContinueBtn) {
+        musicThemeContinueBtn.addEventListener('click', () => {
+            guestMusicTheme = (musicThemeInput ? musicThemeInput.value.trim() : '');
+            showStep(stepPayment);
+            initiatePaymentOrder();
+        });
+    }
+
+    // ШАГ 1: ОТКРЫТИЕ ПОТОКА — ЭКРАН ОПЛАТЫ ИЛИ ВЫБОРА ТЕМЫ
     window.openKioskFlow = function() {
         if (modal) modal.style.display = 'flex';
-        showStep(stepPayment);
-        initiatePaymentOrder();
+
+        const curTpl = templates.find(t => t.id === selectedTemplateId || t.title === selectedStyle);
+        const isMusic = isMusicTemplate(curTpl) || selectedStyleModel === 'suno';
+
+        if (isMusic) {
+            openMusicThemeStep();
+        } else {
+            showStep(stepPayment);
+            initiatePaymentOrder();
+        }
     };
 
     modalClose.addEventListener('click', closeKioskFlow);
@@ -1632,6 +2056,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const resultAudioBox = document.getElementById('result-audio-box');
         if (resultAudioBox) resultAudioBox.style.display = 'none';
 
+        guestMusicTheme = '';
+        if (musicThemeInput) musicThemeInput.value = '';
+        document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
+
         if (tryonLocationInfoCard) tryonLocationInfoCard.style.display = 'none';
         modal.style.display = 'none';
         resetState();
@@ -1639,7 +2067,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showStep(stepEl) {
-        [stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepRoastResult].forEach(s => {
+        [stepMusicTheme, stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepRoastResult].forEach(s => {
             if (s) s.style.display = 'none';
         });
         if (stepEl) stepEl.style.display = 'block';
@@ -1856,7 +2284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ИНИЦИАЛИЗАЦИЯ ЗАКАЗА И QR-КОДА OBUSINESS ELQR
     async function initiatePaymentOrder() {
-        if (payStyleTitle) payStyleTitle.textContent = selectedStyle;
+        if (payStyleTitle) payStyleTitle.textContent = guestMusicTheme ? `${guestMusicTheme} (${selectedStyle})` : selectedStyle;
 
         const isVid = typeof selectedStylePhoto === 'string' && (
             selectedStylePhoto.endsWith('.mp4') || selectedStylePhoto.endsWith('.webm') || selectedStylePhoto.endsWith('.mov') ||
@@ -2995,26 +3423,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const aggregatorUrl = localStorage.getItem('kiosk_aggregator_url') || '';
             const aggregatorKey = localStorage.getItem('kiosk_aggregator_key') || '';
 
-            const resp = await fetch('/api/ai/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    photoData: capturedPhotoData,
-                    videoUrl: guestVideoUrl,
-                    guestVideoUrl: guestVideoUrl,
-                    templateImg: selectedStylePhoto,
-                    prompt: selectedStylePrompt,
-                    model: selectedStyleModel || 'chatgpt-2',
-                    title: selectedStyle,
-                    price: selectedStylePrice,
-                    orderId: currentOrderId,
-                    location: selectedStyleLocation,
-                    isTryOn: isTryOnMode,
-                    resolution: '1K',
-                    aggregatorUrl,
-                    aggregatorKey
-                })
-            });
+                    let finalPrompt = selectedStylePrompt;
+                    let finalTitle = selectedStyle;
+                    if (isMusicSelection && guestMusicTheme) {
+                        finalPrompt = `${selectedStylePrompt}. Тема и посвящение песни: ${guestMusicTheme}. Песня написана персонально для: ${guestMusicTheme}.`;
+                        finalTitle = `${guestMusicTheme} (${selectedStyle})`;
+                    }
+
+                    const resp = await fetch('/api/ai/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            photoData: capturedPhotoData,
+                            videoUrl: guestVideoUrl,
+                            guestVideoUrl: guestVideoUrl,
+                            templateImg: selectedStylePhoto,
+                            prompt: finalPrompt,
+                            model: selectedStyleModel || 'chatgpt-2',
+                            title: finalTitle,
+                            price: selectedStylePrice,
+                            orderId: currentOrderId,
+                            location: selectedStyleLocation,
+                            isTryOn: isTryOnMode,
+                            resolution: '1K',
+                            aggregatorUrl,
+                            aggregatorKey
+                        })
+                    });
 
             if (resp.ok) {
                 const data = await resp.json();
@@ -3192,10 +3627,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultAudioCover.src = capturedPhotoData || selectedStylePhoto || 'assets/hero_portrait.jpg';
             }
             if (resultAudioTitle) {
-                resultAudioTitle.textContent = selectedStyle || 'ВАШ ПЕРСОНАЛЬНЫЙ ТРЕК';
+                resultAudioTitle.textContent = guestMusicTheme ? guestMusicTheme : (selectedStyle || 'ВАШ ПЕРСОНАЛЬНЫЙ ТРЕК');
             }
             if (resultAudioGenre) {
-                resultAudioGenre.textContent = `🎵 ${selectedStyleCategory || 'Suno AI'} • Персональный хит`;
+                resultAudioGenre.textContent = guestMusicTheme
+                    ? `🎵 ${selectedStyle} • Для: ${guestMusicTheme}`
+                    : `🎵 ${selectedStyleCategory || 'Suno AI'} • Персональный хит`;
             }
             resultAudioPlayer.play().catch(e => console.warn('Audio play error:', e));
         } else if (isVideoResult && resultVideo) {

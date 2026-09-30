@@ -171,8 +171,9 @@ function sanitizeForOpenAI(p) {
 }
 
 // 5. Вызов Kie.ai API и ожидание результата задачи генерации изображения
-async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution, orderId }) {
-    if (!apiKey || (!publicPhotoUrl && !guestVideoUrl)) return null;
+async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution, orderId, title }) {
+    const isMusicTarget = (model === 'suno' || (model && model.toLowerCase().includes('suno')) || (model && model.toLowerCase().includes('music')));
+    if (!apiKey || (!isMusicTarget && !publicPhotoUrl && !guestVideoUrl)) return null;
 
     // Разрешение: строго 1K для ультра-быстрой генерации 5-8 сек на киоске
     const targetResolution = '1K';
@@ -623,7 +624,8 @@ module.exports = async (req, res) => {
             templateImgUrl: publicTemplateUrl,
             isTryOn: Boolean(isTryOn),
             resolution: targetResolution,
-            orderId
+            orderId,
+            title
         }) : null;
 
         const effectiveModelName = generationOutcome?.model || model || (isTryOn ? 'nano-banana-2' : 'chatgpt-2.5');
