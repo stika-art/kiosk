@@ -1257,13 +1257,17 @@ window.selectCard = function(cardEl, cardIdOrMode) {
         }
     });
 
-    // 3. Открываем галерею для конкретной кнопки
-    openTemplateGallery(cardIdOrMode);
-
-    setTimeout(() => {
-        allCards.forEach(c => c.classList.remove('fly-left', 'fly-right', 'card-selected'));
-        isSelectingCard = false;
-    }, 400);
+    try {
+        // 3. Открываем галерею или студию для конкретной кнопки
+        openTemplateGallery(cardIdOrMode);
+    } catch (err) {
+        console.error('Ошибка при открытии раздела:', err);
+    } finally {
+        setTimeout(() => {
+            allCards.forEach(c => c.classList.remove('fly-left', 'fly-right', 'card-selected'));
+            isSelectingCard = false;
+        }, 400);
+    }
 };
 
 // 2. GRID ROUTER & RENDERER (ДЛЯ КАЖДОЙ КНОПКИ — СВОИ КАТЕГОРИИ И СВОИ ШАБЛОНЫ)
@@ -1964,25 +1968,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Открытие прямой студии создания песни (без каталога шаблонов)
     window.openDirectMusicStudio = function(card) {
-        if (attractOverlay && !attractOverlay.classList.contains('hidden')) {
-            closeAttractMode();
+        if (typeof window.hideAttractScreen === 'function') {
+            window.hideAttractScreen();
         }
         const templateModal = document.getElementById('template-modal');
         if (templateModal) templateModal.classList.add('hidden');
 
-        activeSectionCard = card || mainCardsConfig.find(c => c.id === 6);
+        activeSectionCard = card || (Array.isArray(mainCardsConfig) ? mainCardsConfig.find(c => c.id === 6) : null);
         selectedStylePrice = (card && card.price) ? card.price : 290;
 
-        if (musicThemeCreateBtn) {
-            musicThemeCreateBtn.innerHTML = `🎵 СОЗДАТЬ ТРЕК • ${selectedStylePrice} СОМ ➔`;
+        const createBtn = document.getElementById('music-theme-create-btn');
+        if (createBtn) {
+            createBtn.innerHTML = `🎵 СОЗДАТЬ ТРЕК • ${selectedStylePrice} СОМ ➔`;
         }
 
-        if (modal) modal.style.display = 'flex';
-        showStep(stepMusicTheme);
+        const kioskModal = document.getElementById('kiosk-modal');
+        if (kioskModal) kioskModal.style.display = 'flex';
 
-        setActiveMusicInput(musicInputAbout);
-        if (musicInputAbout) {
-            setTimeout(() => musicInputAbout.focus(), 150);
+        const stepEl = document.getElementById('step-music-theme');
+        showStep(stepEl);
+
+        const inpAbout = document.getElementById('music-input-about');
+        setActiveMusicInput(inpAbout);
+        if (inpAbout) {
+            setTimeout(() => inpAbout.focus(), 150);
         }
 
         renderVirtualKeyboard();
