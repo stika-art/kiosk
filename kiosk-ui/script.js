@@ -2574,16 +2574,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ОПЛАТА УСПЕШНО ПОЛУЧЕНА
     function handlePaymentSuccess() {
-        if (paymentStatusText) {
-            paymentStatusText.textContent = '✅ Оплата получена! Включаем камеру...';
+        const isMusicPaid = selectedStyleModel === 'suno' ||
+            (selectedStyleModel && selectedStyleModel.includes('suno')) ||
+            (selectedStyleModel && selectedStyleModel.includes('music'));
+
+        if (isMusicPaid) {
+            // Для музыки камера не нужна — сразу запускаем генерацию
+            if (paymentStatusText) {
+                paymentStatusText.textContent = '✅ Оплата получена! Запускаем генерацию...';
+            }
+            showStep(stepProcessing);
+            runAIGeneration();
+        } else {
+            // Для фото/видео — открываем камеру
+            if (paymentStatusText) {
+                paymentStatusText.textContent = '✅ Оплата получена! Включаем камеру...';
+            }
+            resetCameraStep();
+            showStep(stepCamera);
+            if (webcamEl && webcamEl.srcObject && webcamEl.paused) {
+                webcamEl.play().catch(() => {});
+            }
+            startWebcam();
         }
-        resetCameraStep();
-        showStep(stepCamera);
-        if (webcamEl && webcamEl.srcObject && webcamEl.paused) {
-            webcamEl.play().catch(() => {});
-        }
-        startWebcam();
     }
+
 
 
 
