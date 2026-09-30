@@ -1075,6 +1075,7 @@
                         <option value="VIDEO">🎬 Только ВИДЕО (клипы и анимация)</option>
                         <option value="TRENDS">🔥 Только ТРЕНДЫ (популярное)</option>
                         <option value="TRYON">👕 Примерка одежды и товаров</option>
+                        <option value="MUSIC">🎵 Музыка и песни (Suno AI)</option>
                         <option value="ALL">🌟 Все шаблоны подряд</option>
                     </select>
                 </div>
@@ -1876,6 +1877,88 @@
         "img": "images/photo1.jpg",
         "htmlCode": "",
         "location": ""
+    },
+
+    // ==========================================
+    // РАЗДЕЛ: СОЗДАЙ СВОЙ ТРЕК (sectionId: 6, Suno AI)
+    // ==========================================
+    {
+        "id": 1790700000001,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РЭП",
+        "title": "Trap & Rap Hit",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Качающий стильный трек в стиле современный трэп и хип-хоп, плотный бас 808, динамичный ритмичный флоу, запоминающийся припев, качественный русский вокал, студийный мастеринг",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000002,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ПОП",
+        "title": "Club Dance",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Энергичный танцевальный поп-хит для клубов и радиостанций, зажигательный прямой бит, яркий выразительный вокал, позитивное настроение, мощный фестивальный дроп",
+        "img": "images/photo2.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000003,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ФОНК",
+        "title": "Drift Phonk",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Агрессивный дрифт-фонк, cowbell мелодия, мощнейший дисторшн-бас, драйвовый ночной вайб, underground rap vocal, быстрый темп, идеальный трек для авто",
+        "img": "images/photo3.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000004,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ПОЗДРАВЛЕНИЯ",
+        "title": "С Днём Рождения!",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Праздничная душевная песня с Днем Рождения, радостное теплое настроение, добрые поздравления с праздником, торжественный красивый припев, звонкий вокал",
+        "img": "assets/child.png",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000005,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РОК",
+        "title": "Rock Energy",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Мощный альтернативный стадионный рок с перегруженными драйвовыми гитарами, живыми барабанами и сильным эмоциональным рок-вокалом, взрывной припев",
+        "img": "assets/hero_portrait.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000006,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ЛИРИКА",
+        "title": "Love Melody",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Красивая трогательная романтическая песня о любви, нежное фортепиано, акустическая гитара, искренний чувственный бархатный вокал, глубокий текст",
+        "img": "assets/hero_avatar.jpg",
+        "htmlCode": "",
+        "location": ""
     }
 ];
 
@@ -1953,8 +2036,9 @@
                 list = [
                     { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
                     { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
-                    { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'INSTA VIBE'] },
-                    { id: 4, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] }
+                    { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'] },
+                    { id: 4, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] },
+                    { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 НЕЙРОСЕТЬ SUNO AI • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА'] }
                 ];
             } else {
                 let tryOnCard = list.find(c => c.id === 4 || c.id === 5 || (c.title && c.title.toUpperCase().includes('ПРИМЕР')));
@@ -1974,20 +2058,36 @@
                     tryOnCard.title = 'ПРИМЕРКА';
                     tryOnCard.filter = 'TRYON';
                 }
+
+                let musicCard = list.find(c => c.id === 6 || (c.filter && c.filter.toUpperCase() === 'MUSIC') || (c.title && c.title.toUpperCase().includes('ТРЕК')));
+                if (!musicCard) {
+                    list.push({
+                        id: 6,
+                        title: 'СОЗДАЙ СВОЙ ТРЕК',
+                        badge: '🎵 НЕЙРОСЕТЬ SUNO AI • ХИТЫ',
+                        subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ',
+                        filter: 'MUSIC',
+                        category: 'МУЗЫКА',
+                        img: 'images/photo2.jpg',
+                        categories: ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА']
+                    });
+                }
             }
 
             return list.map(c => {
                 const titleUp = (c.title || '').toUpperCase();
-                let cats = Array.isArray(c.categories) && c.categories.length > 0 ? c.categories : null;
+                let cats = Array.isArray(c.categories) && c.categories.length > 0 ? [...c.categories] : null;
                 if (!cats) {
                     if (c.id === 1 || titleUp === 'ФОТО') {
                         cats = ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'];
                     } else if (c.id === 2 || titleUp === 'ВИДЕО') {
                         cats = ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'];
                     } else if (c.id === 3 || titleUp === 'ТРЕНДЫ') {
-                        cats = ['TIKTOK', 'REELS', 'INSTA VIBE'];
+                        cats = ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'];
                     } else if (c.id === 4 || c.id === 5 || titleUp.includes('ПРИМЕР') || titleUp.includes('ОДЕЖД')) {
                         cats = ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'];
+                    } else if (c.id === 6 || titleUp.includes('ТРЕК') || titleUp.includes('МУЗЫК')) {
+                        cats = ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА'];
                     } else {
                         cats = [c.title || 'ОБЩЕЕ'];
                     }
@@ -2253,6 +2353,7 @@
             if (title.includes('ВИДЕО')) return '🎬';
             if (title.includes('ТРЕНД')) return '🔥';
             if (title.includes('ПРИМЕР') || title.includes('ОДЕЖД') || card.id === 4 || card.id === 5 || card.filter === 'TRYON') return '👕';
+            if (title.includes('ТРЕК') || title.includes('МУЗЫК') || title.includes('ПЕСН') || card.id === 6 || card.filter === 'MUSIC') return '🎵';
             return '🎴';
         }
 
@@ -2475,6 +2576,7 @@
             if (m === 'kling-motion' || m.includes('motion')) return '<span class="model-badge" style="background: rgba(16,185,129,0.18); border-color: #10b981; color: #34d399; font-weight: 800;">🕺 Kling Motion Control</span>';
             if (m === 'kling-turbo' || m.includes('turbo')) return '<span class="model-badge" style="background: rgba(59,130,246,0.18); border-color: #3b82f6; color: #60a5fa; font-weight: 800;">🚀 Kling Turbo</span>';
             if (m === 'kling-video' || m.includes('kling')) return '<span class="model-badge" style="background: rgba(168,85,247,0.18); border-color: #a855f7; color: #c084fc; font-weight: 800;">🎥 Kling 2.6 HD</span>';
+            if (m === 'suno' || m.includes('suno') || m.includes('music')) return '<span class="model-badge" style="background: rgba(236,72,153,0.18); border-color: #ec4899; color: #f472b6; font-weight: 800;">🎵 Suno AI</span>';
             return `<span class="model-badge">${m}</span>`;
         }
 
@@ -2600,6 +2702,7 @@
 
             const isTryOn = secNum === 4 || secNum === 5 || titleUp.includes('ПРИМЕР') || (card && card.filter === 'TRYON');
             const isVideo = secNum === 2 || titleUp.includes('ВИДЕО');
+            const isMusic = secNum === 6 || titleUp.includes('ТРЕК') || titleUp.includes('МУЗЫК') || titleUp.includes('ПЕСН') || (card && card.filter === 'MUSIC');
 
             const badgeTitle = document.getElementById('tpl-form-title-badge');
             const catLabel = document.getElementById('tpl-cat-label');
@@ -2707,6 +2810,34 @@
                 if (imgLabel) imgLabel.innerHTML = '🎬 Видео-референс танца (MP4) или Обложка стиля (JPG):';
                 if (imgTip) imgTip.innerHTML = '💡 <b>Для танцев Kling Motion Control загрузите видеоролик MP4</b> с движениями танца. Гость сфотографируется у киоска, и нейросеть перенесет движения из видео на его фото!';
                 if (submitBtn && !editingTemplateId) submitBtn.textContent = '+ Добавить шаблон в «ТРЕНДЫ»';
+
+            } else if (isMusic) {
+                // ============================================
+                // РАЗДЕЛ 🎵 СОЗДАЙ СВОЙ ТРЕК (SUNO AI)
+                // ============================================
+                if (badgeTitle) badgeTitle.innerHTML = '<span>🎵</span> <span>Добавление трека в «СОЗДАЙ СВОЙ ТРЕК»</span>';
+                if (catLabel) catLabel.textContent = 'МУЗЫКАЛЬНЫЙ ЖАНР (ХИТЫ, РЭП, РОК, ПОП, ФОНК...)';
+                if (titleLabel) titleLabel.textContent = 'НАЗВАНИЕ ПЕСНИ ИЛИ СТИЛЯ';
+                if (titleInput && !editingTemplateId) titleInput.placeholder = 'напр: Trap & Rap Hit, Club Dance, С Днём Рождения...';
+                if (priceLabel) priceLabel.textContent = 'ЦЕНА ТРЕКА (СОМ)';
+
+                if (locWrapper) locWrapper.style.display = 'none';
+                if (modelWrapper) modelWrapper.style.display = 'block';
+                if (modelSelect) {
+                    modelSelect.innerHTML = `
+                        <option value="suno" selected>🎵 Suno AI (Генерация полного трека с вокалом)</option>
+                        <option value="custom">✏️ Ввести точный ID модели вручную (любая модель Kie.ai)...</option>
+                    `;
+                }
+                if (resWrapper) resWrapper.style.display = 'none';
+
+                if (promptLabel) promptLabel.textContent = '🎵 Описание музыки, стиля и слов песни (Prompt):';
+                if (promptInput && !editingTemplateId && !promptInput.value.trim()) {
+                    promptInput.placeholder = 'Качающий стильный трек в стиле современный трэп и хип-хоп, плотный бас 808, динамичный ритмичный флоу, запоминающийся припев, качественный русский вокал...';
+                }
+                if (imgLabel) imgLabel.innerHTML = '🖼️ Обложка сингла / альбома (JPG):';
+                if (imgTip) imgTip.innerHTML = '💡 Обложка будет отображаться в аудиоплеере киоска и на странице скачивания готового трека.';
+                if (submitBtn && !editingTemplateId) submitBtn.textContent = '+ Добавить трек в «СОЗДАЙ СВОЙ ТРЕК»';
 
             } else {
                 // ============================================
@@ -3108,7 +3239,10 @@
                     tpl.img.includes('.mp4?') || tpl.img.includes('.webm?')
                 );
                 const isVidModel = Boolean(tpl.model && (tpl.model.includes('video') || tpl.model.includes('omni')));
-                const resBadge = (isVid || isVidModel) ? '<span class="model-badge" style="background: rgba(16,185,129,0.18); border-color: #10b981; color: #34d399; font-weight: 800;">🎬 HD</span>' : getResolutionBadge(tpl.resolution);
+                const isMusicModel = Boolean(tpl.model && (tpl.model === 'suno' || tpl.model.includes('music') || tpl.model.includes('suno')));
+                const resBadge = isMusicModel 
+                    ? '<span class="model-badge" style="background: rgba(236,72,153,0.18); border-color: #ec4899; color: #f472b6; font-weight: 800;">🎵 MP3</span>'
+                    : ((isVid || isVidModel) ? '<span class="model-badge" style="background: rgba(16,185,129,0.18); border-color: #10b981; color: #34d399; font-weight: 800;">🎬 HD</span>' : getResolutionBadge(tpl.resolution));
                 const thumbHtml = isVid 
                     ? `<video src="${tpl.img}" class="tpl-preview-thumb" autoplay loop muted playsinline></video>`
                     : `<img src="${tpl.img}" alt="${tpl.title}" class="tpl-preview-thumb" onerror="this.src='images/photo1.jpg'">`;

@@ -20,9 +20,10 @@ async function persistResultToSupabase(mediaUrl, orderId, isVideo = false) {
 
         const arrayBuffer = await resp.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        const isVid = isVideo || mediaUrl.includes('.mp4') || mediaUrl.includes('.webm') || (resp.headers.get('content-type') || '').includes('video');
-        const ext = isVid ? 'mp4' : 'png';
-        const mimeType = isVid ? 'video/mp4' : 'image/png';
+        const isAud = mediaUrl.includes('.mp3') || mediaUrl.includes('.wav') || mediaUrl.includes('.m4a') || (resp.headers.get('content-type') || '').includes('audio');
+        const isVid = !isAud && (isVideo || mediaUrl.includes('.mp4') || mediaUrl.includes('.webm') || (resp.headers.get('content-type') || '').includes('video'));
+        const ext = isAud ? 'mp3' : (isVid ? 'mp4' : 'png');
+        const mimeType = isAud ? 'audio/mpeg' : (isVid ? 'video/mp4' : 'image/png');
         const safeOrder = (orderId || Date.now()).toString().replace(/[^a-zA-Z0-9_-]/g, '_');
         const filename = `results/trendum_${safeOrder}_${Math.random().toString(36).substring(7)}.${ext}`;
 
@@ -113,6 +114,16 @@ module.exports = async (req, res) => {
                         if (parsed) {
                             if (Array.isArray(parsed.resultUrls)) resultUrls.push(...parsed.resultUrls);
                             if (Array.isArray(parsed.urls)) resultUrls.push(...parsed.urls);
+                            if (Array.isArray(parsed.audio_urls)) resultUrls.push(...parsed.audio_urls);
+                            if (Array.isArray(parsed.audios)) {
+                                parsed.audios.forEach(a => {
+                                    if (typeof a === 'string') resultUrls.push(a);
+                                    else if (a && (a.url || a.audio_url || a.audioUrl)) resultUrls.push(a.url || a.audio_url || a.audioUrl);
+                                });
+                            }
+                            if (parsed.audio_url) resultUrls.push(parsed.audio_url);
+                            if (parsed.audioUrl) resultUrls.push(parsed.audioUrl);
+                            if (parsed.music_url) resultUrls.push(parsed.music_url);
                             if (Array.isArray(parsed.videos)) {
                                 parsed.videos.forEach(v => {
                                     if (typeof v === 'string') resultUrls.push(v);
@@ -124,6 +135,7 @@ module.exports = async (req, res) => {
                             if (parsed.url) resultUrls.push(parsed.url);
                             if (parsed.output) {
                                 if (typeof parsed.output === 'string') resultUrls.push(parsed.output);
+                                else if (parsed.output.audio_url) resultUrls.push(parsed.output.audio_url);
                                 else if (parsed.output.video_url) resultUrls.push(parsed.output.video_url);
                                 else if (parsed.output.url) resultUrls.push(parsed.output.url);
                             }
@@ -133,17 +145,22 @@ module.exports = async (req, res) => {
                 if (taskInfo.response) {
                     const resp = taskInfo.response;
                     if (Array.isArray(resp.resultUrls)) resultUrls.push(...resp.resultUrls);
+                    if (resp.audio_url) resultUrls.push(resp.audio_url);
+                    if (resp.audioUrl) resultUrls.push(resp.audioUrl);
                     if (resp.video_url) resultUrls.push(resp.video_url);
                     if (resp.videoUrl) resultUrls.push(resp.videoUrl);
                     if (resp.url) resultUrls.push(resp.url);
                 }
                 if (taskInfo.output) {
                     if (typeof taskInfo.output === 'string') resultUrls.push(taskInfo.output);
+                    else if (taskInfo.output.audio_url) resultUrls.push(taskInfo.output.audio_url);
                     else if (taskInfo.output.video_url) resultUrls.push(taskInfo.output.video_url);
                     else if (taskInfo.output.url) resultUrls.push(taskInfo.output.url);
                 }
 
                 let resultUrl = resultUrls.find(u => Boolean(u)) || 
+                                  taskInfo.audio_url || 
+                                  taskInfo.audioUrl || 
                                   taskInfo.video_url || 
                                   taskInfo.videoUrl || 
                                   taskInfo.image_url || 

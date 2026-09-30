@@ -67,7 +67,8 @@ function normalizeMainCards(cards) {
             { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
             { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
             { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'] },
-            { id: 4, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] }
+            { id: 4, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] },
+            { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 НЕЙРОСЕТЬ SUNO AI • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА'] }
         ];
     } else {
         let tryOnCard = list.find(c => c.id === 4 || c.id === 5 || (c.title && c.title.toUpperCase().includes('ПРИМЕР')));
@@ -87,6 +88,20 @@ function normalizeMainCards(cards) {
             tryOnCard.title = 'ПРИМЕРКА';
             tryOnCard.filter = 'TRYON';
         }
+
+        let musicCard = list.find(c => c.id === 6 || (c.filter && c.filter.toUpperCase() === 'MUSIC') || (c.title && c.title.toUpperCase().includes('ТРЕК')));
+        if (!musicCard) {
+            list.push({
+                id: 6,
+                title: 'СОЗДАЙ СВОЙ ТРЕК',
+                badge: '🎵 НЕЙРОСЕТЬ SUNO AI • ХИТЫ',
+                subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ',
+                filter: 'MUSIC',
+                category: 'МУЗЫКА',
+                img: 'images/photo2.jpg',
+                categories: ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА']
+            });
+        }
     }
 
     return list.map(c => {
@@ -101,6 +116,8 @@ function normalizeMainCards(cards) {
                 cats = ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'];
             } else if (c.id === 4 || c.id === 5 || titleUp.includes('ПРИМЕР') || titleUp.includes('ОДЕЖД')) {
                 cats = ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'];
+            } else if (c.id === 6 || titleUp.includes('ТРЕК') || titleUp.includes('МУЗЫК')) {
+                cats = ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА'];
             } else {
                 cats = [c.title || 'ОБЩЕЕ'];
             }
@@ -678,6 +695,88 @@ const DEFAULT_KIOSK_TEMPLATES = [
         "img": "images/photo1.jpg",
         "htmlCode": "",
         "location": ""
+    },
+
+    // ==========================================
+    // РАЗДЕЛ: СОЗДАЙ СВОЙ ТРЕК (sectionId: 6, Suno AI)
+    // ==========================================
+    {
+        "id": 1790700000001,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РЭП",
+        "title": "Trap & Rap Hit",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Качающий стильный трек в стиле современный трэп и хип-хоп, плотный бас 808, динамичный ритмичный флоу, запоминающийся припев, качественный русский вокал, студийный мастеринг",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000002,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ПОП",
+        "title": "Club Dance",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Энергичный танцевальный поп-хит для клубов и радиостанций, зажигательный прямой бит, яркий выразительный вокал, позитивное настроение, мощный фестивальный дроп",
+        "img": "images/photo2.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000003,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ФОНК",
+        "title": "Drift Phonk",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Агрессивный дрифт-фонк, cowbell мелодия, мощнейший дисторшн-бас, драйвовый ночной вайб, underground rap vocal, быстрый темп, идеальный трек для авто",
+        "img": "images/photo3.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000004,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ПОЗДРАВЛЕНИЯ",
+        "title": "С Днём Рождения!",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Праздничная душевная песня с Днем Рождения, радостное теплое настроение, добрые поздравления с праздником, торжественный красивый припев, звонкий вокал",
+        "img": "assets/child.png",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000005,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РОК",
+        "title": "Rock Energy",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Мощный альтернативный стадионный рок с перегруженными драйвовыми гитарами, живыми барабанами и сильным эмоциональным рок-вокалом, взрывной припев",
+        "img": "assets/hero_portrait.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000006,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ЛИРИКА",
+        "title": "Love Melody",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Красивая трогательная романтическая песня о любви, нежное фортепиано, акустическая гитара, искренний чувственный бархатный вокал, глубокий текст",
+        "img": "assets/hero_avatar.jpg",
+        "htmlCode": "",
+        "location": ""
     }
 ];
 
@@ -877,6 +976,28 @@ function isTryOnTemplate(tpl) {
            Boolean(tpl.location);
 }
 
+function isMusicTemplate(tpl) {
+    if (!tpl) return false;
+    const m = (tpl.model || '').toLowerCase();
+    const c = (tpl.category || '').toUpperCase();
+    const t = (tpl.title || '').toUpperCase();
+    const st = (tpl.sectionTitle || '').toUpperCase();
+    return tpl.sectionId === 6 ||
+           m === 'suno' ||
+           m.includes('suno') ||
+           m.includes('music') ||
+           st.includes('ТРЕК') ||
+           st.includes('МУЗЫК') ||
+           c.includes('РЭП') ||
+           c.includes('ПОП') ||
+           c.includes('ФОНК') ||
+           c.includes('РОК') ||
+           c.includes('ЛИРИК') ||
+           c.includes('ПОЗДРАВЛ') ||
+           t.includes('ТРЕК') ||
+           t.includes('ХИТ');
+}
+
 let activeGridTab = 'ВСЕ';
 
 // 1. ВЫБОР КАРТОЧКИ — МГНОВЕННОЕ ОТКРЫТИЕ 2-КОЛОНОЧНОЙ СЕТКИ ШАБЛОНОВ
@@ -1053,7 +1174,8 @@ function renderGridTemplates() {
         if (targetSecId === 2 || targetTitle.includes('ВИДЕО')) return isVideoTemplate(t);
         if (targetSecId === 3 || targetTitle.includes('ТРЕНД')) return isTrendsTemplate(t);
         if (targetSecId === 4 || targetSecId === 5 || targetTitle.includes('ПРИМЕР') || targetTitle.includes('ОДЕЖД')) return isTryOnTemplate(t);
-        return !isVideoTemplate(t) && !isTrendsTemplate(t) && !isTryOnTemplate(t);
+        if (targetSecId === 6 || targetTitle.includes('ТРЕК') || targetTitle.includes('МУЗЫК')) return isMusicTemplate(t);
+        return !isVideoTemplate(t) && !isTrendsTemplate(t) && !isTryOnTemplate(t) && !isMusicTemplate(t);
     });
 
     // 2. Внутри раздела фильтруем по выбранной подкатегории кнопки
@@ -1500,6 +1622,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultVideo.src = '';
             } catch(e) {}
         }
+        const resultAudioPlayer = document.getElementById('result-audio-player');
+        if (resultAudioPlayer) {
+            try {
+                resultAudioPlayer.pause();
+                resultAudioPlayer.src = '';
+            } catch(e) {}
+        }
+        const resultAudioBox = document.getElementById('result-audio-box');
+        if (resultAudioBox) resultAudioBox.style.display = 'none';
+
         if (tryonLocationInfoCard) tryonLocationInfoCard.style.display = 'none';
         modal.style.display = 'none';
         resetState();
@@ -2771,14 +2903,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const isMotionControl = false; // Kling Motion Control удалён
 
-        const isVideoSelection = selectedStyleModel === 'omni-flash' ||
+        const isMusicSelection = selectedStyleModel === 'suno' ||
+                                selectedStyleModel.includes('suno') ||
+                                selectedStyleModel.includes('music') ||
+                                (selectedStyleCategory && ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА'].includes(selectedStyleCategory.toUpperCase()));
+
+        const isVideoSelection = !isMusicSelection && (
+                                selectedStyleModel === 'omni-flash' ||
                                 selectedStyleModel.includes('omni') ||
                                 selectedStyleModel.includes('gemini') ||
-                                selectedStyleModel.includes('video');
+                                selectedStyleModel.includes('video'));
 
-        const genTitle = isMotionControl ? 'СОЗДАНИЕ ТАНЦА' : isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
+        const genTitle = isMusicSelection ? 'СОЗДАНИЕ ПЕСНИ (SUNO AI)' : isMotionControl ? 'СОЗДАНИЕ ТАНЦА' : isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
         resetAiProgress(genTitle, selectedStyleModel, currentAiResolution);
 
+        const musicInitialStatuses = [
+            `Генерация бита, ритм-секции и мелодии...`,
+            `Создание стихов и рифм для припева...`,
+            `Синтез студийного вокала в Suno AI...`,
+            `Финальный мастеринг и сведение трека...`
+        ];
         const motionInitialStatuses = [
             `Анализ позы и силуэта на вашем фото...`,
             `Загрузка хореографии из видео-референса...`,
@@ -2790,7 +2934,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `Генерация динамики и траектории движения...`,
             `Подготовка видеопотока...`
         ];
-        const statuses = isMotionControl ? motionInitialStatuses : isVideoSelection ? videoInitialStatuses : isTryOnMode ? [
+        const statuses = isMusicSelection ? musicInitialStatuses : isMotionControl ? motionInitialStatuses : isVideoSelection ? videoInitialStatuses : isTryOnMode ? [
             `Анализ силуэта и позы...`,
             `Подбор размера и примерка кроя...`,
             `Сохранение черт лица и индивидуальности...`,
@@ -2945,7 +3089,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             // Динамический статус в зависимости от времени ожидания
                             let currentStatusText = activePollStatuses[pollIdx % activePollStatuses.length];
-                            if (elapsedSec > 40 && elapsedSec <= 120) {
+                            if (isMusicSelection) {
+                                if (elapsedSec > 30 && elapsedSec <= 90) {
+                                    currentStatusText = `Нейросеть Suno пишет стихи и сводит бит...`;
+                                } else if (elapsedSec > 90) {
+                                    currentStatusText = `Синтез вокала и финальный мастеринг MP3...`;
+                                }
+                            } else if (elapsedSec > 40 && elapsedSec <= 120) {
                                 currentStatusText = `Обработка в очереди нейросетей, ожидаем...`;
                             } else if (elapsedSec > 120 && elapsedSec <= 240) {
                                 currentStatusText = `Нейросеть работает над вашим изображением...`;
@@ -3005,20 +3155,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Завершаем заполнение прогресс-бара до 100% с неоновым свечением
         await finishAiProgress();
-        const isVideoResult = typeof finalResultUrl === 'string' && (
+
+        const isAudioResult = typeof finalResultUrl === 'string' && (
+            finalResultUrl.endsWith('.mp3') || 
+            finalResultUrl.endsWith('.wav') || 
+            finalResultUrl.endsWith('.m4a') || 
+            finalResultUrl.includes('/audio/') || 
+            finalResultUrl.includes('.mp3?') ||
+            finalResultUrl.includes('.wav?') ||
+            isMusicSelection
+        );
+
+        const isVideoResult = !isAudioResult && typeof finalResultUrl === 'string' && (
             finalResultUrl.endsWith('.mp4') || 
             finalResultUrl.endsWith('.webm') || 
             finalResultUrl.includes('/video/') || 
             finalResultUrl.includes('.mp4?') ||
             finalResultUrl.includes('.webm?')
         );
-        if (isVideoResult && resultVideo) {
+
+        const resultAudioBox = document.getElementById('result-audio-box');
+        const resultAudioPlayer = document.getElementById('result-audio-player');
+        const resultAudioCover = document.getElementById('result-audio-cover');
+        const resultAudioTitle = document.getElementById('result-audio-title');
+        const resultAudioGenre = document.getElementById('result-audio-genre');
+
+        if (isAudioResult && resultAudioBox && resultAudioPlayer) {
+            if (resultImg) resultImg.style.display = 'none';
+            if (resultVideo) {
+                resultVideo.pause();
+                resultVideo.style.display = 'none';
+            }
+            resultAudioBox.style.display = 'flex';
+            resultAudioPlayer.src = finalResultUrl;
+            if (resultAudioCover) {
+                resultAudioCover.src = capturedPhotoData || selectedStylePhoto || 'assets/hero_portrait.jpg';
+            }
+            if (resultAudioTitle) {
+                resultAudioTitle.textContent = selectedStyle || 'ВАШ ПЕРСОНАЛЬНЫЙ ТРЕК';
+            }
+            if (resultAudioGenre) {
+                resultAudioGenre.textContent = `🎵 ${selectedStyleCategory || 'Suno AI'} • Персональный хит`;
+            }
+            resultAudioPlayer.play().catch(e => console.warn('Audio play error:', e));
+        } else if (isVideoResult && resultVideo) {
+            if (resultAudioBox) {
+                if (resultAudioPlayer) resultAudioPlayer.pause();
+                resultAudioBox.style.display = 'none';
+            }
             resultVideo.src = finalResultUrl;
             resultVideo.muted = true;
             resultVideo.style.display = 'block';
             resultVideo.play().catch(e => console.warn('Video play error:', e));
             if (resultImg) resultImg.style.display = 'none';
         } else if (resultImg) {
+            if (resultAudioBox) {
+                if (resultAudioPlayer) resultAudioPlayer.pause();
+                resultAudioBox.style.display = 'none';
+            }
             resultImg.src = finalResultUrl;
             resultImg.style.display = 'block';
             if (resultVideo) {

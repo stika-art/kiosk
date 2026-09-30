@@ -123,9 +123,10 @@ async function persistResultToSupabase(mediaUrl, orderId, isVideo = false) {
 
         const arrayBuffer = await resp.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        const isVid = isVideo || mediaUrl.includes('.mp4') || mediaUrl.includes('.webm') || (resp.headers.get('content-type') || '').includes('video');
-        const ext = isVid ? 'mp4' : 'png';
-        const mimeType = isVid ? 'video/mp4' : 'image/png';
+        const isAud = mediaUrl.includes('.mp3') || mediaUrl.includes('.wav') || mediaUrl.includes('.m4a') || (resp.headers.get('content-type') || '').includes('audio');
+        const isVid = !isAud && (isVideo || mediaUrl.includes('.mp4') || mediaUrl.includes('.webm') || (resp.headers.get('content-type') || '').includes('video'));
+        const ext = isAud ? 'mp3' : (isVid ? 'mp4' : 'png');
+        const mimeType = isAud ? 'audio/mpeg' : (isVid ? 'video/mp4' : 'image/png');
         const safeOrder = (orderId || Date.now()).toString().replace(/[^a-zA-Z0-9_-]/g, '_');
         const filename = `results/trendum_${safeOrder}_${Math.random().toString(36).substring(7)}.${ext}`;
 
@@ -204,6 +205,9 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'gemini-omni-video' || model === 'google/gemini-omni-flash-1-1' || model === 'google/gemini-omni-1.1-flash' || (typeof model === 'string' && (model.includes('omni') || model.includes('gemini')))) {
         // Google Gemini Omni Flash — Video-to-Video (официальная модель в Kie.ai: gemini-omni-video)
         kieModel = 'gemini-omni-video';
+    } else if (model === 'suno' || model === 'suno-v3.5' || model === 'suno-v4' || model === 'ai-music-api/generate' || (typeof model === 'string' && (model.includes('suno') || model.includes('music') || model.includes('трек') || model.includes('песн')))) {
+        // Suno AI — Генерация музыки и песен через официальный API Kie.ai
+        kieModel = 'ai-music-api/generate';
     } else if (model && model !== 'default') {
         kieModel = model;
     } else {
@@ -212,19 +216,33 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     }
 
     const isGeminiOmni = kieModel === 'gemini-omni-video' || kieModel.includes('gemini') || kieModel.includes('omni');
-    const isVideoModel = isGeminiOmni ||
+    const isMusicModel = kieModel === 'ai-music-api/generate' || kieModel.includes('music') || kieModel.includes('suno');
+    const isVideoModel = !isMusicModel && (isGeminiOmni ||
                          kieModel.includes('video') ||
                          kieModel.includes('runway') ||
                          kieModel.includes('luma') ||
-                         kieModel.includes('hailuo');
+                         kieModel.includes('hailuo'));
 
-    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isGeminiOmni=${isGeminiOmni}, isTryOn=${Boolean(isTryOn)})...`);
+    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isMusic=${isMusicModel}, isGeminiOmni=${isGeminiOmni}, isTryOn=${Boolean(isTryOn)})...`);
 
     const safePrompt = sanitizeForOpenAI(prompt);
 
     // Формирование входных данных под выбранный тип модели
     let inputPayload = {};
-    if (isGeminiOmni) {
+    if (isMusicModel) {
+        // Генерация полноценной музыки и песен через Suno AI
+        const musicPrompt = (safePrompt && safePrompt.trim().length > 3)
+            ? safePrompt.trim()
+            : 'Энергичный современный трек с качающим битом, запоминающимся припевом и русским вокалом';
+
+        inputPayload = {
+            prompt: musicPrompt,
+            custom_mode: false,
+            instrumental: false,
+            model: 'V3_5',
+            title: title || 'Trendum Hit'
+        };
+    } else if (isGeminiOmni) {
         const isTemplateVideo = templateImgUrl && (
             templateImgUrl.endsWith('.mp4') || 
             templateImgUrl.endsWith('.webm') || 
@@ -370,21 +388,24 @@ CRITICAL MANDATORY INSTRUCTIONS:
                                 targetModel.includes('runway') ||
                                 targetModel.includes('luma') ||
                                 targetModel.includes('hailuo');
+            const isAudioTask = targetModel.includes('music') ||
+                                targetModel.includes('suno') ||
+                                targetModel.includes('audio');
 
             if (!taskId) {
                 const failReason = (createData && (createData.msg || createData.message)) 
                     ? (createData.msg || createData.message) 
                     : `HTTP ${createRes.status}`;
                 console.warn(`[Kie.ai Create Task Error for ${targetModel}]`, createData || createRes.status);
-                return { failed: true, error: `Kie.ai: ${failReason}`, model: targetModel, isVideo: isVideoTask };
+                return { failed: true, error: `Kie.ai: ${failReason}`, model: targetModel, isVideo: isVideoTask, isAudio: isAudioTask };
             }
 
-            console.log(`[Kie.ai Hub] Задача создана (${targetModel}), taskId: ${taskId}, isVideo: ${isVideoTask}. Ожидание результата...`);
+            console.log(`[Kie.ai Hub] Задача создана (${targetModel}), taskId: ${taskId}, isVideo: ${isVideoTask}, isAudio: ${isAudioTask}. Ожидание результата...`);
 
-            // Для видеомоделей: делаем 1 быстрый опрос (1.5 сек). Если задача еще не завершена —
+            // Для видео и аудио моделей: делаем 1 быстрый опрос (1.5-3 сек). Если задача еще не завершена —
             // СРАЗУ возвращаем taskId клиенту для асинхронного поллинга со шкалой прогресса.
             // Это исключает 504 таймауты Vercel и зависания экрана на киоске.
-            const maxWaitMs = isVideoTask ? 3000 : 45000;
+            const maxWaitMs = (isVideoTask || isAudioTask) ? 3000 : 45000;
             const startTime = Date.now();
 
             while (Date.now() - startTime < maxWaitMs) {
@@ -410,6 +431,16 @@ CRITICAL MANDATORY INSTRUCTIONS:
                                 if (parsed) {
                                     if (Array.isArray(parsed.resultUrls)) resultUrls.push(...parsed.resultUrls);
                                     if (Array.isArray(parsed.urls)) resultUrls.push(...parsed.urls);
+                                    if (Array.isArray(parsed.audio_urls)) resultUrls.push(...parsed.audio_urls);
+                                    if (Array.isArray(parsed.audios)) {
+                                        parsed.audios.forEach(a => {
+                                            if (typeof a === 'string') resultUrls.push(a);
+                                            else if (a && (a.url || a.audio_url || a.audioUrl)) resultUrls.push(a.url || a.audio_url || a.audioUrl);
+                                        });
+                                    }
+                                    if (parsed.audio_url) resultUrls.push(parsed.audio_url);
+                                    if (parsed.audioUrl) resultUrls.push(parsed.audioUrl);
+                                    if (parsed.music_url) resultUrls.push(parsed.music_url);
                                     if (Array.isArray(parsed.videos)) {
                                         parsed.videos.forEach(v => {
                                             if (typeof v === 'string') resultUrls.push(v);
@@ -421,6 +452,7 @@ CRITICAL MANDATORY INSTRUCTIONS:
                                     if (parsed.url) resultUrls.push(parsed.url);
                                     if (parsed.output) {
                                         if (typeof parsed.output === 'string') resultUrls.push(parsed.output);
+                                        else if (parsed.output.audio_url) resultUrls.push(parsed.output.audio_url);
                                         else if (parsed.output.video_url) resultUrls.push(parsed.output.video_url);
                                         else if (parsed.output.url) resultUrls.push(parsed.output.url);
                                     }
@@ -430,17 +462,22 @@ CRITICAL MANDATORY INSTRUCTIONS:
                         if (taskInfo.response) {
                             const resp = taskInfo.response;
                             if (Array.isArray(resp.resultUrls)) resultUrls.push(...resp.resultUrls);
+                            if (resp.audio_url) resultUrls.push(resp.audio_url);
+                            if (resp.audioUrl) resultUrls.push(resp.audioUrl);
                             if (resp.video_url) resultUrls.push(resp.video_url);
                             if (resp.videoUrl) resultUrls.push(resp.videoUrl);
                             if (resp.url) resultUrls.push(resp.url);
                         }
                         if (taskInfo.output) {
                             if (typeof taskInfo.output === 'string') resultUrls.push(taskInfo.output);
+                            else if (taskInfo.output.audio_url) resultUrls.push(taskInfo.output.audio_url);
                             else if (taskInfo.output.video_url) resultUrls.push(taskInfo.output.video_url);
                             else if (taskInfo.output.url) resultUrls.push(taskInfo.output.url);
                         }
 
                         const finalMediaUrl = resultUrls.find(u => Boolean(u)) || 
+                                              taskInfo.audio_url ||
+                                              taskInfo.audioUrl ||
                                               taskInfo.video_url || 
                                               taskInfo.videoUrl || 
                                               taskInfo.image_url || 
@@ -448,7 +485,7 @@ CRITICAL MANDATORY INSTRUCTIONS:
 
                         if (finalMediaUrl) {
                             const cleanFinalUrl = await persistResultToSupabase(finalMediaUrl, orderId, isVideoTask);
-                            return { resultUrl: cleanFinalUrl, taskId, resolution: isVideoTask ? 'HD' : targetResolution, model: targetModel, isVideo: isVideoTask };
+                            return { resultUrl: cleanFinalUrl, taskId, resolution: (isVideoTask || isAudioTask) ? 'HD' : targetResolution, model: targetModel, isVideo: isVideoTask, isAudio: isAudioTask };
                         }
                     } else if (state === 'fail' || state === 'failed' || state === 'error') {
                         const errMsg = taskInfo.failMsg || taskInfo.errorMessage || 'Неизвестная ошибка генерации';
@@ -460,7 +497,7 @@ CRITICAL MANDATORY INSTRUCTIONS:
 
             // Если задача ещё в процессе — возвращаем taskId для асинхронного поллинга клиентом
             console.log(`[Kie.ai AI Hub] Задача ${taskId} (${targetModel}) в процессе, передаем клиенту для поллинга`);
-            return { pending: true, taskId, resolution: isVideoTask ? 'HD' : targetResolution, model: targetModel, isVideo: isVideoTask };
+            return { pending: true, taskId, resolution: (isVideoTask || isAudioTask) ? 'HD' : targetResolution, model: targetModel, isVideo: isVideoTask, isAudio: isAudioTask };
 
         } catch (err) {
             console.warn(`[Kie.ai Task Exception for ${targetModel}]`, err.message);

@@ -67,17 +67,17 @@ module.exports = async (req, res) => {
             }
         }
 
-        // Извлечение медиа-ссылки из результата
+        // Извлечение медиа-ссылки из результата (видео, фото или аудио)
         let mediaUrl = null;
         if (taskInfo.resultJson) {
             try {
                 const parsed = typeof taskInfo.resultJson === 'string' ? JSON.parse(taskInfo.resultJson) : taskInfo.resultJson;
-                const resultUrls = parsed.resultUrls || parsed.urls || [parsed.url || parsed.video_url];
+                const resultUrls = parsed.resultUrls || parsed.urls || parsed.audio_urls || [parsed.url || parsed.video_url || parsed.audio_url || parsed.audioUrl];
                 if (resultUrls && resultUrls[0]) mediaUrl = resultUrls[0];
             } catch (e) {}
         }
         if (!mediaUrl) {
-            mediaUrl = taskInfo.video_url || taskInfo.image_url || body.video_url || body.image_url;
+            mediaUrl = taskInfo.audio_url || taskInfo.audioUrl || taskInfo.video_url || taskInfo.image_url || body.audio_url || body.video_url || body.image_url;
         }
 
         const taskResult = {
