@@ -3138,8 +3138,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (webcamEl && mediaStream) {
                 webcamEl.srcObject = mediaStream;
+                webcamEl.defaultMuted = true;
                 webcamEl.muted = true;
-                await webcamEl.play().catch(e => console.warn('Webcam play error:', e));
+                webcamEl.playsInline = true;
+                webcamEl.autoplay = true;
+
+                const ensurePlay = () => {
+                    webcamEl.play().catch(e => console.warn('Play retry:', e));
+                };
+
+                webcamEl.onloadedmetadata = ensurePlay;
+                webcamEl.oncanplay = ensurePlay;
+                webcamEl.onloadeddata = ensurePlay;
+                ensurePlay();
 
                 updateCamBadge(currentTrack);
                 startFpsCounter();
