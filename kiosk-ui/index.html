@@ -1925,7 +1925,24 @@
             }
         }
 
-        /* ЭКРАН ВЫБОРА ТЕМЫ И ПОСВЯЩЕНИЯ ПЕСНИ (MUSIC AI) */
+        /* СТИЛИ СТУДИИ СОЗДАНИЯ ПЕСНИ (СОЗДАЙ СВОЙ ТРЕК) */
+        .music-form-group {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            text-align: left;
+        }
+        .music-group-label {
+            font-size: 11.5px;
+            font-weight: 800;
+            color: var(--primary, #d4a043);
+            letter-spacing: 0.8px;
+            display: block;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
         .music-theme-chips-box {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1943,7 +1960,7 @@
             margin-bottom: 10px;
             text-transform: uppercase;
         }
-        .music-theme-chips {
+        .music-theme-chips, .music-selector-chips {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
@@ -1953,9 +1970,9 @@
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.14);
             color: #f1f5f9;
-            padding: 8px 14px;
+            padding: 7px 12px;
             border-radius: 20px;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.15s ease;
@@ -1973,6 +1990,37 @@
             border-color: #f472b6 !important;
             color: #fff !important;
             box-shadow: 0 0 12px rgba(236, 72, 153, 0.5);
+        }
+        .style-choice-btn, .lang-choice-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1.5px solid rgba(255, 255, 255, 0.14);
+            color: #f1f5f9;
+            padding: 8px 14px;
+            border-radius: 18px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .style-choice-btn:hover, .lang-choice-btn:hover {
+            background: rgba(236, 72, 153, 0.18);
+            border-color: #ec4899;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+        .style-choice-btn.active, .lang-choice-btn.active {
+            background: linear-gradient(135deg, #ec4899, #d946ef) !important;
+            border-color: #f472b6 !important;
+            color: #fff !important;
+            box-shadow: 0 4px 16px rgba(236, 72, 153, 0.45);
+            transform: scale(1.02);
+        }
+        .kiosk-touch-input.active-focus {
+            border-color: #ec4899 !important;
+            box-shadow: 0 0 16px rgba(236, 72, 153, 0.4) !important;
+            background: rgba(15, 15, 26, 0.8) !important;
         }
         .music-input-wrap {
             position: relative;
@@ -2200,53 +2248,95 @@
 <div id="kiosk-modal" class="modal-overlay" style="display:none;">
     <div class="modal-content">
         <button id="modal-close" class="modal-close-btn">&times;</button>
-        <!-- STEP 0.5: MUSIC THEME & DEDICATION (ДЛЯ РАЗДЕЛА СОЗДАЙ СВОЙ ТРЕК) -->
+        <!-- STEP 0.5: DIRECT MUSIC STUDIO (СОЗДАЙ СВОЙ ТРЕК) -->
         <div id="step-music-theme" class="step-view" style="display:none;">
-            <div style="text-align: center; margin-bottom: 10px;">
+            <div style="text-align: center; margin-bottom: 8px;">
                 <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(236, 72, 153, 0.15); border: 1px solid rgba(236, 72, 153, 0.4); color: #f472b6; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 800; letter-spacing: 0.5px;">
                     <span>🎵</span>
-                    <span id="music-theme-genre-badge">СТИЛЬ: МЕДЛЯК О ЛЮБВИ</span>
+                    <span>МУЗЫКАЛЬНЫЙ ИИ • СОЗДАЙ СВОЙ ТРЕК</span>
                 </div>
             </div>
-            <h2 class="modal-title" style="margin-top: 0; text-align: center;">О ЧЁМ БУДЕТ ВАША ПЕСНЯ?</h2>
-            <p class="modal-subtitle" style="text-align: center; max-width: 580px; margin: 0 auto 16px auto;">
-                Укажите имя человека, повод или кому посвятить трек. Нейросеть сочинит слова песни персонально для него!
+            <h2 class="modal-title" style="margin-top: 0; text-align: center;">ПАРАМЕТРЫ ВАШЕЙ ПЕСНИ</h2>
+            <p class="modal-subtitle" style="text-align: center; max-width: 580px; margin: 0 auto 14px auto;">
+                Укажите тему, кому посвятить трек, выберите стиль и язык — нейросеть создаст персональный хит с вокалом!
             </p>
 
-            <!-- Быстрые варианты в 1 клик -->
-            <div class="music-theme-chips-box">
-                <span class="music-chips-label">💡 БЫСТРЫЕ ВАРИАНТЫ (НАЖМИТЕ ДЛЯ ВЫБОРА):</span>
-                <div class="music-theme-chips" id="music-theme-chips">
-                    <button type="button" class="theme-chip" data-prefix="Любимой жене ">💍 Любимой жене</button>
-                    <button type="button" class="theme-chip" data-prefix="Любимому мужу ">👑 Любимому мужу</button>
-                    <button type="button" class="theme-chip" data-prefix="С Днём Рождения, ">🎂 С Днём Рождения</button>
-                    <button type="button" class="theme-chip" data-prefix="Любимой девушке ">❤️ Любимой девушке</button>
-                    <button type="button" class="theme-chip" data-prefix="Любимому парню ">🔥 Любимому парню</button>
-                    <button type="button" class="theme-chip" data-prefix="Брату ">🤝 Брату</button>
-                    <button type="button" class="theme-chip" data-prefix="Сестре ">🌸 Сестре</button>
-                    <button type="button" class="theme-chip" data-prefix="Лучшему другу ">⚡ Лучшему другу</button>
-                    <button type="button" class="theme-chip" data-prefix="Лучшей подруге ">✨ Лучшей подруге</button>
-                    <button type="button" class="theme-chip" data-prefix="Для любимой мамы ">💐 Для мамы</button>
-                    <button type="button" class="theme-chip" data-prefix="На свадьбу молодожёнам ">💒 На свадьбу</button>
-                    <button type="button" class="theme-chip" data-prefix="Про меня и мой успех">💎 Про меня и успех</button>
+            <!-- 1. О ЧЁМ БУДЕТ ПЕСНЯ -->
+            <div class="music-form-group">
+                <label class="music-group-label">1. О ЧЁМ БУДЕТ ПЕСНЯ? (ТЕМА / СЮЖЕТ):</label>
+                <div class="music-theme-chips" id="music-about-chips" style="margin-bottom: 8px;">
+                    <button type="button" class="theme-chip" data-text="Про настоящую любовь">❤️ Про любовь</button>
+                    <button type="button" class="theme-chip" data-text="С Днём Рождения, праздник">🎂 День рождения</button>
+                    <button type="button" class="theme-chip" data-text="На свадьбу, совет да любовь">💒 На свадьбу</button>
+                    <button type="button" class="theme-chip" data-text="Про успех, деньги и силу">💎 Про успех</button>
+                    <button type="button" class="theme-chip" data-text="Зажигательная вечеринка и танцы">🔥 Вечеринка</button>
+                    <button type="button" class="theme-chip" data-text="Верная дружба навсегда">🤝 Про дружбу</button>
+                    <button type="button" class="theme-chip" data-text="Благодарность и уважение">🙏 Благодарность</button>
+                    <button type="button" class="theme-chip" data-text="Ночной город и кайф">🚗 Ночной город</button>
+                </div>
+                <div class="music-input-wrap">
+                    <input type="text" id="music-input-about" class="kiosk-touch-input active-focus" placeholder="Например: Про любовь с первого взгляда, юбилей 30 лет..." maxlength="120" autocomplete="off">
+                    <button type="button" id="music-about-clear-btn" class="input-clear-btn" title="Очистить">&times;</button>
                 </div>
             </div>
 
-            <!-- Поле ввода с кнопкой очистки -->
-            <div class="music-input-wrap">
-                <input type="text" id="music-theme-input" class="kiosk-touch-input" placeholder="Например: Любимой жене Айдай..." maxlength="100" autocomplete="off">
-                <button type="button" id="music-theme-clear-btn" class="input-clear-btn" title="Очистить">&times;</button>
+            <!-- 2. ДЛЯ КОГО -->
+            <div class="music-form-group">
+                <label class="music-group-label">2. ДЛЯ КОГО? (ПОСВЯЩЕНИЕ / ИМЯ):</label>
+                <div class="music-theme-chips" id="music-for-chips" style="margin-bottom: 8px;">
+                    <button type="button" class="theme-chip" data-text="Любимой жене ">💍 Жене</button>
+                    <button type="button" class="theme-chip" data-text="Любимому мужу ">👑 Мужу</button>
+                    <button type="button" class="theme-chip" data-text="Любимой маме ">💐 Маме</button>
+                    <button type="button" class="theme-chip" data-text="Дорогому папе ">👔 Папе</button>
+                    <button type="button" class="theme-chip" data-text="Лучшему другу ">⚡ Другу</button>
+                    <button type="button" class="theme-chip" data-text="Любимой девушке ">❤️ Девушке</button>
+                    <button type="button" class="theme-chip" data-text="Любимому парню ">🔥 Парню</button>
+                    <button type="button" class="theme-chip" data-text="Для сына ">⚽ Сыну</button>
+                    <button type="button" class="theme-chip" data-text="Для дочки ">🌸 Дочке</button>
+                    <button type="button" class="theme-chip" data-text="Для себя любимого ">💎 Себе</button>
+                </div>
+                <div class="music-input-wrap">
+                    <input type="text" id="music-input-for" class="kiosk-touch-input" placeholder="Например: Любимой жене Айдай, другу Азамату..." maxlength="100" autocomplete="off">
+                    <button type="button" id="music-for-clear-btn" class="input-clear-btn" title="Очистить">&times;</button>
+                </div>
+            </div>
+
+            <!-- 3. СТИЛЬ МУЗЫКИ -->
+            <div class="music-form-group">
+                <label class="music-group-label">3. СТИЛЬ МУЗЫКИ (ЖАНР):</label>
+                <div class="music-selector-chips" id="music-style-chips">
+                    <button type="button" class="style-choice-btn active" data-style="Поп-хит" data-prompt="Современный танцевальный поп-хит, цепляющий припев, яркие синтезаторы, качественный вокал">🌟 Поп-хит</button>
+                    <button type="button" class="style-choice-btn" data-style="Рэп / Хип-хоп" data-prompt="Мощный современный рэп и трэп, плотный 808 бас, качающий бит, уверенный ритмичный флоу">🎤 Рэп / Хип-хоп</button>
+                    <button type="button" class="style-choice-btn" data-style="Клубный / Танцы" data-prompt="Энергичный клубный танцевальный EDM хит, мощный дроп, танцевальный ритм">💃 Клубный / Танцы</button>
+                    <button type="button" class="style-choice-btn" data-style="Фонк (Phonk)" data-prompt="Агрессивный дрифт фонк, перегруженный бас, мемфис сэмплы, ритмичный трек в стиле TikTok">⚡ Фонк (Phonk)</button>
+                    <button type="button" class="style-choice-btn" data-style="Русский рок" data-prompt="Душевный русский рок, живые гитары, драйв, мелодичный припев, эмоциональный вокал">🎸 Рок / Драйв</button>
+                    <button type="button" class="style-choice-btn" data-style="Романтика / Медляк" data-prompt="Нежная романтическая баллада, медляк о любви, акустическая гитара и фортепиано, проникновенный вокал">❤️ Романтика / Медляк</button>
+                    <button type="button" class="style-choice-btn" data-style="Душевный шансон" data-prompt="Красивый душевный шансон, теплый мужской вокал, гитарный перебор, жизненная песня">🍸 Душевный шансон</button>
+                    <button type="button" class="style-choice-btn" data-style="Восточный поп" data-prompt="Зажигательный восточный этно-поп, восточные инструменты, колоритные мелодии, танцевальный ритм">🌙 Восточный поп</button>
+                </div>
+            </div>
+
+            <!-- 4. НА КАКОМ ЯЗЫКЕ -->
+            <div class="music-form-group">
+                <label class="music-group-label">4. НА КАКОМ ЯЗЫКЕ СПЕТЬ ПЕСНЮ:</label>
+                <div class="music-selector-chips" id="music-lang-chips">
+                    <button type="button" class="lang-choice-btn active" data-lang="Русский">🇷🇺 Русский</button>
+                    <button type="button" class="lang-choice-btn" data-lang="Кыргызча">🇰🇬 Кыргызча</button>
+                    <button type="button" class="lang-choice-btn" data-lang="English">🇬🇧 English</button>
+                    <button type="button" class="lang-choice-btn" data-lang="Қазақша">🇰🇿 Қазақша</button>
+                    <button type="button" class="lang-choice-btn" data-lang="Türkçe">🇹🇷 Türkçe</button>
+                </div>
             </div>
 
             <!-- Сенсорная клавиатура на экране -->
             <div id="kiosk-virtual-keyboard" class="virtual-keyboard-box"></div>
 
             <div class="modal-actions" style="margin-top: 18px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
-                <button type="button" id="music-theme-skip-btn" class="action-btn cancel-btn" style="min-width: 190px;">
-                    ПРОПУСТИТЬ (БЕЗ ИМЕНИ)
+                <button type="button" id="music-theme-cancel-btn" class="action-btn cancel-btn" style="min-width: 170px;">
+                    ← НА ГЛАВНУЮ
                 </button>
-                <button type="button" id="music-theme-continue-btn" class="action-btn primary-btn" style="min-width: 230px; font-weight: 800;">
-                    ПРОДОЛЖИТЬ К ОПЛАТЕ ➔
+                <button type="button" id="music-theme-create-btn" class="action-btn primary-btn" style="min-width: 280px; font-weight: 800; font-size: 16px; background: linear-gradient(135deg, #ec4899, #d946ef); border: none; box-shadow: 0 0 25px rgba(236,72,153,0.5);">
+                    🎵 СОЗДАТЬ ТРЕК • 290 СОМ ➔
                 </button>
             </div>
         </div>

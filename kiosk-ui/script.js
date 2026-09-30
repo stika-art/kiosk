@@ -1290,6 +1290,20 @@ function openTemplateGallery(cardIdOrMode) {
     }
     activeSectionCard = activeCard;
 
+    const isMusicSec = activeCard && (
+        activeCard.id === 6 ||
+        (activeCard.filter && activeCard.filter.toUpperCase() === 'MUSIC') ||
+        (activeCard.title && activeCard.title.toUpperCase().includes('ТРЕК')) ||
+        (activeCard.category && activeCard.category.toUpperCase().includes('МУЗЫК'))
+    );
+
+    if (isMusicSec) {
+        if (typeof window.openDirectMusicStudio === 'function') {
+            window.openDirectMusicStudio(activeCard);
+            return;
+        }
+    }
+
     try {
         const saved = localStorage.getItem('kiosk_templates_v2');
         if (saved !== null) {
@@ -1541,12 +1555,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const stepResult = document.getElementById('step-result');
     const stepRoastResult = document.getElementById('step-roast-result');
 
-    // Music Theme Elements
-    const musicThemeGenreBadge = document.getElementById('music-theme-genre-badge');
-    const musicThemeInput = document.getElementById('music-theme-input');
-    const musicThemeClearBtn = document.getElementById('music-theme-clear-btn');
-    const musicThemeSkipBtn = document.getElementById('music-theme-skip-btn');
-    const musicThemeContinueBtn = document.getElementById('music-theme-continue-btn');
+    // Music Studio Elements
+    const musicInputAbout = document.getElementById('music-input-about');
+    const musicInputFor = document.getElementById('music-input-for');
+    const musicAboutClearBtn = document.getElementById('music-about-clear-btn');
+    const musicForClearBtn = document.getElementById('music-for-clear-btn');
+    const musicThemeCancelBtn = document.getElementById('music-theme-cancel-btn');
+    const musicThemeCreateBtn = document.getElementById('music-theme-create-btn');
     const musicVirtualKeyboard = document.getElementById('kiosk-virtual-keyboard');
 
     // Roast Elements
@@ -1815,9 +1830,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ============================================================
-    //  МУЗЫКАЛЬНЫЙ ШАГ: ТЕМАТИКА И ПОСВЯЩЕНИЕ ПЕСНИ (MUSIC AI)
+    //  МУЗЫКАЛЬНЫЙ ШАГ: СТУДИЯ «СОЗДАЙ СВОЙ ТРЕК» (4 ПАРАМЕТРА)
     // ============================================================
     let guestMusicTheme = '';
+    let selectedMusicStyle = 'Поп-хит';
+    let selectedMusicLang = 'Русский';
+    let activeMusicInput = null;
     let vkCurrentLayout = 'RU'; // 'RU', 'EN', 'NUM'
 
     const VK_LAYOUTS = {
@@ -1866,7 +1884,7 @@ document.addEventListener('DOMContentLoaded', () => {
             musicVirtualKeyboard.appendChild(rowEl);
         });
 
-        // 4-я строка: переключение языка, ПРОБЕЛ, Очистить
+        // 4-я строка: переключение языка, ПРОБЕЛ, Сброс
         const bottomRow = document.createElement('div');
         bottomRow.className = 'vk-row';
 
@@ -1900,91 +1918,198 @@ document.addEventListener('DOMContentLoaded', () => {
         spaceBtn.onclick = () => handleVkChar(' ');
         bottomRow.appendChild(spaceBtn);
 
-        // Очистить
+        // Очистить активное поле
         const clearBtn = document.createElement('button');
         clearBtn.type = 'button';
         clearBtn.className = 'vk-key vk-key-special';
         clearBtn.textContent = 'Сброс';
-        clearBtn.title = 'Очистить всё поле';
+        clearBtn.title = 'Очистить активное поле';
         clearBtn.onclick = () => {
-            if (musicThemeInput) {
-                musicThemeInput.value = '';
-                musicThemeInput.focus();
+            const target = activeMusicInput || musicInputAbout;
+            if (target) {
+                target.value = '';
+                target.focus();
             }
-            document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
         };
         bottomRow.appendChild(clearBtn);
 
         musicVirtualKeyboard.appendChild(bottomRow);
     }
 
+    function setActiveMusicInput(inputEl) {
+        activeMusicInput = inputEl;
+        if (musicInputAbout) {
+            musicInputAbout.classList.toggle('active-focus', musicInputAbout === inputEl);
+        }
+        if (musicInputFor) {
+            musicInputFor.classList.toggle('active-focus', musicInputFor === inputEl);
+        }
+    }
+
     function handleVkChar(char) {
-        if (!musicThemeInput) return;
-        musicThemeInput.value = (musicThemeInput.value || '') + char;
-        musicThemeInput.focus();
+        const target = activeMusicInput || musicInputAbout;
+        if (!target) return;
+        target.value = (target.value || '') + char;
+        target.focus();
     }
 
     function handleVkAction(action) {
-        if (!musicThemeInput) return;
+        const target = activeMusicInput || musicInputAbout;
+        if (!target) return;
         if (action === 'backspace') {
-            musicThemeInput.value = (musicThemeInput.value || '').slice(0, -1);
-            musicThemeInput.focus();
+            target.value = (target.value || '').slice(0, -1);
+            target.focus();
         }
     }
 
-    function openMusicThemeStep() {
+    // Открытие прямой студии создания песни (без каталога шаблонов)
+    window.openDirectMusicStudio = function(card) {
+        if (attractOverlay && !attractOverlay.classList.contains('hidden')) {
+            closeAttractMode();
+        }
+        const templateModal = document.getElementById('template-modal');
+        if (templateModal) templateModal.classList.add('hidden');
+
+        activeSectionCard = card || mainCardsConfig.find(c => c.id === 6);
+        selectedStylePrice = (card && card.price) ? card.price : 290;
+
+        if (musicThemeCreateBtn) {
+            musicThemeCreateBtn.innerHTML = `🎵 СОЗДАТЬ ТРЕК • ${selectedStylePrice} СОМ ➔`;
+        }
+
+        if (modal) modal.style.display = 'flex';
         showStep(stepMusicTheme);
-        if (musicThemeGenreBadge) {
-            musicThemeGenreBadge.textContent = `СТИЛЬ: ${(selectedStyle || 'МУЗЫКАЛЬНЫЙ ХИТ').toUpperCase()}`;
+
+        setActiveMusicInput(musicInputAbout);
+        if (musicInputAbout) {
+            setTimeout(() => musicInputAbout.focus(), 150);
         }
-        if (musicThemeInput) {
-            musicThemeInput.value = guestMusicTheme || '';
-            setTimeout(() => musicThemeInput.focus(), 150);
-        }
+
         renderVirtualKeyboard();
+    };
+
+    // Фокус и клик по полям ввода
+    if (musicInputAbout) {
+        musicInputAbout.addEventListener('focus', () => setActiveMusicInput(musicInputAbout));
+        musicInputAbout.addEventListener('click', () => setActiveMusicInput(musicInputAbout));
+    }
+    if (musicInputFor) {
+        musicInputFor.addEventListener('focus', () => setActiveMusicInput(musicInputFor));
+        musicInputFor.addEventListener('click', () => setActiveMusicInput(musicInputFor));
     }
 
-    // Инициализация кликов по чипам быстрых тем
-    document.querySelectorAll('.theme-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            const prefix = chip.dataset.prefix || chip.textContent.trim() + ' ';
-            document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
+    // Очистка полей ввода крестиком
+    if (musicAboutClearBtn && musicInputAbout) {
+        musicAboutClearBtn.addEventListener('click', () => {
+            musicInputAbout.value = '';
+            setActiveMusicInput(musicInputAbout);
+            document.querySelectorAll('#music-about-chips .theme-chip').forEach(c => c.classList.remove('active'));
+        });
+    }
+    if (musicForClearBtn && musicInputFor) {
+        musicForClearBtn.addEventListener('click', () => {
+            musicInputFor.value = '';
+            setActiveMusicInput(musicInputFor);
+            document.querySelectorAll('#music-for-chips .theme-chip').forEach(c => c.classList.remove('active'));
+        });
+    }
 
-            if (musicThemeInput) {
-                musicThemeInput.value = prefix;
-                musicThemeInput.focus();
+    // Чипы быстрых тем "О чём"
+    document.querySelectorAll('#music-about-chips .theme-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            setActiveMusicInput(musicInputAbout);
+            document.querySelectorAll('#music-about-chips .theme-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            if (musicInputAbout) {
+                musicInputAbout.value = chip.dataset.text || chip.textContent.trim();
+                musicInputAbout.focus();
             }
         });
     });
 
-    if (musicThemeClearBtn) {
-        musicThemeClearBtn.addEventListener('click', () => {
-            if (musicThemeInput) {
-                musicThemeInput.value = '';
-                musicThemeInput.focus();
+    // Чипы "Для кого"
+    document.querySelectorAll('#music-for-chips .theme-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            setActiveMusicInput(musicInputFor);
+            document.querySelectorAll('#music-for-chips .theme-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            if (musicInputFor) {
+                musicInputFor.value = chip.dataset.text || chip.textContent.trim();
+                musicInputFor.focus();
             }
-            document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
+        });
+    });
+
+    // Выбор стиля
+    document.querySelectorAll('#music-style-chips .style-choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#music-style-chips .style-choice-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedMusicStyle = btn.dataset.style || btn.textContent.trim();
+        });
+    });
+
+    // Выбор языка
+    document.querySelectorAll('#music-lang-chips .lang-choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#music-lang-chips .lang-choice-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedMusicLang = btn.dataset.lang || btn.textContent.trim();
+        });
+    });
+
+    // Кнопка "Назад на главную"
+    if (musicThemeCancelBtn) {
+        musicThemeCancelBtn.addEventListener('click', () => {
+            closeKioskFlow();
         });
     }
 
-    if (musicThemeSkipBtn) {
-        musicThemeSkipBtn.addEventListener('click', () => {
-            guestMusicTheme = '';
+    // Главная кнопка "СОЗДАТЬ ТРЕК"
+    if (musicThemeCreateBtn) {
+        musicThemeCreateBtn.addEventListener('click', () => {
+            const aboutVal = (musicInputAbout ? musicInputAbout.value.trim() : '');
+            const forVal = (musicInputFor ? musicInputFor.value.trim() : '');
+
+            const activeStyleBtn = document.querySelector('#music-style-chips .style-choice-btn.active');
+            const styleName = activeStyleBtn ? (activeStyleBtn.dataset.style || activeStyleBtn.textContent.trim()) : 'Поп-хит';
+            const styleBasePrompt = activeStyleBtn ? (activeStyleBtn.dataset.prompt || '') : '';
+
+            const activeLangBtn = document.querySelector('#music-lang-chips .lang-choice-btn.active');
+            const langName = activeLangBtn ? (activeLangBtn.dataset.lang || activeLangBtn.textContent.trim()) : 'Русский';
+
+            const finalAbout = aboutVal || 'Зажигательный трек про любовь, вдохновение и жизнь';
+            const finalDedication = forVal;
+
+            selectedStyle = styleName;
+            selectedStyleCategory = 'МУЗЫКА';
+            selectedStylePrice = selectedStylePrice || 290;
+            selectedStyleModel = 'suno';
+            selectedStylePhoto = 'images/photo2.jpg';
+            selectedStyleLocation = '';
+            selectedStyleResolution = 'MP3';
+
+            guestMusicTheme = finalDedication ? `${finalDedication} (${finalAbout})` : finalAbout;
+
+            let fullPrompt = `Музыкальный трек в стиле ${styleName}. `;
+            fullPrompt += `Язык исполнения вокала: ${langName}. `;
+            fullPrompt += `Тема и сюжет песни: ${finalAbout}. `;
+            if (finalDedication) {
+                fullPrompt += `Песня написана персонально для: ${finalDedication}. `;
+            }
+            if (styleBasePrompt) {
+                fullPrompt += `${styleBasePrompt}. `;
+            }
+            fullPrompt += `Запоминающийся хитовый мотив, качественное сведение, четкий вокал.`;
+
+            selectedStylePrompt = fullPrompt;
+
             showStep(stepPayment);
             initiatePaymentOrder();
         });
     }
 
-    if (musicThemeContinueBtn) {
-        musicThemeContinueBtn.addEventListener('click', () => {
-            guestMusicTheme = (musicThemeInput ? musicThemeInput.value.trim() : '');
-            showStep(stepPayment);
-            initiatePaymentOrder();
-        });
-    }
-
-    // ШАГ 1: ОТКРЫТИЕ ПОТОКА — ЭКРАН ОПЛАТЫ ИЛИ ВЫБОРА ТЕМЫ
+    // ШАГ 1: ОТКРЫТИЕ ПОТОКА (ДЛЯ ОБЫЧНЫХ ШАБЛОНОВ ФОТО/ВИДЕО)
     window.openKioskFlow = function() {
         if (modal) modal.style.display = 'flex';
 
@@ -1992,7 +2117,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isMusic = isMusicTemplate(curTpl) || selectedStyleModel === 'suno';
 
         if (isMusic) {
-            openMusicThemeStep();
+            openDirectMusicStudio(activeSectionCard);
         } else {
             showStep(stepPayment);
             initiatePaymentOrder();
@@ -2003,7 +2128,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (cancelPayBtn) {
         cancelPayBtn.addEventListener('click', () => {
             closeKioskFlow();
-            openTemplateGallery();
+            if (selectedStyleModel === 'suno' || (activeSectionCard && (activeSectionCard.id === 6 || (activeSectionCard.filter && activeSectionCard.filter.toUpperCase() === 'MUSIC')))) {
+                openDirectMusicStudio(activeSectionCard);
+            } else {
+                openTemplateGallery();
+            }
         });
     }
 
@@ -2080,8 +2209,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const resultAudioBox = document.getElementById('result-audio-box');
         if (resultAudioBox) resultAudioBox.style.display = 'none';
 
-        guestMusicTheme = '';
-        if (musicThemeInput) musicThemeInput.value = '';
+        if (musicInputAbout) musicInputAbout.value = '';
+        if (musicInputFor) musicInputFor.value = '';
         document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
 
         if (tryonLocationInfoCard) tryonLocationInfoCard.style.display = 'none';
