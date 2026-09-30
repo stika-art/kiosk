@@ -2126,7 +2126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.openKioskFlow = function() {
         if (modal) modal.style.display = 'flex';
 
-        const curTpl = templates.find(t => t.id === selectedTemplateId || t.title === selectedStyle);
+        const curTpl = (Array.isArray(masterTemplates) ? masterTemplates : []).find(t => t.id === selectedTemplateId || t.title === selectedStyle);
         const isMusic = isMusicTemplate(curTpl) || selectedStyleModel === 'suno';
 
         if (isMusic) {
@@ -2134,11 +2134,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             showStep(stepPayment);
             initiatePaymentOrder();
-            // Фоновый прогрев камеры: пока гость сканирует Kaspi QR (5-15 сек),
-            // камера киоска активируется в фоне и будет мгновенно готова к съёмке без черного экрана
-            if (!mediaStream) {
-                startWebcam().catch(err => console.warn('Фоновый прогрев камеры:', err));
-            }
         }
     };
 
