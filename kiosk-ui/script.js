@@ -68,7 +68,7 @@ function normalizeMainCards(cards) {
             { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
             { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'] },
             { id: 4, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] },
-            { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 НЕЙРОСЕТЬ SUNO AI • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] }
+            { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] }
         ];
     } else {
         let tryOnCard = list.find(c => c.id === 4 || c.id === 5 || (c.title && c.title.toUpperCase().includes('ПРИМЕР')));
@@ -94,7 +94,7 @@ function normalizeMainCards(cards) {
             list.push({
                 id: 6,
                 title: 'СОЗДАЙ СВОЙ ТРЕК',
-                badge: '🎵 НЕЙРОСЕТЬ SUNO AI • ХИТЫ',
+                badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ',
                 subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ',
                 filter: 'MUSIC',
                 category: 'МУЗЫКА',
@@ -698,7 +698,7 @@ const DEFAULT_KIOSK_TEMPLATES = [
     },
 
     // ==========================================
-    // РАЗДЕЛ: СОЗДАЙ СВОЙ ТРЕК (sectionId: 6, Suno AI)
+    // РАЗДЕЛ: СОЗДАЙ СВОЙ ТРЕК (sectionId: 6, Music AI)
     // ==========================================
     {
         "id": 1790700000001,
@@ -1791,7 +1791,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ============================================================
-    //  МУЗЫКАЛЬНЫЙ ШАГ: ТЕМАТИКА И ПОСВЯЩЕНИЕ ПЕСНИ (SUNO AI)
+    //  МУЗЫКАЛЬНЫЙ ШАГ: ТЕМАТИКА И ПОСВЯЩЕНИЕ ПЕСНИ (MUSIC AI)
     // ============================================================
     let guestMusicTheme = '';
     let vkCurrentLayout = 'RU'; // 'RU', 'EN', 'NUM'
@@ -3342,13 +3342,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                 selectedStyleModel.includes('gemini') ||
                                 selectedStyleModel.includes('video'));
 
-        const genTitle = isMusicSelection ? 'СОЗДАНИЕ ПЕСНИ (SUNO AI)' : isMotionControl ? 'СОЗДАНИЕ ТАНЦА' : isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
+        const genTitle = isMusicSelection ? 'СОЗДАНИЕ ПЕСНИ' : isMotionControl ? 'СОЗДАНИЕ ТАНЦА' : isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
         resetAiProgress(genTitle, selectedStyleModel, currentAiResolution);
 
         const musicInitialStatuses = [
             `Генерация бита, ритм-секции и мелодии...`,
             `Создание стихов и рифм для припева...`,
-            `Синтез студийного вокала в Suno AI...`,
+            `Синтез студийного вокала и инструментов...`,
             `Финальный мастеринг и сведение трека...`
         ];
         const motionInitialStatuses = [
@@ -3526,7 +3526,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             let currentStatusText = activePollStatuses[pollIdx % activePollStatuses.length];
                             if (isMusicSelection) {
                                 if (elapsedSec > 30 && elapsedSec <= 90) {
-                                    currentStatusText = `Нейросеть Suno пишет стихи и сводит бит...`;
+                                    currentStatusText = `Нейросеть пишет слова и сводит бит...`;
                                 } else if (elapsedSec > 90) {
                                     currentStatusText = `Синтез вокала и финальный мастеринг MP3...`;
                                 }
@@ -3632,7 +3632,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (resultAudioGenre) {
                 resultAudioGenre.textContent = guestMusicTheme
                     ? `🎵 ${selectedStyle} • Для: ${guestMusicTheme}`
-                    : `🎵 ${selectedStyleCategory || 'Suno AI'} • Персональный хит`;
+                    : `🎵 ${selectedStyleCategory || 'МУЗЫКА'} • Персональный хит`;
             }
             resultAudioPlayer.play().catch(e => console.warn('Audio play error:', e));
         } else if (isVideoResult && resultVideo) {
