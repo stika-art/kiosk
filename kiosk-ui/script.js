@@ -2001,10 +2001,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (musicInputAbout) {
         musicInputAbout.addEventListener('focus', () => setActiveMusicInput(musicInputAbout));
         musicInputAbout.addEventListener('click', () => setActiveMusicInput(musicInputAbout));
+        musicInputAbout.addEventListener('pointerdown', () => setActiveMusicInput(musicInputAbout));
+        musicInputAbout.addEventListener('touchstart', () => setActiveMusicInput(musicInputAbout), { passive: true });
     }
     if (musicInputFor) {
         musicInputFor.addEventListener('focus', () => setActiveMusicInput(musicInputFor));
         musicInputFor.addEventListener('click', () => setActiveMusicInput(musicInputFor));
+        musicInputFor.addEventListener('pointerdown', () => setActiveMusicInput(musicInputFor));
+        musicInputFor.addEventListener('touchstart', () => setActiveMusicInput(musicInputFor), { passive: true });
     }
 
     // Очистка полей ввода крестиком
