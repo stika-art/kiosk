@@ -2686,8 +2686,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let uiFrameCount = 0;
     let uiLastTime = performance.now();
     let currentUiFps = 60;
+    let uiRafId = null;
 
-    function trackUiFps() {
+    function startTrackingUiFps() {
+        if (uiRafId) return;
+        uiLastTime = performance.now();
+        uiFrameCount = 0;
         const onUiFrame = (now) => {
             uiFrameCount++;
             const elapsed = now - uiLastTime;
@@ -2696,11 +2700,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 uiFrameCount = 0;
                 uiLastTime = now;
             }
-            requestAnimationFrame(onUiFrame);
+            uiRafId = requestAnimationFrame(onUiFrame);
         };
-        requestAnimationFrame(onUiFrame);
+        uiRafId = requestAnimationFrame(onUiFrame);
     }
-    trackUiFps();
+
+    function stopTrackingUiFps() {
+        if (uiRafId) {
+            cancelAnimationFrame(uiRafId);
+            uiRafId = null;
+        }
+    }
 
     function getWebGLInfo() {
         try {
@@ -2853,6 +2863,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function openDiagModal() {
         if (!diagModal) return;
         diagModal.style.display = 'flex';
+        startTrackingUiFps();
         renderDiagnostics();
         if (diagUpdateTimer) clearInterval(diagUpdateTimer);
         diagUpdateTimer = setInterval(renderDiagnostics, 700);
@@ -2861,6 +2872,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeDiagModal() {
         if (!diagModal) return;
         diagModal.style.display = 'none';
+        stopTrackingUiFps();
         if (diagUpdateTimer) {
             clearInterval(diagUpdateTimer);
             diagUpdateTimer = null;
@@ -4355,4 +4367,30 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('gesturestart', (e) => {
         e.preventDefault();
     }, { passive: false });
+
+    // 5. Кнопка быстрого обновления страницы в правом верхнем углу (стиль Chrome)
+    const kioskReloadBtn = document.getElementById('kiosk-reload-btn');
+    if (kioskReloadBtn) {
+        let isReloading = false;
+        const triggerReload = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            if (isReloading) return;
+            isReloading = true;
+            kioskReloadBtn.classList.add('is-reloading');
+            setTimeout(() => {
+                window.location.reload();
+            }, 180);
+        };
+
+        kioskReloadBtn.addEventListener('click', triggerReload);
+        kioskReloadBtn.addEventListener('pointerdown', () => {
+            kioskReloadBtn.style.transform = 'scale(0.92)';
+        });
+        kioskReloadBtn.addEventListener('pointerup', () => {
+            if (!isReloading) kioskReloadBtn.style.transform = '';
+        });
+    }
 });

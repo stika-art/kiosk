@@ -13,21 +13,71 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        * {
+        *, *::before, *::after {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
             -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body, :root, .kiosk, .modal-content, .scrollable {
             scrollbar-width: none !important;
             -ms-overflow-style: none !important;
         }
 
-        *::-webkit-scrollbar,
         ::-webkit-scrollbar {
             display: none !important;
             width: 0 !important;
             height: 0 !important;
             background: transparent !important;
+        }
+
+        /* Кнопка обновления страницы в правом верхнем углу (стиль Chrome) */
+        .kiosk-reload-btn {
+            position: fixed;
+            top: 20px;
+            right: 22px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(22, 22, 28, 0.75);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(212, 160, 67, 0.35);
+            color: rgba(255, 255, 255, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 999999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.12);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+                        background 0.2s ease, 
+                        border-color 0.2s ease, 
+                        box-shadow 0.2s ease, 
+                        color 0.2s ease;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .kiosk-reload-btn:hover {
+            background: rgba(212, 160, 67, 0.22);
+            border-color: var(--primary);
+            color: #FFFFFF;
+            transform: scale(1.08);
+            box-shadow: 0 0 20px rgba(212, 160, 67, 0.45), 0 8px 30px rgba(0, 0, 0, 0.7);
+        }
+
+        .kiosk-reload-btn:active {
+            transform: scale(0.92);
+            background: rgba(212, 160, 67, 0.35);
+        }
+
+        .kiosk-reload-btn svg {
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .kiosk-reload-btn.is-reloading svg {
+            transform: rotate(360deg);
         }
 
         :root {
@@ -169,6 +219,9 @@
             border: 1px solid rgba(212, 160, 67, 0.22);
             cursor: pointer;
             z-index: 2;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            will-change: transform;
             transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
                         box-shadow 0.4s ease, 
                         border-color 0.4s ease;
@@ -2158,6 +2211,14 @@
 <body>
 
 <div class="kiosk">
+
+    <!-- КНОПКА ОБНОВЛЕНИЯ СТРАНИЦЫ (ВЕРХНИЙ ПРАВЫЙ УГОЛ) -->
+    <button type="button" id="kiosk-reload-btn" class="kiosk-reload-btn" aria-label="Обновить страницу" title="Обновить страницу">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-2.63-6.36L21 8"/>
+            <polyline points="21 3 21 8 16 8"/>
+        </svg>
+    </button>
 
     <!-- =========================================
          TOP CENTER LUXURY BRAND HEADER
