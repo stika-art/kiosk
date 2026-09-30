@@ -1478,6 +1478,30 @@ function renderGridTemplates() {
         card.appendChild(mediaEl);
         card.appendChild(priceBadge);
 
+        // Отображение названия и жанра ТОЛЬКО для раздела «СОЗДАЙ СВОЙ ТРЕК» (музыка)
+        const isMusic = isMusicTemplate(item) || targetSecId === 6 || targetTitle.includes('ТРЕК') || targetTitle.includes('МУЗЫК');
+        if (isMusic) {
+            card.classList.add('tile-card-music');
+
+            // Верхний бейдж жанра (напр: 🎵 РЭП, 🎵 РОК, 🎵 ХИТЫ)
+            const genreBadge = document.createElement('div');
+            genreBadge.className = 'tile-music-badge';
+            genreBadge.innerHTML = `<span>🎵</span> <span>${item.category || 'ТРЕК'}</span>`;
+            card.appendChild(genreBadge);
+
+            // Нижняя плашка с названием трека/стиля
+            const bottomInfo = document.createElement('div');
+            bottomInfo.className = 'tile-music-bottom';
+
+            const titleEl = document.createElement('div');
+            titleEl.className = 'tile-music-title';
+            titleEl.textContent = item.title || 'Музыкальный трек';
+            titleEl.title = item.title || '';
+
+            bottomInfo.appendChild(titleEl);
+            card.appendChild(bottomInfo);
+        }
+
         // При клике на карточку — сразу переходим к экрану оплаты Finik ELQR!
         card.addEventListener('click', () => {
             if (isAttractClosing) return; // поглощаем клик закрытия заставки
