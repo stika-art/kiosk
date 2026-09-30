@@ -40,7 +40,6 @@
             position: fixed;
         }
 
-        /* ── Камера ── */
         #camera-video {
             position: absolute;
             top: 0;
@@ -55,7 +54,6 @@
             display: none;
         }
 
-        /* ── Сцена наложения AR ── */
         #ar-stage {
             position: absolute;
             top: 0;
@@ -76,7 +74,7 @@
             border-radius: 12px;
             overflow: hidden;
             border: 2px solid var(--neon-blue);
-            transition: opacity 0.25s ease, transform 0.15s ease-out;
+            transition: opacity 0.3s ease, transform 0.1s ease-out;
             pointer-events: auto;
             background: #000;
         }
@@ -88,7 +86,6 @@
             display: block;
         }
 
-        /* ── HUD ── */
         .ar-hud {
             position: absolute;
             inset: 0;
@@ -150,14 +147,13 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.45);
-            pointer-events: auto;
-            cursor: pointer;
+            pointer-events: none;
             transition: all 0.3s ease;
         }
 
         .ar-scanner-frame.tracking-active {
             box-shadow: none;
-            opacity: 0.1;
+            opacity: 0.08;
         }
 
         .frame-corner {
@@ -165,7 +161,6 @@
             width: 32px;
             height: 32px;
             border: 4px solid var(--neon-blue);
-            transition: border-color 0.2s;
         }
         .corner-tl { top: -2px; left: -2px; border-right: none; border-bottom: none; border-radius: 20px 0 0 0; }
         .corner-tr { top: -2px; right: -2px; border-left: none; border-bottom: none; border-radius: 0 20px 0 0; }
@@ -209,31 +204,6 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
         }
 
-        /* ── Кнопка прямого оживления ── */
-        .manual-trigger-btn {
-            position: absolute;
-            bottom: -110px;
-            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-            border: none;
-            border-radius: 30px;
-            padding: 10px 22px;
-            color: #000;
-            font-family: inherit;
-            font-size: 13px;
-            font-weight: 900;
-            letter-spacing: 1px;
-            cursor: pointer;
-            box-shadow: 0 4px 20px rgba(0, 242, 254, 0.4);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            pointer-events: auto;
-        }
-
-        .manual-trigger-btn:active {
-            transform: scale(0.96);
-        }
-
         .ar-bottom-bar {
             width: 100%;
             display: flex;
@@ -263,6 +233,20 @@
             border-radius: 50%;
             object-fit: cover;
             border: 1.5px solid var(--primary);
+        }
+
+        .btn-rescan {
+            display: none;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 30px;
+            padding: 9px 20px;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            cursor: pointer;
         }
 
         /* ── Экран запуска ── */
@@ -346,7 +330,7 @@
         </div>
 
         <!-- Лазерная рамка сканирования маркера -->
-        <div class="ar-scanner-frame" id="scanner-frame" title="Нажмите для оживления">
+        <div class="ar-scanner-frame" id="scanner-frame">
             <div class="frame-corner corner-tl"></div>
             <div class="frame-corner corner-tr"></div>
             <div class="frame-corner corner-bl"></div>
@@ -356,14 +340,12 @@
                 <span>🎯</span>
                 <span>Наведите камеру на маркер</span>
             </div>
-            <!-- Быстрая кнопка принудительного воспроизведения -->
-            <button type="button" class="manual-trigger-btn" id="btn-manual-play">
-                <span>▶️</span>
-                <span>ОЖИВИТЬ СЕЙЧАС</span>
-            </button>
         </div>
 
         <div class="ar-bottom-bar">
+            <button type="button" class="btn-rescan" id="btn-rescan">
+                🔄 ПЕРЕСКАНИРОВАТЬ МАРКЕР
+            </button>
             <div class="marker-preview-chip" id="marker-chip" style="display:none;">
                 <img class="marker-thumb" id="marker-thumb-img" src="" alt="Маркер">
                 <span>МАРКЕР АКТИВЕН</span>
@@ -380,7 +362,7 @@
         </div>
         <h2 style="font-size:22px; font-weight:800; letter-spacing:1px; color:#fff;">ОЖИВАЮЩЕЕ ФОТО В AR</h2>
         <p style="font-size:14px; color:rgba(255,255,255,0.65); max-width:280px; line-height:1.5;">
-            Нажмите кнопку для запуска дополненной реальности со звуком.
+            Наведите камеру на распечатанное фото или экран для запуска дополненной реальности.
         </p>
         <button type="button" class="ar-btn-start" id="btn-start-ar">
             ВКЛЮЧИТЬ КАМЕРУ
@@ -416,24 +398,26 @@
             const iconOn         = document.getElementById('sound-icon-on');
             const permScreen     = document.getElementById('permission-screen');
             const btnStartAr     = document.getElementById('btn-start-ar');
-            const btnManualPlay  = document.getElementById('btn-manual-play');
+            const btnRescan      = document.getElementById('btn-rescan');
 
             let arConfig = {
                 markerUrl: directMarker,
                 mediaUrl: directMedia,
-                isVideo: true
+                isVideo: true,
+                scale: 1.0,
+                offsetX: 0,
+                offsetY: 0
             };
 
             let markerAnalysis = null;
             let markerLoadedImg = null;
             let cameraStream = null;
             let isRunning = false;
-            let isMuted = true;
-            let lastFoundTime = 0;
+            let isMuted = false;
             let matchStreak = 0;
-            let manualActive = false;
+            let isAttached = false; // Флаг фиксации на маркере
 
-            // 1. Загрузка параметров проекта из Supabase
+            // 1. Загрузка манифеста проекта из Supabase
             async function loadArConfig() {
                 if (!arId) return;
                 try {
@@ -443,9 +427,12 @@
                         arConfig.markerUrl = data.markerUrl || arConfig.markerUrl;
                         arConfig.mediaUrl  = data.mediaUrl || data.contentUrl || arConfig.mediaUrl;
                         arConfig.isVideo   = data.isVideo !== false && !arConfig.mediaUrl.match(/\.(jpg|jpeg|png|webp)$/i);
+                        arConfig.scale     = data.scale || 1.0;
+                        arConfig.offsetX   = data.offsetX || 0;
+                        arConfig.offsetY   = data.offsetY || 0;
                     }
                 } catch(e) {
-                    console.warn('[AR] Не удалось загрузить манифест из Supabase:', e);
+                    console.warn('[AR] Ошибка загрузки манифеста:', e);
                 }
             }
 
@@ -455,12 +442,11 @@
                     markerThumbImg.src = arConfig.markerUrl;
                     markerChip.style.display = 'flex';
 
-                    // Загружаем картинку-маркер для визуального анализа в памяти
                     markerLoadedImg = new Image();
                     markerLoadedImg.crossOrigin = 'anonymous';
                     markerLoadedImg.onload = () => {
                         markerAnalysis = analyzeImage(markerLoadedImg);
-                        console.log('[AR] Маркер успешно проанализирован для визуального поиска');
+                        console.log('[AR] Маркер успешно загружен и проанализирован');
                     };
                     markerLoadedImg.src = arConfig.markerUrl;
                 }
@@ -470,6 +456,7 @@
                         arVideo.src = arConfig.mediaUrl;
                         arVideo.style.display = 'block';
                         arImg.style.display = 'none';
+                        arVideo.muted = isMuted;
                         arVideo.load();
                     } else {
                         arImg.src = arConfig.mediaUrl;
@@ -479,7 +466,7 @@
                 }
             }
 
-            // Алгоритм анализа цветовой карты и яркости (32x32 блок)
+            // Анализ цветовой карты и дисперсии яркости
             function analyzeImage(img) {
                 const cv = document.createElement('canvas');
                 cv.width = 32; cv.height = 32;
@@ -493,12 +480,15 @@
                     avgR += r; avgG += g; avgB += b;
                     grays[i] = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
                 }
-                return {
-                    grays,
-                    avgR: avgR / 1024,
-                    avgG: avgG / 1024,
-                    avgB: avgB / 1024
-                };
+                avgR /= 1024; avgG /= 1024; avgB /= 1024;
+
+                let variance = 0;
+                for (let i = 0; i < 1024; i++) {
+                    variance += (grays[i] - ((avgR*0.299 + avgG*0.587 + avgB*0.114)/255)) ** 2;
+                }
+                const stdDev = Math.sqrt(variance / 1024);
+
+                return { grays, avgR, avgG, avgB, stdDev };
             }
 
             // 3. Запуск камеры
@@ -521,23 +511,29 @@
                     isRunning = true;
                     requestAnimationFrame(processFrame);
                 } catch(err) {
-                    alert('Не удалось запустить камеру. Пожалуйста, разрешите доступ к камере в браузере.');
+                    alert('Разрешите доступ к камере в браузере для просмотра AR.');
                     console.error('Camera error:', err);
                 }
             }
 
-            // 4. Высокоскоростной цикл компьютерного зрения (Visual Matching + QR)
+            // 4. Цикл компьютерного зрения
             function processFrame() {
                 if (!isRunning) return;
+
+                // Если видео уже закреплено на маркере — не прерываем воспроизведение
+                if (isAttached) {
+                    requestAnimationFrame(processFrame);
+                    return;
+                }
 
                 if (videoEl.readyState === videoEl.HAVE_ENOUGH_DATA) {
                     const vw = videoEl.videoWidth;
                     const vh = videoEl.videoHeight;
 
-                    // А. ПРОВЕРКА 1: Визуальное сопоставление с картинкой в видоискателе
+                    // 1. Поиск визуального совпадения изображения
                     const isVisualMatch = checkVisualMatch(vw, vh);
 
-                    // Б. ПРОВЕРКА 2: Сканирование QR-кода через jsQR
+                    // 2. Сканирование QR-кода как альтернативный маркер
                     let qrCodeFound = null;
                     if (!isVisualMatch) {
                         const scale = 0.5;
@@ -548,24 +544,17 @@
                         qrCodeFound = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "dontInvert" });
                     }
 
-                    if (isVisualMatch || manualActive) {
-                        lastFoundTime = performance.now();
-                        applyFrameTracking();
+                    if (isVisualMatch) {
+                        attachToMarker();
                     } else if (qrCodeFound && qrCodeFound.location) {
-                        lastFoundTime = performance.now();
-                        applyQrTracking(qrCodeFound.location, 0.5);
-                    } else {
-                        // Скрытие если маркер ушел из видоискателя
-                        if (performance.now() - lastFoundTime > 500 && !manualActive) {
-                            hideOverlay();
-                        }
+                        attachToMarker();
                     }
                 }
 
                 requestAnimationFrame(processFrame);
             }
 
-            // Сравнение области видоискателя с фото-маркером
+            // Точное сопоставление видоискателя с маркером
             function checkVisualMatch(vw, vh) {
                 if (!markerAnalysis) return false;
 
@@ -590,7 +579,7 @@
                 const cropW = Math.min(vw - cropX, Math.floor((frameRect.width / renderW) * vw));
                 const cropH = Math.min(vh - cropY, Math.floor((frameRect.height / renderH) * vh));
 
-                if (cropW <= 20 || cropH <= 20) return false;
+                if (cropW <= 30 || cropH <= 30) return false;
 
                 checkCanvas.width = 32; checkCanvas.height = 32;
                 checkCtx.drawImage(videoEl, cropX, cropY, cropW, cropH, 0, 0, 32, 32);
@@ -598,117 +587,97 @@
 
                 let curAvgR = 0, curAvgG = 0, curAvgB = 0;
                 let diffSum = 0;
+                const curGrays = new Float32Array(1024);
                 for (let i = 0; i < 1024; i++) {
                     const r = cd[i*4], g = cd[i*4+1], b = cd[i*4+2];
                     curAvgR += r; curAvgG += g; curAvgB += b;
-                    const curGray = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
-                    diffSum += Math.abs(curGray - markerAnalysis.grays[i]);
+                    curGrays[i] = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+                    diffSum += Math.abs(curGrays[i] - markerAnalysis.grays[i]);
                 }
                 curAvgR /= 1024; curAvgG /= 1024; curAvgB /= 1024;
+
+                // Защита от темноты / пустого фона: проверяем контраст кадра
+                let curVar = 0;
+                for (let i = 0; i < 1024; i++) {
+                    curVar += (curGrays[i] - ((curAvgR*0.299 + curAvgG*0.587 + curAvgB*0.114)/255)) ** 2;
+                }
+                const curStdDev = Math.sqrt(curVar / 1024);
+                if (curStdDev < 0.06) {
+                    matchStreak = 0;
+                    return false;
+                }
 
                 const avgDiff = diffSum / 1024;
                 const colorDiff = (Math.abs(curAvgR - markerAnalysis.avgR) +
                                    Math.abs(curAvgG - markerAnalysis.avgG) +
                                    Math.abs(curAvgB - markerAnalysis.avgB)) / (255 * 3);
 
-                // Оценка схожести (от 0 до 1)
-                const similarity = 1 - (avgDiff * 0.7 + colorDiff * 0.3);
+                const similarity = 1 - (avgDiff * 0.65 + colorDiff * 0.35);
 
-                if (similarity > 0.60) {
+                // Строгий порог 0.76 с подтверждением 4 кадров подряд
+                if (similarity >= 0.76) {
                     matchStreak++;
-                    return matchStreak >= 2;
+                    return matchStreak >= 4;
                 } else {
                     matchStreak = Math.max(0, matchStreak - 1);
                     return false;
                 }
             }
 
-            // Наложение видео точно поверх рамки видоискателя
-            function applyFrameTracking() {
+            // Фиксация и наложение видео на маркер с учетом настроек масштаба и положения
+            function attachToMarker() {
+                isAttached = true;
+
                 const rect = scannerFrame.getBoundingClientRect();
-                overlayPlane.style.display = 'block';
-                overlayPlane.style.opacity = '1';
-                overlayPlane.style.width   = `${rect.width}px`;
-                overlayPlane.style.height  = `${rect.height}px`;
-                overlayPlane.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
+                const userScale   = Number(arConfig.scale) || 1.0;
+                const userOffsetX = Number(arConfig.offsetX) || 0;
+                const userOffsetY = Number(arConfig.offsetY) || 0;
 
-                scannerFrame.classList.add('tracking-active');
-                scanLaser.style.display = 'none';
-                scanHint.innerHTML = '<span>✨</span><span>ОЖИВАНИЕ АКТИВНО!</span>';
-
-                if (arConfig.isVideo && arVideo.paused) {
-                    arVideo.play().catch(e => console.warn('Video play:', e));
-                }
-            }
-
-            // Наложение видео по QR-метке
-            function applyQrTracking(loc, scale) {
-                const sTL = { x: loc.topLeftCorner.x / scale, y: loc.topLeftCorner.y / scale };
-                const sTR = { x: loc.topRightCorner.x / scale, y: loc.topRightCorner.y / scale };
-                const sBL = { x: loc.bottomLeftCorner.x / scale, y: loc.bottomLeftCorner.y / scale };
-
-                const screenW = window.innerWidth, screenH = window.innerHeight;
-                const vidW = videoEl.videoWidth || 1280, vidH = videoEl.videoHeight || 720;
-
-                const renderW = screenW;
-                const renderH = screenW * (vidH / vidW);
-                const offsetY = (screenH - renderH) / 2;
-
-                const toScreen = (pt) => ({ x: (pt.x / vidW) * renderW, y: (pt.y / vidH) * renderH + offsetY });
-                const pTL = toScreen(sTL);
-                const pTR = toScreen(sTR);
-                const pBL = toScreen(sBL);
-
-                const targetW = Math.hypot(pTR.x - pTL.x, pTR.y - pTL.y) * 1.4;
-                const targetH = Math.hypot(pBL.x - pTL.x, pBL.y - pTL.y) * 1.4;
-                const angleRad = Math.atan2(pTR.y - pTL.y, pTR.x - pTL.x);
+                const targetW = rect.width * userScale;
+                const targetH = rect.height * userScale;
+                const posX = rect.left + (rect.width - targetW) / 2 + userOffsetX;
+                const posY = rect.top  + (rect.height - targetH) / 2 + userOffsetY;
 
                 overlayPlane.style.display = 'block';
                 overlayPlane.style.opacity = '1';
                 overlayPlane.style.width   = `${targetW}px`;
                 overlayPlane.style.height  = `${targetH}px`;
-                overlayPlane.style.transform = `translate3d(${pTL.x - targetW*0.1}px, ${pTL.y - targetH*0.1}px, 0) rotate(${angleRad}rad)`;
+                overlayPlane.style.transform = `translate3d(${posX}px, ${posY}px, 0)`;
 
                 scannerFrame.classList.add('tracking-active');
                 scanLaser.style.display = 'none';
-                scanHint.innerHTML = '<span>✨</span><span>ОЖИВАНИЕ АКТИВНО!</span>';
+                scanHint.innerHTML = '<span>✨</span><span>МАРКЕР ОБНАРУЖЕН!</span>';
+                btnRescan.style.display = 'block';
 
-                if (arConfig.isVideo && arVideo.paused) {
+                if (arConfig.isVideo) {
+                    arVideo.muted = isMuted;
                     arVideo.play().catch(() => {});
+                }
+
+                if (navigator.vibrate) {
+                    try { navigator.vibrate(80); } catch(e) {}
                 }
             }
 
-            function hideOverlay() {
+            // Сброс и повторный поиск маркера
+            function resetTracking() {
+                isAttached = false;
+                matchStreak = 0;
                 overlayPlane.style.opacity = '0';
                 setTimeout(() => {
-                    if (performance.now() - lastFoundTime > 500 && !manualActive) {
+                    if (!isAttached) {
                         overlayPlane.style.display = 'none';
-                        if (arConfig.isVideo && !arVideo.paused) {
-                            arVideo.pause();
-                        }
+                        if (arConfig.isVideo) arVideo.pause();
                     }
-                }, 250);
+                }, 200);
 
                 scannerFrame.classList.remove('tracking-active');
                 scanLaser.style.display = 'block';
                 scanHint.innerHTML = '<span>🎯</span><span>Наведите камеру на маркер</span>';
+                btnRescan.style.display = 'none';
             }
 
-            // Прямой запуск по кнопке или тапу на видоискатель
-            function triggerManualPlay() {
-                manualActive = true;
-                applyFrameTracking();
-                if (arConfig.isVideo) {
-                    arVideo.muted = false;
-                    isMuted = false;
-                    iconMuted.style.display = 'none';
-                    iconOn.style.display = 'block';
-                    arVideo.play().catch(e => console.warn(e));
-                }
-            }
-
-            if (btnManualPlay) btnManualPlay.addEventListener('click', triggerManualPlay);
-            if (scannerFrame)  scannerFrame.addEventListener('click', triggerManualPlay);
+            btnRescan.addEventListener('click', resetTracking);
 
             // Управление звуком
             btnSound.addEventListener('click', () => {

@@ -2156,11 +2156,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // ========================================================
     let currentArMarker = 'images/photo1.jpg';
     let currentArMedia = 'assets/hero_robot.jpg';
-    let currentArMediaBlob = null;
-    let currentArMarkerBlob = null;
     let isArMediaVideo = false;
     let currentArSessionId = null;
     let arPollTimer = null;
+    let arOverlayScale = 1.0;
+    let arOverlayOffsetX = 0;
+    let arOverlayOffsetY = 0;
+
+    function updateArAlignmentPreview() {
+        const layer = document.getElementById('ar-floating-layer');
+        const badgeScale = document.getElementById('ar-val-scale');
+        const badgeX = document.getElementById('ar-val-x');
+        const badgeY = document.getElementById('ar-val-y');
+
+        if (badgeScale) badgeScale.textContent = Math.round(arOverlayScale * 100) + '%';
+        if (badgeX) badgeX.textContent = arOverlayOffsetX + 'px';
+        if (badgeY) badgeY.textContent = arOverlayOffsetY + 'px';
+
+        if (layer) {
+            layer.style.width = (arOverlayScale * 100) + '%';
+            layer.style.height = (arOverlayScale * 100) + '%';
+            layer.style.transform = `translate(calc(-50% + ${arOverlayOffsetX}px), calc(-50% + ${arOverlayOffsetY}px))`;
+        }
+    }
 
     window.openDirectArStudio = function(card) {
         if (typeof window.hideAttractScreen === 'function') {
@@ -2192,7 +2210,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (vidMedia)  vidMedia.style.display = 'none';
         if (imgMedia)  imgMedia.style.display = 'block';
 
+        arOverlayScale = 1.0;
+        arOverlayOffsetX = 0;
+        arOverlayOffsetY = 0;
+        updateArAlignmentPreview();
     };
+
+    // Контроллеры масштаба и позиции
+    const btnScaleDown = document.getElementById('ar-ctrl-scale-down');
+    const btnScaleUp   = document.getElementById('ar-ctrl-scale-up');
+    const btnScaleFit  = document.getElementById('ar-ctrl-scale-fit');
+    const btnXLeft     = document.getElementById('ar-ctrl-x-left');
+    const btnXRight    = document.getElementById('ar-ctrl-x-right');
+    const btnYUp       = document.getElementById('ar-ctrl-y-up');
+    const btnYDown     = document.getElementById('ar-ctrl-y-down');
+    const btnResetPos  = document.getElementById('ar-ctrl-reset-pos');
+
+    if (btnScaleDown) btnScaleDown.addEventListener('click', () => { arOverlayScale = Math.max(0.3, +(arOverlayScale - 0.1).toFixed(2)); updateArAlignmentPreview(); });
+    if (btnScaleUp)   btnScaleUp.addEventListener('click',   () => { arOverlayScale = Math.min(2.5, +(arOverlayScale + 0.1).toFixed(2)); updateArAlignmentPreview(); });
+    if (btnScaleFit)  btnScaleFit.addEventListener('click',  () => { arOverlayScale = 1.0; arOverlayOffsetX = 0; arOverlayOffsetY = 0; updateArAlignmentPreview(); });
+    if (btnXLeft)     btnXLeft.addEventListener('click',     () => { arOverlayOffsetX -= 12; updateArAlignmentPreview(); });
+    if (btnXRight)    btnXRight.addEventListener('click',    () => { arOverlayOffsetX += 12; updateArAlignmentPreview(); });
+    if (btnYUp)       btnYUp.addEventListener('click',       () => { arOverlayOffsetY -= 12; updateArAlignmentPreview(); });
+    if (btnYDown)     btnYDown.addEventListener('click',     () => { arOverlayOffsetY += 12; updateArAlignmentPreview(); });
+    if (btnResetPos)  btnResetPos.addEventListener('click',  () => { arOverlayOffsetX = 0; arOverlayOffsetY = 0; updateArAlignmentPreview(); });
 
     // 1. Открытие QR-кода загрузки со смартфона
     function openArPhoneQrModal() {
@@ -2343,6 +2384,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 markerUrl: finalMarkerUrl,
                 mediaUrl: finalMediaUrl,
                 isVideo: isArMediaVideo,
+                scale: arOverlayScale,
+                offsetX: arOverlayOffsetX,
+                offsetY: arOverlayOffsetY,
                 createdAt: Date.now()
             };
 

@@ -2209,85 +2209,106 @@
             gap: 20px;
             width: 100%;
             max-width: 900px;
-            margin: 10px auto 16px auto;
-            align-items: stretch;
-            justify-content: center;
-        }
-        .ar-column {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            margin: 10px auto 14px auto;
             align-items: center;
-            text-align: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .ar-composite-preview {
+            width: 320px;
+            height: 320px;
             position: relative;
-        }
-        .ar-column.active-target {
-            border-color: #00f2fe;
-            box-shadow: 0 0 25px rgba(0, 242, 254, 0.2);
-        }
-        .ar-col-badge {
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            color: #00f2fe;
-            text-transform: uppercase;
-            background: rgba(0, 242, 254, 0.1);
-            padding: 4px 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(0, 242, 254, 0.25);
-        }
-        .ar-preview-window {
-            width: 100%;
-            height: 220px;
-            border-radius: 16px;
-            background: #000;
-            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 18px;
             overflow: hidden;
+            background: #000;
+            border: 2px solid rgba(0, 242, 254, 0.4);
+            box-shadow: 0 0 35px rgba(0, 242, 254, 0.25);
+            user-select: none;
+            touch-action: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
         }
-        .ar-preview-window.loaded {
-            border: 2px solid #00f2fe;
+        .ar-base-marker-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
-        .ar-preview-window img, .ar-preview-window video {
+        .ar-floating-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            transform: translate(-50%, -50%);
+            border: 2.5px dashed #00f2fe;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 25px rgba(0, 242, 254, 0.5);
+            pointer-events: none;
+            transition: transform 0.05s ease-out, width 0.05s, height 0.05s;
+        }
+        .ar-floating-overlay video, .ar-floating-overlay img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        .ar-btns-group {
-            width: 100%;
+        .ar-controls-panel {
+            flex: 1;
+            min-width: 300px;
+            max-width: 440px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 16px 18px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 12px;
         }
-        .ar-btn-option {
-            width: 100%;
-            padding: 11px 14px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.06);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: #fff;
-            font-family: inherit;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
+        .ar-ctrl-row {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
             gap: 8px;
-            transition: all 0.15s ease;
         }
-        .ar-btn-option:hover, .ar-btn-option:active {
-            background: rgba(0, 242, 254, 0.15);
-            border-color: #00f2fe;
+        .ar-ctrl-label {
+            font-size: 11.5px;
+            font-weight: 800;
             color: #00f2fe;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+        .ar-ctrl-btns {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .ar-small-btn {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 9px 13px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .ar-small-btn:hover, .ar-small-btn:active {
+            background: #00f2fe;
+            color: #000;
+            border-color: #00f2fe;
+        }
+        .ar-val-badge {
+            font-size: 12px;
+            font-weight: 800;
+            color: #d4a043;
+            background: rgba(212, 160, 67, 0.1);
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(212, 160, 67, 0.25);
         }
         .ar-phone-qr-popup {
             position: absolute;
@@ -2542,48 +2563,84 @@
                     <span>ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ • WEB AR</span>
                 </div>
             </div>
-            <h2 class="modal-title" style="margin-top: 0; text-align: center;">СТУДИЯ ОЖИВАЮЩЕГО ФОТО</h2>
-            <p class="modal-subtitle" style="text-align: center; max-width: 620px; margin: 0 auto 12px auto;">
-                Создайте фотографию, которая оживает при наведении камеры телефона со звуком и эффектом 3D!
+            <h2 class="modal-title" style="margin-top: 0; text-align: center;">НАСТРОЙКА ОЖИВАЮЩЕГО ФОТО</h2>
+            <p class="modal-subtitle" style="text-align: center; max-width: 640px; margin: 0 auto 12px auto;">
+                Загрузите фото и видео со смартфона. Отрегулируйте размер и точное положение оживающего видео на фото!
             </p>
 
-            <div class="ar-studio-container">
-                <!-- 1. МАРКЕР -->
-                <div class="ar-column" id="ar-col-marker">
-                    <div class="ar-col-badge">1. ФОТО-МАРКЕР (НА ЧТО НАВОДИМ)</div>
-                    <div class="ar-preview-window" id="ar-marker-preview-box">
-                        <img id="ar-marker-img" src="images/photo1.jpg" alt="Маркер">
-                        <div id="ar-marker-status" style="position:absolute; bottom:8px; left:8px; right:8px; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); border-radius:8px; font-size:11px; padding:4px 8px; color:#fff;">Готово к распознаванию</div>
-                    </div>
-                    <div class="ar-btns-group">
-                        <button type="button" class="ar-btn-option" id="ar-btn-phone-marker" style="padding:14px; font-size:14px; border-color:#00f2fe; color:#00f2fe;">
-                            📱 Загрузить фото с телефона (QR)
-                        </button>
+            <!-- Кнопки загрузки с телефона -->
+            <div style="display: flex; gap: 12px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap;">
+                <button type="button" class="ar-small-btn" id="ar-btn-phone-marker" style="padding: 10px 18px; border-color: #00f2fe; color: #00f2fe;">
+                    📱 1. Загрузить фото-маркер (QR)
+                </button>
+                <button type="button" class="ar-small-btn" id="ar-btn-phone-media" style="padding: 10px 18px; border-color: #d4a043; color: #d4a043;">
+                    📱 2. Загрузить видеоролик (QR)
+                </button>
+            </div>
+
+            <div class="ar-studio-container" style="position: relative;">
+                <!-- ХОЛСТ ВЫРАВНИВАНИЯ: МАРКЕР + ОВЕРЛЕЙ -->
+                <div class="ar-composite-preview" id="ar-composite-box">
+                    <img id="ar-marker-img" class="ar-base-marker-img" src="images/photo1.jpg" alt="Маркер">
+                    
+                    <div class="ar-floating-overlay" id="ar-floating-layer">
+                        <video id="ar-media-vid" src="" autoplay loop muted playsinline style="display:none;"></video>
+                        <img id="ar-media-img" src="assets/hero_robot.jpg" alt="Оверлей">
                     </div>
 
-                    <!-- Всплывающий QR-код для загрузки с телефона -->
-                    <div class="ar-phone-qr-popup" id="ar-popup-marker-qr">
-                        <div style="font-size:14px; font-weight:800; color:#00f2fe;">СКАНИРУЙТЕ ТЕЛЕФОНОМ</div>
-                        <div style="font-size:11px; color:#aaa; max-width:200px;">Откроется загрузка фото и видео прямо из вашей галереи</div>
-                        <div id="ar-phone-qr-img" style="width:160px; height:160px; background:#fff; border-radius:12px; padding:6px; margin: 0 auto;"></div>
-                        <div id="ar-phone-poll-status" style="font-size:12px; color:#D4A043; font-weight:700;">Ожидание файлов...</div>
-                        <button type="button" class="ar-btn-option" id="ar-btn-close-qr" style="margin-top:6px; padding:8px 16px;">Закрыть QR</button>
+                    <div style="position:absolute; bottom:6px; left:8px; right:8px; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); border-radius:8px; font-size:11px; padding:3px 8px; color:#fff; text-align:center;">
+                        Интерактивный вид в дополненной реальности
                     </div>
                 </div>
 
-                <!-- 2. ОЖИВАЮЩИЙ РОЛИК -->
-                <div class="ar-column" id="ar-col-media">
-                    <div class="ar-col-badge" style="color:#d4a043; border-color:rgba(212,160,67,0.3); background:rgba(212,160,67,0.1);">2. ОЖИВАЮЩЕЕ ВИДЕО (ЧТО ПОЯВИТСЯ)</div>
-                    <div class="ar-preview-window" id="ar-media-preview-box">
-                        <video id="ar-media-vid" src="" autoplay loop muted playsinline style="display:none;"></video>
-                        <img id="ar-media-img" src="assets/hero_robot.jpg" alt="Медиа">
-                        <div id="ar-media-status" style="position:absolute; bottom:8px; left:8px; right:8px; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); border-radius:8px; font-size:11px; padding:4px 8px; color:#fff;">Оживающий ролик</div>
+                <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ПОЛОЖЕНИЕМ И РАЗМЕРОМ -->
+                <div class="ar-controls-panel">
+                    <!-- 1. РАЗМЕР -->
+                    <div class="ar-ctrl-row">
+                        <span class="ar-ctrl-label">📐 РАЗМЕР ВИДЕО:</span>
+                        <div class="ar-ctrl-btns">
+                            <button type="button" class="ar-small-btn" id="ar-ctrl-scale-down">➖</button>
+                            <span class="ar-val-badge" id="ar-val-scale">100%</span>
+                            <button type="button" class="ar-small-btn" id="ar-ctrl-scale-up">➕</button>
+                            <button type="button" class="ar-small-btn" id="ar-ctrl-scale-fit" style="font-size:11px;">НА ВСЁ ФОТО</button>
+                        </div>
                     </div>
-                    <div class="ar-btns-group">
-                        <button type="button" class="ar-btn-option" id="ar-btn-phone-media" style="padding:14px; font-size:14px; border-color:#d4a043; color:#d4a043;">
-                            📱 Загрузить видео с телефона (QR)
+
+                    <!-- 2. СМЕЩЕНИЕ ПО ГОРИЗОНТАЛИ -->
+                    <div class="ar-ctrl-row">
+                        <span class="ar-ctrl-label">↔️ СМЕЩЕНИЕ X:</span>
+                        <div class="ar-ctrl-btns">
+                            <button type="button" class="ar-small-btn" id="ar-ctrl-x-left">⬅️ Влево</button>
+                            <span class="ar-val-badge" id="ar-val-x">0px</span>
+                            <button type="button" class="ar-small-btn" id="ar-ctrl-x-right">➡️ Вправо</button>
+                        </div>
+                    </div>
+
+                    <!-- 3. СМЕЩЕНИЕ ПО ВЕРТИКАЛИ -->
+                    <div class="ar-ctrl-row">
+                        <span class="ar-ctrl-label">↕️ СМЕЩЕНИЕ Y:</span>
+                        <div class="ar-ctrl-btns">
+                            <button type="button" class="ar-small-btn" id="ar-ctrl-y-up">⬆️ Вверх</button>
+                            <span class="ar-val-badge" id="ar-val-y">0px</span>
+                            <button type="button" class="ar-small-btn" id="ar-ctrl-y-down">⬇️ Вниз</button>
+                        </div>
+                    </div>
+
+                    <!-- 4. СБРОС В ЦЕНТР -->
+                    <div style="text-align: right; margin-top: 4px;">
+                        <button type="button" class="ar-small-btn" id="ar-ctrl-reset-pos" style="padding: 6px 14px; font-size: 11.5px; border-color: rgba(255,255,255,0.2);">
+                            🎯 Центрировать видео
                         </button>
                     </div>
+                </div>
+
+                <!-- Всплывающий QR-код для загрузки с телефона -->
+                <div class="ar-phone-qr-popup" id="ar-popup-marker-qr">
+                    <div style="font-size:15px; font-weight:800; color:#00f2fe;">СКАНИРУЙТЕ ТЕЛЕФОНОМ</div>
+                    <div style="font-size:11.5px; color:#ccc; max-width:240px;">Откроется быстрая загрузка фото и видео прямо из галереи</div>
+                    <div id="ar-phone-qr-img" style="width:160px; height:160px; background:#fff; border-radius:12px; padding:6px; margin: 4px auto;"></div>
+                    <div id="ar-phone-poll-status" style="font-size:12px; color:#D4A043; font-weight:700;">Ожидание файлов...</div>
+                    <button type="button" class="ar-small-btn" id="ar-btn-close-qr" style="margin-top:6px; padding:8px 20px;">Закрыть</button>
                 </div>
             </div>
 
