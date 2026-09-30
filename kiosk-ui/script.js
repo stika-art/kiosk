@@ -2375,14 +2375,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // 3. Сохранение манифеста проекта
-            setAiProgress(85, 'Генерация WebAR маркера и QR-кода...');
+            // 3. Компиляция высокоточного 3D нейро-маркера MindAR
+            let mindTargetUrl = '';
+            try {
+                if (window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.Compiler) {
+                    setAiProgress(75, 'Компиляция 3D нейро-маркера MindAR...');
+                    const compiler = new window.MINDAR.IMAGE.Compiler();
+                    const markerImgEl = new Image();
+                    markerImgEl.crossOrigin = 'anonymous';
+                    markerImgEl.src = finalMarkerUrl;
+                    await new Promise(r => { markerImgEl.onload = r; markerImgEl.onerror = r; });
+
+                    if (markerImgEl.width > 0) {
+                        await compiler.compileImageTargets([markerImgEl], (p) => {
+                            setAiProgress(75 + Math.round(p * 10), `Компиляция AR: ${Math.round(p * 100)}%...`);
+                        });
+                        const mindBuffer = await compiler.exportData();
+                        const mindBlob = new Blob([mindBuffer], { type: 'application/octet-stream' });
+                        const mindPath = `ar/${orderId}/target.mind`;
+                        const upMind = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${mindPath}`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
+                            body: mindBlob
+                        });
+                        if (upMind.ok) {
+                            mindTargetUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${mindPath}`;
+                            console.log('[MindAR] 3D маркер скомпилирован и сохранен:', mindTargetUrl);
+                        }
+                    }
+                }
+            } catch(mErr) {
+                console.warn('[MindAR Compiler Warning]', mErr);
+            }
+
+            // 4. Сохранение манифеста проекта
+            setAiProgress(90, 'Генерация WebAR манифеста и QR-кода...');
             const arManifest = {
                 id: orderId,
                 orderId: orderId,
                 title: 'TRENDUM AR ОЖИВАЮЩЕЕ ФОТО',
                 markerUrl: finalMarkerUrl,
                 mediaUrl: finalMediaUrl,
+                mindUrl: mindTargetUrl,
                 isVideo: isArMediaVideo,
                 scale: arOverlayScale,
                 offsetX: arOverlayOffsetX,
