@@ -2134,6 +2134,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             showStep(stepPayment);
             initiatePaymentOrder();
+            // Фоновый прогрев камеры: пока гость сканирует Kaspi QR (5-15 сек),
+            // камера киоска активируется в фоне и будет мгновенно готова к съёмке без черного экрана
+            if (!mediaStream) {
+                startWebcam().catch(err => console.warn('Фоновый прогрев камеры:', err));
+            }
         }
     };
 
@@ -2577,11 +2582,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (paymentStatusText) {
             paymentStatusText.textContent = '✅ Оплата получена! Включаем камеру...';
         }
-        setTimeout(() => {
-            resetCameraStep();
-            showStep(stepCamera);
-            startWebcam();
-        }, 1000);
+        resetCameraStep();
+        showStep(stepCamera);
+        if (webcamEl && webcamEl.srcObject && webcamEl.paused) {
+            webcamEl.play().catch(() => {});
+        }
+        startWebcam();
     }
 
 
@@ -3030,6 +3036,23 @@ document.addEventListener('DOMContentLoaded', () => {
         fpsCallbackId = webcamEl.requestVideoFrameCallback(onFrame);
     }
 
+    // Поиск наилучшей камеры киоска (приоритет внешним USB / Logitech BRIO, исключая IR/Hello)
+    function getOptimalCamera(devices, preferredId) {
+        if (!devices || devices.length === 0) return null;
+        if (preferredId) {
+            const found = devices.find(d => d.deviceId === preferredId);
+            if (found) return found;
+        }
+        const isExcluded = (lbl) => /(?:ir\b|infrared|hello|virtual|obs)/i.test(lbl || '');
+        const isPreferred = (lbl) => /(?:brio|logitech|usb\s*video|c920|c922|c930|live\s*streamer|hd\s*pro|webcam|camera)/i.test(lbl || '');
+
+        const validCams = devices.filter(d => !isExcluded(d.label));
+        const bestCam = validCams.find(d => isPreferred(d.label));
+        if (bestCam) return bestCam;
+        if (validCams.length > 0) return validCams[0];
+        return devices[0];
+    }
+
     async function startWebcam() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             alert('Браузер не поддерживает камеру или страница открыта без HTTPS.');
@@ -3037,46 +3060,60 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            stopWebcam();
             updateResButtonsUI();
 
-            // 1. Предварительно опрашиваем список устройств
+            // 1. Опрашиваем устройства
             try {
                 const devs = await navigator.mediaDevices.enumerateDevices();
                 availableVideoDevices = devs.filter(d => d.kind === 'videoinput');
             } catch(e) {
-                console.warn('Ошибка опроса устройств:', e);
+                console.warn('Ошибка enumerateDevices:', e);
             }
 
-            // 1. Проверяем сохраненную камеру
-            let chosenDeviceId = localStorage.getItem('kiosk_user_selected_cam_id') || localStorage.getItem('kiosk_camera_device_id');
-            if (chosenDeviceId && availableVideoDevices.length > 0 && !availableVideoDevices.some(d => d.deviceId === chosenDeviceId)) {
-                chosenDeviceId = null;
+            const savedId = localStorage.getItem('kiosk_user_selected_cam_id') || localStorage.getItem('kiosk_camera_device_id');
+            const targetCam = getOptimalCamera(availableVideoDevices, savedId);
+            const chosenDeviceId = targetCam ? targetCam.deviceId : savedId;
+
+            // Если видеопоток уже работает и активен — просто гарантируем воспроизведение в <video>
+            const existingTrack = (mediaStream && mediaStream.getVideoTracks()) ? mediaStream.getVideoTracks()[0] : null;
+            if (existingTrack && existingTrack.readyState === 'live' && targetCam && (!targetCam.label || existingTrack.label === targetCam.label)) {
+                if (webcamEl) {
+                    if (webcamEl.srcObject !== mediaStream) webcamEl.srcObject = mediaStream;
+                    webcamEl.muted = true;
+                    webcamEl.defaultMuted = true;
+                    webcamEl.play().catch(() => {});
+                }
+                return;
             }
+
+            stopWebcam();
 
             // 2. Запрашиваем видеопоток (начиная с легкого 720p)
             const is720 = currentCamResolution === '720p';
             let openedStream = null;
+            const videoConstraints = {
+                width: is720 ? { ideal: 1280 } : { ideal: 1920 },
+                height: is720 ? { ideal: 720 } : { ideal: 1080 },
+                frameRate: { ideal: 30 }
+            };
+            if (chosenDeviceId) {
+                videoConstraints.deviceId = { ideal: chosenDeviceId };
+            }
+
             try {
                 openedStream = await navigator.mediaDevices.getUserMedia({
                     audio: false,
-                    video: chosenDeviceId ? {
-                        deviceId: { ideal: chosenDeviceId },
-                        width: is720 ? { ideal: 1280 } : { ideal: 1920 },
-                        height: is720 ? { ideal: 720 } : { ideal: 1080 },
-                        frameRate: { ideal: 30 }
-                    } : {
-                        width: is720 ? { ideal: 1280 } : { ideal: 1920 },
-                        height: is720 ? { ideal: 720 } : { ideal: 1080 },
-                        frameRate: { ideal: 30 }
-                    }
+                    video: videoConstraints
                 });
             } catch (errConstraint) {
-                console.warn('Ошибка при запросе идеальных параметров, пробуем чистый fallback video: true', errConstraint);
+                console.warn('Ошибка идеальных параметров, fallback на базовый video:', errConstraint);
                 try {
-                    openedStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+                    openedStream = await navigator.mediaDevices.getUserMedia({
+                        audio: false,
+                        video: chosenDeviceId ? { deviceId: { ideal: chosenDeviceId } } : true
+                    });
                 } catch(errBasic) {
-                    throw errBasic;
+                    openedStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
                 }
             }
 
@@ -3085,21 +3122,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Поток камеры не получен. Проверьте подключение камеры к киоску.');
             }
 
-            // 3. Обновляем список устройств с полученными названиями
+            // 3. После успешного запроса права выданы — обновляем список с РЕАЛЬНЫМИ именами устройств
             try {
                 const refreshed = await navigator.mediaDevices.enumerateDevices();
                 availableVideoDevices = refreshed.filter(d => d.kind === 'videoinput');
             } catch(e) {}
 
-            const currentTrack = (mediaStream && mediaStream.getVideoTracks()) ? mediaStream.getVideoTracks()[0] : null;
+            let currentTrack = (mediaStream && mediaStream.getVideoTracks()) ? mediaStream.getVideoTracks()[0] : null;
 
-            // Применяем аппаратные настройки для плавной частоты кадров
-            if (currentTrack && currentTrack.applyConstraints) {
+            // 4. Проверяем: если открылась случайная (например встроенная или IR) камера, а киоск имеет внешнюю USB (Logitech BRIO):
+            const realBestCam = getOptimalCamera(availableVideoDevices, savedId);
+            if (realBestCam && currentTrack && realBestCam.label && currentTrack.label !== realBestCam.label) {
+                console.log('⚡ Авто-переключение на обнаруженную приоритетную камеру:', realBestCam.label);
                 try {
-                    await currentTrack.applyConstraints({
-                        frameRate: { ideal: 30 }
+                    const betterStream = await navigator.mediaDevices.getUserMedia({
+                        audio: false,
+                        video: {
+                            deviceId: { exact: realBestCam.deviceId },
+                            width: is720 ? { ideal: 1280 } : { ideal: 1920 },
+                            height: is720 ? { ideal: 720 } : { ideal: 1080 },
+                            frameRate: { ideal: 30 }
+                        }
                     });
-                } catch(e) {}
+                    if (betterStream) {
+                        mediaStream.getTracks().forEach(t => t.stop());
+                        mediaStream = betterStream;
+                        currentTrack = mediaStream.getVideoTracks()[0];
+                        localStorage.setItem('kiosk_camera_device_id', realBestCam.deviceId);
+                    }
+                } catch(camErr) {
+                    console.warn('Не удалось переключиться на лучшую камеру, остаёмся на открытой:', camErr);
+                }
             }
 
             // Заполняем выпадающий список доступных камер прямо на экране киоска
@@ -3110,7 +3163,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     opt.value = dev.deviceId;
                     const cleanName = (dev.label || `Камера ${idx + 1}`).replace(/\(.*?\)/g, '').trim();
                     opt.textContent = `📷 ${cleanName}`;
-                    if (currentTrack && (dev.label === currentTrack.label || dev.deviceId === chosenDeviceId)) {
+                    if (currentTrack && dev.label === currentTrack.label) {
                         opt.selected = true;
                     }
                     camDeviceSelect.appendChild(opt);
@@ -3123,8 +3176,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (currentTrack) {
                 currentDeviceIndex = availableVideoDevices.findIndex(d => 
-                    (currentTrack.label && d.label === currentTrack.label) || 
-                    (chosenDeviceId && d.deviceId === chosenDeviceId)
+                    (currentTrack.label && d.label === currentTrack.label)
                 );
                 if (currentDeviceIndex === -1) currentDeviceIndex = 0;
             }
@@ -3136,21 +3188,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 switchCamLabel.textContent = `📷 ${shortName}`;
             }
 
+            // 5. Привязываем поток к элементу <video> со всеми атрибутами автовоспроизведения
             if (webcamEl && mediaStream) {
-                webcamEl.srcObject = mediaStream;
-                webcamEl.defaultMuted = true;
                 webcamEl.muted = true;
-                webcamEl.playsInline = true;
-                webcamEl.autoplay = true;
+                webcamEl.defaultMuted = true;
+                webcamEl.volume = 0;
+                webcamEl.setAttribute('muted', '');
+                webcamEl.setAttribute('autoplay', '');
+                webcamEl.setAttribute('playsinline', '');
+
+                webcamEl.srcObject = mediaStream;
 
                 const ensurePlay = () => {
-                    webcamEl.play().catch(e => console.warn('Play retry:', e));
+                    if (webcamEl.paused) {
+                        webcamEl.play().catch(e => console.warn('Play retry:', e));
+                    }
                 };
 
                 webcamEl.onloadedmetadata = ensurePlay;
                 webcamEl.oncanplay = ensurePlay;
                 webcamEl.onloadeddata = ensurePlay;
                 ensurePlay();
+
+                // Watchdog: если видео задержалось с запуском — мягко пинаем воспроизведение
+                let watchdogAttempts = 0;
+                const playWatchdog = setInterval(() => {
+                    watchdogAttempts++;
+                    if (!mediaStream || watchdogAttempts > 15) {
+                        clearInterval(playWatchdog);
+                        return;
+                    }
+                    if (webcamEl.paused || webcamEl.readyState < 2) {
+                        webcamEl.play().catch(() => {});
+                    } else {
+                        clearInterval(playWatchdog);
+                    }
+                }, 200);
 
                 updateCamBadge(currentTrack);
                 startFpsCounter();
@@ -3221,8 +3294,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Гарантия снятия блокировки автовоспроизведения видео при любом клике или тапе
+    const kickWebcamPlayback = () => {
+        if (webcamEl && webcamEl.srcObject && webcamEl.paused) {
+            webcamEl.play().catch(() => {});
+        }
+    };
+    window.addEventListener('pointerdown', kickWebcamPlayback, { passive: true });
+    window.addEventListener('touchstart', kickWebcamPlayback, { passive: true });
+    window.addEventListener('click', kickWebcamPlayback, { passive: true });
+
     // 3. SNAP PHOTO / RECORD VIDEO, COUNTDOWN И ПОДТВЕРЖДЕНИЕ ГОСТЕМ
     snapBtn.addEventListener('click', () => {
+        if (webcamEl && webcamEl.paused) {
+            webcamEl.play().catch(() => {});
+        }
         snapBtn.disabled = true;
 
         const isMotionControl = false; // Kling Motion Control удалён — используем Omni Flash
@@ -3243,6 +3329,9 @@ document.addEventListener('DOMContentLoaded', () => {
             countdownOverlay.textContent = count;
 
             const preTimer = setInterval(() => {
+                if (webcamEl && webcamEl.paused) {
+                    webcamEl.play().catch(() => {});
+                }
                 count--;
                 if (count > 0) {
                     countdownOverlay.textContent = count;
@@ -3260,6 +3349,9 @@ document.addEventListener('DOMContentLoaded', () => {
         countdownOverlay.textContent = count;
 
         const timer = setInterval(() => {
+            if (webcamEl && webcamEl.paused) {
+                webcamEl.play().catch(() => {});
+            }
             count--;
             if (count > 0) {
                 countdownOverlay.textContent = count;

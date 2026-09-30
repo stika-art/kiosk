@@ -788,7 +788,6 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(212, 160, 67, 0.15);
             border-radius: 20px;
             overflow: hidden;
-            transform: translateZ(0);
         }
 
         #webcam {
@@ -796,7 +795,8 @@
             height: 100%;
             object-fit: cover;
             transform: scaleX(-1);
-            background: transparent;
+            background: #000;
+            will-change: transform;
         }
 
         .cam-info-badge {
