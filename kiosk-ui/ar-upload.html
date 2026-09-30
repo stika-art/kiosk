@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0F0F12">
+    <title>TRENDUM — Загрузка AR контента</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #D4A043;
+            --primary-glow: rgba(212, 160, 67, 0.4);
+            --neon-blue: #00f2fe;
+            --bg: #0F0F12;
+            --card-bg: #18181D;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: #fff;
+            min-height: 100vh;
+            padding: 24px 18px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .brand-title {
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+
+        .brand-sub {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        .card-wrap {
+            width: 100%;
+            max-width: 440px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .upload-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .section-label {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: var(--primary);
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .preview-box {
+            width: 100%;
+            height: 180px;
+            border-radius: 14px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .preview-box.has-media {
+            border-style: solid;
+            border-color: var(--neon-blue);
+        }
+
+        .preview-img, .preview-vid {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .placeholder-text {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            text-align: center;
+            padding: 10px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn-choose {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-send-kiosk {
+            width: 100%;
+            padding: 18px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            border: none;
+            color: #000;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            box-shadow: 0 8px 30px rgba(0, 242, 254, 0.4);
+            margin-top: 10px;
+            transition: transform 0.15s;
+        }
+
+        .btn-send-kiosk:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-send-kiosk:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+
+        #status-msg {
+            font-size: 13px;
+            text-align: center;
+            margin-top: 12px;
+            color: var(--primary);
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="brand-title">TRENDUM</div>
+        <div class="brand-sub">СТУДИЯ ДОПОЛНЕННОЙ РЕАЛЬНОСТИ</div>
+    </div>
+
+    <div class="card-wrap">
+        <!-- 1. МАРКЕР -->
+        <div class="upload-section">
+            <div class="section-label">
+                <span>1. ФОТО-МАРКЕР (НА ЧТО НАВОДИМ)</span>
+            </div>
+            <div class="preview-box" id="box-marker" onclick="document.getElementById('input-marker').click()">
+                <img id="img-marker-preview" class="preview-img" alt="Маркер">
+                <div class="placeholder-text" id="ph-marker">
+                    📸 Нажмите, чтобы выбрать фото из галереи или сделать снимок
+                </div>
+            </div>
+            <input type="file" id="input-marker" class="file-input" accept="image/*">
+            <button type="button" class="btn-choose" onclick="document.getElementById('input-marker').click()">
+                ВЫБРАТЬ ФОТОГРАФИЮ
+            </button>
+        </div>
+
+        <!-- 2. ОЖИВАЮЩИЙ КОНТЕНТ -->
+        <div class="upload-section">
+            <div class="section-label">
+                <span>2. ОЖИВАЮЩЕЕ ВИДЕО (ЧТО ПОЯВИТСЯ В AR)</span>
+            </div>
+            <div class="preview-box" id="box-media" onclick="document.getElementById('input-media').click()">
+                <video id="vid-media-preview" class="preview-vid" playsinline muted loop></video>
+                <img id="img-media-preview" class="preview-img" alt="Контент">
+                <div class="placeholder-text" id="ph-media">
+                    🎥 Нажмите, чтобы выбрать видео или Live Photo из галереи
+                </div>
+            </div>
+            <input type="file" id="input-media" class="file-input" accept="video/*,image/*">
+            <button type="button" class="btn-choose" onclick="document.getElementById('input-media').click()">
+                ВЫБРАТЬ ВИДЕОРОЛИК
+            </button>
+        </div>
+
+        <button type="button" class="btn-send-kiosk" id="btn-send" disabled>
+            ОТПРАВИТЬ НА ЭКРАН КИОСКА ➔
+        </button>
+
+        <div id="status-msg"></div>
+    </div>
+
+    <script>
+        (function() {
+            const SUPABASE_URL    = 'https://pegkcclwtwxmngczcqtk.supabase.co';
+            const SUPABASE_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
+            const SUPABASE_BUCKET = 'kiosk-media';
+
+            const params = new URLSearchParams(window.location.search);
+            const sessionId = params.get('session');
+
+            const inpMarker  = document.getElementById('input-marker');
+            const inpMedia   = document.getElementById('input-media');
+            const imgMarker  = document.getElementById('img-marker-preview');
+            const vidMedia   = document.getElementById('vid-media-preview');
+            const imgMedia   = document.getElementById('img-media-preview');
+            const phMarker   = document.getElementById('ph-marker');
+            const phMedia    = document.getElementById('ph-media');
+            const boxMarker  = document.getElementById('box-marker');
+            const boxMedia   = document.getElementById('box-media');
+            const btnSend    = document.getElementById('btn-send');
+            const statusMsg  = document.getElementById('status-msg');
+
+            let markerFile = null;
+            let mediaFile  = null;
+
+            if (!sessionId) {
+                statusMsg.textContent = 'Ошибка: не передан ID сессии киоска.';
+                return;
+            }
+
+            inpMarker.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    markerFile = e.target.files[0];
+                    const url = URL.createObjectURL(markerFile);
+                    imgMarker.src = url;
+                    imgMarker.style.display = 'block';
+                    phMarker.style.display = 'none';
+                    boxMarker.classList.add('has-media');
+                    checkReady();
+                }
+            });
+
+            inpMedia.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    mediaFile = e.target.files[0];
+                    const url = URL.createObjectURL(mediaFile);
+                    const isVid = mediaFile.type.startsWith('video');
+
+                    if (isVid) {
+                        vidMedia.src = url;
+                        vidMedia.style.display = 'block';
+                        imgMedia.style.display = 'none';
+                        vidMedia.play().catch(() => {});
+                    } else {
+                        imgMedia.src = url;
+                        imgMedia.style.display = 'block';
+                        vidMedia.style.display = 'none';
+                    }
+                    phMedia.style.display = 'none';
+                    boxMedia.classList.add('has-media');
+                    checkReady();
+                }
+            });
+
+            function checkReady() {
+                btnSend.disabled = !(markerFile && mediaFile);
+            }
+
+            btnSend.addEventListener('click', async () => {
+                if (!markerFile || !mediaFile) return;
+
+                btnSend.disabled = true;
+                btnSend.textContent = '⏳ ЗАГРУЗКА В КИОСК...';
+                statusMsg.textContent = 'Отправка файлов на терминал...';
+
+                try {
+                    // Загрузка маркера
+                    const markerExt = markerFile.name.split('.').pop() || 'jpg';
+                    const markerPath = `ar-sessions/${sessionId}/marker.${markerExt}`;
+                    const upMarker = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${markerPath}`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${SUPABASE_ANON}`, 'Content-Type': markerFile.type || 'image/jpeg', 'x-upsert': 'true' },
+                        body: markerFile
+                    });
+
+                    // Загрузка медиа
+                    const mediaExt = mediaFile.name.split('.').pop() || 'mp4';
+                    const mediaPath = `ar-sessions/${sessionId}/media.${mediaExt}`;
+                    const upMedia = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${mediaPath}`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${SUPABASE_ANON}`, 'Content-Type': mediaFile.type || 'video/mp4', 'x-upsert': 'true' },
+                        body: mediaFile
+                    });
+
+                    if (upMarker.ok && upMedia.ok) {
+                        // Сохраняем готовность сессии
+                        const sessionMeta = {
+                            sessionId,
+                            markerUrl: `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${markerPath}`,
+                            mediaUrl: `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${mediaPath}`,
+                            isVideo: mediaFile.type.startsWith('video'),
+                            updatedAt: Date.now()
+                        };
+
+                        await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/ar-sessions/${sessionId}/ready.json`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${SUPABASE_ANON}`, 'Content-Type': 'application/json', 'x-upsert': 'true' },
+                            body: JSON.stringify(sessionMeta)
+                        });
+
+                        btnSend.textContent = '✅ УСПЕШНО ОТПРАВЛЕНО!';
+                        statusMsg.innerHTML = 'Файлы переданы в киоск!<br>Посмотрите на экран терминала для завершения.';
+                    } else {
+                        throw new Error('Ошибка сервера хранилища');
+                    }
+                } catch(err) {
+                    console.error(err);
+                    btnSend.disabled = false;
+                    btnSend.textContent = 'ОТПРАВИТЬ СНОВА';
+                    statusMsg.textContent = 'Ошибка загрузки. Проверьте интернет и попробуйте снова.';
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

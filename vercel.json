@@ -14,6 +14,10 @@
   "rewrites": [
     { "source": "/download", "destination": "/kiosk-ui/download" },
     { "source": "/download/", "destination": "/kiosk-ui/download" },
+    { "source": "/ar", "destination": "/kiosk-ui/ar" },
+    { "source": "/ar/", "destination": "/kiosk-ui/ar" },
+    { "source": "/ar-upload", "destination": "/kiosk-ui/ar-upload" },
+    { "source": "/ar-upload/", "destination": "/kiosk-ui/ar-upload" },
     { "source": "/admin", "destination": "/kiosk-ui/admin" },
     { "source": "/admin/", "destination": "/kiosk-ui/admin" },
     { "source": "/", "destination": "/kiosk-ui/" },

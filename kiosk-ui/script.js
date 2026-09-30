@@ -68,7 +68,8 @@ function normalizeMainCards(cards) {
             { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
             { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'] },
             { id: 4, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] },
-            { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] }
+            { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] },
+            { id: 7, title: 'ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ', badge: '✨ AR • ОЖИВАЮЩЕЕ ФОТО', subtitle: 'ОЖИВИТЕ ФОТО ИЛИ ВИДЕО ЧЕРЕЗ КАМЕРУ СМАРТФОНА', filter: 'AR', category: 'AR', img: 'assets/hero_robot.jpg', categories: ['AR ФОТО', 'ОЖИВАНИЕ', 'ВИДЕО-ОТКРЫТКА', '3D АРТ'] }
         ];
     } else {
         let tryOnCard = list.find(c => c.id === 4 || c.id === 5 || (c.title && c.title.toUpperCase().includes('ПРИМЕР')));
@@ -100,6 +101,20 @@ function normalizeMainCards(cards) {
                 category: 'МУЗЫКА',
                 img: 'images/photo2.jpg',
                 categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК']
+            });
+        }
+
+        let arCard = list.find(c => c.id === 7 || (c.filter && c.filter.toUpperCase() === 'AR') || (c.title && c.title.toUpperCase().includes('ДОПОЛНЕН')) || (c.title && c.title.toUpperCase().includes('AR')));
+        if (!arCard) {
+            list.push({
+                id: 7,
+                title: 'ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ',
+                badge: '✨ AR • ОЖИВАЮЩЕЕ ФОТО',
+                subtitle: 'ОЖИВИТЕ ФОТО ИЛИ ВИДЕО ЧЕРЕЗ КАМЕРУ СМАРТФОНА',
+                filter: 'AR',
+                category: 'AR',
+                img: 'assets/hero_robot.jpg',
+                categories: ['AR ФОТО', 'ОЖИВАНИЕ', 'ВИДЕО-ОТКРЫТКА', '3D АРТ']
             });
         }
     }
@@ -1308,6 +1323,20 @@ function openTemplateGallery(cardIdOrMode) {
         }
     }
 
+    const isArSec = activeCard && (
+        activeCard.id === 7 ||
+        (activeCard.filter && activeCard.filter.toUpperCase() === 'AR') ||
+        (activeCard.title && activeCard.title.toUpperCase().includes('ДОПОЛНЕН')) ||
+        (activeCard.title && activeCard.title.toUpperCase().includes('AR'))
+    );
+
+    if (isArSec) {
+        if (typeof window.openDirectArStudio === 'function') {
+            window.openDirectArStudio(activeCard);
+            return;
+        }
+    }
+
     try {
         const saved = localStorage.getItem('kiosk_templates_v2');
         if (saved !== null) {
@@ -2122,6 +2151,327 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ========================================================
+    // СТУДИЯ ДОПОЛНЕННОЙ РЕАЛЬНОСТИ (WEB AR STUDIO)
+    // ========================================================
+    let currentArMarker = 'images/photo1.jpg';
+    let currentArMedia = 'assets/hero_robot.jpg';
+    let currentArMediaBlob = null;
+    let currentArMarkerBlob = null;
+    let isArMediaVideo = false;
+    let currentArSessionId = null;
+    let arPollTimer = null;
+
+    window.openDirectArStudio = function(card) {
+        if (typeof window.hideAttractScreen === 'function') {
+            window.hideAttractScreen();
+        }
+        const templateModal = document.getElementById('template-modal');
+        if (templateModal) templateModal.classList.add('hidden');
+
+        activeSectionCard = card || (Array.isArray(mainCardsConfig) ? mainCardsConfig.find(c => c.id === 7 || (c.filter && c.filter.toUpperCase() === 'AR')) : null);
+        selectedStylePrice = (card && card.price) ? card.price : 290;
+
+        const createBtn = document.getElementById('ar-studio-create-btn');
+        if (createBtn) {
+            createBtn.innerHTML = `✨ СОЗДАТЬ AR • ${selectedStylePrice} СОМ ➔`;
+        }
+
+        const kioskModal = document.getElementById('kiosk-modal');
+        if (kioskModal) kioskModal.style.display = 'flex';
+
+        const stepEl = document.getElementById('step-ar-studio');
+        showStep(stepEl);
+
+        // Инициализация превью
+        const imgMarker = document.getElementById('ar-marker-img');
+        const imgMedia  = document.getElementById('ar-media-img');
+        const vidMedia  = document.getElementById('ar-media-vid');
+        if (imgMarker) imgMarker.src = currentArMarker;
+        if (imgMedia)  imgMedia.src  = currentArMedia;
+        if (vidMedia)  vidMedia.style.display = 'none';
+        if (imgMedia)  imgMedia.style.display = 'block';
+
+        // Старт веб-камеры в фоновом режиме для быстрого захвата
+        if (!mediaStream) {
+            startWebcam().catch(() => {});
+        }
+    };
+
+    // 1. Снять маркер на камеру киоска
+    const arBtnSnapMarker = document.getElementById('ar-btn-snap-marker');
+    if (arBtnSnapMarker) {
+        arBtnSnapMarker.addEventListener('click', () => {
+            if (webcamEl && webcamEl.videoWidth) {
+                const cv = document.createElement('canvas');
+                cv.width = webcamEl.videoWidth || 1280;
+                cv.height = webcamEl.videoHeight || 720;
+                const cx = cv.getContext('2d');
+                cx.drawImage(webcamEl, 0, 0, cv.width, cv.height);
+                cv.toBlob(b => {
+                    currentArMarkerBlob = b;
+                    currentArMarker = cv.toDataURL('image/jpeg', 0.92);
+                    const markerImg = document.getElementById('ar-marker-img');
+                    if (markerImg) markerImg.src = currentArMarker;
+                    const st = document.getElementById('ar-marker-status');
+                    if (st) st.textContent = '✅ Снимок с камеры готов!';
+                }, 'image/jpeg', 0.92);
+            } else {
+                alert('Камера киоска еще инициализируется, повторите через секунду');
+            }
+        });
+    }
+
+    // 2. Записать 5-секундное видео на камеру киоска
+    const arBtnRecordVid = document.getElementById('ar-btn-record-vid');
+    if (arBtnRecordVid) {
+        arBtnRecordVid.addEventListener('click', async () => {
+            if (!mediaStream && webcamEl && webcamEl.srcObject) {
+                mediaStream = webcamEl.srcObject;
+            }
+            if (!mediaStream) {
+                alert('Камера не активна. Включаем камеру...');
+                await startWebcam();
+            }
+
+            const recBtn = arBtnRecordVid;
+            const origText = recBtn.textContent;
+            let secLeft = 5;
+            recBtn.disabled = true;
+            recBtn.textContent = `🔴 ЗАПИСЬ: ${secLeft} сек...`;
+
+            try {
+                const mime = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : 'video/webm';
+                const arRec = new MediaRecorder(mediaStream, { mimeType: mime });
+                const chunks = [];
+                arRec.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+                arRec.onstop = () => {
+                    currentArMediaBlob = new Blob(chunks, { type: mime });
+                    currentArMedia = URL.createObjectURL(currentArMediaBlob);
+                    isArMediaVideo = true;
+
+                    const vidMedia = document.getElementById('ar-media-vid');
+                    const imgMedia = document.getElementById('ar-media-img');
+                    if (vidMedia) {
+                        vidMedia.src = currentArMedia;
+                        vidMedia.style.display = 'block';
+                        vidMedia.play().catch(() => {});
+                    }
+                    if (imgMedia) imgMedia.style.display = 'none';
+
+                    const st = document.getElementById('ar-media-status');
+                    if (st) st.textContent = '✅ Живое видео записано!';
+                    recBtn.disabled = false;
+                    recBtn.textContent = origText;
+                };
+
+                arRec.start();
+                const timer = setInterval(() => {
+                    secLeft--;
+                    if (secLeft > 0) {
+                        recBtn.textContent = `🔴 ЗАПИСЬ: ${secLeft} сек...`;
+                    } else {
+                        clearInterval(timer);
+                        try { arRec.stop(); } catch(e) {}
+                    }
+                }, 1000);
+            } catch(e) {
+                console.error('AR Video Record error:', e);
+                recBtn.disabled = false;
+                recBtn.textContent = origText;
+                alert('Не удалось записать видео: ' + e.message);
+            }
+        });
+    }
+
+    // 3. Открытие QR-кода загрузки со смартфона
+    function openArPhoneQrModal() {
+        currentArSessionId = 'ar_sess_' + Date.now() + '_' + Math.random().toString(36).substring(7);
+        const qrBox = document.getElementById('ar-popup-marker-qr');
+        const qrEl  = document.getElementById('ar-phone-qr-img');
+        const stEl  = document.getElementById('ar-phone-poll-status');
+        if (!qrBox || !qrEl) return;
+
+        const uploadUrl = `${window.location.origin}/ar-upload?session=${currentArSessionId}`;
+        renderInstantQR(qrEl, uploadUrl, 160);
+        qrBox.style.display = 'flex';
+        if (stEl) stEl.textContent = 'Ожидание файлов...';
+
+        // Поллинг готовности сессии
+        if (arPollTimer) clearInterval(arPollTimer);
+        arPollTimer = setInterval(async () => {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/ar-sessions/${currentArSessionId}/ready.json?_t=${Date.now()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.markerUrl && data.mediaUrl) {
+                        clearInterval(arPollTimer);
+                        arPollTimer = null;
+                        currentArMarker = data.markerUrl;
+                        currentArMedia  = data.mediaUrl;
+                        isArMediaVideo  = data.isVideo !== false;
+
+                        const imgMarker = document.getElementById('ar-marker-img');
+                        const vidMedia  = document.getElementById('ar-media-vid');
+                        const imgMedia  = document.getElementById('ar-media-img');
+
+                        if (imgMarker) imgMarker.src = currentArMarker;
+                        if (isArMediaVideo) {
+                            if (vidMedia) {
+                                vidMedia.src = currentArMedia;
+                                vidMedia.style.display = 'block';
+                                vidMedia.play().catch(() => {});
+                            }
+                            if (imgMedia) imgMedia.style.display = 'none';
+                        } else {
+                            if (imgMedia) {
+                                imgMedia.src = currentArMedia;
+                                imgMedia.style.display = 'block';
+                            }
+                            if (vidMedia) vidMedia.style.display = 'none';
+                        }
+
+                        const mst = document.getElementById('ar-marker-status');
+                        const cst = document.getElementById('ar-media-status');
+                        if (mst) mst.textContent = '✅ Фото с телефона получено!';
+                        if (cst) cst.textContent = '✅ Медиа с телефона получено!';
+
+                        qrBox.style.display = 'none';
+                    }
+                }
+            } catch(e) {}
+        }, 1500);
+    }
+
+    const arBtnPhoneMarker = document.getElementById('ar-btn-phone-marker');
+    const arBtnPhoneMedia  = document.getElementById('ar-btn-phone-media');
+    const arBtnCloseQr     = document.getElementById('ar-btn-close-qr');
+    if (arBtnPhoneMarker) arBtnPhoneMarker.addEventListener('click', openArPhoneQrModal);
+    if (arBtnPhoneMedia)  arBtnPhoneMedia.addEventListener('click', openArPhoneQrModal);
+    if (arBtnCloseQr) {
+        arBtnCloseQr.addEventListener('click', () => {
+            const qrBox = document.getElementById('ar-popup-marker-qr');
+            if (qrBox) qrBox.style.display = 'none';
+            if (arPollTimer) { clearInterval(arPollTimer); arPollTimer = null; }
+        });
+    }
+
+    // 4. Отмена в AR студии
+    const arCancelBtn = document.getElementById('ar-studio-cancel-btn');
+    if (arCancelBtn) {
+        arCancelBtn.addEventListener('click', () => {
+            if (arPollTimer) { clearInterval(arPollTimer); arPollTimer = null; }
+            closeKioskFlow();
+        });
+    }
+
+    // 5. Кнопка "СОЗДАТЬ AR" -> переход к оплате
+    const arCreateBtn = document.getElementById('ar-studio-create-btn');
+    if (arCreateBtn) {
+        arCreateBtn.addEventListener('click', () => {
+            if (arPollTimer) { clearInterval(arPollTimer); arPollTimer = null; }
+
+            selectedStyle = 'ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ';
+            selectedStyleCategory = 'AR';
+            selectedStyleModel = 'ar-studio';
+            selectedStylePhoto = currentArMarker;
+            selectedStylePrice = selectedStylePrice || 290;
+            selectedStyleLocation = '';
+            selectedStyleResolution = 'AR-HD';
+
+            showStep(stepPayment);
+            initiatePaymentOrder();
+        });
+    }
+
+    // 6. Генерация и публикация AR проекта в Supabase после оплаты
+    async function runArProjectGeneration() {
+        resetAiProgress('СОЗДАНИЕ AR ПРОЕКТА', 'ar-studio', 'HD');
+        setAiProgress(20, 'Подготовка файлов маркера и медиа...');
+
+        try {
+            const orderId = currentOrderId || ('AR_' + Date.now());
+
+            // 1. Загрузка маркера (если это локальный Blob / DataURL)
+            let finalMarkerUrl = currentArMarker;
+            if (currentArMarkerBlob || (currentArMarker && currentArMarker.startsWith('data:'))) {
+                setAiProgress(40, 'Загрузка фото-маркера в облако...');
+                const markerBlob = currentArMarkerBlob || await (await fetch(currentArMarker)).blob();
+                const mPath = `ar/${orderId}/marker.jpg`;
+                const upM = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${mPath}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
+                    body: markerBlob
+                });
+                if (upM.ok) {
+                    finalMarkerUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${mPath}`;
+                }
+            }
+
+            // 2. Загрузка видео/медиа
+            let finalMediaUrl = currentArMedia;
+            if (currentArMediaBlob || (currentArMedia && currentArMedia.startsWith('blob:'))) {
+                setAiProgress(65, 'Загрузка оживающего медиаконтента...');
+                const ext = isArMediaVideo ? 'mp4' : 'jpg';
+                const cPath = `ar/${orderId}/media.${ext}`;
+                const upC = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${cPath}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': isArMediaVideo ? 'video/mp4' : 'image/jpeg', 'x-upsert': 'true' },
+                    body: currentArMediaBlob
+                });
+                if (upC.ok) {
+                    finalMediaUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${cPath}`;
+                }
+            }
+
+            // 3. Сохранение манифеста проекта
+            setAiProgress(85, 'Генерация WebAR маркера и QR-кода...');
+            const arManifest = {
+                id: orderId,
+                orderId: orderId,
+                title: 'TRENDUM AR ОЖИВАЮЩЕЕ ФОТО',
+                markerUrl: finalMarkerUrl,
+                mediaUrl: finalMediaUrl,
+                isVideo: isArMediaVideo,
+                createdAt: Date.now()
+            };
+
+            await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/ar/${orderId}.json`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'x-upsert': 'true' },
+                body: JSON.stringify(arManifest)
+            });
+
+            await finishAiProgress();
+
+            // 4. Показ экрана результата
+            const arViewerUrl = `${window.location.origin}/ar?id=${orderId}`;
+            console.log('[AR Studio] Проект успешно создан! Ссылка AR:', arViewerUrl);
+
+            showStep(stepResult);
+
+            if (resultImg) {
+                resultImg.src = finalMarkerUrl;
+                resultImg.style.display = 'block';
+            }
+            if (resultVideo) resultVideo.style.display = 'none';
+            const audioBox = document.getElementById('result-audio-box');
+            if (audioBox) audioBox.style.display = 'none';
+
+            // Брендированный QR код
+            const resultQrEl = document.getElementById('result-qr-img');
+            if (resultQrEl) {
+                renderInstantQR(resultQrEl, arViewerUrl, 260);
+            }
+
+        } catch(err) {
+            console.error('[AR Studio] Ошибка создания проекта:', err);
+            stopAiProgress();
+            alert('Ошибка при создании AR проекта: ' + err.message);
+            showStep(stepPayment);
+        }
+    }
+
     // ШАГ 1: ОТКРЫТИЕ ПОТОКА (ДЛЯ ОБЫЧНЫХ ШАБЛОНОВ ФОТО/ВИДЕО)
     window.openKioskFlow = function() {
         if (modal) modal.style.display = 'flex';
@@ -2574,6 +2924,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ОПЛАТА УСПЕШНО ПОЛУЧЕНА
     function handlePaymentSuccess() {
+        const isArPaid = selectedStyleModel === 'ar-studio' || selectedStyleCategory === 'AR';
+        if (isArPaid) {
+            if (paymentStatusText) {
+                paymentStatusText.textContent = '✅ Оплата получена! Создаем AR проект...';
+            }
+            showStep(stepProcessing);
+            runArProjectGeneration();
+            return;
+        }
+
         const isMusicPaid = selectedStyleModel === 'suno' ||
             (selectedStyleModel && selectedStyleModel.includes('suno')) ||
             (selectedStyleModel && selectedStyleModel.includes('music'));

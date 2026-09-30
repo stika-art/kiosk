@@ -1076,6 +1076,7 @@
                         <option value="TRENDS">🔥 Только ТРЕНДЫ (популярное)</option>
                         <option value="TRYON">👕 Примерка одежды и товаров</option>
                         <option value="MUSIC">🎵 Музыка и песни (Нейро-треки)</option>
+                        <option value="AR">✨ Дополненная реальность (AR)</option>
                         <option value="ALL">🌟 Все шаблоны подряд</option>
                     </select>
                 </div>
@@ -2272,7 +2273,8 @@
                     { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
                     { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'] },
                     { id: 4, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] },
-                    { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] }
+                    { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] },
+                    { id: 7, title: 'ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ', badge: '✨ AR • ОЖИВАЮЩЕЕ ФОТО', subtitle: 'ОЖИВИТЕ ФОТО ИЛИ ВИДЕО ЧЕРЕЗ КАМЕРУ СМАРТФОНА', filter: 'AR', category: 'AR', img: 'assets/hero_robot.jpg', categories: ['AR ФОТО', 'ОЖИВАНИЕ', 'ВИДЕО-ОТКРЫТКА', '3D АРТ'] }
                 ];
             } else {
                 let tryOnCard = list.find(c => c.id === 4 || c.id === 5 || (c.title && c.title.toUpperCase().includes('ПРИМЕР')));
@@ -2304,6 +2306,20 @@
                         category: 'МУЗЫКА',
                         img: 'images/photo2.jpg',
                         categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК']
+                    });
+                }
+
+                let arCard = list.find(c => c.id === 7 || (c.filter && c.filter.toUpperCase() === 'AR') || (c.title && c.title.toUpperCase().includes('ДОПОЛНЕН')) || (c.title && c.title.toUpperCase().includes('AR')));
+                if (!arCard) {
+                    list.push({
+                        id: 7,
+                        title: 'ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ',
+                        badge: '✨ AR • ОЖИВАЮЩЕЕ ФОТО',
+                        subtitle: 'ОЖИВИТЕ ФОТО ИЛИ ВИДЕО ЧЕРЕЗ КАМЕРУ СМАРТФОНА',
+                        filter: 'AR',
+                        category: 'AR',
+                        img: 'assets/hero_robot.jpg',
+                        categories: ['AR ФОТО', 'ОЖИВАНИЕ', 'ВИДЕО-ОТКРЫТКА', '3D АРТ']
                     });
                 }
             }
