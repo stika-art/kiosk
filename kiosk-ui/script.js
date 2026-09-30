@@ -3101,6 +3101,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             mediaStream = openedStream;
+            if (!mediaStream) {
+                throw new Error('Поток камеры не получен. Проверьте USB-подключение камеры.');
+            }
 
             // 4. Обновляем список устройств с полученными названиями
             try {
@@ -3109,7 +3112,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch(e) {}
 
             // Если открылась случайная медленная камера, но есть BRIO:
-            const activeTrack = mediaStream.getVideoTracks()[0];
+            const activeTrack = mediaStream.getVideoTracks() ? mediaStream.getVideoTracks()[0] : null;
             const activeLabel = (activeTrack && activeTrack.label) ? activeTrack.label.toLowerCase() : '';
             const detectedBrio = availableVideoDevices.find(d => 
                 d.label && (d.label.toLowerCase().includes('brio') || d.label.toLowerCase().includes('logitech'))
@@ -3136,7 +3139,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            const currentTrack = mediaStream.getVideoTracks()[0];
+            const currentTrack = (mediaStream && mediaStream.getVideoTracks()) ? mediaStream.getVideoTracks()[0] : null;
 
             // Применяем аппаратные настройки для плавной частоты кадров
             if (currentTrack && currentTrack.applyConstraints) {
@@ -3181,7 +3184,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 switchCamLabel.textContent = `📷 ${shortName}`;
             }
 
-            if (webcamEl) {
+            if (webcamEl && mediaStream) {
                 webcamEl.srcObject = mediaStream;
                 webcamEl.muted = true;
                 await webcamEl.play().catch(e => console.warn('Webcam play error:', e));
@@ -3191,7 +3194,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (err) {
             console.error('Ошибка доступа к камере:', err);
-            alert('Не удалось подключиться к камере. Проверьте подключение кабеля камеры.');
+            let detail = err.name ? `${err.name}: ${err.message}` : String(err);
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                detail += '\n\nПричина: Браузер заблокировал доступ к камере (нужен флаг --use-fake-ui-for-media-stream в ярлыке).';
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                detail += '\n\nПричина: Физическая камера не обнаружена в системе Windows. Проверьте USB-кабель камеры (Logitech BRIO).';
+            } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                detail += '\n\nПричина: Камера уже занята другой программой (OBS, Zoom, Skype и т.п.).';
+            }
+            alert(`Не удалось подключиться к камере:\n${detail}`);
         }
     }
 
