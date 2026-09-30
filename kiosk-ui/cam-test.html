@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Тест Камеры Киоска — TRENDUM</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background: #0d0d12;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 24px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #d4a043;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #888899;
+        }
+
+        /* Видеоблок */
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 860px;
+            aspect-ratio: 16 / 9;
+            background: #000000;
+            border: 2px solid #d4a043;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(212, 160, 67, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            background: #050508;
+        }
+
+        /* Оверлей статуса поверх видео */
+        .overlay-badge {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background: rgba(15, 15, 20, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #22c55e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 10px #22c55e;
+        }
+
+        .dot.error {
+            background: #ef4444;
+            box-shadow: 0 0 10px #ef4444;
+        }
+
+        /* Панель информации */
+        .info-card {
+            width: 100%;
+            max-width: 860px;
+            margin-top: 20px;
+            background: #16161e;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 14px;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #888899;
+            font-weight: 600;
+        }
+
+        .info-val {
+            color: #ffffff;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        /* Блок ошибки */
+        .error-box {
+            display: none;
+            width: 100%;
+            max-width: 860px;
+            margin-top: 16px;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid #ef4444;
+            border-radius: 14px;
+            padding: 18px 22px;
+            color: #fca5a5;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .error-title {
+            color: #ef4444;
+            font-weight: 800;
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        /* Кнопки управления */
+        .buttons-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            width: 100%;
+            max-width: 860px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 14px 22px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+        }
+
+        .btn-gold {
+            background: #d4a043;
+            color: #000;
+        }
+
+        .btn-gold:active {
+            transform: scale(0.96);
+            background: #b88328;
+        }
+
+        .btn-dark {
+            background: #22222e;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-dark:active {
+            transform: scale(0.96);
+            background: #333344;
+        }
+
+        .btn-red {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .btn-red:active {
+            transform: scale(0.96);
+            background: #b91c1c;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🔍 ТЕСТ ВЕБ-КАМЕРЫ В РЕЖИМЕ КИОСКА</h1>
+        <p id="page-url">Загрузка адреса...</p>
+    </div>
+
+    <!-- Видеопоток камеры -->
+    <div class="video-wrapper">
+        <video id="test-video" autoplay playsinline muted></video>
+        <div class="overlay-badge" id="overlay-badge">
+            <span class="dot" id="status-dot"></span>
+            <span id="status-text">Инициализация камеры...</span>
+        </div>
+    </div>
+
+    <!-- Блок детальной ошибки -->
+    <div class="error-box" id="error-box">
+        <div class="error-title" id="error-title">Ошибка доступа к камере</div>
+        <div id="error-desc">Описание ошибки...</div>
+    </div>
+
+    <!-- Информация о камере и системе -->
+    <div class="info-card">
+        <div class="info-row">
+            <span class="info-label">Статус разрешения в Chrome:</span>
+            <span class="info-val" id="info-perm">Проверка...</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Активная веб-камера:</span>
+            <span class="info-val" id="info-dev-name">Поиск...</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Текущее разрешение видео:</span>
+            <span class="info-val" id="info-resolution">-- x --</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Кадров в секунду (FPS):</span>
+            <span class="info-val" id="info-fps">0 FPS</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Найдено камер в Windows:</span>
+            <span class="info-val" id="info-dev-count">0</span>
+        </div>
+    </div>
+
+    <!-- Кнопки управления тестами -->
+    <div class="buttons-grid">
+        <button type="button" class="btn-gold" onclick="startCameraTest('basic')">⚡ Тест 1: Базовый (video: true)</button>
+        <button type="button" class="btn-gold" onclick="startCameraTest('720p')">🚀 Тест 2: 720p HD</button>
+        <button type="button" class="btn-gold" onclick="startCameraTest('1080p')">🎬 Тест 3: 1080p Full HD</button>
+        <button type="button" class="btn-dark" onclick="switchCameraTest()">🔄 Сменить камеру</button>
+        <button type="button" class="btn-dark" onclick="window.location.reload()">🔄 Перезагрузить страницу</button>
+        <button type="button" class="btn-red" onclick="window.close()">❌ Закрыть тест (В Windows)</button>
+    </div>
+
+    <script>
+        const videoEl = document.getElementById('test-video');
+        const statusText = document.getElementById('status-text');
+        const statusDot = document.getElementById('status-dot');
+        const errorBox = document.getElementById('error-box');
+        const errorTitle = document.getElementById('error-title');
+        const errorDesc = document.getElementById('error-desc');
+        const infoPerm = document.getElementById('info-perm');
+        const infoDevName = document.getElementById('info-dev-name');
+        const infoResolution = document.getElementById('info-resolution');
+        const infoFps = document.getElementById('info-fps');
+        const infoDevCount = document.getElementById('info-dev-count');
+        const pageUrlEl = document.getElementById('page-url');
+
+        let currentStream = null;
+        let allVideoDevices = [];
+        let currentDevIndex = 0;
+        let fpsCounter = 0;
+        let fpsLastTime = performance.now();
+
+        if (pageUrlEl) {
+            pageUrlEl.textContent = window.location.href;
+        }
+
+        // Проверка прав в Chrome
+        async function checkPermissions() {
+            if (navigator.permissions && navigator.permissions.query) {
+                try {
+                    const status = await navigator.permissions.query({ name: 'camera' });
+                    if (status.state === 'granted') {
+                        infoPerm.textContent = '✅ Разрешено (Granted)';
+                        infoPerm.style.color = '#22c55e';
+                    } else if (status.state === 'prompt') {
+                        infoPerm.textContent = '⚠️ Требует подтверждения (Prompt)';
+                        infoPerm.style.color = '#f59e0b';
+                    } else {
+                        infoPerm.textContent = '❌ Заблокировано (Denied)';
+                        infoPerm.style.color = '#ef4444';
+                    }
+                    status.onchange = checkPermissions;
+                } catch(e) {
+                    infoPerm.textContent = 'Не поддерживается API';
+                }
+            } else {
+                infoPerm.textContent = 'Не поддерживается API';
+            }
+        }
+
+        // Замер реального FPS камеры
+        function trackFps() {
+            if (!videoEl || !('requestVideoFrameCallback' in HTMLVideoElement.prototype)) return;
+            const onFrame = (now) => {
+                fpsCounter++;
+                const elapsed = now - fpsLastTime;
+                if (elapsed >= 1000) {
+                    const fps = Math.round((fpsCounter * 1000) / elapsed);
+                    infoFps.textContent = `${fps} FPS`;
+                    fpsCounter = 0;
+                    fpsLastTime = now;
+                }
+                if (currentStream && videoEl.srcObject) {
+                    videoEl.requestVideoFrameCallback(onFrame);
+                }
+            };
+            videoEl.requestVideoFrameCallback(onFrame);
+        }
+
+        // Запуск камеры с выбранными параметрами
+        async function startCameraTest(mode = 'basic') {
+            errorBox.style.display = 'none';
+            statusText.textContent = `Подключение камеры (${mode})...`;
+            statusDot.className = 'dot';
+
+            // Остановка старого потока
+            if (currentStream) {
+                currentStream.getTracks().forEach(t => t.stop());
+                currentStream = null;
+            }
+
+            // Опрос устройств
+            try {
+                const devs = await navigator.mediaDevices.enumerateDevices();
+                allVideoDevices = devs.filter(d => d.kind === 'videoinput');
+                infoDevCount.textContent = allVideoDevices.length;
+            } catch(e) {}
+
+            let constraints = { audio: false, video: true };
+            if (mode === '720p') {
+                constraints.video = { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } };
+            } else if (mode === '1080p') {
+                constraints.video = { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } };
+            }
+
+            if (allVideoDevices.length > 0 && allVideoDevices[currentDevIndex]) {
+                if (typeof constraints.video === 'object') {
+                    constraints.video.deviceId = { ideal: allVideoDevices[currentDevIndex].deviceId };
+                }
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                currentStream = stream;
+                videoEl.srcObject = stream;
+                await videoEl.play();
+
+                // Обновляем список после получения разрешения (теперь будут реальные имена!)
+                const refreshed = await navigator.mediaDevices.enumerateDevices();
+                allVideoDevices = refreshed.filter(d => d.kind === 'videoinput');
+                infoDevCount.textContent = allVideoDevices.length;
+
+                const track = stream.getVideoTracks()[0];
+                const settings = track.getSettings();
+                infoDevName.textContent = track.label || 'Камера без названия';
+                infoResolution.textContent = `${settings.width || videoEl.videoWidth} x ${settings.height || videoEl.videoHeight}`;
+                statusText.textContent = `Камера РАБОТАЕТ! (${settings.width || videoEl.videoWidth}x${settings.height || videoEl.videoHeight})`;
+                statusDot.className = 'dot';
+                checkPermissions();
+                trackFps();
+
+                videoEl.onloadedmetadata = () => {
+                    infoResolution.textContent = `${videoEl.videoWidth} x ${videoEl.videoHeight}`;
+                };
+
+            } catch (err) {
+                console.error('Ошибка камеры:', err);
+                statusText.textContent = `Ошибка: ${err.name}`;
+                statusDot.className = 'dot error';
+                errorBox.style.display = 'block';
+                errorTitle.textContent = `Ошибка: ${err.name}`;
+
+                let explanation = err.message || '';
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    explanation += '<br><b>Причина:</b> Chrome заблокировал доступ к веб-камере в режиме киоска. Запустите Chrome с флагом <code>--use-fake-ui-for-media-stream</code> или разрешите камеру в настройках сайта.';
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    explanation += '<br><b>Причина:</b> Веб-камера физически не обнаружена в Windows. Проверьте USB-кабель камеры (Logitech BRIO).';
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    explanation += '<br><b>Причина:</b> Камера занята другой программой (например, OBS, Zoom, Skype или другой копией браузера).';
+                } else if (err.name === 'OverconstrainedError') {
+                    explanation += '<br><b>Причина:</b> Веб-камера не поддерживает запрошенное разрешение (попробуйте нажать кнопку «Тест 1: Базовый»).';
+                }
+
+                errorDesc.innerHTML = explanation;
+                checkPermissions();
+            }
+        }
+
+        // Переключение между камерами
+        function switchCameraTest() {
+            if (allVideoDevices.length <= 1) {
+                alert('В системе найдена только 1 камера.');
+                return;
+            }
+            currentDevIndex = (currentDevIndex + 1) % allVideoDevices.length;
+            startCameraTest('basic');
+        }
+
+        // Автозапуск при открытии страницы
+        window.addEventListener('DOMContentLoaded', () => {
+            checkPermissions();
+            startCameraTest('basic');
+        });
+    </script>
+</body>
+</html>
