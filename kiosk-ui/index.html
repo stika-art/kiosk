@@ -2220,6 +2220,20 @@
         </svg>
     </button>
 
+    <!-- СЕКРЕТНОЕ МЕНЮ АДМИНИСТРАТОРА (ВЫХОД В WINDOWS) -->
+    <div id="admin-exit-modal" style="display:none; position:fixed; inset:0; z-index:9999999; background:rgba(0,0,0,0.85); backdrop-filter:blur(6px); align-items:center; justify-content:center;">
+        <div style="background:#1c1c24; border:1px solid #d4a043; border-radius:24px; padding:32px; text-align:center; max-width:380px; width:90%; color:#fff; box-shadow:0 12px 40px rgba(0,0,0,0.8);">
+            <div style="font-size:36px; margin-bottom:12px;">⚙️</div>
+            <h3 style="font-size:20px; font-weight:800; margin-bottom:8px; color:#d4a043;">Меню терминала</h3>
+            <p style="font-size:14px; color:#aaa; margin-bottom:24px;">Выберите действие для киоска:</p>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <button type="button" id="admin-btn-close-app" style="padding:15px; background:#dc2626; color:#fff; font-weight:800; border-radius:14px; border:none; font-size:15px; cursor:pointer;">❌ Выйти в Windows (Закрыть киоск)</button>
+                <button type="button" id="admin-btn-reload-app" style="padding:15px; background:#d4a043; color:#000; font-weight:800; border-radius:14px; border:none; font-size:15px; cursor:pointer;">🔄 Перезагрузить страницу</button>
+                <button type="button" id="admin-btn-cancel-app" style="padding:13px; background:#2a2a36; color:#ccc; border-radius:14px; border:1px solid #444; font-size:14px; cursor:pointer;">Отмена</button>
+            </div>
+        </div>
+    </div>
+
     <!-- =========================================
          TOP CENTER LUXURY BRAND HEADER
     ========================================== -->

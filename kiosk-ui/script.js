@@ -4388,4 +4388,50 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isReloading) kioskReloadBtn.style.transform = '';
         });
     }
+
+    // 6. Секретный жест администратора: 5 быстрых тапов по названию TRENDUM вверху экрана
+    const brandHeader = document.querySelector('.top-brand-center');
+    const adminExitModal = document.getElementById('admin-exit-modal');
+    const adminBtnClose = document.getElementById('admin-btn-close-app');
+    const adminBtnReload = document.getElementById('admin-btn-reload-app');
+    const adminBtnCancel = document.getElementById('admin-btn-cancel-app');
+
+    if (brandHeader && adminExitModal) {
+        let brandTapCount = 0;
+        let brandTapTimer = null;
+
+        const onBrandTap = (e) => {
+            brandTapCount++;
+            clearTimeout(brandTapTimer);
+            if (brandTapCount >= 5) {
+                brandTapCount = 0;
+                adminExitModal.style.display = 'flex';
+                if (e && e.stopPropagation) e.stopPropagation();
+            } else {
+                brandTapTimer = setTimeout(() => {
+                    brandTapCount = 0;
+                }, 2200);
+            }
+        };
+
+        brandHeader.addEventListener('click', onBrandTap);
+
+        if (adminBtnClose) {
+            adminBtnClose.addEventListener('click', () => {
+                // Закрываем окно браузера
+                window.open('', '_self', '');
+                window.close();
+            });
+        }
+        if (adminBtnReload) {
+            adminBtnReload.addEventListener('click', () => {
+                window.location.reload();
+            });
+        }
+        if (adminBtnCancel) {
+            adminBtnCancel.addEventListener('click', () => {
+                adminExitModal.style.display = 'none';
+            });
+        }
+    }
 });
