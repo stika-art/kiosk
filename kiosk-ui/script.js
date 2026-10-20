@@ -2842,7 +2842,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Сброс флагов оплаты для нового заказа
         isPaymentSuccessHandled = false;
         isAiGenerating = false;
-        if (simPayBtn) simPayBtn.disabled = false;
+        if (simPayBtn) {
+            simPayBtn.disabled = false;
+            simPayBtn.textContent = 'ТЕСТ: ИМИТИРОВАТЬ ОПЛАТУ';
+        }
 
         // Сразу запускаем опрос статуса платежа
         startPaymentPolling(currentOrderId);
@@ -2970,9 +2973,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ТЕСТОВАЯ КНОПКА СИМУЛЯЦИИ ОПЛАТЫ
     if (simPayBtn) {
-        simPayBtn.addEventListener('click', () => {
+        const handleSimPay = (e) => {
+            if (e) {
+                try { e.preventDefault(); } catch(err) {}
+            }
             if (isPaymentSuccessHandled || simPayBtn.disabled) return;
             simPayBtn.disabled = true;
+            simPayBtn.textContent = '⏳ ОПЛАЧЕНО...';
             stopPaymentPolling();
 
             if (currentOrderId) {
@@ -2983,7 +2990,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).catch(e => console.warn('simulate-success error:', e));
             }
             handlePaymentSuccess();
-        });
+        };
+
+        simPayBtn.addEventListener('click', handleSimPay);
+        simPayBtn.addEventListener('pointerup', handleSimPay);
     }
 
     // 2. WEBCAM LOGIC (АДАПТИВНЫЙ FULL HD 1080p / 720p 30 FPS БЕЗ ЛАГОВ)
@@ -4860,7 +4870,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isReloading = true;
             kioskReloadBtn.classList.add('is-reloading');
             setTimeout(() => {
-                window.location.reload();
+                window.location.href = window.location.origin + window.location.pathname + '?_reload=' + Date.now();
             }, 180);
         };
 
