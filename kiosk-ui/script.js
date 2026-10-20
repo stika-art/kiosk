@@ -2583,6 +2583,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetState() {
         countdownOverlay.textContent = '';
         currentOrderId = null;
+        isAiGenerating = false;
+        isPaymentSuccessHandled = false;
     }
 
     // ============================================================
@@ -2942,7 +2944,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const isMusicPaid = selectedStyleModel === 'suno' ||
             (selectedStyleModel && selectedStyleModel.includes('suno')) ||
-            (selectedStyleModel && selectedStyleModel.includes('music'));
+            (selectedStyleModel && selectedStyleModel.includes('music')) ||
+            (selectedStyleCategory && ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'МУЗЫКА'].includes(selectedStyleCategory.toUpperCase()));
 
         if (isMusicPaid) {
             // Для музыки камера не нужна — сразу запускаем генерацию
@@ -2967,20 +2970,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ТЕСТОВАЯ КНОПКА СИМУЛЯЦИИ ОПЛАТЫ
     if (simPayBtn) {
-        simPayBtn.addEventListener('click', async () => {
-            if (isPaymentSuccessHandled) return;
-            isPaymentSuccessHandled = true;
+        simPayBtn.addEventListener('click', () => {
+            if (isPaymentSuccessHandled || simPayBtn.disabled) return;
+            simPayBtn.disabled = true;
             stopPaymentPolling();
-            if (simPayBtn) simPayBtn.disabled = true;
 
             if (currentOrderId) {
-                try {
-                    await fetch('/api/payment/simulate-success', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ orderId: currentOrderId })
-                    });
-                } catch(e) {}
+                fetch('/api/payment/simulate-success', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderId: currentOrderId })
+                }).catch(e => console.warn('simulate-success error:', e));
             }
             handlePaymentSuccess();
         });
@@ -4216,7 +4216,11 @@ document.addEventListener('DOMContentLoaded', () => {
             stopAiProgress();
             console.error('[AI Pipeline] Результат не получен:', generationError);
             alert(generationError || 'Не удалось завершить создание видео/фото. Пожалуйста, попробуйте еще раз.');
-            showStep(stepConfirm);
+            if (isMusicSelection) {
+                showStep(stepPayment);
+            } else {
+                showStep(stepConfirm);
+            }
             return;
         }
 
