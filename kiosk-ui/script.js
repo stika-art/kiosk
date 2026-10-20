@@ -2519,6 +2519,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function closeKioskFlow() {
         stopPaymentPolling();
+        isPaymentSuccessHandled = false;
+        isAiGenerating = false;
+        if (simPayBtn) simPayBtn.disabled = false;
         stopWebcam();
         stopPhoneCamPolling();
         if (capturedVideoUrl) {
@@ -2834,6 +2837,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (paymentStatusText) paymentStatusText.textContent = `Формирование счёта на ${amount} сом...`;
 
+        // Сброс флагов оплаты для нового заказа
+        isPaymentSuccessHandled = false;
+        isAiGenerating = false;
+        if (simPayBtn) simPayBtn.disabled = false;
+
         // Сразу запускаем опрос статуса платежа
         startPaymentPolling(currentOrderId);
 
@@ -2910,8 +2918,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    let isPaymentSuccessHandled = false;
+
     // ОПЛАТА УСПЕШНО ПОЛУЧЕНА
     function handlePaymentSuccess() {
+        if (isPaymentSuccessHandled) {
+            console.log('[Payment] handlePaymentSuccess уже обработан, повтор отменен');
+            return;
+        }
+        isPaymentSuccessHandled = true;
+        stopPaymentPolling();
+        if (simPayBtn) simPayBtn.disabled = true;
+
         const isArPaid = selectedStyleModel === 'ar-studio' || selectedStyleCategory === 'AR';
         if (isArPaid) {
             if (paymentStatusText) {
@@ -2947,12 +2965,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
-
-
     // ТЕСТОВАЯ КНОПКА СИМУЛЯЦИИ ОПЛАТЫ
     if (simPayBtn) {
         simPayBtn.addEventListener('click', async () => {
+            if (isPaymentSuccessHandled) return;
+            isPaymentSuccessHandled = true;
+            stopPaymentPolling();
+            if (simPayBtn) simPayBtn.disabled = true;
+
             if (currentOrderId) {
                 try {
                     await fetch('/api/payment/simulate-success', {
@@ -3845,8 +3865,15 @@ document.addEventListener('DOMContentLoaded', () => {
         capturedPhotoData = canvasEl.toDataURL('image/jpeg', 0.88);
     }
 
+    let isAiGenerating = false;
     // 4. СТУДИЙНАЯ ОБРАБОТКА И СОЗДАНИЕ ПОРТРЕТА / ПРОЖАРКА (С СОВРЕМЕННЫМ НЕОНОВЫМ ПРОГРЕСС-БАРОМ)
     async function runAIGeneration() {
+        if (isAiGenerating) {
+            console.warn('[AI Pipeline] runAIGeneration уже запущен, повторный вызов заблокирован');
+            return;
+        }
+        isAiGenerating = true;
+
         // Проверка: режим Стендап-Прожарки
         const isRoast = selectedStyleModel === 'roast-standup' || (selectedStyle && selectedStyle.toUpperCase().includes('ПРОЖАР'));
 
@@ -3936,10 +3963,10 @@ document.addEventListener('DOMContentLoaded', () => {
         resetAiProgress(genTitle, selectedStyleModel, currentAiResolution);
 
         const musicInitialStatuses = [
-            `Генерация бита, ритм-секции и мелодии...`,
-            `Создание стихов и рифм для припева...`,
-            `Синтез студийного вокала и инструментов...`,
-            `Финальный мастеринг и сведение трека...`
+            `Создание мелодии и аранжировки в Suno V6...`,
+            `Написание текста песни и куплетов...`,
+            `Синтез студийного вокала и партий инструментов...`,
+            `Финальный мастеринг двух версий трека...`
         ];
         const motionInitialStatuses = [
             `Анализ позы и силуэта на вашем фото...`,
@@ -4050,6 +4077,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         clearInterval(interval);
                         console.log(`[AI Polling] Задача ${data.taskId} в процессе генерации, запускаем поллинг...`);
                         const isVideoTask = Boolean(data.isVideo) || isVideoSelection;
+                        const musicPollStatuses = [
+                            `Нейросеть Suno V6 сочиняет мелодию и ритм...`,
+                            `Написание текста песни и рифм по вашей теме...`,
+                            `Аранжировка инструментов и студийный бит...`,
+                            `Генерация двух версий персонального трека...`,
+                            `Финальный студийный мастеринг MP3...`
+                        ];
                         const photoPollStatuses = [
                             `Обработка портрета в высоком качестве...`,
                             `Прорисовка фотореалистичных черт лица...`,
@@ -4078,13 +4112,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             `Цветокоррекция и сглаживание анимации...`,
                             `Финальная сборка видеоролика...`
                         ];
-                        const activePollStatuses = isMotionControl
-                            ? motionPollStatuses
-                            : isVideoTask 
-                                ? videoPollStatuses 
-                                : (isTryOnMode || selectedStyleModel === 'nano-banana-2') 
-                                    ? tryOnPollStatuses 
-                                    : photoPollStatuses;
+                        const activePollStatuses = isMusicSelection
+                            ? musicPollStatuses
+                            : isMotionControl
+                                ? motionPollStatuses
+                                : isVideoTask 
+                                    ? videoPollStatuses 
+                                    : (isTryOnMode || selectedStyleModel === 'nano-banana-2') 
+                                        ? tryOnPollStatuses 
+                                        : photoPollStatuses;
 
                         let pollIdx = 0;
                         let pollAttempts = 0;
@@ -4116,10 +4152,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Динамический статус в зависимости от времени ожидания
                             let currentStatusText = activePollStatuses[pollIdx % activePollStatuses.length];
                             if (isMusicSelection) {
-                                if (elapsedSec > 30 && elapsedSec <= 90) {
-                                    currentStatusText = `Нейросеть пишет слова и сводит бит...`;
-                                } else if (elapsedSec > 90) {
-                                    currentStatusText = `Синтез вокала и финальный мастеринг MP3...`;
+                                if (elapsedSec > 25 && elapsedSec <= 50) {
+                                    currentStatusText = `Нейросеть сочиняет рифмы и сводит бит...`;
+                                } else if (elapsedSec > 50 && elapsedSec <= 75) {
+                                    currentStatusText = `Синтез вокала и партий инструментов...`;
+                                } else if (elapsedSec > 75) {
+                                    currentStatusText = `Финальный мастеринг и экспорт двух версий MP3...`;
                                 }
                             } else if (elapsedSec > 40 && elapsedSec <= 120) {
                                 currentStatusText = `Обработка в очереди нейросетей, ожидаем...`;
@@ -4174,6 +4212,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Если результат не получен — не показываем шаблон под видом результата!
         if (!finalResultUrl) {
+            isAiGenerating = false;
             stopAiProgress();
             console.error('[AI Pipeline] Результат не получен:', generationError);
             alert(generationError || 'Не удалось завершить создание видео/фото. Пожалуйста, попробуйте еще раз.');
@@ -4315,6 +4354,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         showStep(stepResult);
+        isAiGenerating = false;
     }
 
     // 5. FINISH & TEMPLATE SELECTION

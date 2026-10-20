@@ -148,11 +148,32 @@ module.exports = async (req, res) => {
                 if (taskInfo.response) {
                     const resp = taskInfo.response;
                     if (Array.isArray(resp.resultUrls)) resultUrls.push(...resp.resultUrls);
+                    if (Array.isArray(resp.data)) {
+                        resp.data.forEach(item => {
+                            if (typeof item === 'string') resultUrls.push(item);
+                            else if (item && typeof item === 'object') {
+                                if (item.audio_url) resultUrls.push(item.audio_url);
+                                if (item.stream_audio_url) resultUrls.push(item.stream_audio_url);
+                                if (item.url) resultUrls.push(item.url);
+                                if (item.video_url) resultUrls.push(item.video_url);
+                            }
+                        });
+                    }
                     if (resp.audio_url) resultUrls.push(resp.audio_url);
                     if (resp.audioUrl) resultUrls.push(resp.audioUrl);
                     if (resp.video_url) resultUrls.push(resp.video_url);
                     if (resp.videoUrl) resultUrls.push(resp.videoUrl);
                     if (resp.url) resultUrls.push(resp.url);
+                }
+                if (taskInfo.data && Array.isArray(taskInfo.data)) {
+                    taskInfo.data.forEach(item => {
+                        if (typeof item === 'string') resultUrls.push(item);
+                        else if (item && typeof item === 'object') {
+                            if (item.audio_url) resultUrls.push(item.audio_url);
+                            if (item.stream_audio_url) resultUrls.push(item.stream_audio_url);
+                            if (item.url) resultUrls.push(item.url);
+                        }
+                    });
                 }
                 if (taskInfo.output) {
                     if (typeof taskInfo.output === 'string') resultUrls.push(taskInfo.output);
@@ -161,7 +182,15 @@ module.exports = async (req, res) => {
                     else if (taskInfo.output.url) resultUrls.push(taskInfo.output.url);
                 }
 
-                const allAudioUrls = [...new Set(resultUrls.filter(u => typeof u === 'string' && (u.includes('.mp3') || u.includes('.wav') || u.includes('audio') || u.includes('suno') || Boolean(taskInfo.audio_url || taskInfo.audioUrl || taskInfo.audios))))];
+                const allAudioUrls = [...new Set(resultUrls.filter(u => typeof u === 'string' && (
+                    u.includes('.mp3') || 
+                    u.includes('.wav') || 
+                    u.includes('.m4a') || 
+                    u.includes('audio') || 
+                    u.includes('suno') || 
+                    u.includes('audiostream') ||
+                    Boolean(taskInfo.audio_url || taskInfo.audioUrl || taskInfo.audios)
+                )))];
                 const isAudio = allAudioUrls.length > 0;
 
                 if (isAudio) {

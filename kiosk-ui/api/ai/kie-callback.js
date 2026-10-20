@@ -69,6 +69,19 @@ module.exports = async (req, res) => {
 
         // Извлечение медиа-ссылки из результата (видео, фото или аудио)
         let mediaUrl = null;
+        let audioUrls = [];
+
+        if (taskInfo.response) {
+            const resp = taskInfo.response;
+            if (Array.isArray(resp.data)) {
+                resp.data.forEach(item => {
+                    if (item && item.audio_url) audioUrls.push(item.audio_url);
+                    else if (item && item.stream_audio_url) audioUrls.push(item.stream_audio_url);
+                });
+            }
+            if (audioUrls.length > 0 && !mediaUrl) mediaUrl = audioUrls[0];
+        }
+
         if (taskInfo.resultJson) {
             try {
                 const parsed = typeof taskInfo.resultJson === 'string' ? JSON.parse(taskInfo.resultJson) : taskInfo.resultJson;
@@ -84,6 +97,8 @@ module.exports = async (req, res) => {
             taskId,
             state: state || 'success',
             mediaUrl,
+            audioUrls: audioUrls.length > 0 ? audioUrls : undefined,
+            isAudio: audioUrls.length > 0 || (mediaUrl && (mediaUrl.includes('.mp3') || mediaUrl.includes('audio'))),
             updatedAt: new Date().toISOString(),
             raw: taskInfo
         };

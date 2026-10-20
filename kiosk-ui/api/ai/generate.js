@@ -475,11 +475,32 @@ CRITICAL MANDATORY INSTRUCTIONS:
                         if (taskInfo.response) {
                             const resp = taskInfo.response;
                             if (Array.isArray(resp.resultUrls)) resultUrls.push(...resp.resultUrls);
+                            if (Array.isArray(resp.data)) {
+                                resp.data.forEach(item => {
+                                    if (typeof item === 'string') resultUrls.push(item);
+                                    else if (item && typeof item === 'object') {
+                                        if (item.audio_url) resultUrls.push(item.audio_url);
+                                        if (item.stream_audio_url) resultUrls.push(item.stream_audio_url);
+                                        if (item.url) resultUrls.push(item.url);
+                                        if (item.video_url) resultUrls.push(item.video_url);
+                                    }
+                                });
+                            }
                             if (resp.audio_url) resultUrls.push(resp.audio_url);
                             if (resp.audioUrl) resultUrls.push(resp.audioUrl);
                             if (resp.video_url) resultUrls.push(resp.video_url);
                             if (resp.videoUrl) resultUrls.push(resp.videoUrl);
                             if (resp.url) resultUrls.push(resp.url);
+                        }
+                        if (taskInfo.data && Array.isArray(taskInfo.data)) {
+                            taskInfo.data.forEach(item => {
+                                if (typeof item === 'string') resultUrls.push(item);
+                                else if (item && typeof item === 'object') {
+                                    if (item.audio_url) resultUrls.push(item.audio_url);
+                                    if (item.stream_audio_url) resultUrls.push(item.stream_audio_url);
+                                    if (item.url) resultUrls.push(item.url);
+                                }
+                            });
                         }
                         if (taskInfo.output) {
                             if (typeof taskInfo.output === 'string') resultUrls.push(taskInfo.output);
@@ -580,6 +601,9 @@ async function verifyPaidOrder(orderId) {
     }
 }
 
+// Кэш активных задач по orderId для предотвращения дублирования генераций и списания лишних кредитов
+const activeOrderTasks = new Map();
+
 module.exports = async (req, res) => {
     // Включение CORS для киоска
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -601,7 +625,16 @@ module.exports = async (req, res) => {
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
         const { photoData, videoUrl, guestVideoUrl, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey } = body;
 
-        // 0. Защита: строгая проверка оплаты заказа перед генерацией
+        // 0. Защита от дублирования запросов с одного киоска по одному и тому же заказу
+        if (orderId && activeOrderTasks.has(orderId)) {
+            const cached = activeOrderTasks.get(orderId);
+            if (Date.now() - cached.timestamp < 120000 && cached.response) {
+                console.log(`[AI Hub Deduplication] Заказ "${orderId}" уже запущен (taskId: ${cached.taskId}), отдаем существующий ответ без повторного вызова Kie.ai`);
+                return res.status(200).json(cached.response);
+            }
+        }
+
+        // 0b. Защита: строгая проверка оплаты заказа перед генерацией
         const paymentCheck = await verifyPaidOrder(orderId);
         if (!paymentCheck.ok) {
             console.warn(`[AI Hub Security] Генерация отклонена для заказа "${orderId}": ${paymentCheck.error}`);
@@ -672,9 +705,9 @@ module.exports = async (req, res) => {
             });
         }
 
-        // Если задача ещё в процессе (OpenAI) — возвращаем статус pending для поллинга
+        // Если задача ещё в процессе (OpenAI / Suno) — возвращаем статус pending для поллинга
         if (generationOutcome && generationOutcome.pending) {
-            return res.status(200).json({
+            const pendingResp = {
                 success: true,
                 pending: true,
                 state: 'generating',
@@ -687,7 +720,17 @@ module.exports = async (req, res) => {
                 audioUrl: null,
                 speechText: '',
                 message: `Генерация через ${effectiveModelName} выполняется...`
-            });
+            };
+
+            if (orderId && generationOutcome.taskId) {
+                activeOrderTasks.set(orderId, {
+                    taskId: generationOutcome.taskId,
+                    timestamp: Date.now(),
+                    response: pendingResp
+                });
+            }
+
+            return res.status(200).json(pendingResp);
         }
 
         let generatedImageUrl = generationOutcome?.resultUrl || null;
