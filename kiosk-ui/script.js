@@ -1026,6 +1026,19 @@ const DEFAULT_KIOSK_TEMPLATES = [
         "img": "assets/hero_avatar.jpg",
         "htmlCode": "",
         "location": ""
+    },
+    {
+        "id": 1789200000002,
+        "sectionId": 2,
+        "sectionTitle": "ВИДЕО",
+        "category": "КИНЕМАТОГРАФ",
+        "title": "Neon Cinematic",
+        "price": 290,
+        "model": "omni-flash",
+        "prompt": "The person from the reference image accurately performs the exact movements from the reference video, keeping natural fluid motion, preserving facial identity and likeness, realistic body anatomy, cinematic lighting, 1080p high quality render",
+        "img": "assets/card_loop.mp4",
+        "htmlCode": "",
+        "location": ""
     }
 ];
 
