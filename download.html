@@ -218,6 +218,77 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* ── Аудио-режим ── */
+        .audio-box {
+            width: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 8px 8px;
+            gap: 14px;
+        }
+
+        .audio-cover {
+            width: 180px;
+            height: 180px;
+            border-radius: 16px;
+            object-fit: cover;
+            box-shadow: 0 8px 30px rgba(168, 85, 247, 0.4);
+        }
+
+        .audio-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #fff;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .audio-genre {
+            font-size: 12px;
+            color: rgba(168, 85, 247, 0.9);
+            text-align: center;
+            font-weight: 600;
+        }
+
+        audio#dl-audio-player {
+            width: 100%;
+            border-radius: 12px;
+            outline: none;
+        }
+
+        .audio-variants {
+            display: none;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .audio-var-btn {
+            flex: 1;
+            padding: 12px 8px;
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            border-radius: 12px;
+            background: transparent;
+            color: #aaa;
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .audio-var-btn.active {
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+            border-color: transparent;
+        }
+
+        .btn-music {
+            background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+            box-shadow: 0 8px 24px rgba(168, 85, 247, 0.35);
+        }
     </style>
 </head>
 <body>
@@ -232,6 +303,18 @@
             <img id="photo-el" style="display: none;" alt="TRENDUM Photo">
             <video id="video-el" style="display: none;" playsinline autoplay loop muted controls></video>
         </div>
+
+        <!-- Аудио-блок (показывается при mode=audio) -->
+        <div class="audio-box" id="audio-box">
+            <img class="audio-cover" id="dl-audio-cover" src="" alt="Обложка">
+            <div class="audio-title" id="dl-audio-title">ВАШ ПЕРСОНАЛЬНЫЙ ТРЕК</div>
+            <div class="audio-genre" id="dl-audio-genre">🎵 Suno AI • Персональный хит</div>
+            <audio id="dl-audio-player" controls></audio>
+            <div class="audio-variants" id="dl-audio-variants">
+                <button class="audio-var-btn active" id="dl-btn-var1">🎵 ВАРИАНТ 1</button>
+                <button class="audio-var-btn" id="dl-btn-var2">🎵 ВАРИАНТ 2</button>
+            </div>
+        </div>
     </div>
 
     <!-- Карточка бутика (если передана в ссылке) -->
@@ -245,10 +328,16 @@
         <div class="boutique-price" id="boutique-price"></div>
     </div>
 
-    <div class="actions">
+    <div class="actions" id="actions-box">
         <button type="button" class="btn-main" id="btn-download">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             <span id="btn-download-text">СКАЧАТЬ В ГАЛЕРЕЮ</span>
+        </button>
+
+        <!-- Кнопка скачивания второго варианта — только для музыки -->
+        <button type="button" class="btn-main btn-music" id="btn-download2" style="display:none;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span id="btn-download2-text">СКАЧАТЬ ВАРИАНТ 2</span>
         </button>
 
         <button type="button" class="btn-sub" id="btn-share">
@@ -262,22 +351,28 @@
     <script>
         (function() {
             const params = new URLSearchParams(window.location.search);
-            const fileUrl = params.get('file') || params.get('url') || '';
-            const title = params.get('title') || '';
-            const loc = params.get('loc') || '';
-            const price = params.get('price') || '';
+            const fileUrl  = params.get('file') || params.get('url') || '';
+            const file2Url = params.get('file2') || '';
+            const mode     = params.get('mode') || '';
+            const title    = params.get('title') || '';
+            const loc      = params.get('loc') || '';
+            const price    = params.get('price') || '';
 
-            const loader = document.getElementById('loader');
-            const photoEl = document.getElementById('photo-el');
-            const videoEl = document.getElementById('video-el');
-            const btnDownload = document.getElementById('btn-download');
+            const loader       = document.getElementById('loader');
+            const mediaBox     = document.getElementById('media-box');
+            const photoEl      = document.getElementById('photo-el');
+            const videoEl      = document.getElementById('video-el');
+            const audioBox     = document.getElementById('audio-box');
+            const btnDownload  = document.getElementById('btn-download');
             const btnDownloadText = document.getElementById('btn-download-text');
-            const btnShare = document.getElementById('btn-share');
+            const btnDownload2 = document.getElementById('btn-download2');
+            const btnDownload2Text = document.getElementById('btn-download2-text');
+            const btnShare     = document.getElementById('btn-share');
             const boutiqueCard = document.getElementById('boutique-card');
 
             if (loc || price || title) {
                 if (title) document.getElementById('boutique-title').textContent = title;
-                if (loc) document.getElementById('boutique-loc').textContent = loc;
+                if (loc)   document.getElementById('boutique-loc').textContent = loc;
                 if (price) document.getElementById('boutique-price').textContent = `${price} СОМ`;
                 boutiqueCard.style.display = 'block';
             }
@@ -288,9 +383,86 @@
                 return;
             }
 
-            const isVideo = fileUrl.includes('.mp4') || fileUrl.includes('.webm') || fileUrl.includes('/video/');
+            // Определяем тип файла
+            const isAudio = mode === 'audio' ||
+                fileUrl.includes('.mp3') || fileUrl.includes('.wav') || fileUrl.includes('.m4a') ||
+                fileUrl.includes('/audio/') || fileUrl.includes('suno');
+            const isVideo = !isAudio && (fileUrl.includes('.mp4') || fileUrl.includes('.webm') || fileUrl.includes('/video/'));
 
-            if (isVideo) {
+            if (isAudio) {
+                // ── Аудио-режим ──
+                document.getElementById('page-subtitle').textContent = 'Ваш трек готов 🎵';
+                mediaBox.style.display = 'none';
+                loader.style.display = 'none';
+                audioBox.style.display = 'flex';
+
+                const audioPlayer    = document.getElementById('dl-audio-player');
+                const audioCover     = document.getElementById('dl-audio-cover');
+                const audioTitle     = document.getElementById('dl-audio-title');
+                const audioGenre     = document.getElementById('dl-audio-genre');
+                const variantsBox    = document.getElementById('dl-audio-variants');
+                const btnVar1        = document.getElementById('dl-btn-var1');
+                const btnVar2        = document.getElementById('dl-btn-var2');
+
+                // URL первого варианта — из file, второго — из file2
+                const tracks = [fileUrl];
+                if (file2Url) tracks.push(file2Url);
+
+                // Название трека
+                if (title) audioTitle.textContent = title;
+                if (title) audioGenre.textContent = `🎵 Suno AI • ${title}`;
+
+                // Установить активный трек
+                let activeIdx = 0;
+                function setTrack(idx) {
+                    activeIdx = idx;
+                    audioPlayer.src = tracks[idx];
+                    audioPlayer.play().catch(() => {});
+                    btnVar1.classList.toggle('active', idx === 0);
+                    btnVar2.classList.toggle('active', idx === 1);
+                }
+
+                audioPlayer.src = tracks[0];
+
+                if (tracks.length >= 2) {
+                    variantsBox.style.display = 'flex';
+                    btnVar1.onclick = () => setTrack(0);
+                    btnVar2.onclick = () => setTrack(1);
+                    // Кнопка скачать вариант 1
+                    btnDownloadText.textContent = 'СКАЧАТЬ ВАРИАНТ 1 🎵';
+                    // Кнопка скачать вариант 2
+                    btnDownload2.style.display = 'flex';
+                }
+
+                // Скачивание MP3
+                async function downloadTrack(url, filename, btnText) {
+                    const orig = btnText.textContent;
+                    btnText.textContent = '⏳ СОХРАНЕНИЕ...';
+                    try {
+                        const resp = await fetch(url);
+                        if (!resp.ok) throw new Error('Fetch failed');
+                        const blob = await resp.blob();
+                        const objectUrl = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = objectUrl;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        setTimeout(() => URL.revokeObjectURL(objectUrl), 4000);
+                        btnText.textContent = '✅ СОХРАНЕНО!';
+                        setTimeout(() => { btnText.textContent = orig; }, 2500);
+                    } catch(e) {
+                        window.location.href = url;
+                        btnText.textContent = orig;
+                    }
+                }
+
+                btnDownload.addEventListener('click', () => downloadTrack(tracks[0], 'TRENDUM_TRACK_1.mp3', btnDownloadText));
+                btnDownload2.addEventListener('click', () => downloadTrack(tracks[1], 'TRENDUM_TRACK_2.mp3', btnDownload2Text));
+
+            } else if (isVideo) {
+                // ── Видео-режим ──
                 videoEl.src = fileUrl;
                 videoEl.onloadeddata = () => {
                     loader.style.display = 'none';
@@ -300,7 +472,33 @@
                     loader.style.display = 'none';
                     videoEl.style.display = 'block';
                 };
+
+                async function triggerDownload() {
+                    const orig = btnDownloadText.textContent;
+                    btnDownloadText.textContent = '⏳ СОХРАНЕНИЕ...';
+                    try {
+                        const resp = await fetch(fileUrl);
+                        if (!resp.ok) throw new Error('Fetch failed');
+                        const blob = await resp.blob();
+                        const objectUrl = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = objectUrl;
+                        link.download = 'TRENDUM_VIDEO.mp4';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        setTimeout(() => URL.revokeObjectURL(objectUrl), 4000);
+                        btnDownloadText.textContent = '✅ СОХРАНЕНО!';
+                        setTimeout(() => { btnDownloadText.textContent = orig; }, 2500);
+                    } catch(e) {
+                        window.location.href = fileUrl;
+                        btnDownloadText.textContent = orig;
+                    }
+                }
+                btnDownload.addEventListener('click', triggerDownload);
+
             } else {
+                // ── Фото-режим ──
                 photoEl.src = fileUrl;
                 photoEl.onload = () => {
                     loader.style.display = 'none';
@@ -310,42 +508,39 @@
                     loader.style.display = 'none';
                     photoEl.style.display = 'block';
                 };
-            }
 
-            // Скачивание файла прямо в память телефона (галерею)
-            async function triggerDownload() {
-                const origText = btnDownloadText.textContent;
-                btnDownloadText.textContent = '⏳ СОХРАНЕНИЕ...';
-                try {
-                    const resp = await fetch(fileUrl);
-                    if (!resp.ok) throw new Error('Fetch failed');
-                    const blob = await resp.blob();
-                    const objectUrl = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = objectUrl;
-                    link.download = isVideo ? 'TRENDUM_VIDEO.mp4' : 'TRENDUM_PHOTO.png';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    setTimeout(() => URL.revokeObjectURL(objectUrl), 4000);
-                    btnDownloadText.textContent = '✅ СОХРАНЕНО!';
-                    setTimeout(() => { btnDownloadText.textContent = origText; }, 2500);
-                } catch(e) {
-                    // Резервный переход
-                    window.location.href = fileUrl;
-                    btnDownloadText.textContent = origText;
+                async function triggerDownload() {
+                    const orig = btnDownloadText.textContent;
+                    btnDownloadText.textContent = '⏳ СОХРАНЕНИЕ...';
+                    try {
+                        const resp = await fetch(fileUrl);
+                        if (!resp.ok) throw new Error('Fetch failed');
+                        const blob = await resp.blob();
+                        const objectUrl = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = objectUrl;
+                        link.download = 'TRENDUM_PHOTO.jpg';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        setTimeout(() => URL.revokeObjectURL(objectUrl), 4000);
+                        btnDownloadText.textContent = '✅ СОХРАНЕНО!';
+                        setTimeout(() => { btnDownloadText.textContent = orig; }, 2500);
+                    } catch(e) {
+                        window.location.href = fileUrl;
+                        btnDownloadText.textContent = orig;
+                    }
                 }
+                btnDownload.addEventListener('click', triggerDownload);
             }
-
-            btnDownload.addEventListener('click', triggerDownload);
 
             // Поделиться через нативный интерфейс смартфона
             btnShare.addEventListener('click', async () => {
                 if (navigator.share) {
                     try {
                         await navigator.share({
-                            title: 'TRENDUM Photo',
-                            text: 'Мой снимок из Trendum!',
+                            title: 'TRENDUM',
+                            text: isAudio ? 'Мой персональный трек из Trendum! 🎵' : 'Мой снимок из Trendum!',
                             url: window.location.href
                         });
                     } catch(e) {}

@@ -161,13 +161,26 @@ const server = http.createServer(async (req, res) => {
     if (req.url.startsWith('/api/payment/simulate-success') && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk; });
-        req.on('end', () => {
+        req.on('end', async () => {
             try {
                 const data = JSON.parse(body || '{}');
                 const orderId = data.orderId;
-                if (orderId && ordersDB[orderId]) {
-                    ordersDB[orderId].status = 'PAID';
+                if (orderId) {
+                    if (ordersDB[orderId]) ordersDB[orderId].status = 'PAID';
                     console.log(`[Simulate] Заказ ${orderId} переведен в статус PAID`);
+
+                    const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
+                    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
+                    await fetch(`${SUPABASE_URL}/storage/v1/object/kiosk-media/orders/${orderId}.json`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json',
+                            'x-upsert': 'true'
+                        },
+                        body: JSON.stringify({ orderId, status: 'PAID', simulated: true, paidAt: new Date().toISOString() })
+                    }).catch(() => {});
                 }
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true, status: 'PAID' }));

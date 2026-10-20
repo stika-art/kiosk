@@ -178,7 +178,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     // Разрешение: строго 1K для ультра-быстрой генерации 5-8 сек на киоске
     const targetResolution = '1K';
 
-    if (!publicPhotoUrl && !templateImgUrl && !guestVideoUrl) {
+    if (!isMusicTarget && !publicPhotoUrl && !templateImgUrl && !guestVideoUrl) {
         console.warn('[Kie.ai] Отсутствуют изображения/видео для обработки, вызов Kie.ai отменен для защиты баланса.');
         return null;
     }
@@ -206,8 +206,8 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'gemini-omni-video' || model === 'google/gemini-omni-flash-1-1' || model === 'google/gemini-omni-1.1-flash' || (typeof model === 'string' && (model.includes('omni') || model.includes('gemini')))) {
         // Google Gemini Omni Flash — Video-to-Video (официальная модель в Kie.ai: gemini-omni-video)
         kieModel = 'gemini-omni-video';
-    } else if (model === 'suno' || model === 'suno-v3.5' || model === 'suno-v4' || model === 'ai-music-api/generate' || (typeof model === 'string' && (model.includes('suno') || model.includes('music') || model.includes('трек') || model.includes('песн')))) {
-        // Suno AI — Генерация музыки и песен через официальный API Kie.ai
+    } else if (model === 'suno' || model === 'suno-v6' || model === 'suno-v6-mini' || model === 'suno-v6-wild' || model === 'suno-v4' || model === 'suno-v3.5' || model === 'ai-music-api/generate' || (typeof model === 'string' && (model.includes('suno') || model.includes('music') || model.includes('трек') || model.includes('песн')))) {
+        // Suno AI (V6) — Генерация музыки и песен через официальный API Kie.ai
         kieModel = 'ai-music-api/generate';
     } else if (model && model !== 'default') {
         kieModel = model;
@@ -231,16 +231,28 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     // Формирование входных данных под выбранный тип модели
     let inputPayload = {};
     if (isMusicModel) {
-        // Генерация полноценной музыки и песен через Suno AI
+        // Генерация полноценной музыки и песен через Suno AI (актуальная флагманская версия V6 в Kie.ai)
         const musicPrompt = (safePrompt && safePrompt.trim().length > 3)
             ? safePrompt.trim()
             : 'Энергичный современный трек с качающим битом, запоминающимся припевом и русским вокалом';
 
+        // Поддержка версий модели Kie.ai: V6 (по умолчанию), V6_MINI, V6_WILD
+        let targetMusicModel = 'V6';
+        if (typeof model === 'string') {
+            const mLow = model.toLowerCase();
+            if (mLow.includes('mini')) {
+                targetMusicModel = 'V6_MINI';
+            } else if (mLow.includes('wild')) {
+                targetMusicModel = 'V6_WILD';
+            }
+        }
+
         inputPayload = {
             prompt: musicPrompt,
             custom_mode: false,
+            customMode: false,
             instrumental: false,
-            model: 'V3_5',
+            model: targetMusicModel,
             title: title || 'Trendum Hit'
         };
     } else if (isGeminiOmni) {
@@ -476,6 +488,24 @@ CRITICAL MANDATORY INSTRUCTIONS:
                             else if (taskInfo.output.url) resultUrls.push(taskInfo.output.url);
                         }
 
+                        if (isAudioTask) {
+                            const allAudio = [...new Set(resultUrls.filter(u => typeof u === 'string' && Boolean(u.trim())))];
+                            if (allAudio.length > 0) {
+                                const cleanAudioUrls = await Promise.all(
+                                    allAudio.slice(0, 2).map((url, idx) => persistResultToSupabase(url, `${orderId}_track${idx + 1}`, false))
+                                );
+                                return {
+                                    resultUrl: cleanAudioUrls[0],
+                                    audioUrls: cleanAudioUrls,
+                                    taskId,
+                                    resolution: 'HD',
+                                    model: targetModel,
+                                    isVideo: false,
+                                    isAudio: true
+                                };
+                            }
+                        }
+
                         const finalMediaUrl = resultUrls.find(u => Boolean(u)) || 
                                               taskInfo.audio_url ||
                                               taskInfo.audioUrl ||
@@ -588,7 +618,8 @@ module.exports = async (req, res) => {
         console.log(`[AI Hub] Запрос подтвержден и оплачен: "${title}", модель="${model || 'chatgpt-2.5'}", заказ="${orderId}"`);
 
         // Защита от списания кредитов Kie.ai без реальных данных
-        if (!photoData && !templateImg && !videoUrl && !guestVideoUrl) {
+        const isMusicReq = (model === 'suno' || (typeof model === 'string' && (model.includes('suno') || model.includes('music') || model.includes('трек') || model.includes('песн'))));
+        if (!isMusicReq && !photoData && !templateImg && !videoUrl && !guestVideoUrl) {
             console.log('[AI Hub] Входные медиаданные отсутствуют. Обращение к Kie.ai пропущено для защиты кредитов.');
             return res.status(200).json({
                 success: true,
@@ -604,7 +635,7 @@ module.exports = async (req, res) => {
         const rawGuestVideo = guestVideoUrl || videoUrl;
         const publicGuestVideoUrl = rawGuestVideo ? await uploadImageToCDN(rawGuestVideo, 'guests', orderId) : null;
 
-        if (!publicPhotoUrl && !publicTemplateUrl && !publicGuestVideoUrl) {
+        if (!isMusicReq && !publicPhotoUrl && !publicTemplateUrl && !publicGuestVideoUrl) {
             console.log('[AI Hub] Изображения не загружены в CDN. Обращение к Kie.ai отменено для защиты кредитов.');
             return res.status(200).json({
                 success: true,
