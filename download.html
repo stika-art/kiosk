@@ -154,49 +154,6 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
-        /* Карточка бутика / локации примерки */
-        .boutique-card {
-            width: 100%;
-            max-width: 440px;
-            background: rgba(212, 160, 67, 0.08);
-            border: 1px solid rgba(212, 160, 67, 0.3);
-            border-radius: 18px;
-            padding: 16px 18px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .boutique-header {
-            font-size: 11px;
-            font-weight: 800;
-            color: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 6px;
-        }
-
-        .boutique-title {
-            font-size: 16px;
-            font-weight: 800;
-            color: #FFFFFF;
-            margin-bottom: 4px;
-        }
-
-        .boutique-loc {
-            font-size: 14px;
-            color: var(--text-dim);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .boutique-price {
-            margin-top: 8px;
-            font-size: 18px;
-            font-weight: 900;
-            color: var(--primary);
-        }
-
         .footer {
             font-size: 11px;
             color: rgba(255, 255, 255, 0.35);
@@ -359,17 +316,6 @@
         </div>
     </div>
 
-    <!-- Карточка бутика (если передана в ссылке) -->
-    <div class="boutique-card" id="boutique-card">
-        <div class="boutique-header">ГДЕ ПРИМЕРИТЬ И КУПИТЬ</div>
-        <div class="boutique-title" id="boutique-title">Товар из каталога</div>
-        <div class="boutique-loc">
-            <span>📍</span>
-            <span id="boutique-loc">Уточняйте у консультанта</span>
-        </div>
-        <div class="boutique-price" id="boutique-price"></div>
-    </div>
-
     <div class="actions" id="actions-box">
         <button type="button" class="btn-main" id="btn-download">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -410,14 +356,6 @@
             const btnDownload2 = document.getElementById('btn-download2');
             const btnDownload2Text = document.getElementById('btn-download2-text');
             const btnShare     = document.getElementById('btn-share');
-            const boutiqueCard = document.getElementById('boutique-card');
-
-            if (loc || price || title) {
-                if (title) document.getElementById('boutique-title').textContent = title;
-                if (loc)   document.getElementById('boutique-loc').textContent = loc;
-                if (price) document.getElementById('boutique-price').textContent = `${price} СОМ`;
-                boutiqueCard.style.display = 'block';
-            }
 
             if (!fileUrl) {
                 loader.style.display = 'none';

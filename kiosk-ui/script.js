@@ -4359,16 +4359,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
 
-        // Отображение карточки локации примерки одежды (где купить вещь)
+        // Отображение информации где купить временно отключено по запросу
         if (tryonLocationInfoCard) {
-            if (isTryOnMode || selectedStyleLocation) {
-                if (tryonLocPriceVal) tryonLocPriceVal.textContent = `${selectedStylePrice || 450} СОМ`;
-                if (tryonLocTitleVal) tryonLocTitleVal.textContent = selectedStyle || 'Товар из каталога';
-                if (tryonLocPlaceVal) tryonLocPlaceVal.textContent = selectedStyleLocation || 'Уточняйте у продавца';
-                tryonLocationInfoCard.style.display = 'flex';
-            } else {
-                tryonLocationInfoCard.style.display = 'none';
-            }
+            tryonLocationInfoCard.style.display = 'none';
         }
 
         showStep(stepResult);
