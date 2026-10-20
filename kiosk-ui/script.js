@@ -17,6 +17,7 @@ let isAttractClosing = false;
 let currentCategory = 'ФОТО';
 let activeTemplateIndex = 0;
 let selectedStyleCategory = '';
+let selectedVideoDuration = 5;
 
 // УПРАВЛЕНИЕ РАЗРЕШЕНИЕМ ГЕНЕРАЦИИ (СТРОГО 1K ДЛЯ МАКСИМАЛЬНОЙ СКОРОСТИ 5-8 СЕК)
 let currentAiResolution = '1K';
@@ -1126,8 +1127,10 @@ function normalizeTemplates(tplList, cardsList) {
         if (sid === 4 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || Boolean(t.location)) {
             modelNorm = 'nano-banana-2';
         } else if (sid === 2 || stUp.includes('ВИДЕО') || catUp.includes('ВИДЕО')) {
-            modelNorm = modelNorm || 'omni-flash';
-        } else if (modelNorm !== 'omni-flash' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2') {
+            modelNorm = (modelNorm === 'omni-flash' || modelNorm.includes('omni') || modelNorm.includes('pixverse') || !modelNorm)
+                ? 'pixverse-v6'
+                : modelNorm;
+        } else if (modelNorm !== 'omni-flash' && modelNorm !== 'pixverse-v6' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2') {
             modelNorm = 'chatgpt-2.5';
         }
 
@@ -1147,6 +1150,7 @@ function normalizeTemplates(tplList, cardsList) {
             title: tTitle,
             model: modelNorm,
             resolution: resNorm,
+            duration: Number(t.duration) || 5,
             location: t.location || '',
             htmlCode: t.htmlCode || ''
         };
@@ -1578,6 +1582,7 @@ function renderGridTemplates() {
             selectedStylePrompt = item.prompt || '';
             selectedTemplateId = item.id;
             selectedTemplateHtml = item.htmlCode || '';
+            selectedVideoDuration = Number(item.duration) || 5;
             closeTemplateGallery();
             openKioskFlow();
         });
@@ -4108,6 +4113,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     location: selectedStyleLocation,
                     isTryOn: isTryOnMode,
                     resolution: '1K',
+                    duration: selectedVideoDuration || 5,
                     aggregatorUrl,
                     aggregatorKey
                 })
@@ -4537,6 +4543,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             createBtn.innerHTML = `🎵 СОЗДАТЬ ТРЕК • ${data.music_price} СОМ ➔`;
                         }
                     } catch (e) { }
+                }
+                if (data.pixverse_markup) {
+                    try { localStorage.setItem('kiosk_pixverse_markup', data.pixverse_markup.toString()); } catch (e) { }
                 }
                 if (Array.isArray(data.templates) && data.templates.length > 0) {
                     masterTemplates = normalizeTemplates(data.templates, mainCardsConfig);

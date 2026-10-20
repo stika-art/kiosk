@@ -3,7 +3,7 @@
 // Models supported:
 // 1. 'nano-banana-2'  -> google/nano-banana-edit (Фото с сохранением лица / Примерка одежды)
 // 2. 'chatgpt-2.5'    -> gpt-image-2-image-to-image (Базовый GPT Image 2)
-// 3. 'omni-flash'     -> gemini-omni-video (Google Gemini Omni Flash — Video-to-Video)
+// 3. 'pixverse-v6'    -> pixverse/v6/image-to-video (PixVerse V6 — Реалистичное оживление фото в видео)
 // 4. 'kling-turbo'    -> kling/v2-5-turbo-image-to-video (Ультра-быстрая генерация видео из фото)
 // 5. 'kling-video'    -> kling-2.6/image-to-video (Высокодетализированное видео из фото)
 // ============================================================
@@ -170,22 +170,16 @@ function sanitizeForOpenAI(p) {
         .replace(/\binstagram\b/gi, 'social media aesthetic');
 }
 
-// 5. Вызов Kie.ai API и ожидание результата задачи генерации изображения
-async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution, orderId, title }) {
+// 5. Вызов Kie.ai API и ожидание результата задачи генерации изображения или видео
+async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution, orderId, title, duration }) {
     const isMusicTarget = (model === 'suno' || (model && model.toLowerCase().includes('suno')) || (model && model.toLowerCase().includes('music')));
-    if (!apiKey || (!isMusicTarget && !publicPhotoUrl && !guestVideoUrl)) return null;
+    if (!apiKey || (!isMusicTarget && !publicPhotoUrl && !guestVideoUrl && !templateImgUrl)) return null;
 
     // Разрешение: строго 1K для ультра-быстрой генерации 5-8 сек на киоске
     const targetResolution = '1K';
 
-    if (!isMusicTarget && !publicPhotoUrl && !templateImgUrl && !guestVideoUrl) {
-        console.warn('[Kie.ai] Отсутствуют изображения/видео для обработки, вызов Kie.ai отменен для защиты баланса.');
-        return null;
-    }
-
     // Сопоставление моделей:
     // По умолчанию GPT Image 2 — быстрая генерация 5-15 сек для киоска.
-    // Для виртуальной примерки одежды — тоже GPT Image 2 (лучше понимает промпт на русском).
     let kieModel = 'gpt-image-2-image-to-image';
     if (isTryOn) {
         // Виртуальная примерка одежды -> GPT Image 2 (понимает "Одень одежду с первой фото")
@@ -203,9 +197,13 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     } else if (model === 'gpt-image-2' || model === 'chatgpt-2' || model === 'chatgpt-2.5' || model === 'gpt-image-2-image-to-image') {
         // GPT Image 2 — быстрая генерация (дефолт для всех карточек с chatgpt-2 / chatgpt-2.5)
         kieModel = 'gpt-image-2-image-to-image';
-    } else if (model === 'omni-flash' || model === 'google-omni-flash' || model === 'gemini-omni-video' || model === 'google/gemini-omni-flash-1-1' || model === 'google/gemini-omni-1.1-flash' || (typeof model === 'string' && (model.includes('omni') || model.includes('gemini')))) {
-        // Google Gemini Omni Flash — Video-to-Video (официальная модель в Kie.ai: gemini-omni-video)
-        kieModel = 'gemini-omni-video';
+    } else if (model === 'pixverse-v6' || model === 'pixverse' || model === 'pixverse/v6/image-to-video' || model === 'pixverse-v6/image-to-video' || model === 'omni-flash' || model === 'google-omni-flash' || model === 'gemini-omni-video' || (typeof model === 'string' && (model.includes('pixverse') || model.includes('omni') || model.includes('gemini')))) {
+        // PixVerse V6 — Флагманское кинематографичное оживление фото в видео (официальная модель Kie.ai: pixverse/v6/image-to-video)
+        kieModel = 'pixverse/v6/image-to-video';
+    } else if (model === 'kling-turbo' || model === 'kling/v2-5-turbo-image-to-video') {
+        kieModel = 'kling/v2-5-turbo-image-to-video';
+    } else if (model === 'kling-video' || model === 'kling-2.6/image-to-video') {
+        kieModel = 'kling-2.6/image-to-video';
     } else if (model === 'suno' || model === 'suno-v6' || model === 'suno-v6-mini' || model === 'suno-v6-wild' || model === 'suno-v4' || model === 'suno-v3.5' || model === 'ai-music-api/generate' || (typeof model === 'string' && (model.includes('suno') || model.includes('music') || model.includes('трек') || model.includes('песн')))) {
         // Suno AI (V6) — Генерация музыки и песен через официальный API Kie.ai
         kieModel = 'ai-music-api/generate';
@@ -216,15 +214,18 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
         kieModel = 'gpt-image-2-image-to-image';
     }
 
+    const isPixverse = kieModel === 'pixverse/v6/image-to-video' || kieModel.includes('pixverse');
     const isGeminiOmni = kieModel === 'gemini-omni-video' || kieModel.includes('gemini') || kieModel.includes('omni');
     const isMusicModel = kieModel === 'ai-music-api/generate' || kieModel.includes('music') || kieModel.includes('suno');
-    const isVideoModel = !isMusicModel && (isGeminiOmni ||
+    const isVideoModel = !isMusicModel && (isPixverse ||
+                         isGeminiOmni ||
                          kieModel.includes('video') ||
+                         kieModel.includes('kling') ||
                          kieModel.includes('runway') ||
                          kieModel.includes('luma') ||
                          kieModel.includes('hailuo'));
 
-    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isMusic=${isMusicModel}, isGeminiOmni=${isGeminiOmni}, isTryOn=${Boolean(isTryOn)})...`);
+    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isMusic=${isMusicModel}, isPixverse=${isPixverse}, duration=${duration || 5}s, isTryOn=${Boolean(isTryOn)})...`);
 
     const safePrompt = sanitizeForOpenAI(prompt);
 
@@ -255,6 +256,30 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
             model: targetMusicModel,
             title: title || 'Trendum Hit'
         };
+    } else if (isPixverse) {
+        // Генерация ультра-реалистичного видео из фото гостя через PixVerse V6
+        const defaultPrompt = 'Smooth natural cinematic motion, realistic high quality animation, highly detailed, fluid lifelike movement, 4k render';
+        const vPrompt = (safePrompt && safePrompt.trim().length > 3)
+            ? safePrompt.trim()
+            : defaultPrompt;
+
+        // Длительность видео от 2 до 15 секунд (по умолчанию 5 секунд)
+        const targetDuration = Math.min(15, Math.max(2, parseInt(duration, 10) || 5));
+
+        // Источник изображения для PixVerse Image-to-Video:
+        // ПРИОРИТЕТ 1: Фото гостя, сделанное у киоска
+        // ПРИОРИТЕТ 2: Обложка шаблона
+        const sourceImageUrl = publicPhotoUrl || templateImgUrl;
+
+        inputPayload = {
+            prompt: vPrompt,
+            image_url: sourceImageUrl,
+            duration: targetDuration,
+            quality: '720p',
+            aspect_ratio: '9:16',
+            generate_audio_switch: false,
+            generate_multi_clip_switch: false
+        };
     } else if (isGeminiOmni) {
         const isTemplateVideo = templateImgUrl && (
             templateImgUrl.endsWith('.mp4') || 
@@ -272,23 +297,17 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
             ? safePrompt.trim()
             : defaultPrompt;
 
-        // Исходное видео для трансформации:
-        // ПРИОРИТЕТ 1: Записанное гостем видео прямо перед экраном киоска
-        // ПРИОРИТЕТ 2: Видео шаблона из каталога (если было загружено)
-        // ПРИОРИТЕТ 3: Базовый ролик киоска
         const sourceVideoUrl = guestVideoUrl || (isTemplateVideo 
             ? templateImgUrl 
             : 'https://kiosk394.vercel.app/kiosk-ui/assets/card_loop.mp4');
 
         inputPayload = {
             prompt: v2vPrompt,
-            // Исходное видео для Video-to-Video трансформации (2 юнита квоты в Kie.ai)
             video_list: [
                 {
                     url: sourceVideoUrl
                 }
             ],
-            // Референс стиля (фото обложки шаблона) или стоп-кадр лица гостя (1 юнит квоты в Kie.ai)
             image_urls: (templateImgUrl && !isTemplateVideo) 
                 ? [templateImgUrl] 
                 : (publicPhotoUrl ? [publicPhotoUrl] : [])
@@ -395,7 +414,9 @@ CRITICAL MANDATORY INSTRUCTIONS:
                 ? (createData.data.taskId || createData.data.id || createData.data.recordId) 
                 : null;
 
-            const isVideoTask = targetModel.includes('gemini') ||
+            const isVideoTask = targetModel.includes('pixverse') ||
+                                targetModel.includes('kling') ||
+                                targetModel.includes('gemini') ||
                                 targetModel.includes('omni') ||
                                 targetModel.includes('video') ||
                                 targetModel.includes('runway') ||
@@ -623,7 +644,7 @@ module.exports = async (req, res) => {
         triggerBackgroundCleanup();
 
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-        const { photoData, videoUrl, guestVideoUrl, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey } = body;
+        const { photoData, videoUrl, guestVideoUrl, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey, duration } = body;
 
         // 0. Защита от дублирования запросов с одного киоска по одному и тому же заказу
         if (orderId && activeOrderTasks.has(orderId)) {
@@ -648,7 +669,7 @@ module.exports = async (req, res) => {
         const effectiveKey = aggregatorKey || process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || 'fde11cd9f361b989eb19b8ef8530bfbd';
         const targetResolution = '1K';
 
-        console.log(`[AI Hub] Запрос подтвержден и оплачен: "${title}", модель="${model || 'chatgpt-2.5'}", заказ="${orderId}"`);
+        console.log(`[AI Hub] Запрос подтвержден и оплачен: "${title}", модель="${model || 'chatgpt-2.5'}", duration=${duration || 5}s, заказ="${orderId}"`);
 
         // Защита от списания кредитов Kie.ai без реальных данных
         const isMusicReq = (model === 'suno' || (typeof model === 'string' && (model.includes('suno') || model.includes('music') || model.includes('трек') || model.includes('песн'))));
@@ -689,7 +710,8 @@ module.exports = async (req, res) => {
             isTryOn: Boolean(isTryOn),
             resolution: targetResolution,
             orderId,
-            title
+            title,
+            duration
         }) : null;
 
         const effectiveModelName = generationOutcome?.model || model || (isTryOn ? 'nano-banana-2' : 'chatgpt-2.5');

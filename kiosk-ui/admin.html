@@ -960,6 +960,10 @@
                             <label id="tpl-title-label" style="display: block; font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 6px; letter-spacing: 0.5px;">НАЗВАНИЕ СТИЛЯ ПОРТРЕТА</label>
                             <input type="text" id="tpl-title-input" class="admin-input" placeholder="напр: Cyberpunk Samurai, Черно-белый портрет..." style="width: 100%;">
                         </div>
+                        <div id="tpl-duration-wrapper" style="width: 140px; display: none;">
+                            <label id="tpl-duration-label" style="display: block; font-size: 11px; font-weight: 700; color: #a855f7; margin-bottom: 6px; letter-spacing: 0.5px;">⏱️ ДЛИТЕЛЬНОСТЬ (СЕК)</label>
+                            <input type="number" id="tpl-duration-input" class="admin-input" placeholder="5" min="2" max="15" step="1" value="5" style="width: 100%; border-color: #a855f7; font-weight: 700; color: #fff;" oninput="onTplDurationChange(this.value)">
+                        </div>
                         <div id="tpl-price-wrapper" style="width: 130px;">
                             <label id="tpl-price-label" style="display: block; font-size: 11px; font-weight: 700; color: var(--primary); margin-bottom: 6px; letter-spacing: 0.5px;">ЦЕНА (СОМ)</label>
                             <input type="number" id="tpl-price-input" class="admin-input" placeholder="100" min="1" step="10" style="width: 100%;">
@@ -969,7 +973,7 @@
                             <select id="tpl-model-select" class="admin-select" style="width: 100%; font-weight: 700;" onchange="toggleCustomModelInput(this.value)"></select>
                             <div id="tpl-custom-model-box" style="display: none; margin-top: 8px;">
                                 <input type="text" id="tpl-custom-model-input" class="admin-input" style="width: 100%; border-color: var(--primary); font-weight: 700;" placeholder="Введите ID модели из Kie.ai (напр: kling-3.0/motion-control)..." oninput="toggleCustomModelInput('custom')">
-                                <span style="display: block; font-size: 11px; color: #38bdf8; margin-top: 4px; line-height: 1.4;">💡 Введите любой точный ID модели из каталога Kie.ai (например: <b>kling-3.0/motion-control</b>, <b>kling-motion</b>, <b>kling/v2-5-turbo-image-to-video</b>, <b>midjourney</b>, <b>flux-pro</b> и т.д.)</span>
+                                <span style="display: block; font-size: 11px; color: #38bdf8; margin-top: 4px; line-height: 1.4;">💡 Введите любой точный ID модели из каталога Kie.ai (например: <b>pixverse-v6/image-to-video</b>, <b>kling-turbo</b>, <b>kling-2.6/image-to-video</b> и т.д.)</span>
                             </div>
                         </div>
                         <div id="tpl-resolution-wrapper" style="width: 165px;">
@@ -980,6 +984,12 @@
                                 <option value="4K">💎 4K Ultra (Макс.)</option>
                             </select>
                         </div>
+                    </div>
+
+                    <!-- ПОДСКАЗКА АВТОМАТИЧЕСКОГО РАСЧЕТА СТОИМОСТИ ДЛЯ ВИДЕО (PIXVERSE V6) -->
+                    <div id="tpl-calc-hint" style="display: none; width: 100%; margin-top: 10px; padding: 10px 14px; background: rgba(168, 85, 247, 0.08); border: 1px dashed rgba(168, 85, 247, 0.4); border-radius: 10px; font-size: 12px; color: #d8b4fe; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                        <span id="tpl-calc-text">💡 Себестоимость API: 16 сом (36 кр) • Наценка: +250 сом • Рекомендуемая цена: 270 сом</span>
+                        <button type="button" class="btn-primary" style="padding: 4px 10px; font-size: 11px; height: auto; background: rgba(168, 85, 247, 0.25); border-color: #a855f7;" onclick="applySuggestedPriceToInput()">🔄 Подставить расчет в поле цены</button>
                     </div>
 
                     <!-- СТРОКА 2: МЕСТО ПРОДАЖИ (ТОЛЬКО ДЛЯ РАЗДЕЛА ПРИМЕРКА ОДЕЖДЫ!) -->
@@ -1377,6 +1387,49 @@
                         По умолчанию: <strong>290 сом</strong>. Эта цена автоматически отобразится на главной кнопке «СОЗДАТЬ ТРЕК», в окне оплаты и сформирует динамический инвойс Finik ELQR на киоске.
                     </p>
                     <div id="music-price-status" class="status-msg" style="margin-top: 10px;"></div>
+                </div>
+            </div>
+
+            <!-- VIDEO GENERATION (PIXVERSE V6) MARKUP & AUTO-PRICING CARD -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">🎬 Наценка и расчет стоимости видео (PixVerse V6)</h2>
+                    <p class="card-subtitle">Управление торговой наценкой на видеоролики над себестоимостью API Kie.ai</p>
+                </div>
+
+                <div style="max-width: 620px;">
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">
+                            💰 Наценка администратора (в сомах KGS над себестоимостью API):
+                        </label>
+                        <div class="form-row" style="align-items: center; gap: 12px; display: flex;">
+                            <input type="number" id="pixverse-markup-input" class="admin-input" min="0" max="10000" step="10" placeholder="250" style="max-width: 180px; font-weight: 700; font-size: 16px; color: #fff;" oninput="updateFormulaHints(this.value)">
+                            <span style="font-size: 14px; font-weight: 700; color: #fff;">СОМ</span>
+                            <button type="button" class="btn-primary" onclick="savePixverseMarkupSettings()">💾 Сохранить наценку</button>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 14px 18px; margin-bottom: 16px;">
+                        <div style="font-size: 13px; color: #fff; font-weight: 700; margin-bottom: 6px;">
+                            📊 Формула гибридного ценообразования:
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6;">
+                            • Себестоимость API PixVerse V6 (720p): <strong>7.2 кредита/сек (~3.17 сом/сек)</strong>.<br>
+                            • Для видео 5 сек: себестоимость ≈ <strong>16 сом</strong> (36 кр). С наценкой +<span id="formula-markup-val" style="color: var(--primary); font-weight: 700;">250</span> сом = <strong id="formula-price-5s" style="color: #34c759;">270 сом</strong>.<br>
+                            • Для видео 8 сек: себестоимость ≈ <strong>25 сом</strong> (58 кр). С наценкой +<span id="formula-markup-val-8" style="color: var(--primary); font-weight: 700;">250</span> сом = <strong id="formula-price-8s" style="color: #34c759;">280 сом</strong>.<br>
+                            • Для видео 10 сек: себестоимость ≈ <strong>32 сома</strong> (72 кр). С наценкой +<span id="formula-markup-val-10" style="color: var(--primary); font-weight: 700;">250</span> сом = <strong id="formula-price-10s" style="color: #34c759;">290 сом</strong>.
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <button type="button" class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-color: #10b981;" onclick="applyPixverseMarkupToAllTemplates()">
+                            ⚡ Применить наценку ко всем шаблонам ВИДЕО
+                        </button>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-dim); margin-top: 8px;">
+                        Кнопка мгновенно пересчитает цену каждого видео-шаблона по его длительности (Себестоимость + Наценка) и сохранит в облако. При этом в редакторе любого шаблона вы по-прежнему можете задать любую фиксированную цену вручную (например, 350 сом).
+                    </p>
+                    <div id="pixverse-markup-status" class="status-msg" style="margin-top: 10px;"></div>
                 </div>
             </div>
 
@@ -2829,7 +2882,8 @@
             if (m === 'chatgpt-2.5-sunburst' || m === 'gpt-image-2-5-sunburst') return '<span class="model-badge" style="background: rgba(212,160,67,0.18); border-color: #D4A043; color: #D4A043; font-weight: 800;">☀️ GPT 2.5 Sunburst</span>';
             if (m === 'chatgpt-2.5-flare' || m === 'gpt-image-2-5-flare') return '<span class="model-badge" style="background: rgba(255,149,0,0.18); border-color: #ff9500; color: #ff9500; font-weight: 800;">🔥 GPT 2.5 Flare</span>';
             if (m === 'nano-banana-2') return '<span class="model-badge">🍌 Nano Banana 2</span>';
-            if (m === 'omni-flash' || m === 'gemini-omni-video' || m.includes('omni')) return '<span class="model-badge" style="background: rgba(66,133,244,0.18); border-color: #4285F4; color: #4285F4; font-weight: 800;">⚡ Gemini Omni Flash (V2V)</span>';
+            if (m === 'pixverse-v6' || m === 'pixverse' || m.includes('pixverse')) return '<span class="model-badge" style="background: rgba(168,85,247,0.18); border-color: #a855f7; color: #c084fc; font-weight: 800;">🎬 PixVerse V6</span>';
+            if (m === 'omni-flash' || m === 'gemini-omni-video' || m.includes('omni')) return '<span class="model-badge" style="background: rgba(168,85,247,0.18); border-color: #a855f7; color: #c084fc; font-weight: 800;">🎬 PixVerse V6</span>';
             if (m === 'kling-3.0/motion-control') return '<span class="model-badge" style="background: rgba(16,185,129,0.18); border-color: #10b981; color: #34d399; font-weight: 800;">🕺 Kling 3.0 Motion</span>';
             if (m === 'kling-2.6/motion-control') return '<span class="model-badge" style="background: rgba(16,185,129,0.18); border-color: #10b981; color: #34d399; font-weight: 800;">🕺 Kling 2.6 Motion</span>';
             if (m === 'kling-motion' || m.includes('motion')) return '<span class="model-badge" style="background: rgba(16,185,129,0.18); border-color: #10b981; color: #34d399; font-weight: 800;">🕺 Kling Motion Control</span>';
@@ -2972,6 +3026,8 @@
             const modelSelect = document.getElementById('tpl-model-select');
             const modelWrapper = document.getElementById('tpl-model-wrapper');
             const resWrapper = document.getElementById('tpl-resolution-wrapper');
+            const durWrapper = document.getElementById('tpl-duration-wrapper');
+            const calcHint = document.getElementById('tpl-calc-hint');
             const locWrapper = document.getElementById('tpl-location-wrapper');
             const promptLabel = document.getElementById('tpl-prompt-label');
             const promptInput = document.getElementById('tpl-prompt-input');
@@ -2983,6 +3039,8 @@
                 // ============================================
                 // РАЗДЕЛ 👕 ПРИМЕРКА ОДЕЖДЫ
                 // ============================================
+                if (durWrapper) durWrapper.style.display = 'none';
+                if (calcHint) calcHint.style.display = 'none';
                 if (badgeTitle) badgeTitle.innerHTML = '<span>👕</span> <span>Добавление одежды в «ПРИМЕРКА»</span>';
                 if (catLabel) catLabel.textContent = 'ТИП ОДЕЖДЫ (ХУДИ, ТОЛСТОВКИ...)';
                 if (titleLabel) titleLabel.textContent = 'НАЗВАНИЕ ТОВАРА / ВЕЩИ';
@@ -3011,9 +3069,17 @@
 
             } else if (isVideo) {
                 // ============================================
-                // РАЗДЕЛ 🎬 ВИДЕО (АНИМАЦИЯ ФОТО)
+                // РАЗДЕЛ 🎬 ВИДЕО (АНИМАЦИЯ ФОТО ЧЕРЕЗ PIXVERSE V6)
                 // ============================================
-                if (badgeTitle) badgeTitle.innerHTML = '<span>🎬</span> <span>Добавление шаблона в «ВИДЕО»</span>';
+                if (durWrapper) durWrapper.style.display = 'block';
+                if (calcHint) calcHint.style.display = 'flex';
+                const calcInfo = updateTplVideoCalcUI();
+                const priceInputEl = document.getElementById('tpl-price-input');
+                if (priceInputEl && !editingTemplateId && (!priceInputEl.value || priceInputEl.value === '100' || priceInputEl.value === '290')) {
+                    priceInputEl.value = calcInfo.suggestedPrice;
+                }
+
+                if (badgeTitle) badgeTitle.innerHTML = '<span>🎬</span> <span>Добавление шаблона в «ВИДЕО» (PixVerse V6)</span>';
                 if (catLabel) catLabel.textContent = 'ЖАНР ВИДЕОРОЛИКА';
                 if (titleLabel) titleLabel.textContent = 'НАЗВАНИЕ ВИДЕО-ШАБЛОНА';
                 if (titleInput && !editingTemplateId) titleInput.placeholder = 'напр: Кибер-динамика, Неоновый полет...';
@@ -3025,7 +3091,9 @@
                 if (modelWrapper) modelWrapper.style.display = 'block';
                 if (modelSelect) {
                     modelSelect.innerHTML = `
-                        <option value="omni-flash" selected>⚡ Google Gemini Omni Flash (Video-to-Video / Анимация)</option>
+                        <option value="pixverse-v6" selected>🎬 PixVerse V6 (Реалистичное оживление фото в видео)</option>
+                        <option value="kling-turbo">🚀 Kling Turbo (Быстрое видео 5 сек)</option>
+                        <option value="kling-video">🎥 Kling 2.6 HD (Высокая детализация)</option>
                         <option value="custom">✏️ Ввести точный ID модели вручную (любая модель Kie.ai)...</option>
                     `;
                 }
@@ -3035,8 +3103,8 @@
                 if (promptInput && !editingTemplateId && !promptInput.value.trim()) {
                     promptInput.placeholder = 'Smooth natural cinematic video transformation, preserve facial identity, fluid motion, high quality render...';
                 }
-                if (imgLabel) imgLabel.innerHTML = '🎬 Видео-референс для трансформации (MP4/WebM):';
-                if (imgTip) imgTip.innerHTML = '💡 <b>Загрузите видеоролик</b> (MP4). Гость запишет себя у киоска, и Gemini Omni Flash вставит его лицо в этот видеоролик!';
+                if (imgLabel) imgLabel.innerHTML = '🎬 Видео-референс или обложка стиля (MP4/JPG):';
+                if (imgTip) imgTip.innerHTML = '💡 <b>Загрузите видеоролик или обложку</b>. Гость сфотографируется у киоска, и нейросеть PixVerse V6 оживит его фото в реалистичный ролик с заданной длительностью!';
                 if (submitBtn && !editingTemplateId) submitBtn.textContent = '+ Добавить ролик в «ВИДЕО»';
 
             } else if (secNum === 3 || titleUp.includes('ТРЕНД')) {
@@ -3049,6 +3117,8 @@
                 if (titleInput && !editingTemplateId) titleInput.placeholder = 'напр: Трендовый танец, Макарена, Стендап-прожарка...';
                 if (priceLabel) priceLabel.textContent = 'ЦЕНА (СОМ)';
 
+                if (durWrapper) durWrapper.style.display = 'none';
+                if (calcHint) calcHint.style.display = 'none';
                 if (locWrapper) locWrapper.style.display = 'none';
                 if (modelWrapper) modelWrapper.style.display = 'block';
                 if (modelSelect) {
@@ -3056,7 +3126,7 @@
                         <option value="chatgpt-2.5-flare">🔥 GPT Image 2.5 Flare (Скоростная версия — 10-15 сек)</option>
                         <option value="chatgpt-2.5-sunburst">☀️ GPT Image 2.5 Sunburst (Высокая детализация)</option>
                         <option value="chatgpt-2" selected>🎨 GPT Image 2 (Быстрые фото-портреты)</option>
-                        <option value="omni-flash">⚡ Google Gemini Omni Flash (Video-to-Video)</option>
+                        <option value="pixverse-v6">🎬 PixVerse V6 (Оживление фото в видео)</option>
                         <option value="custom">✏️ Ввести точный ID модели вручную (любая модель Kie.ai)...</option>
                     `;
                 }
@@ -3080,6 +3150,8 @@
                 if (titleInput && !editingTemplateId) titleInput.placeholder = 'напр: Trap & Rap Hit, Club Dance, С Днём Рождения...';
                 if (priceLabel) priceLabel.textContent = 'ЦЕНА ТРЕКА (СОМ)';
 
+                if (durWrapper) durWrapper.style.display = 'none';
+                if (calcHint) calcHint.style.display = 'none';
                 if (locWrapper) locWrapper.style.display = 'none';
                 if (modelWrapper) modelWrapper.style.display = 'block';
                 if (modelSelect) {
@@ -3103,6 +3175,8 @@
                 // РАЗДЕЛ 📸 ФОТО-ПОРТРЕТЫ (ПО УМОЛЧАНИЮ)
                 // ============================================
                 const sectionName = card ? card.title : 'ФОТО';
+                if (durWrapper) durWrapper.style.display = 'none';
+                if (calcHint) calcHint.style.display = 'none';
                 if (badgeTitle) badgeTitle.innerHTML = `<span>📸</span> <span>Добавление стиля в раздел «${sectionName}»</span>`;
                 if (catLabel) catLabel.textContent = 'КАТЕГОРИЯ СТИЛЯ (ОБЛОЖКИ, МУЛЬТИКИ...)';
                 if (titleLabel) titleLabel.textContent = 'НАЗВАНИЕ ФОТО-СТИЛЯ';
@@ -3236,17 +3310,23 @@
             }
 
             if (isVideoFile) {
-                // Предупреждение о длительности видео и списании кредитов
+                // Автоопределение длительности видео и авторасчет розничной цены
                 try {
                     const videoProbe = document.createElement('video');
                     videoProbe.preload = 'metadata';
                     videoProbe.src = URL.createObjectURL(file);
                     videoProbe.onloadedmetadata = function() {
                         URL.revokeObjectURL(videoProbe.src);
-                        const dur = Math.round(videoProbe.duration || 0);
-                        if (dur > 8) {
-                            const estCredits = dur * 20;
-                            alert(`⚠️ ВНИМАНИЕ: Длительность загружаемого видео — ${dur} секунд!\n\n• Нейросеть Kling AI генерирует только первые 5–6 секунд танца.\n• При этом сервис Kie.ai спишет за это видео ~${estCredits} кредитов (${dur} сек × 20 кр/сек)!\n\n💡 Рекомендация:\nОбрежьте видео в редакторе до 5–6 секунд (это сохранит кредиты: спишется всего 100-120 кр вместо ${estCredits}).\nИли используйте модель «Google Gemini Omni Flash», у которой фиксированная цена 168 кредитов.`);
+                        const rawDur = Math.round(videoProbe.duration || 5);
+                        const dur = Math.min(15, Math.max(2, rawDur));
+                        const durInput = document.getElementById('tpl-duration-input');
+                        if (durInput) durInput.value = dur;
+                        const calc = updateTplVideoCalcUI(dur);
+                        const priceInput = document.getElementById('tpl-price-input');
+                        if (priceInput && (!editingTemplateId || !priceInput.value || priceInput.value === '100' || priceInput.value === '290')) {
+                            priceInput.value = calc.suggestedPrice;
+                            priceInput.style.borderColor = '#34c759';
+                            setTimeout(() => { priceInput.style.borderColor = ''; }, 2000);
                         }
                     };
                 } catch (probeErr) {
@@ -3609,6 +3689,9 @@
 
             document.getElementById('tpl-title-input').value = tpl.title || '';
             document.getElementById('tpl-price-input').value = tpl.price || 290;
+            const durInput = document.getElementById('tpl-duration-input');
+            if (durInput) durInput.value = tpl.duration || 5;
+            updateTplVideoCalcUI(tpl.duration || 5);
             const locInput = document.getElementById('tpl-location-input');
             if (locInput) locInput.value = tpl.location || '';
 
@@ -3679,6 +3762,9 @@
             editingTemplateId = null;
             document.getElementById('tpl-title-input').value = '';
             document.getElementById('tpl-price-input').value = '';
+            const durInput = document.getElementById('tpl-duration-input');
+            if (durInput) durInput.value = '5';
+            updateTplVideoCalcUI(5);
             const locInput = document.getElementById('tpl-location-input');
             if (locInput) locInput.value = '';
             document.getElementById('tpl-prompt-input').value = '';
@@ -3710,6 +3796,7 @@
             const catSelect = document.getElementById('tpl-cat-select');
             const titleInput = document.getElementById('tpl-title-input');
             const priceInput = document.getElementById('tpl-price-input');
+            const durInput = document.getElementById('tpl-duration-input');
             const locationInput = document.getElementById('tpl-location-input');
             const modelSelect = document.getElementById('tpl-model-select');
             const resSelect = document.getElementById('tpl-resolution-select');
@@ -3727,6 +3814,7 @@
 
             const title = titleInput ? titleInput.value.trim() : '';
             const price = priceInput ? (Number(priceInput.value) || 290) : 290;
+            const duration = durInput ? (parseInt(durInput.value, 10) || 5) : 5;
             const location = locationInput ? locationInput.value.trim() : '';
             
             let model = modelSelect ? modelSelect.value : 'chatgpt-2';
@@ -3768,6 +3856,7 @@
                         category,
                         title,
                         price,
+                        duration,
                         location,
                         model,
                         resolution,
@@ -3789,6 +3878,7 @@
                     category,
                     title,
                     price,
+                    duration,
                     location,
                     model,
                     resolution,
@@ -4727,6 +4817,154 @@
             }
         }
 
+        // =============================================
+        // PIXVERSE V6 НАЦЕНКА И КАЛЬКУЛЯТОР ЦЕН ВИДЕО
+        // =============================================
+        function getPixverseMarkup() {
+            try {
+                const val = parseInt(localStorage.getItem('kiosk_pixverse_markup') || '250', 10);
+                return isNaN(val) ? 250 : val;
+            } catch(e) {
+                return 250;
+            }
+        }
+
+        function calcPixverseCostAndPrice(durationSec) {
+            const dur = Math.min(15, Math.max(2, parseInt(durationSec, 10) || 5));
+            const credits = Math.round(dur * 7.2);
+            // 1 кредит Kie.ai = $0.005 ≈ 0.44 сом (курс $1 = 88 сом). 7.2 кредита/сек = ~3.17 сом/сек себестоимости.
+            const costKgs = Math.round(dur * 7.2 * 0.44);
+            const markup = getPixverseMarkup();
+            const rawPrice = costKgs + markup;
+            // Округляем до красивых десятков сомов (например, 266 -> 270)
+            const suggestedPrice = Math.round(rawPrice / 10) * 10;
+            return { dur, credits, costKgs, markup, suggestedPrice };
+        }
+
+        function updateTplVideoCalcUI(durationSec) {
+            const durInput = document.getElementById('tpl-duration-input');
+            const dur = durationSec !== undefined ? durationSec : (durInput ? durInput.value : 5);
+            const calc = calcPixverseCostAndPrice(dur);
+            const calcText = document.getElementById('tpl-calc-text');
+            if (calcText) {
+                calcText.innerHTML = `💡 Себестоимость API PixVerse V6 (${calc.dur} сек): <strong>~${calc.costKgs} сом</strong> (${calc.credits} кр) • Наценка: <strong>+${calc.markup} сом</strong> ➔ Рекомендуемая розничная цена: <strong style="color: #34c759; font-size: 13px;">${calc.suggestedPrice} СОМ</strong>`;
+            }
+            return calc;
+        }
+
+        function onTplDurationChange(val) {
+            const calc = updateTplVideoCalcUI(val);
+            const priceInput = document.getElementById('tpl-price-input');
+            // Если в поле цены еще ничего нет или это новый шаблон — подставляем рекомендуемую цену
+            if (priceInput && (!priceInput.value || !editingTemplateId)) {
+                priceInput.value = calc.suggestedPrice;
+            }
+        }
+
+        function applySuggestedPriceToInput() {
+            const durInput = document.getElementById('tpl-duration-input');
+            const dur = durInput ? durInput.value : 5;
+            const calc = calcPixverseCostAndPrice(dur);
+            const priceInput = document.getElementById('tpl-price-input');
+            if (priceInput) {
+                priceInput.value = calc.suggestedPrice;
+                priceInput.style.borderColor = '#34c759';
+                setTimeout(() => { priceInput.style.borderColor = ''; }, 1500);
+            }
+        }
+
+        function updateFormulaHints(val) {
+            const markup = parseInt(val !== undefined ? val : getPixverseMarkup(), 10) || 0;
+            const el1 = document.getElementById('formula-markup-val');
+            const el2 = document.getElementById('formula-markup-val-8');
+            const el3 = document.getElementById('formula-markup-val-10');
+            if (el1) el1.textContent = markup;
+            if (el2) el2.textContent = markup;
+            if (el3) el3.textContent = markup;
+
+            const p5 = Math.round((16 + markup) / 10) * 10;
+            const p8 = Math.round((25 + markup) / 10) * 10;
+            const p10 = Math.round((32 + markup) / 10) * 10;
+
+            const elP5 = document.getElementById('formula-price-5s');
+            const elP8 = document.getElementById('formula-price-8s');
+            const elP10 = document.getElementById('formula-price-10s');
+            if (elP5) elP5.textContent = `${p5} сом`;
+            if (elP8) elP8.textContent = `${p8} сом`;
+            if (elP10) elP10.textContent = `${p10} сом`;
+        }
+
+        function loadPixverseMarkupSettings() {
+            try {
+                const markup = getPixverseMarkup();
+                const input = document.getElementById('pixverse-markup-input');
+                if (input) input.value = markup;
+                updateFormulaHints(markup);
+            } catch(e) {
+                console.warn('loadPixverseMarkupSettings error:', e);
+            }
+        }
+
+        function savePixverseMarkupSettings() {
+            const input = document.getElementById('pixverse-markup-input');
+            const status = document.getElementById('pixverse-markup-status');
+            const val = parseInt(input ? input.value : '250', 10);
+
+            if (isNaN(val) || val < 0) {
+                if (status) {
+                    status.textContent = '❌ Укажите корректную сумму наценки в сомах (0 или больше)';
+                    status.className = 'status-msg error';
+                }
+                return;
+            }
+
+            localStorage.setItem('kiosk_pixverse_markup', val.toString());
+            updateFormulaHints(val);
+            updateTplVideoCalcUI();
+            syncAllToCloud();
+
+            if (status) {
+                status.className = 'status-msg success';
+                status.textContent = `✅ Наценка на видео (+${val} сом) успешно сохранена и отправлена в облако!`;
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
+            }
+        }
+
+        function applyPixverseMarkupToAllTemplates() {
+            const markup = getPixverseMarkup();
+            let updatedCount = 0;
+
+            templates.forEach(t => {
+                const secId = Number(t.sectionId);
+                const stUp = (t.sectionTitle || '').toUpperCase();
+                const catUp = (t.category || '').toUpperCase();
+                const mUp = (t.model || '').toLowerCase();
+
+                const isVideo = secId === 2 || stUp.includes('ВИДЕО') || catUp.includes('ВИДЕО') || mUp.includes('pixverse') || mUp.includes('video') || mUp.includes('omni');
+                if (isVideo) {
+                    const dur = Number(t.duration) || 5;
+                    const calc = calcPixverseCostAndPrice(dur);
+                    t.price = calc.suggestedPrice;
+                    t.duration = dur;
+                    if (!t.model || t.model === 'omni-flash' || t.model.includes('omni')) {
+                        t.model = 'pixverse-v6';
+                    }
+                    updatedCount++;
+                }
+            });
+
+            localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
+            syncAllToCloud();
+            renderTemplates();
+
+            const status = document.getElementById('pixverse-markup-status');
+            if (status) {
+                status.className = 'status-msg success';
+                status.textContent = `✅ Успешно пересчитаны цены для ${updatedCount} видео-шаблонов с наценкой +${markup} сом (сохранено в облако)!`;
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 5000);
+            }
+        }
+
         async function checkKieBalance() {
             const key = localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd';
             const balEl = document.getElementById('kie-balance-val');
@@ -4764,6 +5002,7 @@
                     categories: categories,
                     attract_timeout: localStorage.getItem('kiosk_attract_timeout') || '5',
                     music_price: localStorage.getItem('kiosk_music_price') || '290',
+                    pixverse_markup: localStorage.getItem('kiosk_pixverse_markup') || '250',
                     openai_key: localStorage.getItem('kiosk_openai_key') || '',
                     finik_account_id: localStorage.getItem('kiosk_finik_account_id') || '',
                     finik_pos_id: localStorage.getItem('kiosk_finik_pos_id') || '',
@@ -4896,6 +5135,14 @@
                         const input = document.getElementById('music-price-input');
                         if (input && !input.value) input.value = data.music_price;
                     }
+                    if (data.pixverse_markup) {
+                        try {
+                            localStorage.setItem('kiosk_pixverse_markup', data.pixverse_markup.toString());
+                            const input = document.getElementById('pixverse-markup-input');
+                            if (input && !input.value) input.value = data.pixverse_markup;
+                            updateFormulaHints(data.pixverse_markup);
+                        } catch(e){}
+                    }
                     if (changed) {
                         console.log('✅ Данные админки успешно синхронизированы с облаком (' + templates.length + ' шаблонов)');
                     }
@@ -4994,6 +5241,7 @@
         loadAggregatorSettings();
         loadPaymentSettings();
         loadMusicPriceSettings();
+        loadPixverseMarkupSettings();
         checkKieBalance();
         checkSupabaseStatus();
         fetchCloudConfig();
