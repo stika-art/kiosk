@@ -28,6 +28,11 @@
             -ms-overflow-style: none !important;
         }
 
+        @keyframes mEqPulse {
+            0% { height: 10px; opacity: 0.5; }
+            100% { height: 48px; opacity: 1; }
+        }
+
         ::-webkit-scrollbar {
             display: none !important;
             width: 0 !important;
@@ -2881,9 +2886,16 @@
                     
                     <!-- АУДИОПЛЕЕР ДЛЯ СОЗДАНИЯ ТРЕКОВ -->
                     <div id="result-audio-box" style="display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at center, #2e1065 0%, #09090b 100%); border-radius: 20px; padding: 28px; border: 1px solid rgba(168, 85, 247, 0.45); text-align: center; box-sizing: border-box;">
-                        <div style="width: 170px; height: 170px; border-radius: 20px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 12px 35px rgba(168, 85, 247, 0.5); border: 2px solid #a855f7; position: relative; background: #000;">
-                            <img id="result-audio-cover" src="assets/hero_portrait.jpg" style="width: 100%; height: 100%; object-fit: cover;">
-                            <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); padding: 3px 8px; border-radius: 8px; font-size: 10px; font-weight: 800; color: #c084fc; border: 1px solid rgba(168,85,247,0.4);">AUDIO AI</div>
+                        <!-- Неоновый пульсирующий аудио-визуализатор (без фото-обложки) -->
+                        <div class="audio-neon-visualizer" style="width: 150px; height: 150px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 22px; background: radial-gradient(circle, rgba(168,85,247,0.35) 0%, rgba(236,72,153,0.15) 60%, rgba(0,0,0,0.8) 100%); border: 2px solid rgba(168,85,247,0.65); box-shadow: 0 0 35px rgba(168,85,247,0.5), inset 0 0 20px rgba(168,85,247,0.3); position: relative;">
+                            <div style="display: flex; align-items: flex-end; justify-content: center; gap: 5px; height: 50px; margin-bottom: 8px;">
+                                <span class="m-wave-bar" style="width: 5px; height: 26px; background: linear-gradient(to top, #ec4899, #f43f5e); border-radius: 3px; animation: mEqPulse 0.9s ease-in-out infinite alternate;"></span>
+                                <span class="m-wave-bar" style="width: 5px; height: 44px; background: linear-gradient(to top, #a855f7, #ec4899); border-radius: 3px; animation: mEqPulse 0.7s ease-in-out infinite alternate 0.15s;"></span>
+                                <span class="m-wave-bar" style="width: 5px; height: 32px; background: linear-gradient(to top, #c084fc, #a855f7); border-radius: 3px; animation: mEqPulse 1.1s ease-in-out infinite alternate 0.3s;"></span>
+                                <span class="m-wave-bar" style="width: 5px; height: 48px; background: linear-gradient(to top, #a855f7, #ec4899); border-radius: 3px; animation: mEqPulse 0.8s ease-in-out infinite alternate 0.1s;"></span>
+                                <span class="m-wave-bar" style="width: 5px; height: 22px; background: linear-gradient(to top, #ec4899, #f43f5e); border-radius: 3px; animation: mEqPulse 1.0s ease-in-out infinite alternate 0.25s;"></span>
+                            </div>
+                            <span style="font-size: 10px; font-weight: 900; letter-spacing: 1.5px; color: #c084fc; text-transform: uppercase;">SUNO V6 • HI-FI</span>
                         </div>
                         <div id="result-audio-title" style="font-size: 22px; font-weight: 900; color: #ffffff; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">ВАШ ТРЕК ГОТОВ!</div>
                         <div id="result-audio-genre" style="font-size: 13px; font-weight: 700; color: #c084fc; margin-bottom: 14px;">🎵 Персональный трек • Студийная запись</div>
@@ -3073,7 +3085,7 @@
 </div>
 
 <script src="qrcode.min.js"></script>
-<script src="script.js?v=20261020_pay_fix_v8"></script>
+<script src="script.js?v=20261020_music_v9"></script>
 
 <!-- Белая вспышка при съёмке -->
 <div id="camera-flash"></div>

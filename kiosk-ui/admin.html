@@ -1355,6 +1355,31 @@
                 </div>
             </div>
 
+            <!-- MUSIC GENERATION (SUNO V6) PRICE SETTING CARD -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2 class="card-title">🎵 Стоимость генерации песни (Suno V6)</h2>
+                    <p class="card-subtitle">Управление ценой на экране создания трека и в QR-оплате Finik ELQR</p>
+                </div>
+
+                <div style="max-width: 540px;">
+                    <div style="margin-bottom: 14px;">
+                        <label style="display:block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 600;">
+                            💰 Стоимость создания песни (в сомах KGS):
+                        </label>
+                        <div class="form-row" style="align-items: center; gap: 12px; display: flex;">
+                            <input type="number" id="music-price-input" class="admin-input" min="1" max="10000" placeholder="290" style="max-width: 180px; font-weight: 700; font-size: 16px; color: #fff;">
+                            <span style="font-size: 14px; font-weight: 700; color: #fff;">СОМ</span>
+                            <button type="button" class="btn-primary" onclick="saveMusicPriceSettings()">💾 Сохранить цену</button>
+                        </div>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-dim); margin-top: 5px;">
+                        По умолчанию: <strong>290 сом</strong>. Эта цена автоматически отобразится на главной кнопке «СОЗДАТЬ ТРЕК», в окне оплаты и сформирует динамический инвойс Finik ELQR на киоске.
+                    </p>
+                    <div id="music-price-status" class="status-msg" style="margin-top: 10px;"></div>
+                </div>
+            </div>
+
             <!-- CLOUD STORAGE STATUS CARD -->
             <div class="admin-card">
                 <div class="card-header">
@@ -4659,6 +4684,49 @@
             }
         }
 
+        function loadMusicPriceSettings() {
+            try {
+                const price = localStorage.getItem('kiosk_music_price') || '290';
+                const input = document.getElementById('music-price-input');
+                if (input) input.value = price;
+            } catch (e) {
+                console.warn('loadMusicPriceSettings error:', e);
+            }
+        }
+
+        function saveMusicPriceSettings() {
+            const input = document.getElementById('music-price-input');
+            const status = document.getElementById('music-price-status');
+            const val = parseInt(input ? input.value : '290', 10);
+
+            if (isNaN(val) || val <= 0) {
+                if (status) {
+                    status.textContent = '❌ Укажите корректную сумму в сомах';
+                    status.className = 'status-msg error';
+                }
+                return;
+            }
+
+            localStorage.setItem('kiosk_music_price', val.toString());
+
+            // Обновляем цену карточки Музыки (id: 6) в основном каталоге
+            if (Array.isArray(mainCards)) {
+                const musicCard = mainCards.find(c => c.id === 6 || (c.filter && c.filter.toUpperCase() === 'MUSIC'));
+                if (musicCard) {
+                    musicCard.price = val;
+                    try { localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCards)); } catch(e){}
+                }
+            }
+
+            syncAllToCloud();
+
+            if (status) {
+                status.className = 'status-msg success';
+                status.textContent = `✅ Цена генерации песни (${val} сом) успешно сохранена и отправлена в облако!`;
+                setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 4000);
+            }
+        }
+
         async function checkKieBalance() {
             const key = localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd';
             const balEl = document.getElementById('kie-balance-val');
@@ -4695,6 +4763,7 @@
                     templates: templates,
                     categories: categories,
                     attract_timeout: localStorage.getItem('kiosk_attract_timeout') || '5',
+                    music_price: localStorage.getItem('kiosk_music_price') || '290',
                     openai_key: localStorage.getItem('kiosk_openai_key') || '',
                     finik_account_id: localStorage.getItem('kiosk_finik_account_id') || '',
                     finik_pos_id: localStorage.getItem('kiosk_finik_pos_id') || '',
@@ -4822,6 +4891,11 @@
                         const input = document.getElementById('finik-static-qr-input');
                         if (input && !input.value) input.value = data.finik_static_qr;
                     }
+                    if (data.music_price) {
+                        try { localStorage.setItem('kiosk_music_price', data.music_price.toString()); } catch(e){}
+                        const input = document.getElementById('music-price-input');
+                        if (input && !input.value) input.value = data.music_price;
+                    }
                     if (changed) {
                         console.log('✅ Данные админки успешно синхронизированы с облаком (' + templates.length + ' шаблонов)');
                     }
@@ -4919,6 +4993,7 @@
         loadKioskSettings();
         loadAggregatorSettings();
         loadPaymentSettings();
+        loadMusicPriceSettings();
         checkKieBalance();
         checkSupabaseStatus();
         fetchCloudConfig();

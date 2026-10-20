@@ -19,12 +19,12 @@ let activeTemplateIndex = 0;
 
 // УПРАВЛЕНИЕ РАЗРЕШЕНИЕМ ГЕНЕРАЦИИ (СТРОГО 1K ДЛЯ МАКСИМАЛЬНОЙ СКОРОСТИ 5-8 СЕК)
 let currentAiResolution = '1K';
-try { localStorage.setItem('kiosk_ai_resolution', '1K'); } catch(e) {}
+try { localStorage.setItem('kiosk_ai_resolution', '1K'); } catch (e) { }
 
 function setAiResolution(res) {
     currentAiResolution = '1K';
-    try { localStorage.setItem('kiosk_ai_resolution', '1K'); } catch(e) {}
-    
+    try { localStorage.setItem('kiosk_ai_resolution', '1K'); } catch (e) { }
+
     document.querySelectorAll('.ai-res-pill').forEach(btn => {
         if (btn.dataset.res === '1K') {
             btn.classList.add('active');
@@ -45,7 +45,7 @@ function getStoredMainHeader() {
     try {
         const saved = localStorage.getItem('kiosk_main_header_v1');
         if (saved) return JSON.parse(saved);
-    } catch(e) {}
+    } catch (e) { }
     return {
         badge: 'PREMIUM PHOTO KIOSK',
         title: 'TRENDUM',
@@ -154,7 +154,7 @@ function getStoredMainCards() {
             const parsed = JSON.parse(saved);
             if (Array.isArray(parsed) && parsed.length > 0) return normalizeMainCards(parsed);
         }
-    } catch(e) {}
+    } catch (e) { }
     return normalizeMainCards([]);
 }
 
@@ -183,7 +183,7 @@ function renderMainCards() {
     mainCardsConfig.forEach((c, idx) => {
         const section = document.createElement('section');
         section.className = `card card-${idx + 1}`;
-        section.onclick = function() {
+        section.onclick = function () {
             window.selectCard(this, c.id);
         };
 
@@ -210,7 +210,7 @@ let kioskCategories = [];
 try {
     const savedCats = localStorage.getItem('kiosk_categories_v2');
     if (savedCats) kioskCategories = JSON.parse(savedCats);
-} catch(e) {}
+} catch (e) { }
 
 if (!kioskCategories || kioskCategories.length === 0) {
     kioskCategories = ['ВСЕ', 'ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'ВИДЕО', 'ТРЕНДЫ'];
@@ -1038,7 +1038,7 @@ try {
             masterTemplates = parsed;
         }
     }
-} catch(e) {}
+} catch (e) { }
 
 if (!Array.isArray(masterTemplates) || masterTemplates.length === 0) {
     masterTemplates = JSON.parse(JSON.stringify(DEFAULT_KIOSK_TEMPLATES));
@@ -1050,7 +1050,7 @@ if (!Array.isArray(masterTemplates) || masterTemplates.length === 0) {
         masterTemplates = masterTemplates.concat(missing);
         try {
             localStorage.setItem('kiosk_templates_v2', JSON.stringify(masterTemplates));
-        } catch(e) {}
+        } catch (e) { }
     }
 }
 
@@ -1163,7 +1163,7 @@ if (!masterTemplates.some(t => (t.model || '').toLowerCase() === 'roast-standup'
 
 try {
     localStorage.setItem('kiosk_templates_v2', JSON.stringify(masterTemplates));
-} catch(e) {}
+} catch (e) { }
 
 // Preload all template images into memory for instant rendering
 function preloadMasterImages() {
@@ -1182,16 +1182,16 @@ function isVideoTemplate(tpl) {
     const m = (tpl.model || '').toLowerCase();
     const c = (tpl.category || '').toUpperCase();
     const img = (tpl.img || '').toLowerCase();
-    return c === 'ВИДЕО' || 
-           m.includes('kling') || 
-           m.includes('omni') || 
-           m.includes('gemini') || 
-           m.includes('video') ||
-           img.endsWith('.mp4') ||
-           img.endsWith('.webm') ||
-           img.endsWith('.mov') ||
-           img.includes('.mp4?') ||
-           img.includes('.webm?');
+    return c === 'ВИДЕО' ||
+        m.includes('kling') ||
+        m.includes('omni') ||
+        m.includes('gemini') ||
+        m.includes('video') ||
+        img.endsWith('.mp4') ||
+        img.endsWith('.webm') ||
+        img.endsWith('.mov') ||
+        img.includes('.mp4?') ||
+        img.includes('.webm?');
 }
 
 function isTrendsTemplate(tpl) {
@@ -1211,18 +1211,18 @@ function isTryOnTemplate(tpl) {
     const c = (tpl.category || '').toUpperCase();
     const t = (tpl.title || '').toUpperCase();
     const st = (tpl.sectionTitle || '').toUpperCase();
-    return tpl.sectionId === 4 || 
-           tpl.sectionId === 5 ||
-           st.includes('ПРИМЕР') || 
-           st.includes('ОДЕЖД') ||
-           c.includes('ТОЛСТОВ') || 
-           c.includes('ХУДИ') || 
-           c.includes('ФУТБОЛ') || 
-           c.includes('КУРТК') || 
-           c.includes('МЕРЧ') ||
-           t.includes('ТОЛСТОВ') ||
-           t.includes('ХУДИ') ||
-           Boolean(tpl.location);
+    return tpl.sectionId === 4 ||
+        tpl.sectionId === 5 ||
+        st.includes('ПРИМЕР') ||
+        st.includes('ОДЕЖД') ||
+        c.includes('ТОЛСТОВ') ||
+        c.includes('ХУДИ') ||
+        c.includes('ФУТБОЛ') ||
+        c.includes('КУРТК') ||
+        c.includes('МЕРЧ') ||
+        t.includes('ТОЛСТОВ') ||
+        t.includes('ХУДИ') ||
+        Boolean(tpl.location);
 }
 
 function isMusicTemplate(tpl) {
@@ -1232,28 +1232,28 @@ function isMusicTemplate(tpl) {
     const t = (tpl.title || '').toUpperCase();
     const st = (tpl.sectionTitle || '').toUpperCase();
     return tpl.sectionId === 6 ||
-           m === 'suno' ||
-           m.includes('suno') ||
-           m.includes('music') ||
-           st.includes('ТРЕК') ||
-           st.includes('МУЗЫК') ||
-           c.includes('РЭП') ||
-           c.includes('ПОП') ||
-           c.includes('ФОНК') ||
-           c.includes('РОК') ||
-           c.includes('ЛИРИК') ||
-           c.includes('ПОЗДРАВЛ') ||
-           c.includes('КЛУБН') ||
-           c.includes('ШАНСОН') ||
-           c.includes('ВОСТОК') ||
-           t.includes('ТРЕК') ||
-           t.includes('ХИТ');
+        m === 'suno' ||
+        m.includes('suno') ||
+        m.includes('music') ||
+        st.includes('ТРЕК') ||
+        st.includes('МУЗЫК') ||
+        c.includes('РЭП') ||
+        c.includes('ПОП') ||
+        c.includes('ФОНК') ||
+        c.includes('РОК') ||
+        c.includes('ЛИРИК') ||
+        c.includes('ПОЗДРАВЛ') ||
+        c.includes('КЛУБН') ||
+        c.includes('ШАНСОН') ||
+        c.includes('ВОСТОК') ||
+        t.includes('ТРЕК') ||
+        t.includes('ХИТ');
 }
 
 let activeGridTab = 'ВСЕ';
 
 // 1. ВЫБОР КАРТОЧКИ — МГНОВЕННОЕ ОТКРЫТИЕ 2-КОЛОНОЧНОЙ СЕТКИ ШАБЛОНОВ
-window.selectCard = function(cardEl, cardIdOrMode) {
+window.selectCard = function (cardEl, cardIdOrMode) {
     if (isSelectingCard || isAttractClosing) return;
     isSelectingCard = true;
 
@@ -1298,8 +1298,8 @@ function openTemplateGallery(cardIdOrMode) {
     }
     if (!activeCard && cardIdOrMode) {
         const modeStr = String(cardIdOrMode).trim().toUpperCase();
-        activeCard = mainCardsConfig.find(c => 
-            (c.filter && c.filter.toUpperCase() === modeStr) || 
+        activeCard = mainCardsConfig.find(c =>
+            (c.filter && c.filter.toUpperCase() === modeStr) ||
             (c.title && c.title.toUpperCase() === modeStr) ||
             (c.category && c.category.toUpperCase() === modeStr)
         );
@@ -1345,7 +1345,7 @@ function openTemplateGallery(cardIdOrMode) {
                 masterTemplates = normalizeTemplates(parsed, mainCardsConfig);
             }
         }
-    } catch(e) {}
+    } catch (e) { }
 
     if (!Array.isArray(masterTemplates) || masterTemplates.length === 0) {
         masterTemplates = JSON.parse(JSON.stringify(DEFAULT_KIOSK_TEMPLATES));
@@ -1376,7 +1376,7 @@ function openTemplateGallery(cardIdOrMode) {
 
     try {
         localStorage.setItem('kiosk_templates_v2', JSON.stringify(masterTemplates));
-    } catch(e) {}
+    } catch (e) { }
 
     const modal = document.getElementById('template-modal');
     activeGridTab = 'ВСЕ';
@@ -1397,8 +1397,8 @@ function renderCategoryPillsBar() {
     bar.innerHTML = '';
 
     const card = activeSectionCard || mainCardsConfig[0];
-    const cats = (card && Array.isArray(card.categories) && card.categories.length > 0) 
-        ? card.categories 
+    const cats = (card && Array.isArray(card.categories) && card.categories.length > 0)
+        ? card.categories
         : ['ОБЩЕЕ'];
 
     const visibleCategories = ['ВСЕ', ...cats];
@@ -1415,7 +1415,7 @@ function renderCategoryPillsBar() {
 }
 
 // ПЕРЕКЛЮЧЕНИЕ КАТЕГОРИИ ВНУТРИ ВЫБРАННОЙ КНОПКИ
-window.switchGridCategory = function(catName) {
+window.switchGridCategory = function (catName) {
     activeGridTab = catName;
 
     const card = activeSectionCard || mainCardsConfig[0];
@@ -1578,7 +1578,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const modal = document.getElementById('kiosk-modal');
     const modalClose = document.getElementById('modal-close');
-    
+
     // Steps
     const stepMusicTheme = document.getElementById('step-music-theme');
     const stepCamera = document.getElementById('step-camera');
@@ -1596,6 +1596,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const musicThemeCancelBtn = document.getElementById('music-theme-cancel-btn');
     const musicThemeCreateBtn = document.getElementById('music-theme-create-btn');
     const musicVirtualKeyboard = document.getElementById('kiosk-virtual-keyboard');
+    try {
+        const initMusicPrice = localStorage.getItem('kiosk_music_price');
+        if (initMusicPrice && musicThemeCreateBtn) {
+            musicThemeCreateBtn.innerHTML = `🎵 СОЗДАТЬ ТРЕК • ${initMusicPrice} СОМ ➔`;
+        }
+    } catch (e) { }
 
     // Roast Elements
     const roastCaricatureImg = document.getElementById('roast-caricature-img');
@@ -1813,8 +1819,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (qrInstance && qrInstance._oQRCode) {
                     const svgString = buildSvgString(qrInstance._oQRCode, size);
 
-                    const targetContainer = (element.tagName === 'IMG' && element.parentElement) 
-                        ? element.parentElement 
+                    const targetContainer = (element.tagName === 'IMG' && element.parentElement)
+                        ? element.parentElement
                         : element;
 
                     let svgHolder = targetContainer.querySelector('.qr-svg-holder');
@@ -1830,7 +1836,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         element.style.display = 'none';
                         try {
                             element.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
-                        } catch(e) {}
+                        } catch (e) { }
                     }
                     return;
                 }
@@ -1893,8 +1899,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!musicVirtualKeyboard) return;
         musicVirtualKeyboard.innerHTML = '';
 
-        const layoutRows = vkCurrentLayout === 'RU' 
-            ? VK_LAYOUTS.RU 
+        const layoutRows = vkCurrentLayout === 'RU'
+            ? VK_LAYOUTS.RU
             : (vkCurrentLayout === 'EN' ? VK_LAYOUTS.EN : VK_LAYOUTS.NUM);
 
         layoutRows.forEach(row => {
@@ -1996,7 +2002,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Открытие прямой студии создания песни (без каталога шаблонов)
-    window.openDirectMusicStudio = function(card) {
+    window.openDirectMusicStudio = function (card) {
         if (typeof window.hideAttractScreen === 'function') {
             window.hideAttractScreen();
         }
@@ -2004,7 +2010,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (templateModal) templateModal.classList.add('hidden');
 
         activeSectionCard = card || (Array.isArray(mainCardsConfig) ? mainCardsConfig.find(c => c.id === 6) : null);
-        selectedStylePrice = (card && card.price) ? card.price : 290;
+        const savedMusicPrice = parseInt(localStorage.getItem('kiosk_music_price'), 10);
+        selectedStylePrice = savedMusicPrice || (card && card.price) || 290;
 
         const createBtn = document.getElementById('music-theme-create-btn');
         if (createBtn) {
@@ -2125,7 +2132,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             selectedStyle = styleName;
             selectedStyleCategory = 'МУЗЫКА';
-            selectedStylePrice = selectedStylePrice || 290;
+            const savedMusicPrice = parseInt(localStorage.getItem('kiosk_music_price'), 10);
+            selectedStylePrice = savedMusicPrice || selectedStylePrice || 290;
             selectedStyleModel = 'suno';
             selectedStylePhoto = 'images/photo2.jpg';
             selectedStyleLocation = '';
@@ -2180,7 +2188,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.openDirectArStudio = function(card) {
+    window.openDirectArStudio = function (card) {
         if (typeof window.hideAttractScreen === 'function') {
             window.hideAttractScreen();
         }
@@ -2203,12 +2211,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Инициализация превью
         const imgMarker = document.getElementById('ar-marker-img');
-        const imgMedia  = document.getElementById('ar-media-img');
-        const vidMedia  = document.getElementById('ar-media-vid');
+        const imgMedia = document.getElementById('ar-media-img');
+        const vidMedia = document.getElementById('ar-media-vid');
         if (imgMarker) imgMarker.src = currentArMarker;
-        if (imgMedia)  imgMedia.src  = currentArMedia;
-        if (vidMedia)  vidMedia.style.display = 'none';
-        if (imgMedia)  imgMedia.style.display = 'block';
+        if (imgMedia) imgMedia.src = currentArMedia;
+        if (vidMedia) vidMedia.style.display = 'none';
+        if (imgMedia) imgMedia.style.display = 'block';
 
         arOverlayScale = 1.0;
         arOverlayOffsetX = 0;
@@ -2218,29 +2226,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Контроллеры масштаба и позиции
     const btnScaleDown = document.getElementById('ar-ctrl-scale-down');
-    const btnScaleUp   = document.getElementById('ar-ctrl-scale-up');
-    const btnScaleFit  = document.getElementById('ar-ctrl-scale-fit');
-    const btnXLeft     = document.getElementById('ar-ctrl-x-left');
-    const btnXRight    = document.getElementById('ar-ctrl-x-right');
-    const btnYUp       = document.getElementById('ar-ctrl-y-up');
-    const btnYDown     = document.getElementById('ar-ctrl-y-down');
-    const btnResetPos  = document.getElementById('ar-ctrl-reset-pos');
+    const btnScaleUp = document.getElementById('ar-ctrl-scale-up');
+    const btnScaleFit = document.getElementById('ar-ctrl-scale-fit');
+    const btnXLeft = document.getElementById('ar-ctrl-x-left');
+    const btnXRight = document.getElementById('ar-ctrl-x-right');
+    const btnYUp = document.getElementById('ar-ctrl-y-up');
+    const btnYDown = document.getElementById('ar-ctrl-y-down');
+    const btnResetPos = document.getElementById('ar-ctrl-reset-pos');
 
     if (btnScaleDown) btnScaleDown.addEventListener('click', () => { arOverlayScale = Math.max(0.3, +(arOverlayScale - 0.1).toFixed(2)); updateArAlignmentPreview(); });
-    if (btnScaleUp)   btnScaleUp.addEventListener('click',   () => { arOverlayScale = Math.min(2.5, +(arOverlayScale + 0.1).toFixed(2)); updateArAlignmentPreview(); });
-    if (btnScaleFit)  btnScaleFit.addEventListener('click',  () => { arOverlayScale = 1.0; arOverlayOffsetX = 0; arOverlayOffsetY = 0; updateArAlignmentPreview(); });
-    if (btnXLeft)     btnXLeft.addEventListener('click',     () => { arOverlayOffsetX -= 12; updateArAlignmentPreview(); });
-    if (btnXRight)    btnXRight.addEventListener('click',    () => { arOverlayOffsetX += 12; updateArAlignmentPreview(); });
-    if (btnYUp)       btnYUp.addEventListener('click',       () => { arOverlayOffsetY -= 12; updateArAlignmentPreview(); });
-    if (btnYDown)     btnYDown.addEventListener('click',     () => { arOverlayOffsetY += 12; updateArAlignmentPreview(); });
-    if (btnResetPos)  btnResetPos.addEventListener('click',  () => { arOverlayOffsetX = 0; arOverlayOffsetY = 0; updateArAlignmentPreview(); });
+    if (btnScaleUp) btnScaleUp.addEventListener('click', () => { arOverlayScale = Math.min(2.5, +(arOverlayScale + 0.1).toFixed(2)); updateArAlignmentPreview(); });
+    if (btnScaleFit) btnScaleFit.addEventListener('click', () => { arOverlayScale = 1.0; arOverlayOffsetX = 0; arOverlayOffsetY = 0; updateArAlignmentPreview(); });
+    if (btnXLeft) btnXLeft.addEventListener('click', () => { arOverlayOffsetX -= 12; updateArAlignmentPreview(); });
+    if (btnXRight) btnXRight.addEventListener('click', () => { arOverlayOffsetX += 12; updateArAlignmentPreview(); });
+    if (btnYUp) btnYUp.addEventListener('click', () => { arOverlayOffsetY -= 12; updateArAlignmentPreview(); });
+    if (btnYDown) btnYDown.addEventListener('click', () => { arOverlayOffsetY += 12; updateArAlignmentPreview(); });
+    if (btnResetPos) btnResetPos.addEventListener('click', () => { arOverlayOffsetX = 0; arOverlayOffsetY = 0; updateArAlignmentPreview(); });
 
     // 1. Открытие QR-кода загрузки со смартфона
     function openArPhoneQrModal() {
         currentArSessionId = 'ar_sess_' + Date.now() + '_' + Math.random().toString(36).substring(7);
         const qrBox = document.getElementById('ar-popup-marker-qr');
-        const qrEl  = document.getElementById('ar-phone-qr-img');
-        const stEl  = document.getElementById('ar-phone-poll-status');
+        const qrEl = document.getElementById('ar-phone-qr-img');
+        const stEl = document.getElementById('ar-phone-poll-status');
         if (!qrBox || !qrEl) return;
 
         const uploadUrl = `${window.location.origin}/ar-upload?session=${currentArSessionId}`;
@@ -2259,19 +2267,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         clearInterval(arPollTimer);
                         arPollTimer = null;
                         currentArMarker = data.markerUrl;
-                        currentArMedia  = data.mediaUrl;
-                        isArMediaVideo  = data.isVideo !== false;
+                        currentArMedia = data.mediaUrl;
+                        isArMediaVideo = data.isVideo !== false;
 
                         const imgMarker = document.getElementById('ar-marker-img');
-                        const vidMedia  = document.getElementById('ar-media-vid');
-                        const imgMedia  = document.getElementById('ar-media-img');
+                        const vidMedia = document.getElementById('ar-media-vid');
+                        const imgMedia = document.getElementById('ar-media-img');
 
                         if (imgMarker) imgMarker.src = currentArMarker;
                         if (isArMediaVideo) {
                             if (vidMedia) {
                                 vidMedia.src = currentArMedia;
                                 vidMedia.style.display = 'block';
-                                vidMedia.play().catch(() => {});
+                                vidMedia.play().catch(() => { });
                             }
                             if (imgMedia) imgMedia.style.display = 'none';
                         } else {
@@ -2290,15 +2298,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         qrBox.style.display = 'none';
                     }
                 }
-            } catch(e) {}
+            } catch (e) { }
         }, 1500);
     }
 
     const arBtnPhoneMarker = document.getElementById('ar-btn-phone-marker');
-    const arBtnPhoneMedia  = document.getElementById('ar-btn-phone-media');
-    const arBtnCloseQr     = document.getElementById('ar-btn-close-qr');
+    const arBtnPhoneMedia = document.getElementById('ar-btn-phone-media');
+    const arBtnCloseQr = document.getElementById('ar-btn-close-qr');
     if (arBtnPhoneMarker) arBtnPhoneMarker.addEventListener('click', openArPhoneQrModal);
-    if (arBtnPhoneMedia)  arBtnPhoneMedia.addEventListener('click', openArPhoneQrModal);
+    if (arBtnPhoneMedia) arBtnPhoneMedia.addEventListener('click', openArPhoneQrModal);
     if (arBtnCloseQr) {
         arBtnCloseQr.addEventListener('click', () => {
             const qrBox = document.getElementById('ar-popup-marker-qr');
@@ -2404,7 +2412,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 }
-            } catch(mErr) {
+            } catch (mErr) {
                 console.warn('[MindAR Compiler Warning]', mErr);
             }
 
@@ -2452,7 +2460,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderInstantQR(resultQrEl, arViewerUrl, 260);
             }
 
-        } catch(err) {
+        } catch (err) {
             console.error('[AR Studio] Ошибка создания проекта:', err);
             stopAiProgress();
             alert('Ошибка при создании AR проекта: ' + err.message);
@@ -2461,7 +2469,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ШАГ 1: ОТКРЫТИЕ ПОТОКА (ДЛЯ ОБЫЧНЫХ ШАБЛОНОВ ФОТО/ВИДЕО)
-    window.openKioskFlow = function() {
+    window.openKioskFlow = function () {
         if (modal) modal.style.display = 'flex';
 
         const curTpl = (Array.isArray(masterTemplates) ? masterTemplates : []).find(t => t.id === selectedTemplateId || t.title === selectedStyle);
@@ -2530,7 +2538,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         capturedVideoBlob = null;
         if (mediaRecorder && mediaRecorder.state === 'recording') {
-            try { mediaRecorder.stop(); } catch(e) {}
+            try { mediaRecorder.stop(); } catch (e) { }
         }
         if (videoPreviewConfirm) {
             videoPreviewConfirm.pause();
@@ -2542,7 +2550,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/phone-cam/${phoneCamSessionId}.jpg`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-            }).catch(() => {});
+            }).catch(() => { });
         }
         phoneCamMode = false;
         phoneCamSessionId = null;
@@ -2551,14 +2559,14 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 resultVideo.pause();
                 resultVideo.src = '';
-            } catch(e) {}
+            } catch (e) { }
         }
         const resultAudioPlayer = document.getElementById('result-audio-player');
         if (resultAudioPlayer) {
             try {
                 resultAudioPlayer.pause();
                 resultAudioPlayer.src = '';
-            } catch(e) {}
+            } catch (e) { }
         }
         const resultAudioBox = document.getElementById('result-audio-box');
         if (resultAudioBox) resultAudioBox.style.display = 'none';
@@ -2590,14 +2598,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================================
     //  ПЕРЕКЛЮЧЕНИЕ ИСТОЧНИКА КАМЕРЫ: КИОСК / ТЕЛЕФОН
     // ============================================================
-    const tabKioskCam  = document.getElementById('tab-kiosk-cam');
-    const tabPhoneCam  = document.getElementById('tab-phone-cam');
-    const webcamLiveBox    = document.getElementById('webcam-live-box');
-    const phoneCamPanel    = document.getElementById('phone-cam-panel');
-    const phoneQrImg       = document.getElementById('phone-qr-img');
-    const timerSelectWrap  = document.getElementById('timer-select-wrapper');
-    const snapBtnEl        = document.getElementById('snap-btn');
-    const camSubtitle      = document.getElementById('cam-subtitle');
+    const tabKioskCam = document.getElementById('tab-kiosk-cam');
+    const tabPhoneCam = document.getElementById('tab-phone-cam');
+    const webcamLiveBox = document.getElementById('webcam-live-box');
+    const phoneCamPanel = document.getElementById('phone-cam-panel');
+    const phoneQrImg = document.getElementById('phone-qr-img');
+    const timerSelectWrap = document.getElementById('timer-select-wrapper');
+    const snapBtnEl = document.getElementById('snap-btn');
+    const camSubtitle = document.getElementById('cam-subtitle');
 
     if (tabKioskCam) {
         tabKioskCam.addEventListener('click', () => {
@@ -2639,7 +2647,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${oldPath}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-            }).catch(() => {}); // Игнорируем ошибки удаления
+            }).catch(() => { }); // Игнорируем ошибки удаления
         }
 
         // Генерируем уникальный session ID
@@ -2679,7 +2687,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                     reader.readAsDataURL(blob);
                 }
-            } catch(e) { /* игнорируем сетевые ошибки */ }
+            } catch (e) { /* игнорируем сетевые ошибки */ }
         }, 2000);
     }
 
@@ -2734,7 +2742,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (camModalTitle) camModalTitle.textContent = 'ЗАПИСЬ ВИДЕО';
             if (camSubtitle) camSubtitle.textContent = 'Помашите рукой, улыбнитесь или примите позу — запишем короткий ролик';
-            
+
             // Кнопки длительности видео полностью убраны: длительность совпадает с референсом
             if (timerSelectWrap) timerSelectWrap.style.display = 'none';
             if (timerOptionsContainer) timerOptionsContainer.innerHTML = '';
@@ -2816,7 +2824,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (payAmountVal) payAmountVal.textContent = selectedStylePrice || 290;
-        
+
         const paySubtext = document.querySelector('.pay-subtext');
         if (paySubtext) {
             paySubtext.style.display = 'none';
@@ -2965,7 +2973,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resetCameraStep();
             showStep(stepCamera);
             if (webcamEl && webcamEl.srcObject && webcamEl.paused) {
-                webcamEl.play().catch(() => {});
+                webcamEl.play().catch(() => { });
             }
             startWebcam();
         }
@@ -2975,7 +2983,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (simPayBtn) {
         const handleSimPay = (e) => {
             if (e) {
-                try { e.preventDefault(); } catch(err) {}
+                try { e.preventDefault(); } catch (err) { }
             }
             if (isPaymentSuccessHandled || simPayBtn.disabled) return;
             simPayBtn.disabled = true;
@@ -3122,7 +3130,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 vendor: gl.getParameter(gl.VENDOR) || 'Unknown',
                 renderer: gl.getParameter(gl.RENDERER) || 'Unknown'
             };
-        } catch(e) {
+        } catch (e) {
             return { vendor: 'Error', renderer: e.message };
         }
     }
@@ -3150,20 +3158,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isBasicGpu || currentUiFps <= 12) {
             verdict = `🚨 КРИТИЧЕСКАЯ ПРИЧИНА ТОРМОЗОВ — ОТКЛЮЧЕН GPU (${currentUiFps} FPS ЭКРАНА):\n` +
-                      `Видеочип: "${gpu.renderer}". Браузер рендерит интерфейс и Full HD видео чисто процессором через софтверную эмуляцию, из-за чего процессор перегружен на 100% и выдает 2 FPS!\n` +
-                      `КАК ИСПРАВИТЬ:\n` +
-                      `1. Откройте в Chrome chrome://settings/system и ВКЛЮЧИТЕ пункт "Использовать аппаратное ускорение (при наличии)", затем нажмите Перезапустить.\n` +
-                      `2. Откройте chrome://flags/#ignore-gpu-blocklist, переключите в "Enabled" и нажмите Relaunch.\n` +
-                      `3. Если в chrome://gpu всё еще Basic Render Driver — в Windows не установлен видеодрайвер (Диспетчер устройств -> Видеоадаптеры -> нужен Intel HD Graphics, а не Microsoft Basic Display).`;
+                `Видеочип: "${gpu.renderer}". Браузер рендерит интерфейс и Full HD видео чисто процессором через софтверную эмуляцию, из-за чего процессор перегружен на 100% и выдает 2 FPS!\n` +
+                `КАК ИСПРАВИТЬ:\n` +
+                `1. Откройте в Chrome chrome://settings/system и ВКЛЮЧИТЕ пункт "Использовать аппаратное ускорение (при наличии)", затем нажмите Перезапустить.\n` +
+                `2. Откройте chrome://flags/#ignore-gpu-blocklist, переключите в "Enabled" и нажмите Relaunch.\n` +
+                `3. Если в chrome://gpu всё еще Basic Render Driver — в Windows не установлен видеодрайвер (Диспетчер устройств -> Видеоадаптеры -> нужен Intel HD Graphics, а не Microsoft Basic Display).`;
         } else if (currentCameraFps <= 7 && avgDelta >= 170) {
             verdict = `⚠️ СЕНСОР КАМЕРЫ НА ДЛИННОЙ ВЫДЕРЖКЕ (~${avgDelta} мс на кадр):\n` +
-                      `1. Сенсор UVC-камеры при недостатке света автоматически растянул затвор до ~1/4 сек (250 мс), из-за чего физически не может выдать более ${currentCameraFps} FPS.\n` +
-                      `👉 ТЕСТ СВЕТА: Включите фонарик смартфона и посветите прямо в глазок камеры на 3 секунды. Если FPS сразу подскочит до 25-30 — добавьте свет на киоск!\n` +
-                      `2. Если света достаточно: в Windows Chrome драйвер MediaFoundation часто багует на портах USB 2.0. Перейдите по ссылке chrome://flags/#enable-media-foundation-video-capture, выберите Disabled и нажмите Relaunch.`;
+                `1. Сенсор UVC-камеры при недостатке света автоматически растянул затвор до ~1/4 сек (250 мс), из-за чего физически не может выдать более ${currentCameraFps} FPS.\n` +
+                `👉 ТЕСТ СВЕТА: Включите фонарик смартфона и посветите прямо в глазок камеры на 3 секунды. Если FPS сразу подскочит до 25-30 — добавьте свет на киоск!\n` +
+                `2. Если света достаточно: в Windows Chrome драйвер MediaFoundation часто багует на портах USB 2.0. Перейдите по ссылке chrome://flags/#enable-media-foundation-video-capture, выберите Disabled и нажмите Relaunch.`;
         } else if (currentUiFps < 25) {
             verdict = `⚠️ НИЗКИЙ FPS ИНТЕРФЕЙСА (${currentUiFps} FPS):\n` +
-                      `Сам браузер медленно отрисовывает кадры. GPU: ${gpu.renderer}.\n` +
-                      `Включите в настройках Chrome: Система -> 'Использовать аппаратное ускорение'.`;
+                `Сам браузер медленно отрисовывает кадры. GPU: ${gpu.renderer}.\n` +
+                `Включите в настройках Chrome: Система -> 'Использовать аппаратное ускорение'.`;
         } else if (currentCameraFps >= 24) {
             verdict = `✅ ОТЛИЧНО: Поток плавный (${currentCameraFps} FPS), задержка кадра ~${avgDelta} мс, отрисовка интерфейса ${currentUiFps} FPS.`;
         } else {
@@ -3294,7 +3302,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify(data)
                 });
                 if (res.ok) sent = true;
-            } catch(e) {
+            } catch (e) {
                 console.warn('POST /api/diag err:', e);
             }
 
@@ -3326,7 +3334,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 throw new Error('Сервер не ответил 200 OK');
             }
-        } catch(err) {
+        } catch (err) {
             if (diagSendStatus) {
                 diagSendStatus.style.color = '#ef4444';
                 diagSendStatus.textContent = '❌ Ошибка отправки: ' + err.message + '. Скопируйте текст кнопкой ниже.';
@@ -3454,7 +3462,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const devs = await navigator.mediaDevices.enumerateDevices();
                 availableVideoDevices = devs.filter(d => d.kind === 'videoinput');
-            } catch(e) {
+            } catch (e) {
                 console.warn('Ошибка enumerateDevices:', e);
             }
 
@@ -3469,7 +3477,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (webcamEl.srcObject !== mediaStream) webcamEl.srcObject = mediaStream;
                     webcamEl.muted = true;
                     webcamEl.defaultMuted = true;
-                    webcamEl.play().catch(() => {});
+                    webcamEl.play().catch(() => { });
                 }
                 return;
             }
@@ -3500,7 +3508,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         audio: false,
                         video: chosenDeviceId ? { deviceId: { ideal: chosenDeviceId } } : true
                     });
-                } catch(errBasic) {
+                } catch (errBasic) {
                     openedStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
                 }
             }
@@ -3514,7 +3522,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const refreshed = await navigator.mediaDevices.enumerateDevices();
                 availableVideoDevices = refreshed.filter(d => d.kind === 'videoinput');
-            } catch(e) {}
+            } catch (e) { }
 
             let currentTrack = (mediaStream && mediaStream.getVideoTracks()) ? mediaStream.getVideoTracks()[0] : null;
 
@@ -3538,7 +3546,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         currentTrack = mediaStream.getVideoTracks()[0];
                         localStorage.setItem('kiosk_camera_device_id', realBestCam.deviceId);
                     }
-                } catch(camErr) {
+                } catch (camErr) {
                     console.warn('Не удалось переключиться на лучшую камеру, остаёмся на открытой:', camErr);
                 }
             }
@@ -3563,7 +3571,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (currentTrack) {
-                currentDeviceIndex = availableVideoDevices.findIndex(d => 
+                currentDeviceIndex = availableVideoDevices.findIndex(d =>
                     (currentTrack.label && d.label === currentTrack.label)
                 );
                 if (currentDeviceIndex === -1) currentDeviceIndex = 0;
@@ -3607,7 +3615,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
                     if (webcamEl.paused || webcamEl.readyState < 2) {
-                        webcamEl.play().catch(() => {});
+                        webcamEl.play().catch(() => { });
                     } else {
                         clearInterval(playWatchdog);
                     }
@@ -3685,7 +3693,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Гарантия снятия блокировки автовоспроизведения видео при любом клике или тапе
     const kickWebcamPlayback = () => {
         if (webcamEl && webcamEl.srcObject && webcamEl.paused) {
-            webcamEl.play().catch(() => {});
+            webcamEl.play().catch(() => { });
         }
     };
     window.addEventListener('pointerdown', kickWebcamPlayback, { passive: true });
@@ -3695,7 +3703,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. SNAP PHOTO / RECORD VIDEO, COUNTDOWN И ПОДТВЕРЖДЕНИЕ ГОСТЕМ
     snapBtn.addEventListener('click', () => {
         if (webcamEl && webcamEl.paused) {
-            webcamEl.play().catch(() => {});
+            webcamEl.play().catch(() => { });
         }
         snapBtn.disabled = true;
 
@@ -3718,7 +3726,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const preTimer = setInterval(() => {
                 if (webcamEl && webcamEl.paused) {
-                    webcamEl.play().catch(() => {});
+                    webcamEl.play().catch(() => { });
                 }
                 count--;
                 if (count > 0) {
@@ -3738,7 +3746,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const timer = setInterval(() => {
             if (webcamEl && webcamEl.paused) {
-                webcamEl.play().catch(() => {});
+                webcamEl.play().catch(() => { });
             }
             count--;
             if (count > 0) {
@@ -3779,7 +3787,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const mime = getSupportedVideoMimeType();
         try {
             mediaRecorder = mime ? new MediaRecorder(mediaStream, { mimeType: mime }) : new MediaRecorder(mediaStream);
-        } catch(err) {
+        } catch (err) {
             console.warn('Fallback к стандартному MediaRecorder:', err);
             mediaRecorder = new MediaRecorder(mediaStream);
         }
@@ -3949,7 +3957,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
                 }
-            } catch(err) {
+            } catch (err) {
                 console.warn('[Roast Pipeline Error]', err);
                 clearInterval(rInterval);
                 stopAiProgress();
@@ -3959,15 +3967,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const isMotionControl = false; // Kling Motion Control удалён
 
         const isMusicSelection = selectedStyleModel === 'suno' ||
-                                selectedStyleModel.includes('suno') ||
-                                selectedStyleModel.includes('music') ||
-                                (selectedStyleCategory && ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА'].includes(selectedStyleCategory.toUpperCase()));
+            selectedStyleModel.includes('suno') ||
+            selectedStyleModel.includes('music') ||
+            (selectedStyleCategory && ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА'].includes(selectedStyleCategory.toUpperCase()));
 
         const isVideoSelection = !isMusicSelection && (
-                                selectedStyleModel === 'omni-flash' ||
-                                selectedStyleModel.includes('omni') ||
-                                selectedStyleModel.includes('gemini') ||
-                                selectedStyleModel.includes('video'));
+            selectedStyleModel === 'omni-flash' ||
+            selectedStyleModel.includes('omni') ||
+            selectedStyleModel.includes('gemini') ||
+            selectedStyleModel.includes('video'));
 
         const genTitle = isMusicSelection ? 'СОЗДАНИЕ ПЕСНИ' : isMotionControl ? 'СОЗДАНИЕ ТАНЦА' : isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
         resetAiProgress(genTitle, selectedStyleModel, currentAiResolution);
@@ -4042,7 +4050,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     console.warn('[Kiosk Video] Ошибка загрузки видео в Supabase:', uploadRes.status);
                 }
-            } catch(e) {
+            } catch (e) {
                 console.warn('[Kiosk Video] Ошибка при загрузке видео гостя:', e);
             }
         }
@@ -4051,33 +4059,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const aggregatorUrl = localStorage.getItem('kiosk_aggregator_url') || '';
             const aggregatorKey = localStorage.getItem('kiosk_aggregator_key') || '';
 
-                    let finalPrompt = selectedStylePrompt;
-                    let finalTitle = selectedStyle;
-                    if (isMusicSelection && guestMusicTheme) {
-                        finalPrompt = `${selectedStylePrompt}. Тема и посвящение песни: ${guestMusicTheme}. Песня написана персонально для: ${guestMusicTheme}.`;
-                        finalTitle = `${guestMusicTheme} (${selectedStyle})`;
-                    }
+            let finalPrompt = selectedStylePrompt;
+            let finalTitle = selectedStyle;
+            if (isMusicSelection && guestMusicTheme) {
+                finalPrompt = `${selectedStylePrompt}. Тема и посвящение песни: ${guestMusicTheme}. Песня написана персонально для: ${guestMusicTheme}.`;
+                finalTitle = `${guestMusicTheme} (${selectedStyle})`;
+            }
 
-                    const resp = await fetch('/api/ai/generate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            photoData: capturedPhotoData,
-                            videoUrl: guestVideoUrl,
-                            guestVideoUrl: guestVideoUrl,
-                            templateImg: selectedStylePhoto,
-                            prompt: finalPrompt,
-                            model: selectedStyleModel || 'chatgpt-2',
-                            title: finalTitle,
-                            price: selectedStylePrice,
-                            orderId: currentOrderId,
-                            location: selectedStyleLocation,
-                            isTryOn: isTryOnMode,
-                            resolution: '1K',
-                            aggregatorUrl,
-                            aggregatorKey
-                        })
-                    });
+            const resp = await fetch('/api/ai/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    photoData: capturedPhotoData,
+                    videoUrl: guestVideoUrl,
+                    guestVideoUrl: guestVideoUrl,
+                    templateImg: selectedStylePhoto,
+                    prompt: finalPrompt,
+                    model: selectedStyleModel || 'chatgpt-2',
+                    title: finalTitle,
+                    price: selectedStylePrice,
+                    orderId: currentOrderId,
+                    location: selectedStyleLocation,
+                    isTryOn: isTryOnMode,
+                    resolution: '1K',
+                    aggregatorUrl,
+                    aggregatorKey
+                })
+            });
 
             if (resp.ok) {
                 const data = await resp.json();
@@ -4126,10 +4134,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             ? musicPollStatuses
                             : isMotionControl
                                 ? motionPollStatuses
-                                : isVideoTask 
-                                    ? videoPollStatuses 
-                                    : (isTryOnMode || selectedStyleModel === 'nano-banana-2') 
-                                        ? tryOnPollStatuses 
+                                : isVideoTask
+                                    ? videoPollStatuses
+                                    : (isTryOnMode || selectedStyleModel === 'nano-banana-2')
+                                        ? tryOnPollStatuses
                                         : photoPollStatuses;
 
                         let pollIdx = 0;
@@ -4238,26 +4246,25 @@ document.addEventListener('DOMContentLoaded', () => {
         await finishAiProgress();
 
         const isAudioResult = typeof finalResultUrl === 'string' && (
-            finalResultUrl.endsWith('.mp3') || 
-            finalResultUrl.endsWith('.wav') || 
-            finalResultUrl.endsWith('.m4a') || 
-            finalResultUrl.includes('/audio/') || 
+            finalResultUrl.endsWith('.mp3') ||
+            finalResultUrl.endsWith('.wav') ||
+            finalResultUrl.endsWith('.m4a') ||
+            finalResultUrl.includes('/audio/') ||
             finalResultUrl.includes('.mp3?') ||
             finalResultUrl.includes('.wav?') ||
             isMusicSelection
         );
 
         const isVideoResult = !isAudioResult && typeof finalResultUrl === 'string' && (
-            finalResultUrl.endsWith('.mp4') || 
-            finalResultUrl.endsWith('.webm') || 
-            finalResultUrl.includes('/video/') || 
+            finalResultUrl.endsWith('.mp4') ||
+            finalResultUrl.endsWith('.webm') ||
+            finalResultUrl.includes('/video/') ||
             finalResultUrl.includes('.mp4?') ||
             finalResultUrl.includes('.webm?')
         );
 
         const resultAudioBox = document.getElementById('result-audio-box');
         const resultAudioPlayer = document.getElementById('result-audio-player');
-        const resultAudioCover = document.getElementById('result-audio-cover');
         const resultAudioTitle = document.getElementById('result-audio-title');
         const resultAudioGenre = document.getElementById('result-audio-genre');
 
@@ -4269,9 +4276,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             resultAudioBox.style.display = 'flex';
             resultAudioPlayer.src = finalResultUrl;
-            if (resultAudioCover) {
-                resultAudioCover.src = capturedPhotoData || selectedStylePhoto || 'assets/hero_portrait.jpg';
-            }
             if (resultAudioTitle) {
                 resultAudioTitle.textContent = guestMusicTheme ? guestMusicTheme : (selectedStyle || 'ВАШ ПЕРСОНАЛЬНЫЙ ТРЕК');
             }
@@ -4290,7 +4294,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 variantSwitcher.style.display = 'flex';
                 const setVariant = (idx) => {
                     resultAudioPlayer.src = finalAudioUrls[idx];
-                    resultAudioPlayer.play().catch(e => {});
+                    resultAudioPlayer.play().catch(e => { });
                     const activeStyle = 'linear-gradient(135deg, #a855f7, #ec4899)';
                     btnVar1.style.background = idx === 0 ? activeStyle : 'transparent';
                     btnVar1.style.color = idx === 0 ? '#fff' : '#aaa';
@@ -4441,7 +4445,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isNaN(val) && val >= 3) {
                 return val * 1000;
             }
-        } catch(e) {}
+        } catch (e) { }
         return 5000; // по умолчанию 5 секунд
     }
 
@@ -4487,24 +4491,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (data.main_header) {
                     mainHeaderConfig = data.main_header;
-                    try { localStorage.setItem('kiosk_main_header_v1', JSON.stringify(data.main_header)); } catch(e){}
+                    try { localStorage.setItem('kiosk_main_header_v1', JSON.stringify(data.main_header)); } catch (e) { }
                 }
                 if (Array.isArray(data.main_cards) && data.main_cards.length > 0) {
                     mainCardsConfig = normalizeMainCards(data.main_cards);
-                    try { localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCardsConfig)); } catch(e){}
+                    try { localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCardsConfig)); } catch (e) { }
                     renderMainCards();
                 }
 
                 if (Array.isArray(data.ads_top) && data.ads_top.length > 0) {
                     topPlaylist = data.ads_top;
-                    try { localStorage.setItem('kiosk_ads_top', JSON.stringify(data.ads_top)); } catch(e){}
+                    try { localStorage.setItem('kiosk_ads_top', JSON.stringify(data.ads_top)); } catch (e) { }
                 }
                 if (Array.isArray(data.ads_bottom) && data.ads_bottom.length > 0) {
                     bottomPlaylist = data.ads_bottom;
-                    try { localStorage.setItem('kiosk_ads_bottom', JSON.stringify(data.ads_bottom)); } catch(e){}
+                    try { localStorage.setItem('kiosk_ads_bottom', JSON.stringify(data.ads_bottom)); } catch (e) { }
                 }
                 if (data.attract_timeout) {
-                    try { localStorage.setItem('kiosk_attract_timeout', data.attract_timeout); } catch(e){}
+                    try { localStorage.setItem('kiosk_attract_timeout', data.attract_timeout); } catch (e) { }
+                }
+                if (data.music_price) {
+                    try {
+                        localStorage.setItem('kiosk_music_price', data.music_price.toString());
+                        const createBtn = document.getElementById('music-theme-create-btn');
+                        if (createBtn) {
+                            createBtn.innerHTML = `🎵 СОЗДАТЬ ТРЕК • ${data.music_price} СОМ ➔`;
+                        }
+                    } catch (e) { }
                 }
                 if (Array.isArray(data.templates) && data.templates.length > 0) {
                     masterTemplates = normalizeTemplates(data.templates, mainCardsConfig);
@@ -4518,27 +4531,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (Array.isArray(data.categories)) {
                     kioskCategories = data.categories;
-                    try { localStorage.setItem('kiosk_categories_v2', JSON.stringify(data.categories)); } catch(e){}
+                    try { localStorage.setItem('kiosk_categories_v2', JSON.stringify(data.categories)); } catch (e) { }
                     renderCategoryPillsBar();
                 }
                 if (data.finik_account_id) {
-                    try { localStorage.setItem('kiosk_finik_account_id', data.finik_account_id); } catch(e){}
+                    try { localStorage.setItem('kiosk_finik_account_id', data.finik_account_id); } catch (e) { }
                 }
                 if (data.finik_pos_id) {
-                    try { localStorage.setItem('kiosk_finik_pos_id', data.finik_pos_id); } catch(e){}
+                    try { localStorage.setItem('kiosk_finik_pos_id', data.finik_pos_id); } catch (e) { }
                 }
                 if (data.finik_merchant_name) {
-                    try { localStorage.setItem('kiosk_finik_merchant_name', data.finik_merchant_name); } catch(e){}
+                    try { localStorage.setItem('kiosk_finik_merchant_name', data.finik_merchant_name); } catch (e) { }
                 }
                 if (data.finik_static_qr) {
-                    try { localStorage.setItem('kiosk_finik_static_qr', data.finik_static_qr); } catch(e){}
+                    try { localStorage.setItem('kiosk_finik_static_qr', data.finik_static_qr); } catch (e) { }
                 }
                 if (data.finik_qr_img) {
-                    try { localStorage.setItem('kiosk_finik_qr_img', data.finik_qr_img); } catch(e){}
+                    try { localStorage.setItem('kiosk_finik_qr_img', data.finik_qr_img); } catch (e) { }
                 }
                 console.log('☁️ Авто-синхронизация Supabase: обновлены шаблоны и настройки на устройстве (' + (data.templates ? data.templates.length : 0) + ' шт.)');
             }
-        } catch(e) {
+        } catch (e) {
             console.warn('Cloud config fetch skipped/offline:', e);
         } finally {
             isSyncingCloud = false;
@@ -4553,7 +4566,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const parsed = JSON.parse(data);
                 if (Array.isArray(parsed) && parsed.length > 0) return parsed;
             }
-        } catch(e) {}
+        } catch (e) { }
         return defaultTopPlaylist;
     }
 
@@ -4564,7 +4577,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const parsed = JSON.parse(data);
                 if (Array.isArray(parsed) && parsed.length > 0) return parsed;
             }
-        } catch(e) {}
+        } catch (e) { }
         return defaultBottomPlaylist;
     }
 
@@ -4720,7 +4733,7 @@ document.addEventListener('DOMContentLoaded', () => {
             attractOverlay.classList.remove('hidden');
             attractOverlay.style.display = 'flex';
         }
-        
+
         topIndex = 0;
         bottomIndex = 0;
         playTopPlaylistNext();
@@ -4736,7 +4749,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (v2) v2.pause();
     }
 
-    window.hideAttractScreen = function() {
+    window.hideAttractScreen = function () {
         const attractOverlay = document.getElementById('attract-overlay');
         if (attractOverlay && (attractOverlay.style.display === 'flex' || !attractOverlay.classList.contains('hidden'))) {
             isAttractClosing = true;

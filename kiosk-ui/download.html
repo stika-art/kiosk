@@ -229,12 +229,45 @@
             gap: 14px;
         }
 
-        .audio-cover {
-            width: 180px;
-            height: 180px;
-            border-radius: 16px;
-            object-fit: cover;
-            box-shadow: 0 8px 30px rgba(168, 85, 247, 0.4);
+        .audio-neon-visualizer {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            background: radial-gradient(circle, rgba(168,85,247,0.35) 0%, rgba(236,72,153,0.15) 60%, rgba(0,0,0,0.8) 100%);
+            border: 2px solid rgba(168,85,247,0.65);
+            box-shadow: 0 0 30px rgba(168,85,247,0.45);
+        }
+
+        .m-wave-box {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 5px;
+            height: 44px;
+            margin-bottom: 6px;
+        }
+
+        .m-wave-bar {
+            width: 5px;
+            height: 24px;
+            background: linear-gradient(to top, #ec4899, #a855f7);
+            border-radius: 3px;
+            animation: mEqPulse 0.9s ease-in-out infinite alternate;
+        }
+
+        .m-wave-bar:nth-child(2) { height: 40px; animation-duration: 0.7s; animation-delay: 0.15s; }
+        .m-wave-bar:nth-child(3) { height: 30px; animation-duration: 1.1s; animation-delay: 0.3s; }
+        .m-wave-bar:nth-child(4) { height: 44px; animation-duration: 0.8s; animation-delay: 0.1s; }
+        .m-wave-bar:nth-child(5) { height: 20px; animation-duration: 1.0s; animation-delay: 0.25s; }
+
+        @keyframes mEqPulse {
+            0% { height: 8px; opacity: 0.5; }
+            100% { height: 44px; opacity: 1; }
         }
 
         .audio-title {
@@ -306,7 +339,16 @@
 
         <!-- Аудио-блок (показывается при mode=audio) -->
         <div class="audio-box" id="audio-box">
-            <img class="audio-cover" id="dl-audio-cover" src="" alt="Обложка">
+            <div class="audio-neon-visualizer">
+                <div class="m-wave-box">
+                    <span class="m-wave-bar"></span>
+                    <span class="m-wave-bar"></span>
+                    <span class="m-wave-bar"></span>
+                    <span class="m-wave-bar"></span>
+                    <span class="m-wave-bar"></span>
+                </div>
+                <span style="font-size: 9px; font-weight: 900; letter-spacing: 1.5px; color: #c084fc;">SUNO V6 • HI-FI</span>
+            </div>
             <div class="audio-title" id="dl-audio-title">ВАШ ПЕРСОНАЛЬНЫЙ ТРЕК</div>
             <div class="audio-genre" id="dl-audio-genre">🎵 Suno AI • Персональный хит</div>
             <audio id="dl-audio-player" controls></audio>
@@ -397,7 +439,6 @@
                 audioBox.style.display = 'flex';
 
                 const audioPlayer    = document.getElementById('dl-audio-player');
-                const audioCover     = document.getElementById('dl-audio-cover');
                 const audioTitle     = document.getElementById('dl-audio-title');
                 const audioGenre     = document.getElementById('dl-audio-genre');
                 const variantsBox    = document.getElementById('dl-audio-variants');
