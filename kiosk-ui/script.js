@@ -16,6 +16,7 @@ let isSelectingCard = false;
 let isAttractClosing = false;
 let currentCategory = 'ФОТО';
 let activeTemplateIndex = 0;
+let selectedStyleCategory = '';
 
 // УПРАВЛЕНИЕ РАЗРЕШЕНИЕМ ГЕНЕРАЦИИ (СТРОГО 1K ДЛЯ МАКСИМАЛЬНОЙ СКОРОСТИ 5-8 СЕК)
 let currentAiResolution = '1K';
@@ -1568,6 +1569,7 @@ function renderGridTemplates() {
             selectedStyle = item.title;
             selectedStylePhoto = item.img;
             selectedStylePrice = itemPrice;
+            selectedStyleCategory = item.category || '';
             selectedStyleLocation = item.location || '';
             selectedStyleResolution = item.resolution || '2K';
             setAiResolution(selectedStyleResolution);
@@ -2606,6 +2608,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentOrderId = null;
         isAiGenerating = false;
         isPaymentSuccessHandled = false;
+        selectedStyleCategory = '';
     }
 
     // ============================================================
@@ -2956,38 +2959,48 @@ document.addEventListener('DOMContentLoaded', () => {
         stopPaymentPolling();
         if (simPayBtn) simPayBtn.disabled = true;
 
-        const isArPaid = selectedStyleModel === 'ar-studio' || selectedStyleCategory === 'AR';
-        if (isArPaid) {
-            if (paymentStatusText) {
-                paymentStatusText.textContent = '✅ Оплата получена! Создаем AR проект...';
-            }
-            showStep(stepProcessing);
-            runArProjectGeneration();
-            return;
-        }
+        try {
+            const catUp = (typeof selectedStyleCategory === 'string') ? selectedStyleCategory.toUpperCase() : '';
+            const modelLow = (typeof selectedStyleModel === 'string') ? selectedStyleModel.toLowerCase() : '';
 
-        const isMusicPaid = selectedStyleModel === 'suno' ||
-            (selectedStyleModel && selectedStyleModel.includes('suno')) ||
-            (selectedStyleModel && selectedStyleModel.includes('music')) ||
-            (selectedStyleCategory && ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'МУЗЫКА'].includes(selectedStyleCategory.toUpperCase()));
+            const isArPaid = modelLow === 'ar-studio' || catUp === 'AR';
+            if (isArPaid) {
+                if (paymentStatusText) {
+                    paymentStatusText.textContent = '✅ Оплата получена! Создаем AR проект...';
+                }
+                showStep(stepProcessing);
+                runArProjectGeneration();
+                return;
+            }
 
-        if (isMusicPaid) {
-            // Для музыки камера не нужна — сразу запускаем генерацию
-            if (paymentStatusText) {
-                paymentStatusText.textContent = '✅ Оплата получена! Запускаем генерацию...';
+            const isMusicPaid = modelLow === 'suno' ||
+                modelLow.includes('suno') ||
+                modelLow.includes('music') ||
+                ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'МУЗЫКА'].includes(catUp);
+
+            if (isMusicPaid) {
+                // Для музыки камера не нужна — сразу запускаем генерацию
+                if (paymentStatusText) {
+                    paymentStatusText.textContent = '✅ Оплата получена! Запускаем генерацию...';
+                }
+                showStep(stepProcessing);
+                runAIGeneration();
+            } else {
+                // Для фото/видео — открываем камеру
+                if (paymentStatusText) {
+                    paymentStatusText.textContent = '✅ Оплата получена! Включаем камеру...';
+                }
+                resetCameraStep();
+                showStep(stepCamera);
+                if (webcamEl && webcamEl.srcObject && webcamEl.paused) {
+                    webcamEl.play().catch(() => { });
+                }
+                startWebcam();
             }
-            showStep(stepProcessing);
-            runAIGeneration();
-        } else {
-            // Для фото/видео — открываем камеру
-            if (paymentStatusText) {
-                paymentStatusText.textContent = '✅ Оплата получена! Включаем камеру...';
-            }
+        } catch (err) {
+            console.error('[Payment] Ошибка в handlePaymentSuccess, fallback на камеру:', err);
             resetCameraStep();
             showStep(stepCamera);
-            if (webcamEl && webcamEl.srcObject && webcamEl.paused) {
-                webcamEl.play().catch(() => { });
-            }
             startWebcam();
         }
     }
