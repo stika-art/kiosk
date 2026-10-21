@@ -1268,7 +1268,7 @@ function isMusicTemplate(tpl) {
 let activeGridTab = 'ВСЕ';
 
 // 1. ВЫБОР КАРТОЧКИ — МГНОВЕННОЕ ОТКРЫТИЕ 2-КОЛОНОЧНОЙ СЕТКИ ШАБЛОНОВ
-window.selectCard = function (cardEl, cardIdOrMode) {
+function selectCard(cardEl, cardIdOrMode) {
     if (isSelectingCard || isAttractClosing) return;
     isSelectingCard = true;
 
@@ -1402,6 +1402,7 @@ function openTemplateGallery(cardIdOrMode) {
     switchGridCategory('ВСЕ');
     if (modal) modal.classList.remove('hidden');
 }
+window.selectCard = selectCard;
 
 function closeTemplateGallery() {
     const modal = document.getElementById('template-modal');
