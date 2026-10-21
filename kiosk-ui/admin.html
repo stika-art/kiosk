@@ -2274,27 +2274,26 @@
     }
 ];
 
+        let deletedTemplateIds = [];
+        try {
+            const rawDel = localStorage.getItem('kiosk_deleted_templates');
+            if (rawDel) deletedTemplateIds = JSON.parse(rawDel);
+            if (!Array.isArray(deletedTemplateIds)) deletedTemplateIds = [];
+        } catch(e) {
+            deletedTemplateIds = [];
+        }
+
         function getStoredTemplates() {
             try {
                 const tpls = localStorage.getItem('kiosk_templates_v2');
                 if (tpls) {
                     const parsed = JSON.parse(tpls);
                     if (Array.isArray(parsed) && parsed.length > 0) {
-                        // Автоматически добавляем любые новые стандартные шаблоны, которых ещё нет в списке
-                        const existingIds = new Set(parsed.map(t => Number(t.id)));
-                        const missingDefaults = DEFAULT_KIOSK_TEMPLATES.filter(dt => !existingIds.has(Number(dt.id)));
-                        if (missingDefaults.length > 0) {
-                            const merged = parsed.concat(missingDefaults);
-                            try {
-                                localStorage.setItem('kiosk_templates_v2', JSON.stringify(merged));
-                            } catch(e) {}
-                            return merged;
-                        }
-                        return parsed;
+                        return parsed.filter(t => t && !deletedTemplateIds.includes(String(t.id)));
                     }
                 }
             } catch(e) {}
-            return JSON.parse(JSON.stringify(DEFAULT_KIOSK_TEMPLATES));
+            return JSON.parse(JSON.stringify(DEFAULT_KIOSK_TEMPLATES)).filter(t => t && !deletedTemplateIds.includes(String(t.id)));
         }
 
         function getStoredTopAds() {
@@ -2456,6 +2455,7 @@
                 if (st.includes('ПРИГЛАС')) return false;
                 if (c.includes('ПРИГЛАС') || c === 'СВАДЬБА' || c === 'КЫЗ УЗАТУУ' || c === 'ЮБИЛЕЙ' || c === 'СУННОТ ТОЙ') return false;
                 if (title.includes('WEDDING') || title.includes('КЫЗ УЗАТУУ') || title.includes('JUBILEE LUXURY')) return false;
+                if (deletedTemplateIds.includes(String(t.id))) return false;
                 return true;
             });
 
@@ -2649,7 +2649,6 @@
                 } else {
                     renderTplSectionTabs();
                     renderTemplates();
-                    updateHtmlCodeVisibility();
                 }
             } else {
                 if (subMenu) subMenu.style.display = 'none';
@@ -2935,7 +2934,7 @@
             subMenu.appendChild(allBtn);
 
             mainCards.forEach(c => {
-                const count = templates.filter(t => t.sectionId === c.id).length;
+                const count = templates.filter(t => Number(t.sectionId) === Number(c.id)).length;
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = `sidebar-sub-item ${activeTplFilterSectionId === c.id ? 'active' : ''}`;
@@ -2965,7 +2964,7 @@
 
             // 2. Кнопки для каждого раздела (Фото, Видео, Тренды, Примерка)
             mainCards.forEach(c => {
-                const count = templates.filter(t => t.sectionId === c.id).length;
+                const count = templates.filter(t => Number(t.sectionId) === Number(c.id)).length;
                 const chip = document.createElement('div');
                 chip.className = `section-tab-chip ${activeTplFilterSectionId === c.id ? 'active' : ''}`;
                 chip.onclick = () => selectTplSection(c.id);
@@ -3478,13 +3477,13 @@
             if (activeTplFilterSectionId !== 'ALL') {
                 // Показываем конкретный выбранный раздел (Фото, Видео, Тренды, Примерка)
                 const card = mainCards.find(c => c.id === Number(activeTplFilterSectionId)) || mainCards[0];
-                const sectionItems = templates.filter(t => t.sectionId === card.id);
+                const sectionItems = templates.filter(t => Number(t.sectionId) === Number(card.id));
                 const cardEl = buildSectionGroupCard(card, sectionItems, true);
                 container.appendChild(cardEl);
             } else {
                 // Показываем все разделы, но аккуратно разделенные по отдельным блокам-карточкам!
                 mainCards.forEach(c => {
-                    const sectionItems = templates.filter(t => t.sectionId === c.id);
+                    const sectionItems = templates.filter(t => Number(t.sectionId) === Number(c.id));
                     const cardEl = buildSectionGroupCard(c, sectionItems, false);
                     container.appendChild(cardEl);
                 });
@@ -3603,10 +3602,10 @@
                         </td>
                         <td><span class="price-badge">${priceVal} сом</span></td>
                         <td style="text-align: right; white-space: nowrap;">
-                            <button class="btn-move" onclick="moveTemplateInSection(${tpl.id}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
-                            <button class="btn-move" onclick="moveTemplateInSection(${tpl.id}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
-                            <button class="btn-edit" onclick="editTemplate(${tpl.id})" title="Редактировать">✏️ Ред.</button>
-                            <button class="btn-del" onclick="deleteTemplate(${tpl.id})">Удалить</button>
+                            <button class="btn-move" onclick="moveTemplateInSection('${tpl.id}', -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
+                            <button class="btn-move" onclick="moveTemplateInSection('${tpl.id}', 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
+                            <button class="btn-edit" onclick="editTemplate('${tpl.id}')" title="Редактировать">✏️ Ред.</button>
+                            <button class="btn-del" onclick="deleteTemplate('${tpl.id}')">Удалить</button>
                         </td>
                     `;
                 } else {
@@ -3626,10 +3625,10 @@
                         <td><div class="prompt-preview-cell" title="${promptEscaped}">${promptText}</div></td>
                         <td><span class="price-badge">${priceVal} сом</span></td>
                         <td style="text-align: right; white-space: nowrap;">
-                            <button class="btn-move" onclick="moveTemplateInSection(${tpl.id}, -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
-                            <button class="btn-move" onclick="moveTemplateInSection(${tpl.id}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
-                            <button class="btn-edit" onclick="editTemplate(${tpl.id})" title="Редактировать">✏️ Ред.</button>
-                            <button class="btn-del" onclick="deleteTemplate(${tpl.id})">Удалить</button>
+                            <button class="btn-move" onclick="moveTemplateInSection('${tpl.id}', -1)" ${idx === 0 ? 'disabled' : ''} title="Переместить выше">▲</button>
+                            <button class="btn-move" onclick="moveTemplateInSection('${tpl.id}', 1)" ${idx === items.length - 1 ? 'disabled' : ''} title="Переместить ниже">▼</button>
+                            <button class="btn-edit" onclick="editTemplate('${tpl.id}')" title="Редактировать">✏️ Ред.</button>
+                            <button class="btn-del" onclick="deleteTemplate('${tpl.id}')">Удалить</button>
                         </td>
                     `;
                 }
@@ -3944,7 +3943,15 @@
                 cancelTemplateEdit();
             }
 
-            templates = templates.filter(t => String(t.id) !== String(id) && Number(t.id) !== Number(id));
+            const strId = String(id);
+            if (!deletedTemplateIds.includes(strId)) {
+                deletedTemplateIds.push(strId);
+                try {
+                    localStorage.setItem('kiosk_deleted_templates', JSON.stringify(deletedTemplateIds));
+                } catch(e) {}
+            }
+
+            templates = templates.filter(t => String(t.id) !== strId && Number(t.id) !== Number(id));
 
             try {
                 localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
@@ -3952,9 +3959,14 @@
                 console.warn('LocalStorage save error:', e);
             }
 
+            // МГНОВЕННО скрываем удаленный шаблон из интерфейса
+            renderTplSectionTabs();
+            renderSidebarTplSubMenu();
+            renderTemplates();
+
             const status = document.getElementById('tpl-status');
             if (status) {
-                status.textContent = `⏳ Удаление "${title}" из облака Supabase...`;
+                status.textContent = `⏳ Синхронизация удаления "${title}" с облаком...`;
                 status.className = 'status-msg';
             }
 
@@ -3972,10 +3984,6 @@
                     status.className = 'status-msg error';
                 }
             }
-
-            renderTplSectionTabs();
-            renderSidebarTplSubMenu();
-            renderTemplates();
         }
 
         // =============================================
@@ -4999,6 +5007,7 @@
                     ads_top: topAds,
                     ads_bottom: bottomAds,
                     templates: templates,
+                    deleted_template_ids: deletedTemplateIds,
                     categories: categories,
                     attract_timeout: localStorage.getItem('kiosk_attract_timeout') || '5',
                     music_price: localStorage.getItem('kiosk_music_price') || '290',
@@ -5083,8 +5092,12 @@
                         renderBottomAds();
                         changed = true;
                     }
+                    if (Array.isArray(data.deleted_template_ids) && data.deleted_template_ids.length > 0) {
+                        deletedTemplateIds = Array.from(new Set([...deletedTemplateIds, ...data.deleted_template_ids.map(String)]));
+                        try { localStorage.setItem('kiosk_deleted_templates', JSON.stringify(deletedTemplateIds)); } catch(e){}
+                    }
                     if (Array.isArray(data.templates) && data.templates.length > 0) {
-                        templates = normalizeTemplates(data.templates, mainCards);
+                        templates = normalizeTemplates(data.templates, mainCards).filter(t => t && !deletedTemplateIds.includes(String(t.id)));
                         try {
                             localStorage.setItem('kiosk_templates_v2', JSON.stringify(templates));
                         } catch (e) {
