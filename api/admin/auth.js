@@ -105,6 +105,6 @@ module.exports = async (req, res) => {
         return res.status(405).json({ success: false, error: 'Метод не поддерживается' });
     } catch (err) {
         console.error('[Admin Auth Error]', err);
-        return res.status(500).json({ success: false, error: 'Внутренняя ошибка сервера' });
+        return res.status(500).json({ success: false, error: 'Внутренняя ошибка сервера: ' + err.message, stack: err.stack });
     }
 };
