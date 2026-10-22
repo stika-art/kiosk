@@ -40,10 +40,15 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
+    let body = {};
     try {
-        const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-        const query = req.query || {};
+        body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    } catch (e) {
+        body = {};
+    }
 
+    try {
+        const query = req.query || {};
         const action = body.action || query.action || 'login';
 
         // 1. Проверка существующего токена сессии
@@ -105,6 +110,6 @@ module.exports = async (req, res) => {
         return res.status(405).json({ success: false, error: 'Метод не поддерживается' });
     } catch (err) {
         console.error('[Admin Auth Error]', err);
-        return res.status(500).json({ success: false, error: 'Внутренняя ошибка сервера: ' + err.message, stack: err.stack });
+        return res.status(500).json({ success: false, error: 'Внутренняя ошибка сервера: ' + err.message });
     }
 };
