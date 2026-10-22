@@ -1513,7 +1513,10 @@
                             <h2 class="card-title">🎙️ Иностранные / Русские голоса ElevenLabs</h2>
                             <p class="card-subtitle">Введите Voice ID из библиотеки ElevenLabs. При создании сказки на русском языке система случайно выбирает один из активных Voice ID.</p>
                         </div>
-                        <button class="btn-primary" type="button" onclick="addFairytaleVoice('foreign')">+ Добавить Voice ID</button>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button class="btn-primary" type="button" onclick="addFairytaleVoice('foreign')">+ Добавить Voice ID</button>
+                            <button class="btn-upload" type="button" onclick="saveFairytaleVoices()">💾 Сохранить в облако</button>
+                        </div>
                     </div>
                 </div>
 
@@ -1541,7 +1544,10 @@
                             <h2 class="card-title">🇰🇬 Кыргызские голоса ElevenLabs (Кыргыз тилиндеги үндөр)</h2>
                             <p class="card-subtitle">Введите Voice ID дикторов для кыргызского языка. Когда гость в киоске выбирает «Кыргызча», система случайно выбирает Voice ID строго из этого списка.</p>
                         </div>
-                        <button class="btn-primary" type="button" onclick="addFairytaleVoice('kyrgyz')">+ Добавить Voice ID</button>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button class="btn-primary" type="button" onclick="addFairytaleVoice('kyrgyz')">+ Добавить Voice ID</button>
+                            <button class="btn-upload" type="button" onclick="saveFairytaleVoices()">💾 Сохранить в облако</button>
+                        </div>
                     </div>
                 </div>
 
@@ -5280,15 +5286,23 @@
                         const input = document.getElementById('music-price-input');
                         if (input && !input.value) input.value = data.music_price;
                     }
-                    if (Array.isArray(data.fairytale_voices_foreign)) {
-                        fairytaleVoicesForeign = data.fairytale_voices_foreign;
-                        try { localStorage.setItem('kiosk_fairytale_voices_foreign', JSON.stringify(fairytaleVoicesForeign)); } catch(e){}
-                        renderFairytaleVoicesTables();
-                    }
-                    if (Array.isArray(data.fairytale_voices_kyrgyz)) {
-                        fairytaleVoicesKyrgyz = data.fairytale_voices_kyrgyz;
-                        try { localStorage.setItem('kiosk_fairytale_voices_kyrgyz', JSON.stringify(fairytaleVoicesKyrgyz)); } catch(e){}
-                        renderFairytaleVoicesTables();
+                    const fairytaleTabEl = document.getElementById('tab-content-fairytale');
+                    const isViewingFairytaleTab = fairytaleTabEl && !fairytaleTabEl.classList.contains('hidden');
+                    if (!isFairytaleVoicesDirty && !isViewingFairytaleTab) {
+                        let fChanged = false;
+                        if (Array.isArray(data.fairytale_voices_foreign)) {
+                            fairytaleVoicesForeign = data.fairytale_voices_foreign;
+                            try { localStorage.setItem('kiosk_fairytale_voices_foreign', JSON.stringify(fairytaleVoicesForeign)); } catch(e){}
+                            fChanged = true;
+                        }
+                        if (Array.isArray(data.fairytale_voices_kyrgyz)) {
+                            fairytaleVoicesKyrgyz = data.fairytale_voices_kyrgyz;
+                            try { localStorage.setItem('kiosk_fairytale_voices_kyrgyz', JSON.stringify(fairytaleVoicesKyrgyz)); } catch(e){}
+                            fChanged = true;
+                        }
+                        if (fChanged) {
+                            renderFairytaleVoicesTables();
+                        }
                     }
                     if (data.pixverse_markup) {
                         try {
@@ -5395,22 +5409,58 @@
         // =============================================
         let fairytaleVoicesForeign = [];
         let fairytaleVoicesKyrgyz = [];
+        let isFairytaleVoicesDirty = false;
+        let autoSaveFairytaleTimer = null;
 
         function escapeVoiceHtml(str) {
             return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
+        function persistFairytaleVoicesLocally() {
+            try {
+                localStorage.setItem('kiosk_fairytale_voices_foreign', JSON.stringify(fairytaleVoicesForeign));
+                localStorage.setItem('kiosk_fairytale_voices_kyrgyz', JSON.stringify(fairytaleVoicesKyrgyz));
+            } catch(e) {}
+        }
+
+        function scheduleAutoSaveFairytaleVoices() {
+            const status = document.getElementById('fairytale-voices-status');
+            if (status) {
+                status.textContent = '⏳ Сохранение в облако...';
+                status.className = 'status-msg';
+            }
+            clearTimeout(autoSaveFairytaleTimer);
+            autoSaveFairytaleTimer = setTimeout(async () => {
+                try {
+                    await syncAllToCloud();
+                    isFairytaleVoicesDirty = false;
+                    if (status) {
+                        status.textContent = '✅ Сохранено в облако Supabase!';
+                        status.className = 'status-msg success';
+                        setTimeout(() => { if (status.textContent.includes('Сохранено')) status.textContent = ''; }, 3000);
+                    }
+                } catch(e) {
+                    if (status) {
+                        status.textContent = '⚠️ Ошибка синхронизации: ' + e.message;
+                        status.className = 'status-msg error';
+                    }
+                }
+            }, 600);
+        }
+
         function loadFairytaleVoices() {
             try {
                 const storedF = localStorage.getItem('kiosk_fairytale_voices_foreign');
-                if (storedF) fairytaleVoicesForeign = JSON.parse(storedF);
-                else {
+                if (storedF !== null) {
+                    fairytaleVoicesForeign = JSON.parse(storedF);
+                } else {
                     fairytaleVoicesForeign = [
                         { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'George (Дедушка-сказочник)', active: true },
                         { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam (Бархатный рассказчик)', active: true },
                         { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel (Нежный / мама)', active: true },
                         { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella (Сказочный / фея)', active: true }
                     ];
+                    persistFairytaleVoicesLocally();
                 }
             } catch(e) {
                 fairytaleVoicesForeign = [];
@@ -5418,11 +5468,13 @@
 
             try {
                 const storedK = localStorage.getItem('kiosk_fairytale_voices_kyrgyz');
-                if (storedK) fairytaleVoicesKyrgyz = JSON.parse(storedK);
-                else {
+                if (storedK !== null) {
+                    fairytaleVoicesKyrgyz = JSON.parse(storedK);
+                } else {
                     fairytaleVoicesKyrgyz = [
                         { id: '', name: 'Чоң ата (Жомокчу)', active: true }
                     ];
+                    persistFairytaleVoicesLocally();
                 }
             } catch(e) {
                 fairytaleVoicesKyrgyz = [];
@@ -5488,31 +5540,52 @@
             const list = lang === 'kyrgyz' ? fairytaleVoicesKyrgyz : fairytaleVoicesForeign;
             if (list[index]) {
                 list[index][field] = value;
+                isFairytaleVoicesDirty = true;
+                persistFairytaleVoicesLocally();
+                scheduleAutoSaveFairytaleVoices();
             }
         }
 
         function addFairytaleVoice(lang) {
             const list = lang === 'kyrgyz' ? fairytaleVoicesKyrgyz : fairytaleVoicesForeign;
             list.push({ id: '', name: '', active: true });
+            isFairytaleVoicesDirty = true;
+            persistFairytaleVoicesLocally();
             renderFairytaleVoicesTables();
+            scheduleAutoSaveFairytaleVoices();
+            setTimeout(() => {
+                const tbody = document.getElementById(lang === 'kyrgyz' ? 'fairytale-voices-kyrgyz-tbody' : 'fairytale-voices-foreign-tbody');
+                if (tbody) {
+                    const rows = tbody.querySelectorAll('tr');
+                    const lastRow = rows[rows.length - 1];
+                    if (lastRow) {
+                        const input = lastRow.querySelector('input');
+                        if (input) input.focus();
+                    }
+                }
+            }, 50);
         }
 
         function deleteFairytaleVoice(lang, index) {
             const list = lang === 'kyrgyz' ? fairytaleVoicesKyrgyz : fairytaleVoicesForeign;
             list.splice(index, 1);
+            isFairytaleVoicesDirty = true;
+            persistFairytaleVoicesLocally();
             renderFairytaleVoicesTables();
+            scheduleAutoSaveFairytaleVoices();
         }
 
         async function saveFairytaleVoices() {
             const status = document.getElementById('fairytale-voices-status');
+            clearTimeout(autoSaveFairytaleTimer);
             try {
-                localStorage.setItem('kiosk_fairytale_voices_foreign', JSON.stringify(fairytaleVoicesForeign));
-                localStorage.setItem('kiosk_fairytale_voices_kyrgyz', JSON.stringify(fairytaleVoicesKyrgyz));
+                persistFairytaleVoicesLocally();
                 if (status) {
                     status.textContent = '⏳ Сохранение в облако Supabase...';
                     status.className = 'status-msg';
                 }
                 await syncAllToCloud();
+                isFairytaleVoicesDirty = false;
                 if (status) {
                     status.textContent = '✅ Голоса успешно сохранены в облако!';
                     status.className = 'status-msg success';
