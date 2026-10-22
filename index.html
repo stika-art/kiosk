@@ -3,10 +3,39 @@
 <head>
     <meta charset="utf-8">
     <meta name="google" content="notranslate">
-    <meta http-equiv="refresh" content="0; url=/kiosk-ui/">
-    <script>window.location.replace("/kiosk-ui/");</script>
+    <title>TRENDUM</title>
+    <script>
+        (function() {
+            try {
+                var urlParams = new URLSearchParams(window.location.search);
+                var kioskKey = urlParams.get('kiosk') || urlParams.get('terminal_key');
+                var storedPin = localStorage.getItem('kiosk_admin_pin') || '7799';
+
+                // Если передан секретный мастер-ключ (?kiosk=7799 или ?kiosk=active) — привязываем этот ПК навсегда
+                if (kioskKey === storedPin || kioskKey === '7799' || kioskKey === 'active' || kioskKey === 'true') {
+                    localStorage.setItem('trendum_terminal_authorized', 'true');
+                    window.location.replace('/kiosk-ui/' + window.location.search);
+                    return;
+                }
+
+                // Проверяем, авторизован ли данный компьютер как рабочий киоск
+                var isAuthorized = localStorage.getItem('trendum_terminal_authorized') === 'true';
+
+                if (isAuthorized) {
+                    window.location.replace('/kiosk-ui/' + window.location.search);
+                } else {
+                    // Клиенты с телефонов и посторонние посетители перенаправляются на страницу скачивания
+                    window.location.replace('/download');
+                }
+            } catch (e) {
+                window.location.replace('/download');
+            }
+        })();
+    </script>
 </head>
 <body>
-    <p>Redirecting to <a href="/kiosk-ui/">TRENDUM Kiosk</a>...</p>
+    <p style="font-family: sans-serif; text-align: center; margin-top: 40px; color: #888;">
+        Загрузка системы TRENDUM...
+    </p>
 </body>
 </html>

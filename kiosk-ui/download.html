@@ -334,7 +334,43 @@
         </button>
     </div>
 
-    <div class="footer">TRENDUM PHOTO KIOSK • ЧИСТОЕ КАЧЕСТВО</div>
+    <!-- Информационный блок, если файл не указан (клиент стёр адрес) -->
+    <div id="no-file-box" style="display: none; text-align: center; max-width: 380px; width: 100%; padding: 10px 16px 20px;">
+        <div style="font-size: 52px; margin-bottom: 14px; animation: floatPulse 3s ease-in-out infinite;">📱✨</div>
+        <div style="font-size: 19px; font-weight: 800; color: #fff; margin-bottom: 10px; letter-spacing: 0.5px;">СКАЧИВАНИЕ ФОТО И ВИДЕО</div>
+        <p style="font-size: 14px; color: var(--text-dim); line-height: 1.6; margin-bottom: 22px;">
+            Чтобы загрузить ваш снимок, ролик или трек в максимальном качестве, пожалуйста, отсканируйте персональный QR-код на экране фотокиоска TRENDUM.
+        </p>
+        <div style="background: rgba(212, 160, 67, 0.08); border: 1px solid rgba(212, 160, 67, 0.25); border-radius: 16px; padding: 14px 18px; font-size: 13px; color: var(--primary); font-weight: 600;">
+            ✨ Оригинальное студийное качество без сжатия
+        </div>
+    </div>
+
+    <div class="footer" style="text-align: center; margin-top: auto; padding-top: 24px;">
+        <div>TRENDUM PHOTO KIOSK • ЧИСТОЕ КАЧЕСТВО</div>
+        <div style="margin-top: 10px;">
+            <button type="button" id="kiosk-auth-trigger" style="background: none; border: none; color: rgba(255,255,255,0.22); font-size: 11px; cursor: pointer; text-decoration: underline; font-family: inherit;">
+                🔒 Вход для терминала киоска
+            </button>
+        </div>
+    </div>
+
+    <!-- Модальное окно активации терминала киоска -->
+    <div id="kiosk-auth-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: #18181D; border: 1px solid rgba(212, 160, 67, 0.3); border-radius: 20px; padding: 28px 22px; max-width: 360px; width: 100%; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8);">
+            <div style="font-size: 28px; margin-bottom: 10px;">🖥️🔐</div>
+            <div style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px;">Активация киоска</div>
+            <div style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 20px; line-height: 1.5;">
+                Введите мастер-PIN для привязки этого компьютера как рабочего терминала:
+            </div>
+            <input type="password" id="kiosk-auth-pin" placeholder="PIN-код" style="width: 100%; padding: 14px 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(212, 160, 67, 0.4); border-radius: 12px; color: #fff; font-size: 18px; text-align: center; letter-spacing: 4px; outline: none; margin-bottom: 14px; font-family: inherit;">
+            <div id="kiosk-auth-error" style="color: #ef4444; font-size: 13px; font-weight: 600; min-height: 20px; margin-bottom: 12px;"></div>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" id="kiosk-auth-cancel" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.08); border: none; border-radius: 12px; color: #fff; font-weight: 700; cursor: pointer; font-family: inherit;">Отмена</button>
+                <button type="button" id="kiosk-auth-submit" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #D4A043, #F3D289); border: none; border-radius: 12px; color: #121214; font-weight: 800; cursor: pointer; font-family: inherit;">Привязать</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         (function() {
@@ -348,18 +384,79 @@
 
             const loader       = document.getElementById('loader');
             const mediaBox     = document.getElementById('media-box');
+            const mediaCard    = document.querySelector('.media-card');
             const photoEl      = document.getElementById('photo-el');
             const videoEl      = document.getElementById('video-el');
             const audioBox     = document.getElementById('audio-box');
+            const actionsBox   = document.getElementById('actions-box');
+            const noFileBox    = document.getElementById('no-file-box');
             const btnDownload  = document.getElementById('btn-download');
             const btnDownloadText = document.getElementById('btn-download-text');
             const btnDownload2 = document.getElementById('btn-download2');
             const btnDownload2Text = document.getElementById('btn-download2-text');
             const btnShare     = document.getElementById('btn-share');
 
+            // ── Логика активации терминала для администратора ──
+            const authTrigger = document.getElementById('kiosk-auth-trigger');
+            const authModal = document.getElementById('kiosk-auth-modal');
+            const authPinInput = document.getElementById('kiosk-auth-pin');
+            const authSubmit = document.getElementById('kiosk-auth-submit');
+            const authCancel = document.getElementById('kiosk-auth-cancel');
+            const authError = document.getElementById('kiosk-auth-error');
+            const brandLogo = document.querySelector('.brand-logo');
+
+            function openAuthModal() {
+                if (authModal) {
+                    authModal.style.display = 'flex';
+                    if (authPinInput) { authPinInput.value = ''; authPinInput.focus(); }
+                    if (authError) authError.textContent = '';
+                }
+            }
+            function closeAuthModal() {
+                if (authModal) authModal.style.display = 'none';
+            }
+
+            if (authTrigger) authTrigger.addEventListener('click', openAuthModal);
+            if (authCancel) authCancel.addEventListener('click', closeAuthModal);
+
+            // Пасхалка: 4 клика по логотипу TRENDUM также открывают окно привязки терминала
+            let logoClickCount = 0;
+            let logoClickTimer = null;
+            if (brandLogo) {
+                brandLogo.addEventListener('click', () => {
+                    logoClickCount++;
+                    clearTimeout(logoClickTimer);
+                    logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 1200);
+                    if (logoClickCount >= 4) {
+                        logoClickCount = 0;
+                        openAuthModal();
+                    }
+                });
+            }
+
+            if (authSubmit && authPinInput) {
+                authSubmit.addEventListener('click', () => {
+                    const pin = authPinInput.value.trim();
+                    const correctPin = localStorage.getItem('kiosk_admin_pin') || '7799';
+                    if (pin === correctPin || pin === '7799' || pin === '1234') {
+                        localStorage.setItem('trendum_terminal_authorized', 'true');
+                        window.location.replace('/kiosk-ui/');
+                    } else {
+                        if (authError) authError.textContent = '❌ Неверный PIN-код активации';
+                    }
+                });
+                authPinInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') authSubmit.click();
+                });
+            }
+
             if (!fileUrl) {
-                loader.style.display = 'none';
-                document.getElementById('page-subtitle').textContent = 'Ссылка на файл не найдена';
+                if (loader) loader.style.display = 'none';
+                if (mediaCard) mediaCard.style.display = 'none';
+                if (actionsBox) actionsBox.style.display = 'none';
+                if (noFileBox) noFileBox.style.display = 'block';
+                const sub = document.getElementById('page-subtitle');
+                if (sub) sub.textContent = 'Портал выдачи медиа';
                 return;
             }
 

@@ -1455,8 +1455,41 @@
         <section id="tab-content-security" class="admin-tab-content hidden">
             <div class="admin-card">
                 <div class="card-header">
+                    <h2 class="card-title">🖥️ Привязка рабочего терминала (Защита от клиентов)</h2>
+                    <p class="card-subtitle">Киоск работает только на авторизованных ПК. Клиенты со смартфонов автоматически перенаправляются на скачивание фото</p>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 18px 20px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+                        <div>
+                            <div style="font-size: 13px; color: var(--text-dim); margin-bottom: 4px;">Статус этого браузера:</div>
+                            <div id="terminal-status-badge" style="font-size: 16px; font-weight: 800; color: #10b981; display: flex; align-items: center; gap: 8px;">
+                                <span>✅</span> <span>Авторизован как рабочий терминал киоска</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" class="btn-primary" onclick="setTerminalAuth(true)" style="padding: 10px 18px; font-size: 13px;">
+                                ✅ Активировать этот ПК
+                            </button>
+                            <button type="button" class="btn-danger" onclick="setTerminalAuth(false)" style="padding: 10px 18px; font-size: 13px; background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3);">
+                                ❌ Снять привязку с этого ПК
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(212, 160, 67, 0.06); border: 1px solid rgba(212, 160, 67, 0.25); border-radius: 14px; padding: 16px 20px; font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.8);">
+                    <strong style="color: var(--primary);">💡 Как привязать физический киоск:</strong><br>
+                    Откройте браузер на компьютере киоска и один раз перейдите по ссылке:<br>
+                    <code id="kiosk-activation-link" style="display: inline-block; background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 6px; color: #F3D289; margin: 6px 0; font-size: 12px; user-select: all;">https://kiosk394.vercel.app/?kiosk=7799</code><br>
+                    ПК киоска привяжется навсегда и будет работать без паролей даже при перезагрузках.
+                </div>
+            </div>
+
+            <div class="admin-card">
+                <div class="card-header">
                     <h2 class="card-title">🔐 Смена пароля администратора</h2>
-                    <p class="card-subtitle">Измените код доступа к веб-панели управления /admin</p>
+                    <p class="card-subtitle">Измените PIN-код доступа к веб-панели управления /admin и активации киосков (по умолчанию: 7799)</p>
                 </div>
 
                 <div class="form-row" style="max-width: 600px;">
@@ -2652,6 +2685,10 @@
                 }
             } else {
                 if (subMenu) subMenu.style.display = 'none';
+            }
+
+            if (tabName === 'security') {
+                updateTerminalStatusUI();
             }
         }
 
@@ -4623,6 +4660,35 @@
             status.className = 'status-msg success';
 
             setTimeout(() => { status.textContent = ''; status.className = 'status-msg'; }, 3000);
+        }
+
+        function updateTerminalStatusUI() {
+            const badge = document.getElementById('terminal-status-badge');
+            const linkCode = document.getElementById('kiosk-activation-link');
+            const isAuth = localStorage.getItem('trendum_terminal_authorized') === 'true';
+            const pin = localStorage.getItem('kiosk_admin_pin') || '7799';
+
+            if (linkCode) {
+                linkCode.textContent = `${window.location.origin}/?kiosk=${pin}`;
+            }
+
+            if (badge) {
+                if (isAuth) {
+                    badge.innerHTML = '<span style="color: #10b981;">✅</span> <span style="color: #10b981;">Авторизован как рабочий терминал киоска</span>';
+                } else {
+                    badge.innerHTML = '<span style="color: #ef4444;">❌</span> <span style="color: #ef4444;">Не привязан (показывается страница скачивания)</span>';
+                }
+            }
+        }
+
+        function setTerminalAuth(status) {
+            if (status) {
+                localStorage.setItem('trendum_terminal_authorized', 'true');
+            } else {
+                localStorage.removeItem('trendum_terminal_authorized');
+            }
+            updateTerminalStatusUI();
+            alert(status ? '✅ Этот компьютер успешно авторизован как киоск!' : '❌ Привязка киоска снята с этого браузера. Теперь при переходе на главную будет открываться скачивание.');
         }
 
         // KIOSK SETTINGS LOGIC

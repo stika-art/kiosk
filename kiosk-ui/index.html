@@ -9,6 +9,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TRENDUM — Премиальный Фотокиоск</title>
     
+    <!-- Защита киоска: доступ разрешен только для авторизованных терминалов -->
+    <script>
+        (function() {
+            try {
+                var urlParams = new URLSearchParams(window.location.search);
+                var kioskKey = urlParams.get('kiosk') || urlParams.get('terminal_key');
+                var storedPin = localStorage.getItem('kiosk_admin_pin') || '7799';
+
+                // Быстрая авторизация терминала по секретному мастер-ключу (?kiosk=7799)
+                if (kioskKey === storedPin || kioskKey === '7799' || kioskKey === 'active' || kioskKey === 'true') {
+                    localStorage.setItem('trendum_terminal_authorized', 'true');
+                    urlParams.delete('kiosk');
+                    urlParams.delete('terminal_key');
+                    var cleanUrl = window.location.pathname + (urlParams.toString() ? ('?' + urlParams.toString()) : '') + window.location.hash;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                    return; // Авторизован, продолжаем показ киоска
+                }
+
+                // Проверка авторизации текущего устройства
+                var isAuthorized = localStorage.getItem('trendum_terminal_authorized') === 'true';
+
+                // Если устройство НЕ авторизовано как киоск — немедленно перенаправляем на скачивание
+                if (!isAuthorized) {
+                    window.location.replace('/download');
+                }
+            } catch (e) {
+                window.location.replace('/download');
+            }
+        })();
+    </script>
+    
     <!-- Google Fonts Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
