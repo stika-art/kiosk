@@ -851,6 +851,10 @@
                 <span class="nav-item-icon">📺</span>
                 <span>Реклама и Баннеры</span>
             </button>
+            <button class="nav-item" id="tab-btn-fairytale" onclick="switchAdminTab('fairytale')">
+                <span class="nav-item-icon">🎙️</span>
+                <span>Аудиосказка</span>
+            </button>
             <button class="nav-item" id="tab-btn-settings" onclick="switchAdminTab('settings')">
                 <span class="nav-item-icon">⚙️</span>
                 <span>Настройки</span>
@@ -1496,6 +1500,72 @@
                     <button class="btn-primary" onclick="changePassword()">Сохранить пароль</button>
                 </div>
                 <div id="sec-status" class="status-msg"></div>
+            </div>
+        </section>
+
+        <!-- TAB: FAIRYTALE VOICES (ТОЛЬКО ПО VOICE ID ИЗ ELEVENLABS) -->
+        <section id="tab-content-fairytale" class="admin-tab-content hidden">
+            <!-- ТАБЛИЦА 1: ИНОСТРАННЫЕ / РУССКИЕ ГОЛОСА -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <h2 class="card-title">🎙️ Иностранные / Русские голоса ElevenLabs</h2>
+                            <p class="card-subtitle">Введите Voice ID из библиотеки ElevenLabs. При создании сказки на русском языке система случайно выбирает один из активных Voice ID.</p>
+                        </div>
+                        <button class="btn-primary" type="button" onclick="addFairytaleVoice('foreign')">+ Добавить Voice ID</button>
+                    </div>
+                </div>
+
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 45px;">#</th>
+                            <th style="width: 320px;">Voice ID (из ElevenLabs / Kie)</th>
+                            <th>Метка / Описание (для себя)</th>
+                            <th style="width: 100px; text-align: center;">Активен</th>
+                            <th style="width: 80px; text-align: right;">Удалить</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fairytale-voices-foreign-tbody">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ТАБЛИЦА 2: КЫРГЫЗСКИЕ ГОЛОСА -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <h2 class="card-title">🇰🇬 Кыргызские голоса ElevenLabs (Кыргыз тилиндеги үндөр)</h2>
+                            <p class="card-subtitle">Введите Voice ID дикторов для кыргызского языка. Когда гость в киоске выбирает «Кыргызча», система случайно выбирает Voice ID строго из этого списка.</p>
+                        </div>
+                        <button class="btn-primary" type="button" onclick="addFairytaleVoice('kyrgyz')">+ Добавить Voice ID</button>
+                    </div>
+                </div>
+
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 45px;">#</th>
+                            <th style="width: 320px;">Voice ID (из ElevenLabs / Kie)</th>
+                            <th>Метка / Описание (для себя)</th>
+                            <th style="width: 100px; text-align: center;">Активен</th>
+                            <th style="width: 80px; text-align: right;">Удалить</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fairytale-voices-kyrgyz-tbody">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+
+                <div style="margin-top: 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                    <button class="btn-primary" type="button" style="padding: 14px 28px; font-size: 15px;" onclick="saveFairytaleVoices()">
+                        💾 Сохранить оба списка голосов в облако
+                    </button>
+                    <div id="fairytale-voices-status" class="status-msg"></div>
+                </div>
             </div>
         </section>
     </main>
@@ -5068,6 +5138,8 @@
                     music_price: localStorage.getItem('kiosk_music_price') || '290',
                     pixverse_markup: localStorage.getItem('kiosk_pixverse_markup') || '250',
                     openai_key: localStorage.getItem('kiosk_openai_key') || '',
+                    fairytale_voices_foreign: fairytaleVoicesForeign,
+                    fairytale_voices_kyrgyz: fairytaleVoicesKyrgyz,
                     finik_account_id: localStorage.getItem('kiosk_finik_account_id') || '',
                     finik_pos_id: localStorage.getItem('kiosk_finik_pos_id') || '',
                     finik_merchant_name: localStorage.getItem('kiosk_finik_merchant_name') || '',
@@ -5208,6 +5280,16 @@
                         const input = document.getElementById('music-price-input');
                         if (input && !input.value) input.value = data.music_price;
                     }
+                    if (Array.isArray(data.fairytale_voices_foreign)) {
+                        fairytaleVoicesForeign = data.fairytale_voices_foreign;
+                        try { localStorage.setItem('kiosk_fairytale_voices_foreign', JSON.stringify(fairytaleVoicesForeign)); } catch(e){}
+                        renderFairytaleVoicesTables();
+                    }
+                    if (Array.isArray(data.fairytale_voices_kyrgyz)) {
+                        fairytaleVoicesKyrgyz = data.fairytale_voices_kyrgyz;
+                        try { localStorage.setItem('kiosk_fairytale_voices_kyrgyz', JSON.stringify(fairytaleVoicesKyrgyz)); } catch(e){}
+                        renderFairytaleVoicesTables();
+                    }
                     if (data.pixverse_markup) {
                         try {
                             localStorage.setItem('kiosk_pixverse_markup', data.pixverse_markup.toString());
@@ -5308,6 +5390,142 @@
             }
         }
 
+        // =============================================
+        // УПРАВЛЕНИЕ ГОЛОСАМИ ELEVENLABS ДЛЯ АУДИОСКАЗКИ
+        // =============================================
+        let fairytaleVoicesForeign = [];
+        let fairytaleVoicesKyrgyz = [];
+
+        function escapeVoiceHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function loadFairytaleVoices() {
+            try {
+                const storedF = localStorage.getItem('kiosk_fairytale_voices_foreign');
+                if (storedF) fairytaleVoicesForeign = JSON.parse(storedF);
+                else {
+                    fairytaleVoicesForeign = [
+                        { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'George (Дедушка-сказочник)', active: true },
+                        { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam (Бархатный рассказчик)', active: true },
+                        { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel (Нежный / мама)', active: true },
+                        { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella (Сказочный / фея)', active: true }
+                    ];
+                }
+            } catch(e) {
+                fairytaleVoicesForeign = [];
+            }
+
+            try {
+                const storedK = localStorage.getItem('kiosk_fairytale_voices_kyrgyz');
+                if (storedK) fairytaleVoicesKyrgyz = JSON.parse(storedK);
+                else {
+                    fairytaleVoicesKyrgyz = [
+                        { id: '', name: 'Чоң ата (Жомокчу)', active: true }
+                    ];
+                }
+            } catch(e) {
+                fairytaleVoicesKyrgyz = [];
+            }
+
+            renderFairytaleVoicesTables();
+        }
+
+        function renderFairytaleVoicesTables() {
+            const fTbody = document.getElementById('fairytale-voices-foreign-tbody');
+            const kTbody = document.getElementById('fairytale-voices-kyrgyz-tbody');
+
+            if (fTbody) {
+                if (!fairytaleVoicesForeign.length) {
+                    fTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 20px;">Список пуст. Нажмите «+ Добавить Voice ID», чтобы добавить голос из ElevenLabs.</td></tr>`;
+                } else {
+                    fTbody.innerHTML = fairytaleVoicesForeign.map((v, i) => `
+                        <tr>
+                            <td style="color: var(--text-dim); font-weight: 700;">${i + 1}</td>
+                            <td>
+                                <input type="text" class="admin-input" style="font-family: monospace; font-size: 13px; width: 100%;" placeholder="Вставьте Voice ID из ElevenLabs..." value="${escapeVoiceHtml(v.id || '')}" oninput="updateFairytaleVoice('foreign', ${i}, 'id', this.value)">
+                            </td>
+                            <td>
+                                <input type="text" class="admin-input" style="width: 100%;" placeholder="Метка для себя (напр. Дедушка, Мама)..." value="${escapeVoiceHtml(v.name || '')}" oninput="updateFairytaleVoice('foreign', ${i}, 'name', this.value)">
+                            </td>
+                            <td style="text-align: center;">
+                                <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary);" ${v.active ? 'checked' : ''} onchange="updateFairytaleVoice('foreign', ${i}, 'active', this.checked)">
+                            </td>
+                            <td style="text-align: right;">
+                                <button type="button" class="btn-del" onclick="deleteFairytaleVoice('foreign', ${i})" title="Удалить голос">🗑️</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            if (kTbody) {
+                if (!fairytaleVoicesKyrgyz.length) {
+                    kTbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 20px;">Список пуст. Нажмите «+ Добавить Voice ID», чтобы добавить кыргызский голос из ElevenLabs.</td></tr>`;
+                } else {
+                    kTbody.innerHTML = fairytaleVoicesKyrgyz.map((v, i) => `
+                        <tr>
+                            <td style="color: var(--text-dim); font-weight: 700;">${i + 1}</td>
+                            <td>
+                                <input type="text" class="admin-input" style="font-family: monospace; font-size: 13px; width: 100%;" placeholder="Вставьте Voice ID из ElevenLabs..." value="${escapeVoiceHtml(v.id || '')}" oninput="updateFairytaleVoice('kyrgyz', ${i}, 'id', this.value)">
+                            </td>
+                            <td>
+                                <input type="text" class="admin-input" style="width: 100%;" placeholder="Метка для себя (напр. Чоң ата, Энеке)..." value="${escapeVoiceHtml(v.name || '')}" oninput="updateFairytaleVoice('kyrgyz', ${i}, 'name', this.value)">
+                            </td>
+                            <td style="text-align: center;">
+                                <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary);" ${v.active ? 'checked' : ''} onchange="updateFairytaleVoice('kyrgyz', ${i}, 'active', this.checked)">
+                            </td>
+                            <td style="text-align: right;">
+                                <button type="button" class="btn-del" onclick="deleteFairytaleVoice('kyrgyz', ${i})" title="Удалить голос">🗑️</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        }
+
+        function updateFairytaleVoice(lang, index, field, value) {
+            const list = lang === 'kyrgyz' ? fairytaleVoicesKyrgyz : fairytaleVoicesForeign;
+            if (list[index]) {
+                list[index][field] = value;
+            }
+        }
+
+        function addFairytaleVoice(lang) {
+            const list = lang === 'kyrgyz' ? fairytaleVoicesKyrgyz : fairytaleVoicesForeign;
+            list.push({ id: '', name: '', active: true });
+            renderFairytaleVoicesTables();
+        }
+
+        function deleteFairytaleVoice(lang, index) {
+            const list = lang === 'kyrgyz' ? fairytaleVoicesKyrgyz : fairytaleVoicesForeign;
+            list.splice(index, 1);
+            renderFairytaleVoicesTables();
+        }
+
+        async function saveFairytaleVoices() {
+            const status = document.getElementById('fairytale-voices-status');
+            try {
+                localStorage.setItem('kiosk_fairytale_voices_foreign', JSON.stringify(fairytaleVoicesForeign));
+                localStorage.setItem('kiosk_fairytale_voices_kyrgyz', JSON.stringify(fairytaleVoicesKyrgyz));
+                if (status) {
+                    status.textContent = '⏳ Сохранение в облако Supabase...';
+                    status.className = 'status-msg';
+                }
+                await syncAllToCloud();
+                if (status) {
+                    status.textContent = '✅ Голоса успешно сохранены в облако!';
+                    status.className = 'status-msg success';
+                    setTimeout(() => { status.textContent = ''; }, 4000);
+                }
+            } catch(e) {
+                if (status) {
+                    status.textContent = '❌ Ошибка сохранения: ' + e.message;
+                    status.className = 'status-msg error';
+                }
+            }
+        }
+
         // Init on load
         checkAuth();
         loadKioskSettings();
@@ -5317,6 +5535,7 @@
         loadPixverseMarkupSettings();
         checkKieBalance();
         checkSupabaseStatus();
+        loadFairytaleVoices();
         fetchCloudConfig();
 
         // Фоновая авто-синхронизация админки с Supabase при смене вкладки или каждые 25 секунд
