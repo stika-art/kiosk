@@ -2514,6 +2514,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultAudioPlayer.src = '';
             } catch (e) { }
         }
+        const studioCustomPlayer = document.getElementById('studio-custom-player');
+        if (studioCustomPlayer) studioCustomPlayer.classList.remove('playing');
+        if (studioVinylDisc) studioVinylDisc.classList.remove('playing');
+        const studioProgressFill = document.getElementById('studio-progress-fill');
+        if (studioProgressFill) studioProgressFill.style.width = '0%';
+        const studioProgressThumb = document.getElementById('studio-progress-thumb');
+        if (studioProgressThumb) studioProgressThumb.style.left = '0%';
+        const studioCurrentTime = document.getElementById('studio-current-time');
+        if (studioCurrentTime) studioCurrentTime.textContent = '0:00';
         const resultAudioBox = document.getElementById('result-audio-box');
         if (resultAudioBox) resultAudioBox.style.display = 'none';
 
@@ -4229,6 +4238,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const resultAudioPlayer = document.getElementById('result-audio-player');
         const resultAudioTitle = document.getElementById('result-audio-title');
         const resultAudioGenre = document.getElementById('result-audio-genre');
+        const stepResultTitle = document.querySelector('#step-result .modal-title');
+        const stepResultSubtitle = document.querySelector('#step-result .modal-subtitle');
 
         if (isAudioResult && resultAudioBox && resultAudioPlayer) {
             if (resultImg) resultImg.style.display = 'none';
@@ -4237,16 +4248,103 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultVideo.style.display = 'none';
             }
             resultAudioBox.style.display = 'flex';
-            resultAudioPlayer.src = finalResultUrl;
+
+            // Настройка солидных заголовков для музыкального сингла
+            if (stepResultTitle) stepResultTitle.textContent = 'ВАШ МУЗЫКАЛЬНЫЙ ХИТ ГОТОВ! 🎵';
+            if (stepResultSubtitle) stepResultSubtitle.textContent = 'Послушайте созданные варианты и отсканируйте QR-код для загрузки MP3';
+
             if (resultAudioTitle) {
-                resultAudioTitle.textContent = guestMusicTheme ? guestMusicTheme : (selectedStyle || 'ВАШ ПЕРСОНАЛЬНЫЙ ТРЕК');
+                const themeClean = guestMusicTheme ? guestMusicTheme.trim() : '';
+                resultAudioTitle.textContent = themeClean ? `«${themeClean}»` : (selectedStyle ? `Хит: ${selectedStyle}` : 'Ваш персональный трек');
             }
             if (resultAudioGenre) {
-                resultAudioGenre.textContent = guestMusicTheme
-                    ? `🎵 ${selectedStyle} • Для: ${guestMusicTheme}`
-                    : `🎵 ${selectedStyleCategory || 'МУЗЫКА'} • Персональный хит`;
+                resultAudioGenre.textContent = `🎵 ${selectedStyle || 'ХИТ'} • СТУДИЙНАЯ ЗАПИСЬ`;
             }
-            resultAudioPlayer.play().catch(e => console.warn('Audio play error:', e));
+
+            // Кастомный студийный плеер Trendum Sound
+            const studioCustomPlayer = document.getElementById('studio-custom-player');
+            const studioVinylDisc = document.getElementById('studio-vinyl-disc');
+            const studioPlayToggle = document.getElementById('studio-play-toggle');
+            const studioPlayIcon = document.getElementById('studio-play-icon');
+            const studioPauseIcon = document.getElementById('studio-pause-icon');
+            const studioCurrentTime = document.getElementById('studio-current-time');
+            const studioTotalTime = document.getElementById('studio-total-time');
+            const studioProgressTrack = document.getElementById('studio-progress-track');
+            const studioProgressFill = document.getElementById('studio-progress-fill');
+            const studioProgressThumb = document.getElementById('studio-progress-thumb');
+            const studioSeekBackward = document.getElementById('studio-seek-backward');
+            const studioSeekForward = document.getElementById('studio-seek-forward');
+
+            const formatStudioTime = (seconds) => {
+                if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
+                const m = Math.floor(seconds / 60);
+                const s = Math.floor(seconds % 60);
+                return `${m}:${s < 10 ? '0' : ''}${s}`;
+            };
+
+            const updateStudioPlayerState = (isPlaying) => {
+                if (studioPlayIcon && studioPauseIcon) {
+                    studioPlayIcon.style.display = isPlaying ? 'none' : 'block';
+                    studioPauseIcon.style.display = isPlaying ? 'block' : 'none';
+                }
+                if (studioCustomPlayer) studioCustomPlayer.classList.toggle('playing', isPlaying);
+                if (studioVinylDisc) studioVinylDisc.classList.toggle('playing', isPlaying);
+            };
+
+            // Привязка событий воспроизведения
+            resultAudioPlayer.onplay = () => updateStudioPlayerState(true);
+            resultAudioPlayer.onpause = () => updateStudioPlayerState(false);
+            resultAudioPlayer.onended = () => {
+                updateStudioPlayerState(false);
+                if (studioProgressFill) studioProgressFill.style.width = '0%';
+                if (studioProgressThumb) studioProgressThumb.style.left = '0%';
+                if (studioCurrentTime) studioCurrentTime.textContent = '0:00';
+            };
+            resultAudioPlayer.ontimeupdate = () => {
+                const cur = resultAudioPlayer.currentTime || 0;
+                const dur = resultAudioPlayer.duration || 0;
+                if (studioCurrentTime) studioCurrentTime.textContent = formatStudioTime(cur);
+                if (dur > 0) {
+                    const pct = Math.min(100, Math.max(0, (cur / dur) * 100));
+                    if (studioProgressFill) studioProgressFill.style.width = pct + '%';
+                    if (studioProgressThumb) studioProgressThumb.style.left = pct + '%';
+                }
+            };
+            resultAudioPlayer.onloadedmetadata = () => {
+                if (studioTotalTime) studioTotalTime.textContent = formatStudioTime(resultAudioPlayer.duration || 0);
+            };
+            resultAudioPlayer.ondurationchange = () => {
+                if (studioTotalTime) studioTotalTime.textContent = formatStudioTime(resultAudioPlayer.duration || 0);
+            };
+
+            if (studioPlayToggle) {
+                studioPlayToggle.onclick = () => {
+                    if (resultAudioPlayer.paused) {
+                        resultAudioPlayer.play().catch(e => console.warn('Play error:', e));
+                    } else {
+                        resultAudioPlayer.pause();
+                    }
+                };
+            }
+            if (studioSeekBackward) {
+                studioSeekBackward.onclick = () => {
+                    resultAudioPlayer.currentTime = Math.max(0, (resultAudioPlayer.currentTime || 0) - 10);
+                };
+            }
+            if (studioSeekForward) {
+                studioSeekForward.onclick = () => {
+                    resultAudioPlayer.currentTime = Math.min(resultAudioPlayer.duration || 9999, (resultAudioPlayer.currentTime || 0) + 10);
+                };
+            }
+            if (studioProgressTrack) {
+                studioProgressTrack.onclick = (e) => {
+                    const rect = studioProgressTrack.getBoundingClientRect();
+                    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+                    if (resultAudioPlayer.duration) {
+                        resultAudioPlayer.currentTime = ratio * resultAudioPlayer.duration;
+                    }
+                };
+            }
 
             // Показываем переключатель вариантов если Suno вернул 2 трека
             const variantSwitcher = document.getElementById('audio-variants-switcher');
@@ -4256,23 +4354,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 variantSwitcher.style.display = 'flex';
                 const setVariant = (idx) => {
                     resultAudioPlayer.src = finalAudioUrls[idx];
+                    resultAudioPlayer.currentTime = 0;
+                    if (studioProgressFill) studioProgressFill.style.width = '0%';
+                    if (studioProgressThumb) studioProgressThumb.style.left = '0%';
+                    if (btnVar1) btnVar1.classList.toggle('active', idx === 0);
+                    if (btnVar2) btnVar2.classList.toggle('active', idx === 1);
                     resultAudioPlayer.play().catch(e => { });
-                    const activeStyle = 'linear-gradient(135deg, #a855f7, #ec4899)';
-                    btnVar1.style.background = idx === 0 ? activeStyle : 'transparent';
-                    btnVar1.style.color = idx === 0 ? '#fff' : '#aaa';
-                    btnVar1.style.boxShadow = idx === 0 ? '0 4px 15px rgba(168,85,247,0.4)' : 'none';
-                    btnVar2.style.background = idx === 1 ? activeStyle : 'transparent';
-                    btnVar2.style.color = idx === 1 ? '#fff' : '#aaa';
-                    btnVar2.style.boxShadow = idx === 1 ? '0 4px 15px rgba(168,85,247,0.4)' : 'none';
                 };
-                btnVar1.onclick = () => setVariant(0);
-                btnVar2.onclick = () => setVariant(1);
+                if (btnVar1) btnVar1.onclick = () => setVariant(0);
+                if (btnVar2) btnVar2.onclick = () => setVariant(1);
                 setVariant(0);
-            } else if (variantSwitcher) {
-                variantSwitcher.style.display = 'none';
+            } else {
+                if (variantSwitcher) variantSwitcher.style.display = 'none';
+                resultAudioPlayer.src = finalResultUrl;
+                resultAudioPlayer.currentTime = 0;
+                resultAudioPlayer.play().catch(e => console.warn('Audio play error:', e));
             }
 
         } else if (isVideoResult && resultVideo) {
+            if (stepResultTitle) stepResultTitle.textContent = 'ВАШ РЕЗУЛЬТАТ ГОТОВ!';
+            if (stepResultSubtitle) stepResultSubtitle.textContent = 'Отсканируйте QR-код камерой телефона, чтобы сохранить фото или видео';
             if (resultAudioBox) {
                 if (resultAudioPlayer) resultAudioPlayer.pause();
                 resultAudioBox.style.display = 'none';
@@ -4283,6 +4384,8 @@ document.addEventListener('DOMContentLoaded', () => {
             resultVideo.play().catch(e => console.warn('Video play error:', e));
             if (resultImg) resultImg.style.display = 'none';
         } else if (resultImg) {
+            if (stepResultTitle) stepResultTitle.textContent = 'ВАШ РЕЗУЛЬТАТ ГОТОВ!';
+            if (stepResultSubtitle) stepResultSubtitle.textContent = 'Отсканируйте QR-код камерой телефона, чтобы сохранить фото';
             if (resultAudioBox) {
                 if (resultAudioPlayer) resultAudioPlayer.pause();
                 resultAudioBox.style.display = 'none';
@@ -4307,10 +4410,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     loc: selectedStyleLocation || '',
                     price: selectedStylePrice || ''
                 });
-                // Если музыка — добавляем второй трек и режим
-                if (isAudioResult && finalAudioUrls.length >= 2) {
-                    query.set('file2', finalAudioUrls[1]);
+                // Если музыка — передаем mode=audio и второй трек (если есть)
+                if (isAudioResult) {
                     query.set('mode', 'audio');
+                    if (finalAudioUrls.length >= 2) {
+                        query.set('file2', finalAudioUrls[1]);
+                    }
                 }
                 qrDownloadUrl = `${window.location.origin}/download?${query.toString()}`;
             } else {

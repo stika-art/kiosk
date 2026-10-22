@@ -500,14 +500,16 @@
 
                 audioPlayer.src = tracks[0];
 
+                btnDownload.classList.add('btn-music');
                 if (tracks.length >= 2) {
                     variantsBox.style.display = 'flex';
                     btnVar1.onclick = () => setTrack(0);
                     btnVar2.onclick = () => setTrack(1);
-                    // Кнопка скачать вариант 1
-                    btnDownloadText.textContent = 'СКАЧАТЬ ВАРИАНТ 1 🎵';
-                    // Кнопка скачать вариант 2
+                    btnDownloadText.textContent = 'СКАЧАТЬ ВАРИАНТ 1 (MP3) 🎵';
                     btnDownload2.style.display = 'flex';
+                    btnDownload2Text.textContent = 'СКАЧАТЬ ВАРИАНТ 2 (MP3) 🎵';
+                } else {
+                    btnDownloadText.textContent = 'СКАЧАТЬ ТРЕК (MP3) 🎵';
                 }
 
                 // Скачивание MP3

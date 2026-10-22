@@ -493,6 +493,65 @@ CRITICAL MANDATORY INSTRUCTIONS:
                                 }
                             } catch(e) {}
                         }
+                        // Извлечение аудио-треков (гарантирует, что Вариант 1 и Вариант 2 — это РАЗНЫЕ треки от Suno, а не stream_audio_url одного трека)
+                        const audioTracks = [];
+                        const addAudioTrack = (u) => {
+                            if (!u || typeof u !== 'string') return;
+                            const s = u.trim();
+                            if (!s) return;
+                            if (!audioTracks.includes(s)) audioTracks.push(s);
+                        };
+
+                        const processAudioItem = (item) => {
+                            if (!item) return;
+                            if (typeof item === 'string') {
+                                addAudioTrack(item);
+                                return;
+                            }
+                            if (typeof item === 'object') {
+                                // Главное: берем audio_url (основной MP3), и НЕ берем stream_audio_url того же трека
+                                const mainAudio = item.audio_url || item.audioUrl || item.music_url;
+                                if (mainAudio) {
+                                    addAudioTrack(mainAudio);
+                                    return;
+                                }
+                                if (item.stream_audio_url) {
+                                    addAudioTrack(item.stream_audio_url);
+                                    return;
+                                }
+                                if (item.url && (item.url.includes('.mp3') || item.url.includes('.wav') || item.url.includes('audio') || item.url.includes('suno'))) {
+                                    addAudioTrack(item.url);
+                                }
+                            }
+                        };
+
+                        if (taskInfo.response) {
+                            const resp = taskInfo.response;
+                            if (Array.isArray(resp.data)) resp.data.forEach(processAudioItem);
+                            if (Array.isArray(resp.resultUrls)) resp.resultUrls.forEach(processAudioItem);
+                            if (resp.audio_url) addAudioTrack(resp.audio_url);
+                            if (resp.audioUrl) addAudioTrack(resp.audioUrl);
+                        }
+                        if (taskInfo.data && Array.isArray(taskInfo.data)) {
+                            taskInfo.data.forEach(processAudioItem);
+                        }
+                        if (taskInfo.resultJson) {
+                            try {
+                                const parsed = typeof taskInfo.resultJson === 'string' ? JSON.parse(taskInfo.resultJson) : taskInfo.resultJson;
+                                if (parsed) {
+                                    if (Array.isArray(parsed.data)) parsed.data.forEach(processAudioItem);
+                                    if (Array.isArray(parsed.audios)) parsed.audios.forEach(processAudioItem);
+                                    if (Array.isArray(parsed.audio_urls)) parsed.audio_urls.forEach(processAudioItem);
+                                    if (Array.isArray(parsed.resultUrls)) parsed.resultUrls.forEach(processAudioItem);
+                                    if (parsed.audio_url) addAudioTrack(parsed.audio_url);
+                                    if (parsed.audioUrl) addAudioTrack(parsed.audioUrl);
+                                }
+                            } catch(e) {}
+                        }
+                        if (taskInfo.output) processAudioItem(taskInfo.output);
+                        if (taskInfo.audio_url) addAudioTrack(taskInfo.audio_url);
+                        if (taskInfo.audioUrl) addAudioTrack(taskInfo.audioUrl);
+
                         if (taskInfo.response) {
                             const resp = taskInfo.response;
                             if (Array.isArray(resp.resultUrls)) resultUrls.push(...resp.resultUrls);
@@ -500,15 +559,12 @@ CRITICAL MANDATORY INSTRUCTIONS:
                                 resp.data.forEach(item => {
                                     if (typeof item === 'string') resultUrls.push(item);
                                     else if (item && typeof item === 'object') {
-                                        if (item.audio_url) resultUrls.push(item.audio_url);
-                                        if (item.stream_audio_url) resultUrls.push(item.stream_audio_url);
                                         if (item.url) resultUrls.push(item.url);
                                         if (item.video_url) resultUrls.push(item.video_url);
+                                        if (item.audio_url) resultUrls.push(item.audio_url);
                                     }
                                 });
                             }
-                            if (resp.audio_url) resultUrls.push(resp.audio_url);
-                            if (resp.audioUrl) resultUrls.push(resp.audioUrl);
                             if (resp.video_url) resultUrls.push(resp.video_url);
                             if (resp.videoUrl) resultUrls.push(resp.videoUrl);
                             if (resp.url) resultUrls.push(resp.url);
@@ -517,9 +573,8 @@ CRITICAL MANDATORY INSTRUCTIONS:
                             taskInfo.data.forEach(item => {
                                 if (typeof item === 'string') resultUrls.push(item);
                                 else if (item && typeof item === 'object') {
-                                    if (item.audio_url) resultUrls.push(item.audio_url);
-                                    if (item.stream_audio_url) resultUrls.push(item.stream_audio_url);
                                     if (item.url) resultUrls.push(item.url);
+                                    if (item.audio_url) resultUrls.push(item.audio_url);
                                 }
                             });
                         }
@@ -530,12 +585,13 @@ CRITICAL MANDATORY INSTRUCTIONS:
                             else if (taskInfo.output.url) resultUrls.push(taskInfo.output.url);
                         }
 
-                        if (isAudioTask) {
-                            const allAudio = [...new Set(resultUrls.filter(u => typeof u === 'string' && Boolean(u.trim())))];
+                        if (isAudioTask || audioTracks.length > 0) {
+                            const allAudio = audioTracks.length > 0 ? audioTracks : [...new Set(resultUrls.filter(u => typeof u === 'string' && Boolean(u.trim())))];
                             if (allAudio.length > 0) {
                                 const cleanAudioUrls = await Promise.all(
                                     allAudio.slice(0, 2).map((url, idx) => persistResultToSupabase(url, `${orderId}_track${idx + 1}`, false))
                                 );
+                                console.log(`[Generate Audio] Найдено ${allAudio.length} уникальных треков. Вариант 1: ${cleanAudioUrls[0]}, Вариант 2: ${cleanAudioUrls[1] || 'нет'}`);
                                 return {
                                     resultUrl: cleanAudioUrls[0],
                                     audioUrls: cleanAudioUrls,
