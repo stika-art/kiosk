@@ -57,41 +57,25 @@ function getStoredMainHeader() {
 
 function normalizeMainCards(cards) {
     let list = Array.isArray(cards) ? [...cards] : [];
-    // Полностью удаляем любые карточки пригласительных
+    // Полностью удаляем любые карточки пригласительных, трендов, примерки и дополненной реальности
     list = list.filter(c => {
         const t = (c.title || '').toUpperCase();
         const f = (c.filter || '').toUpperCase();
-        return !t.includes('ПРИГЛАС') && f !== 'INVITE' && f !== 'INVITES';
+        const id = Number(c.id);
+        if (t.includes('ПРИГЛАС') || f === 'INVITE' || f === 'INVITES') return false;
+        if (id === 3 || t.includes('ТРЕНД') || f === 'TRENDS' || f === 'TREND') return false;
+        if (id === 4 || id === 5 || t.includes('ПРИМЕР') || f === 'TRYON' || t.includes('ОДЕЖД')) return false;
+        if (id === 7 || t.includes('ДОПОЛНЕН') || t.includes('AR') || f === 'AR') return false;
+        return true;
     });
 
     if (list.length === 0) {
         list = [
             { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
             { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
-            { id: 3, title: 'ТРЕНДЫ', badge: 'ПОПУЛЯРНЫЕ ОБРАЗЫ', subtitle: 'СОВРЕМЕННЫЕ ЭСТЕТИЧЕСКИЕ ОБРАЗЫ', filter: 'TRENDS', category: 'ТРЕНДЫ', img: 'assets/hero_robot.jpg', categories: ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'] },
-            { id: 4, title: 'ПРИМЕРКА', badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ', subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК', filter: 'TRYON', category: 'ПРИМЕРКА', img: 'assets/1489.jpg', categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'] },
-            { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] },
-            { id: 7, title: 'ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ', badge: '✨ AR • ОЖИВАЮЩЕЕ ФОТО', subtitle: 'ОЖИВИТЕ ФОТО ИЛИ ВИДЕО ЧЕРЕЗ КАМЕРУ СМАРТФОНА', filter: 'AR', category: 'AR', img: 'assets/hero_robot.jpg', categories: ['AR ФОТО', 'ОЖИВАНИЕ', 'ВИДЕО-ОТКРЫТКА', '3D АРТ'] }
+            { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] }
         ];
     } else {
-        let tryOnCard = list.find(c => c.id === 4 || c.id === 5 || (c.title && c.title.toUpperCase().includes('ПРИМЕР')));
-        if (!tryOnCard) {
-            list.push({
-                id: 4,
-                title: 'ПРИМЕРКА',
-                badge: 'ОНЛАЙН ПРИМЕРКА • ОДЕЖДА • МЕРЧ',
-                subtitle: 'ПРИМЕРЬТЕ ТОЛСТОВКИ, ХУДИ И ТОВАРЫ В 1 КЛИК',
-                filter: 'TRYON',
-                category: 'ПРИМЕРКА',
-                img: 'assets/1489.jpg',
-                categories: ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ']
-            });
-        } else {
-            tryOnCard.id = 4;
-            tryOnCard.title = 'ПРИМЕРКА';
-            tryOnCard.filter = 'TRYON';
-        }
-
         let musicCard = list.find(c => c.id === 6 || (c.filter && c.filter.toUpperCase() === 'MUSIC') || (c.title && c.title.toUpperCase().includes('ТРЕК')));
         if (!musicCard) {
             list.push({
@@ -105,20 +89,6 @@ function normalizeMainCards(cards) {
                 categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК']
             });
         }
-
-        let arCard = list.find(c => c.id === 7 || (c.filter && c.filter.toUpperCase() === 'AR') || (c.title && c.title.toUpperCase().includes('ДОПОЛНЕН')) || (c.title && c.title.toUpperCase().includes('AR')));
-        if (!arCard) {
-            list.push({
-                id: 7,
-                title: 'ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ',
-                badge: '✨ AR • ОЖИВАЮЩЕЕ ФОТО',
-                subtitle: 'ОЖИВИТЕ ФОТО ИЛИ ВИДЕО ЧЕРЕЗ КАМЕРУ СМАРТФОНА',
-                filter: 'AR',
-                category: 'AR',
-                img: 'assets/hero_robot.jpg',
-                categories: ['AR ФОТО', 'ОЖИВАНИЕ', 'ВИДЕО-ОТКРЫТКА', '3D АРТ']
-            });
-        }
     }
 
     return list.map(c => {
@@ -129,17 +99,11 @@ function normalizeMainCards(cards) {
                 cats = ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'];
             } else if (c.id === 2 || titleUp === 'ВИДЕО') {
                 cats = ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'];
-            } else if (c.id === 3 || titleUp === 'ТРЕНДЫ') {
-                cats = ['TIKTOK', 'REELS', 'ПРОЖАРКА', 'INSTA VIBE'];
-            } else if (c.id === 4 || c.id === 5 || titleUp.includes('ПРИМЕР') || titleUp.includes('ОДЕЖД')) {
-                cats = ['ТОЛСТОВКИ', 'ХУДИ', 'ФУТБОЛКИ', 'КУРТКИ', 'МЕРЧ'];
             } else if (c.id === 6 || titleUp.includes('ТРЕК') || titleUp.includes('МУЗЫК')) {
                 cats = ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'];
             } else {
                 cats = [c.title || 'ОБЩЕЕ'];
             }
-        } else if ((c.id === 3 || titleUp === 'ТРЕНДЫ') && !cats.some(ct => ct.toUpperCase() === 'ПРОЖАРКА')) {
-            cats.splice(2, 0, 'ПРОЖАРКА');
         }
         return {
             ...c,
@@ -203,8 +167,7 @@ function renderMainCards() {
 // ТРЕКОВЫЕ ШАБЛОНЫ ДЛЯ 3D COVERFLOW ГАЛЕРЕИ (STYLE DRIBBLE)
 const templateCatalog = {
     'ФОТО': [],
-    'ВИДЕО': [],
-    'ТРЕНДЫ': []
+    'ВИДЕО': []
 };
 
 // DYNAMIC CATEGORIES & TEMPLATES ENGINE WITH LOCALSTORAGE
@@ -214,8 +177,12 @@ try {
     if (savedCats) kioskCategories = JSON.parse(savedCats);
 } catch (e) { }
 
+if (Array.isArray(kioskCategories) && kioskCategories.length > 0) {
+    kioskCategories = kioskCategories.filter(c => c !== 'ТРЕНДЫ' && c !== 'ПРИМЕРКА');
+}
+
 if (!kioskCategories || kioskCategories.length === 0) {
-    kioskCategories = ['ВСЕ', 'ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'ВИДЕО', 'ТРЕНДЫ'];
+    kioskCategories = ['ВСЕ', 'ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'ВИДЕО', 'МУЗЫКА'];
 }
 
 const LEGACY_STANDARD_TITLES = [
@@ -1097,21 +1064,17 @@ function normalizeTemplates(tplList, cardsList) {
         const titleUp = (t.title || '').toUpperCase();
         const stUp = (stitle || '').toUpperCase();
 
-        if (sid === 5 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || catUp.includes('ТОЛСТОВ') || catUp.includes('ХУДИ') || catUp.includes('ФУТБОЛ') || catUp.includes('КУРТК') || catUp.includes('МЕРЧ') || titleUp.includes('ТОЛСТОВ') || titleUp.includes('ХУДИ') || Boolean(t.location)) {
-            sid = 4;
-            stitle = 'ПРИМЕРКА';
-        } else if (!sid) {
-            if (catUp === 'ВИДЕО' || modelUp.includes('omni') || modelUp.includes('video')) {
+        if (!sid || sid === 3 || sid === 4 || sid === 5 || sid === 7 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || catUp.includes('ТРЕНД') || stUp.includes('ТРЕНД')) {
+            if (catUp === 'ВИДЕО' || modelUp.includes('omni') || modelUp.includes('video') || modelUp.includes('pixverse')) {
                 sid = 2;
                 stitle = 'ВИДЕО';
-                if (catUp === 'ВИДЕО') cat = 'НЕОН';
-            } else if (catUp === 'ТРЕНДЫ' || catUp.includes('ПРОЖАР') || modelUp.includes('roast') || titleUp.includes('TREND') || titleUp.includes('ПРОЖАР')) {
-                sid = 3;
-                stitle = 'ТРЕНДЫ';
-                if (!cat || cat === 'ОБЩЕЕ' || catUp === 'ТРЕНДЫ') cat = modelUp.includes('roast') ? 'ПРОЖАРКА' : 'TIKTOK';
+                if (catUp === 'ВИДЕО' || catUp === 'ТРЕНДЫ' || catUp === 'ПРИМЕРКА') cat = 'НЕОН';
             } else {
                 sid = 1;
                 stitle = 'ФОТО';
+                if (catUp === 'ТРЕНДЫ' || catUp === 'ПРИМЕРКА' || catUp.includes('ТОЛСТОВ') || catUp.includes('ХУДИ') || catUp.includes('ФУТБОЛ')) {
+                    cat = 'АРТ';
+                }
             }
         }
 
@@ -1378,9 +1341,9 @@ function openTemplateGallery(cardIdOrMode) {
     if (!masterTemplates.some(t => (t.model || '').toLowerCase() === 'roast-standup')) {
         masterTemplates.push({
             id: 99,
-            sectionId: 3,
-            sectionTitle: 'ТРЕНДЫ',
-            category: 'ПРОЖАРКА',
+            sectionId: 1,
+            sectionTitle: 'ФОТО',
+            category: 'АРТ',
             title: '🔥 СТЕНДАП-ПРОЖАРКА',
             img: 'assets/hero_portrait.jpg',
             price: 190,
@@ -1389,7 +1352,11 @@ function openTemplateGallery(cardIdOrMode) {
         });
     } else {
         const rTpl = masterTemplates.find(t => (t.model || '').toLowerCase() === 'roast-standup');
-        if (rTpl) rTpl.title = '🔥 СТЕНДАП-ПРОЖАРКА';
+        if (rTpl) {
+            rTpl.title = '🔥 СТЕНДАП-ПРОЖАРКА';
+            rTpl.sectionId = 1;
+            rTpl.sectionTitle = 'ФОТО';
+        }
     }
 
     try {
