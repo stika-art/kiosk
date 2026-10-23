@@ -1505,6 +1505,38 @@
 
         <!-- TAB: FAIRYTALE VOICES (ТОЛЬКО ПО VOICE ID ИЗ ELEVENLABS) -->
         <section id="tab-content-fairytale" class="admin-tab-content hidden">
+            <!-- БЛОК НАСТРОЕК ELEVENLABS 4 -->
+            <div class="admin-card" style="margin-bottom: 24px; border: 1px solid var(--primary-border); background: linear-gradient(180deg, rgba(212,160,67,0.06) 0%, rgba(20,20,20,0.95) 100%);">
+                <div class="card-header">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h2 class="card-title" style="color: var(--primary);">⚡ Настройки генератора ElevenLabs 4 (Eleven v4)</h2>
+                            <p class="card-subtitle">Для максимального качества детской сказки используется флагманский движок <strong>ElevenLabs 4 (eleven_v4)</strong>. Укажите ваш API-ключ ElevenLabs для мгновенного синтеза без задержек.</p>
+                        </div>
+                        <span class="badge" style="background: rgba(212,160,67,0.2); color: var(--primary); padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 12px; border: 1px solid var(--primary-border);">🌟 ELEVENLABS 4 ENGINE</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; margin-top: 14px;">
+                    <div style="flex: 1; min-width: 320px;">
+                        <label style="font-size: 12px; color: var(--text-dim); display: block; margin-bottom: 6px; font-weight: 700;">API-КЛЮЧ ELEVENLABS (ИЗ ЛИЧНОГО КАБИНЕТА ELEVENLABS.IO):</label>
+                        <input type="password" id="fairytale-elevenlabs-key" class="admin-input" style="width: 100%; font-family: monospace; font-size: 13px;" placeholder="sk_... (вставьте ваш ключ ElevenLabs)">
+                    </div>
+                    <div style="width: 280px;">
+                        <label style="font-size: 12px; color: var(--text-dim); display: block; margin-bottom: 6px; font-weight: 700;">МОДЕЛЬ СИНТЕЗА РЕЧИ:</label>
+                        <select id="fairytale-elevenlabs-model" class="admin-input" style="width: 100%;">
+                            <option value="eleven_v4" selected>ElevenLabs 4 (eleven_v4) — Флагман</option>
+                            <option value="eleven_v4_turbo">ElevenLabs 4 Turbo (Low Latency)</option>
+                            <option value="eleven_multilingual_v2">ElevenLabs Multilingual v2</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button class="btn-primary" type="button" style="padding: 12px 24px; font-weight: 800;" onclick="saveFairytaleElevenSettings()">💾 Сохранить ElevenLabs 4</button>
+                    </div>
+                </div>
+                <div id="fairytale-key-status" class="status-msg"></div>
+            </div>
+
             <!-- ТАБЛИЦА 1: ИНОСТРАННЫЕ / РУССКИЕ ГОЛОСА -->
             <div class="admin-card">
                 <div class="card-header">
@@ -5162,6 +5194,8 @@
                     openai_key: localStorage.getItem('kiosk_openai_key') || '',
                     fairytale_voices_foreign: fairytaleVoicesForeign,
                     fairytale_voices_kyrgyz: fairytaleVoicesKyrgyz,
+                    elevenlabs_api_key: localStorage.getItem('kiosk_elevenlabs_api_key') || '',
+                    elevenlabs_model: localStorage.getItem('kiosk_elevenlabs_model') || 'eleven_v4',
                     finik_account_id: localStorage.getItem('kiosk_finik_account_id') || '',
                     finik_pos_id: localStorage.getItem('kiosk_finik_pos_id') || '',
                     finik_merchant_name: localStorage.getItem('kiosk_finik_merchant_name') || '',
@@ -5319,6 +5353,16 @@
                         if (fChanged) {
                             renderFairytaleVoicesTables();
                         }
+                    }
+                    if (data.elevenlabs_api_key !== undefined) {
+                        try { localStorage.setItem('kiosk_elevenlabs_api_key', data.elevenlabs_api_key); } catch(e){}
+                        const keyInp = document.getElementById('fairytale-elevenlabs-key');
+                        if (keyInp) keyInp.value = data.elevenlabs_api_key;
+                    }
+                    if (data.elevenlabs_model !== undefined) {
+                        try { localStorage.setItem('kiosk_elevenlabs_model', data.elevenlabs_model); } catch(e){}
+                        const modInp = document.getElementById('fairytale-elevenlabs-model');
+                        if (modInp) modInp.value = data.elevenlabs_model;
                     }
                     if (data.pixverse_markup) {
                         try {
@@ -5615,9 +5659,50 @@
             }
         }
 
+        function loadFairytaleElevenSettings() {
+            try {
+                const key = localStorage.getItem('kiosk_elevenlabs_api_key') || '';
+                const model = localStorage.getItem('kiosk_elevenlabs_model') || 'eleven_v4';
+                const keyInp = document.getElementById('fairytale-elevenlabs-key');
+                const modInp = document.getElementById('fairytale-elevenlabs-model');
+                if (keyInp) keyInp.value = key;
+                if (modInp) modInp.value = model;
+            } catch(e) {}
+        }
+
+        async function saveFairytaleElevenSettings() {
+            const keyInp = document.getElementById('fairytale-elevenlabs-key');
+            const modInp = document.getElementById('fairytale-elevenlabs-model');
+            const status = document.getElementById('fairytale-key-status');
+            const val = keyInp ? keyInp.value.trim() : '';
+            const modelVal = modInp ? modInp.value : 'eleven_v4';
+
+            localStorage.setItem('kiosk_elevenlabs_api_key', val);
+            localStorage.setItem('kiosk_elevenlabs_model', modelVal);
+
+            if (status) {
+                status.textContent = '⏳ Сохранение настроек ElevenLabs 4 в облако...';
+                status.className = 'status-msg';
+            }
+            try {
+                await syncAllToCloud();
+                if (status) {
+                    status.textContent = '✅ Настройки ElevenLabs 4 успешно сохранены в облако!';
+                    status.className = 'status-msg success';
+                    setTimeout(() => { if (status.textContent.includes('успешно')) status.textContent = ''; }, 4000);
+                }
+            } catch(e) {
+                if (status) {
+                    status.textContent = '❌ Ошибка сохранения: ' + e.message;
+                    status.className = 'status-msg error';
+                }
+            }
+        }
+
         // Init on load
         checkAuth();
         loadKioskSettings();
+        loadFairytaleElevenSettings();
         loadAggregatorSettings();
         loadPaymentSettings();
         loadMusicPriceSettings();

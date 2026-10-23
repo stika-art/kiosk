@@ -170,6 +170,74 @@ function sanitizeForOpenAI(p) {
         .replace(/\binstagram\b/gi, 'social media aesthetic');
 }
 
+// 4b. Прямой синтез детской аудиосказки через новейший ElevenLabs 4 (модель eleven_v4)
+async function generateViaElevenLabsDirect({ apiKey, voiceId, text, orderId, modelId = 'eleven_v4' }) {
+    if (!apiKey || !text) return null;
+    const cleanVoiceId = (voiceId || 'JBFqnCBsd6RMkjVDRZzb').trim();
+    const endpoint = `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(cleanVoiceId)}`;
+    const targetModel = modelId || 'eleven_v4';
+
+    console.log(`[ElevenLabs 4 Engine] Прямой синтез через "${targetModel}" (voice: ${cleanVoiceId}, length: ${text.length} символов)...`);
+
+    try {
+        const resp = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'xi-api-key': apiKey
+            },
+            body: JSON.stringify({
+                text: text,
+                model_id: targetModel,
+                voice_settings: {
+                    stability: 0.55,
+                    similarity_boost: 0.75,
+                    style: 0.35,
+                    use_speaker_boost: true
+                }
+            })
+        });
+
+        if (!resp.ok) {
+            const errBody = await resp.text().catch(() => '');
+            console.warn(`[ElevenLabs 4 Error] HTTP ${resp.status}:`, errBody);
+            return { failed: true, error: `ElevenLabs 4: HTTP ${resp.status} - ${errBody.slice(0, 140)}` };
+        }
+
+        const arrayBuffer = await resp.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const safeOrder = (orderId || Date.now()).toString().replace(/[^a-zA-Z0-9_-]/g, '_');
+        const filename = `results/fairytale_${safeOrder}_${Math.random().toString(36).substring(7)}.mp3`;
+
+        const supaRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'audio/mpeg',
+                'x-upsert': 'true'
+            },
+            body: buffer
+        });
+
+        if (supaRes.ok) {
+            const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${filename}`;
+            console.log(`[ElevenLabs 4] Аудиосказка успешно сгенерирована и сохранена в Supabase CDN:`, publicUrl);
+            return {
+                success: true,
+                resultUrl: publicUrl,
+                mediaUrl: publicUrl,
+                audioUrls: [publicUrl],
+                isAudio: true,
+                model: targetModel
+            };
+        }
+        return { failed: true, error: 'Ошибка сохранения аудиофайла сказки в Supabase CDN' };
+    } catch (err) {
+        console.warn(`[ElevenLabs 4 Exception]`, err.message);
+        return { failed: true, error: `ElevenLabs 4: ${err.message}` };
+    }
+}
+
 // 5. Вызов Kie.ai API и ожидание результата задачи генерации изображения или видео
 async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution, orderId, title, duration, isFairytale, fairytaleData, voiceId }) {
     const isMusicTarget = (model === 'suno' || (model && model.toLowerCase().includes('suno')) || (model && model.toLowerCase().includes('music')));
@@ -237,12 +305,14 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     // Формирование входных данных под выбранный тип модели
     let inputPayload = {};
     if (isFairytaleModel) {
-        // Озвучивание сказки через ElevenLabs Multilingual V2 в Kie.ai
+        // Озвучивание сказки через ElevenLabs 4 (eleven_v4) в Kie.ai
         const targetVoice = voiceId || 'James';
         const storyText = safePrompt || 'Жил-был на свете маленький герой, который очень любил волшебные приключения.';
         inputPayload = {
             text: storyText,
             voice: targetVoice,
+            model_id: 'eleven_v4',
+            model: 'eleven_v4',
             stability: 0.55,
             similarity_boost: 0.75
         };
@@ -825,23 +895,55 @@ module.exports = async (req, res) => {
             }
         }
 
-        // 2. Запуск генерации через выбранную модель (Kie.ai)
-        const generationOutcome = effectiveKey ? await generateViaKie({
-            apiKey: effectiveKey,
-            model: model || 'chatgpt-2.5',
-            prompt: fairytaleNarrative || prompt,
-            publicPhotoUrl,
-            guestVideoUrl: publicGuestVideoUrl,
-            templateImgUrl: publicTemplateUrl,
-            isTryOn: Boolean(isTryOn),
-            isFairytale: isFairytaleReq,
-            fairytaleData,
-            voiceId: activeVoiceId,
-            resolution: targetResolution,
-            orderId,
-            title,
-            duration
-        }) : null;
+        // 2. Для аудиосказки: приоритетный вызов официального ElevenLabs 4 (eleven_v4)
+        let generationOutcome = null;
+
+        if (isFairytaleReq) {
+            let elKey = body.elevenlabsApiKey || process.env.ELEVENLABS_API_KEY;
+            let elModel = body.elevenlabsModel || 'eleven_v4';
+
+            if (!elKey) {
+                try {
+                    const cfgRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?_t=${Date.now()}`);
+                    if (cfgRes.ok) {
+                        const cfg = await cfgRes.json();
+                        if (cfg.elevenlabs_api_key) elKey = cfg.elevenlabs_api_key;
+                        if (cfg.elevenlabs_model) elModel = cfg.elevenlabs_model;
+                    }
+                } catch (e) { }
+            }
+
+            if (elKey) {
+                console.log(`[AI Hub] Вызов официального ElevenLabs 4 (${elModel}) для сказки (voice: ${activeVoiceId})...`);
+                generationOutcome = await generateViaElevenLabsDirect({
+                    apiKey: elKey,
+                    voiceId: activeVoiceId,
+                    text: fairytaleNarrative || prompt,
+                    orderId,
+                    modelId: elModel
+                });
+            }
+        }
+
+        // Если прямой вызов не был настроен или не вернул результат — запуск через Kie.ai
+        if (!generationOutcome) {
+            generationOutcome = effectiveKey ? await generateViaKie({
+                apiKey: effectiveKey,
+                model: isFairytaleReq ? 'elevenlabs/text-to-speech-multilingual-v2' : (model || 'chatgpt-2.5'),
+                prompt: fairytaleNarrative || prompt,
+                publicPhotoUrl,
+                guestVideoUrl: publicGuestVideoUrl,
+                templateImgUrl: publicTemplateUrl,
+                isTryOn: Boolean(isTryOn),
+                isFairytale: isFairytaleReq,
+                fairytaleData,
+                voiceId: activeVoiceId,
+                resolution: targetResolution,
+                orderId,
+                title,
+                duration
+            }) : null;
+        }
 
         const effectiveModelName = generationOutcome?.model || model || (isTryOn ? 'nano-banana-2' : 'chatgpt-2.5');
 
@@ -884,9 +986,26 @@ module.exports = async (req, res) => {
             return res.status(200).json(pendingResp);
         }
 
-        let generatedImageUrl = generationOutcome?.resultUrl || null;
+        let generatedImageUrl = generationOutcome?.resultUrl || generationOutcome?.mediaUrl || null;
         if (generatedImageUrl && !generatedImageUrl.includes('supabase.co')) {
             generatedImageUrl = await persistResultToSupabase(generatedImageUrl, orderId, Boolean(generationOutcome?.isVideo));
+        }
+
+        // Если это аудиозадача (сказка ElevenLabs или трек Suno)
+        if (generationOutcome && generationOutcome.isAudio && generatedImageUrl) {
+            return res.status(200).json({
+                success: true,
+                pending: false,
+                state: 'success',
+                orderId,
+                taskId: generationOutcome?.taskId || null,
+                model: effectiveModelName,
+                resultUrl: generatedImageUrl,
+                audioUrls: generationOutcome.audioUrls || [generatedImageUrl],
+                isAudio: true,
+                title: title || 'Аудиосказка',
+                message: `Успешно создано через ${effectiveModelName}`
+            });
         }
 
         // Защита: ни при каких обстоятельствах не подменять результат видео/фото шаблоном!

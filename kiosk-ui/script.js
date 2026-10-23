@@ -4319,6 +4319,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const aggregatorUrl = localStorage.getItem('kiosk_aggregator_url') || '';
             const aggregatorKey = localStorage.getItem('kiosk_aggregator_key') || '';
+            const elevenlabsApiKey = localStorage.getItem('kiosk_elevenlabs_api_key') || '';
+            const elevenlabsModel = localStorage.getItem('kiosk_elevenlabs_model') || 'eleven_v4';
 
             let finalPrompt = selectedStylePrompt;
             let finalTitle = selectedStyle;
@@ -4344,6 +4346,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     isTryOn: isTryOnMode,
                     isFairytale: isFairytaleSelection,
                     fairytaleData: guestFairytaleData,
+                    elevenlabsApiKey,
+                    elevenlabsModel,
                     resolution: '1K',
                     duration: selectedVideoDuration || 5,
                     aggregatorUrl,

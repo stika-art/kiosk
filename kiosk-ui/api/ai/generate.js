@@ -170,10 +170,79 @@ function sanitizeForOpenAI(p) {
         .replace(/\binstagram\b/gi, 'social media aesthetic');
 }
 
+// 4b. Прямой синтез детской аудиосказки через новейший ElevenLabs 4 (модель eleven_v4)
+async function generateViaElevenLabsDirect({ apiKey, voiceId, text, orderId, modelId = 'eleven_v4' }) {
+    if (!apiKey || !text) return null;
+    const cleanVoiceId = (voiceId || 'JBFqnCBsd6RMkjVDRZzb').trim();
+    const endpoint = `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(cleanVoiceId)}`;
+    const targetModel = modelId || 'eleven_v4';
+
+    console.log(`[ElevenLabs 4 Engine] Прямой синтез через "${targetModel}" (voice: ${cleanVoiceId}, length: ${text.length} символов)...`);
+
+    try {
+        const resp = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'xi-api-key': apiKey
+            },
+            body: JSON.stringify({
+                text: text,
+                model_id: targetModel,
+                voice_settings: {
+                    stability: 0.55,
+                    similarity_boost: 0.75,
+                    style: 0.35,
+                    use_speaker_boost: true
+                }
+            })
+        });
+
+        if (!resp.ok) {
+            const errBody = await resp.text().catch(() => '');
+            console.warn(`[ElevenLabs 4 Error] HTTP ${resp.status}:`, errBody);
+            return { failed: true, error: `ElevenLabs 4: HTTP ${resp.status} - ${errBody.slice(0, 140)}` };
+        }
+
+        const arrayBuffer = await resp.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const safeOrder = (orderId || Date.now()).toString().replace(/[^a-zA-Z0-9_-]/g, '_');
+        const filename = `results/fairytale_${safeOrder}_${Math.random().toString(36).substring(7)}.mp3`;
+
+        const supaRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'audio/mpeg',
+                'x-upsert': 'true'
+            },
+            body: buffer
+        });
+
+        if (supaRes.ok) {
+            const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${filename}`;
+            console.log(`[ElevenLabs 4] Аудиосказка успешно сгенерирована и сохранена в Supabase CDN:`, publicUrl);
+            return {
+                success: true,
+                resultUrl: publicUrl,
+                mediaUrl: publicUrl,
+                audioUrls: [publicUrl],
+                isAudio: true,
+                model: targetModel
+            };
+        }
+        return { failed: true, error: 'Ошибка сохранения аудиофайла сказки в Supabase CDN' };
+    } catch (err) {
+        console.warn(`[ElevenLabs 4 Exception]`, err.message);
+        return { failed: true, error: `ElevenLabs 4: ${err.message}` };
+    }
+}
+
 // 5. Вызов Kie.ai API и ожидание результата задачи генерации изображения или видео
-async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution, orderId, title, duration }) {
+async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution, orderId, title, duration, isFairytale, fairytaleData, voiceId }) {
     const isMusicTarget = (model === 'suno' || (model && model.toLowerCase().includes('suno')) || (model && model.toLowerCase().includes('music')));
-    if (!apiKey || (!isMusicTarget && !publicPhotoUrl && !guestVideoUrl && !templateImgUrl)) return null;
+    const isFairytaleTarget = Boolean(isFairytale) || model === 'fairytale' || (model && model.toLowerCase().includes('fairytale')) || (model && model.toLowerCase().includes('elevenlabs'));
+    if (!apiKey || (!isMusicTarget && !isFairytaleTarget && !publicPhotoUrl && !guestVideoUrl && !templateImgUrl)) return null;
 
     // Разрешение: строго 1K для ультра-быстрой генерации 5-8 сек на киоске
     const targetResolution = '1K';
@@ -207,6 +276,9 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     } else if (model === 'suno' || model === 'suno-v6' || model === 'suno-v6-mini' || model === 'suno-v6-wild' || model === 'suno-v4' || model === 'suno-v3.5' || model === 'ai-music-api/generate' || (typeof model === 'string' && (model.includes('suno') || model.includes('music') || model.includes('трек') || model.includes('песн')))) {
         // Suno AI (V6) — Генерация музыки и песен через официальный API Kie.ai
         kieModel = 'ai-music-api/generate';
+    } else if (model === 'fairytale' || isFairytaleTarget || (typeof model === 'string' && (model.includes('elevenlabs') || model.includes('fairytale') || model.includes('сказк')))) {
+        // ElevenLabs Multilingual V2 — Синтез сказочного голоса диктора
+        kieModel = 'elevenlabs/text-to-speech-multilingual-v2';
     } else if (model && model !== 'default') {
         kieModel = model;
     } else {
@@ -217,7 +289,8 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     const isPixverse = kieModel === 'pixverse/v6/image-to-video' || kieModel.includes('pixverse');
     const isGeminiOmni = kieModel === 'gemini-omni-video' || kieModel.includes('gemini') || kieModel.includes('omni');
     const isMusicModel = kieModel === 'ai-music-api/generate' || kieModel.includes('music') || kieModel.includes('suno');
-    const isVideoModel = !isMusicModel && (isPixverse ||
+    const isFairytaleModel = kieModel === 'elevenlabs/text-to-speech-multilingual-v2' || kieModel.includes('elevenlabs') || isFairytaleTarget;
+    const isVideoModel = !isMusicModel && !isFairytaleModel && (isPixverse ||
                          isGeminiOmni ||
                          kieModel.includes('video') ||
                          kieModel.includes('kling') ||
@@ -225,13 +298,25 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
                          kieModel.includes('luma') ||
                          kieModel.includes('hailuo'));
 
-    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isMusic=${isMusicModel}, isPixverse=${isPixverse}, duration=${duration || 5}s, isTryOn=${Boolean(isTryOn)})...`);
+    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isMusic=${isMusicModel}, isFairytale=${isFairytaleModel}, isPixverse=${isPixverse}, duration=${duration || 5}s, isTryOn=${Boolean(isTryOn)})...`);
 
     const safePrompt = sanitizeForOpenAI(prompt);
 
     // Формирование входных данных под выбранный тип модели
     let inputPayload = {};
-    if (isMusicModel) {
+    if (isFairytaleModel) {
+        // Озвучивание сказки через ElevenLabs 4 (eleven_v4) в Kie.ai
+        const targetVoice = voiceId || 'James';
+        const storyText = safePrompt || 'Жил-был на свете маленький герой, который очень любил волшебные приключения.';
+        inputPayload = {
+            text: storyText,
+            voice: targetVoice,
+            model_id: 'eleven_v4',
+            model: 'eleven_v4',
+            stability: 0.55,
+            similarity_boost: 0.75
+        };
+    } else if (isMusicModel) {
         // Генерация полноценной музыки и песен через Suno AI (актуальная флагманская версия V6 в Kie.ai)
         const musicPrompt = (safePrompt && safePrompt.trim().length > 3)
             ? safePrompt.trim()
@@ -424,7 +509,9 @@ CRITICAL MANDATORY INSTRUCTIONS:
                                 targetModel.includes('hailuo');
             const isAudioTask = targetModel.includes('music') ||
                                 targetModel.includes('suno') ||
-                                targetModel.includes('audio');
+                                targetModel.includes('audio') ||
+                                targetModel.includes('elevenlabs') ||
+                                targetModel.includes('fairytale');
 
             if (!taskId) {
                 const failReason = (createData && (createData.msg || createData.message)) 
@@ -493,6 +580,65 @@ CRITICAL MANDATORY INSTRUCTIONS:
                                 }
                             } catch(e) {}
                         }
+                        // Извлечение аудио-треков (гарантирует, что Вариант 1 и Вариант 2 — это РАЗНЫЕ треки от Suno, а не stream_audio_url одного трека)
+                        const audioTracks = [];
+                        const addAudioTrack = (u) => {
+                            if (!u || typeof u !== 'string') return;
+                            const s = u.trim();
+                            if (!s) return;
+                            if (!audioTracks.includes(s)) audioTracks.push(s);
+                        };
+
+                        const processAudioItem = (item) => {
+                            if (!item) return;
+                            if (typeof item === 'string') {
+                                addAudioTrack(item);
+                                return;
+                            }
+                            if (typeof item === 'object') {
+                                // Главное: берем audio_url (основной MP3), и НЕ берем stream_audio_url того же трека
+                                const mainAudio = item.audio_url || item.audioUrl || item.music_url;
+                                if (mainAudio) {
+                                    addAudioTrack(mainAudio);
+                                    return;
+                                }
+                                if (item.stream_audio_url) {
+                                    addAudioTrack(item.stream_audio_url);
+                                    return;
+                                }
+                                if (item.url && (item.url.includes('.mp3') || item.url.includes('.wav') || item.url.includes('audio') || item.url.includes('suno'))) {
+                                    addAudioTrack(item.url);
+                                }
+                            }
+                        };
+
+                        if (taskInfo.response) {
+                            const resp = taskInfo.response;
+                            if (Array.isArray(resp.data)) resp.data.forEach(processAudioItem);
+                            if (Array.isArray(resp.resultUrls)) resp.resultUrls.forEach(processAudioItem);
+                            if (resp.audio_url) addAudioTrack(resp.audio_url);
+                            if (resp.audioUrl) addAudioTrack(resp.audioUrl);
+                        }
+                        if (taskInfo.data && Array.isArray(taskInfo.data)) {
+                            taskInfo.data.forEach(processAudioItem);
+                        }
+                        if (taskInfo.resultJson) {
+                            try {
+                                const parsed = typeof taskInfo.resultJson === 'string' ? JSON.parse(taskInfo.resultJson) : taskInfo.resultJson;
+                                if (parsed) {
+                                    if (Array.isArray(parsed.data)) parsed.data.forEach(processAudioItem);
+                                    if (Array.isArray(parsed.audios)) parsed.audios.forEach(processAudioItem);
+                                    if (Array.isArray(parsed.audio_urls)) parsed.audio_urls.forEach(processAudioItem);
+                                    if (Array.isArray(parsed.resultUrls)) parsed.resultUrls.forEach(processAudioItem);
+                                    if (parsed.audio_url) addAudioTrack(parsed.audio_url);
+                                    if (parsed.audioUrl) addAudioTrack(parsed.audioUrl);
+                                }
+                            } catch(e) {}
+                        }
+                        if (taskInfo.output) processAudioItem(taskInfo.output);
+                        if (taskInfo.audio_url) addAudioTrack(taskInfo.audio_url);
+                        if (taskInfo.audioUrl) addAudioTrack(taskInfo.audioUrl);
+
                         if (taskInfo.response) {
                             const resp = taskInfo.response;
                             if (Array.isArray(resp.resultUrls)) resultUrls.push(...resp.resultUrls);
@@ -500,15 +646,12 @@ CRITICAL MANDATORY INSTRUCTIONS:
                                 resp.data.forEach(item => {
                                     if (typeof item === 'string') resultUrls.push(item);
                                     else if (item && typeof item === 'object') {
-                                        if (item.audio_url) resultUrls.push(item.audio_url);
-                                        if (item.stream_audio_url) resultUrls.push(item.stream_audio_url);
                                         if (item.url) resultUrls.push(item.url);
                                         if (item.video_url) resultUrls.push(item.video_url);
+                                        if (item.audio_url) resultUrls.push(item.audio_url);
                                     }
                                 });
                             }
-                            if (resp.audio_url) resultUrls.push(resp.audio_url);
-                            if (resp.audioUrl) resultUrls.push(resp.audioUrl);
                             if (resp.video_url) resultUrls.push(resp.video_url);
                             if (resp.videoUrl) resultUrls.push(resp.videoUrl);
                             if (resp.url) resultUrls.push(resp.url);
@@ -517,9 +660,8 @@ CRITICAL MANDATORY INSTRUCTIONS:
                             taskInfo.data.forEach(item => {
                                 if (typeof item === 'string') resultUrls.push(item);
                                 else if (item && typeof item === 'object') {
-                                    if (item.audio_url) resultUrls.push(item.audio_url);
-                                    if (item.stream_audio_url) resultUrls.push(item.stream_audio_url);
                                     if (item.url) resultUrls.push(item.url);
+                                    if (item.audio_url) resultUrls.push(item.audio_url);
                                 }
                             });
                         }
@@ -530,12 +672,13 @@ CRITICAL MANDATORY INSTRUCTIONS:
                             else if (taskInfo.output.url) resultUrls.push(taskInfo.output.url);
                         }
 
-                        if (isAudioTask) {
-                            const allAudio = [...new Set(resultUrls.filter(u => typeof u === 'string' && Boolean(u.trim())))];
+                        if (isAudioTask || audioTracks.length > 0) {
+                            const allAudio = audioTracks.length > 0 ? audioTracks : [...new Set(resultUrls.filter(u => typeof u === 'string' && Boolean(u.trim())))];
                             if (allAudio.length > 0) {
                                 const cleanAudioUrls = await Promise.all(
                                     allAudio.slice(0, 2).map((url, idx) => persistResultToSupabase(url, `${orderId}_track${idx + 1}`, false))
                                 );
+                                console.log(`[Generate Audio] Найдено ${allAudio.length} уникальных треков. Вариант 1: ${cleanAudioUrls[0]}, Вариант 2: ${cleanAudioUrls[1] || 'нет'}`);
                                 return {
                                     resultUrl: cleanAudioUrls[0],
                                     audioUrls: cleanAudioUrls,
@@ -656,7 +799,7 @@ module.exports = async (req, res) => {
         triggerBackgroundCleanup();
 
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-        const { photoData, videoUrl, guestVideoUrl, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey, duration } = body;
+        const { photoData, videoUrl, guestVideoUrl, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey, duration, isFairytale, fairytaleData } = body;
 
         // 0. Защита от дублирования запросов с одного киоска по одному и тому же заказу
         if (orderId && activeOrderTasks.has(orderId)) {
@@ -685,7 +828,9 @@ module.exports = async (req, res) => {
 
         // Защита от списания кредитов Kie.ai без реальных данных
         const isMusicReq = (model === 'suno' || (typeof model === 'string' && (model.includes('suno') || model.includes('music') || model.includes('трек') || model.includes('песн'))));
-        if (!isMusicReq && !photoData && !templateImg && !videoUrl && !guestVideoUrl) {
+        const isFairytaleReq = Boolean(isFairytale) || model === 'fairytale' || (typeof model === 'string' && (model.includes('fairytale') || model.includes('сказк') || model.includes('elevenlabs')));
+
+        if (!isMusicReq && !isFairytaleReq && !photoData && !templateImg && !videoUrl && !guestVideoUrl) {
             console.log('[AI Hub] Входные медиаданные отсутствуют. Обращение к Kie.ai пропущено для защиты кредитов.');
             return res.status(200).json({
                 success: true,
@@ -701,7 +846,7 @@ module.exports = async (req, res) => {
         const rawGuestVideo = guestVideoUrl || videoUrl;
         const publicGuestVideoUrl = rawGuestVideo ? await uploadImageToCDN(rawGuestVideo, 'guests', orderId) : null;
 
-        if (!isMusicReq && !publicPhotoUrl && !publicTemplateUrl && !publicGuestVideoUrl) {
+        if (!isMusicReq && !isFairytaleReq && !publicPhotoUrl && !publicTemplateUrl && !publicGuestVideoUrl) {
             console.log('[AI Hub] Изображения не загружены в CDN. Обращение к Kie.ai отменено для защиты кредитов.');
             return res.status(200).json({
                 success: true,
@@ -711,20 +856,94 @@ module.exports = async (req, res) => {
             });
         }
 
-        // 2. Запуск генерации через выбранную модель (Kie.ai)
-        const generationOutcome = effectiveKey ? await generateViaKie({
-            apiKey: effectiveKey,
-            model: model || 'chatgpt-2.5',
-            prompt,
-            publicPhotoUrl,
-            guestVideoUrl: publicGuestVideoUrl,
-            templateImgUrl: publicTemplateUrl,
-            isTryOn: Boolean(isTryOn),
-            resolution: targetResolution,
-            orderId,
-            title,
-            duration
-        }) : null;
+        // Подбор активного Voice ID из Supabase settings для сказки
+        let activeVoiceId = null;
+        let fairytaleNarrative = prompt;
+
+        if (isFairytaleReq) {
+            const langCode = (fairytaleData?.lang || 'ru').toLowerCase();
+            try {
+                const cfgRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?_t=${Date.now()}`);
+                if (cfgRes.ok) {
+                    const cfg = await cfgRes.json();
+                    const voiceList = (langCode === 'kg' || langCode === 'kyrgyz')
+                        ? (cfg.fairytale_voices_kyrgyz || [])
+                        : (cfg.fairytale_voices_foreign || []);
+                    const activeVoices = voiceList.filter(v => v.active !== false && (v.id || v.name));
+                    if (activeVoices.length > 0) {
+                        const randomVoice = activeVoices[Math.floor(Math.random() * activeVoices.length)];
+                        activeVoiceId = randomVoice.id || randomVoice.name;
+                    }
+                }
+            } catch(e) {
+                console.warn('[AI Hub] Не удалось загрузить голоса из Supabase settings:', e.message);
+            }
+
+            if (!activeVoiceId) {
+                activeVoiceId = (langCode === 'kg' || langCode === 'kyrgyz') ? 'James' : 'Rachel';
+            }
+
+            if (fairytaleData) {
+                const child = fairytaleData.childName || 'малыш';
+                const theme = fairytaleData.theme || 'волшебные приключения';
+                const mood = fairytaleData.mood || 'добрая сказка';
+                if (langCode === 'kg' || langCode === 'kyrgyz') {
+                    fairytaleNarrative = `Бир бар экен, бир жок экен, илгери өткөн заманда ${child} аттуу адептүү жана акылдуу бала жашаптыр. Анын эң чоң кыялы — ${theme} тууралуу экен. Бул ${mood} жомогу анын эр жүрөктүүлүгү жана боорукерлиги жөнүндө баяндайт.`;
+                } else {
+                    fairytaleNarrative = `Жил-был добрый и любознательный герой по имени ${child}. Больше всего на свете ${child} мечтал про ${theme}. И вот однажды сказочные огни осветили дорогу в удивительный мир. Это история про дружбу, чудеса и смелость.`;
+                }
+            }
+        }
+
+        // 2. Для аудиосказки: приоритетный вызов официального ElevenLabs 4 (eleven_v4)
+        let generationOutcome = null;
+
+        if (isFairytaleReq) {
+            let elKey = body.elevenlabsApiKey || process.env.ELEVENLABS_API_KEY;
+            let elModel = body.elevenlabsModel || 'eleven_v4';
+
+            if (!elKey) {
+                try {
+                    const cfgRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?_t=${Date.now()}`);
+                    if (cfgRes.ok) {
+                        const cfg = await cfgRes.json();
+                        if (cfg.elevenlabs_api_key) elKey = cfg.elevenlabs_api_key;
+                        if (cfg.elevenlabs_model) elModel = cfg.elevenlabs_model;
+                    }
+                } catch (e) { }
+            }
+
+            if (elKey) {
+                console.log(`[AI Hub] Вызов официального ElevenLabs 4 (${elModel}) для сказки (voice: ${activeVoiceId})...`);
+                generationOutcome = await generateViaElevenLabsDirect({
+                    apiKey: elKey,
+                    voiceId: activeVoiceId,
+                    text: fairytaleNarrative || prompt,
+                    orderId,
+                    modelId: elModel
+                });
+            }
+        }
+
+        // Если прямой вызов не был настроен или не вернул результат — запуск через Kie.ai
+        if (!generationOutcome) {
+            generationOutcome = effectiveKey ? await generateViaKie({
+                apiKey: effectiveKey,
+                model: isFairytaleReq ? 'elevenlabs/text-to-speech-multilingual-v2' : (model || 'chatgpt-2.5'),
+                prompt: fairytaleNarrative || prompt,
+                publicPhotoUrl,
+                guestVideoUrl: publicGuestVideoUrl,
+                templateImgUrl: publicTemplateUrl,
+                isTryOn: Boolean(isTryOn),
+                isFairytale: isFairytaleReq,
+                fairytaleData,
+                voiceId: activeVoiceId,
+                resolution: targetResolution,
+                orderId,
+                title,
+                duration
+            }) : null;
+        }
 
         const effectiveModelName = generationOutcome?.model || model || (isTryOn ? 'nano-banana-2' : 'chatgpt-2.5');
 
@@ -767,9 +986,26 @@ module.exports = async (req, res) => {
             return res.status(200).json(pendingResp);
         }
 
-        let generatedImageUrl = generationOutcome?.resultUrl || null;
+        let generatedImageUrl = generationOutcome?.resultUrl || generationOutcome?.mediaUrl || null;
         if (generatedImageUrl && !generatedImageUrl.includes('supabase.co')) {
             generatedImageUrl = await persistResultToSupabase(generatedImageUrl, orderId, Boolean(generationOutcome?.isVideo));
+        }
+
+        // Если это аудиозадача (сказка ElevenLabs или трек Suno)
+        if (generationOutcome && generationOutcome.isAudio && generatedImageUrl) {
+            return res.status(200).json({
+                success: true,
+                pending: false,
+                state: 'success',
+                orderId,
+                taskId: generationOutcome?.taskId || null,
+                model: effectiveModelName,
+                resultUrl: generatedImageUrl,
+                audioUrls: generationOutcome.audioUrls || [generatedImageUrl],
+                isAudio: true,
+                title: title || 'Аудиосказка',
+                message: `Успешно создано через ${effectiveModelName}`
+            });
         }
 
         // Защита: ни при каких обстоятельствах не подменять результат видео/фото шаблоном!
