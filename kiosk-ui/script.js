@@ -4794,16 +4794,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     loc: selectedStyleLocation || '',
                     price: selectedStylePrice || ''
                 });
-                // Если музыка или сказка — передаем mode=audio и фон
-                if (isAudioResult) {
+
+                // Если сказка (видео)
+                if (isFairytaleSelection) {
+                    query.set('mode', 'video');
+                    const child = guestFairytaleData?.childName || 'малыша';
+                    query.set('title', `Сказка для ${child}`);
+                } else if (isAudioResult) {
                     query.set('mode', 'audio');
                     if (finalAudioUrls.length >= 2) {
                         query.set('file2', finalAudioUrls[1]);
                     }
-                    if (isFairytaleSelection && currentBgTrackUrl) {
-                        query.set('bg', currentBgTrackUrl);
-                        if (currentBgTrackName) query.set('bgTitle', currentBgTrackName);
-                    }
+                } else if (isVideoResult) {
+                    query.set('mode', 'video');
                 }
                 qrDownloadUrl = `${window.location.origin}/download?${query.toString()}`;
             } else {

@@ -2864,21 +2864,29 @@
             return '🎴';
         }
 
+        function isFairytaleCard(card) {
+            if (!card) return false;
+            return card.id === 8 ||
+                (card.filter && card.filter.toUpperCase() === 'FAIRYTALE') ||
+                (card.title && card.title.toUpperCase().includes('СКАЗК'));
+        }
+
         function renderCatSectionSelect() {
             const select = document.getElementById('cat-section-select');
             if (!select) return;
 
+            const catCards = mainCards.filter(c => !isFairytaleCard(c));
             select.innerHTML = '';
-            mainCards.forEach(c => {
+            catCards.forEach(c => {
                 const opt = document.createElement('option');
                 opt.value = c.id;
                 opt.textContent = `${getCardIcon(c)} ${c.title} (${(c.categories || []).length} категорий)`;
                 select.appendChild(opt);
             });
 
-            // Проверяем, существует ли еще выбранная карточка
-            if (!mainCards.some(c => c.id === activeCatSectionId) && mainCards.length > 0) {
-                activeCatSectionId = mainCards[0].id;
+            // Проверяем, существует ли еще выбранная карточка среди доступных
+            if (!catCards.some(c => c.id === activeCatSectionId) && catCards.length > 0) {
+                activeCatSectionId = catCards[0].id;
             }
             select.value = activeCatSectionId;
             updateCatAddButtonText();
@@ -2903,9 +2911,10 @@
         }
 
         function getActiveCatCard() {
-            let card = mainCards.find(c => c.id === activeCatSectionId);
-            if (!card && mainCards.length > 0) {
-                card = mainCards[0];
+            const catCards = mainCards.filter(c => !isFairytaleCard(c));
+            let card = catCards.find(c => c.id === activeCatSectionId);
+            if (!card && catCards.length > 0) {
+                card = catCards[0];
                 activeCatSectionId = card.id;
             }
             if (card && !Array.isArray(card.categories)) {
@@ -3098,16 +3107,19 @@
 
         function renderTplSectionSelect() {
             const secSelect = document.getElementById('tpl-section-select');
+            const tplCards = mainCards.filter(c => !isFairytaleCard(c));
             if (secSelect) {
                 secSelect.innerHTML = '';
-                mainCards.forEach(c => {
+                tplCards.forEach(c => {
                     const opt = document.createElement('option');
                     opt.value = c.id;
                     opt.textContent = `${getCardIcon(c)} ${c.title}`;
                     secSelect.appendChild(opt);
                 });
-                if (activeTplFilterSectionId !== 'ALL') {
+                if (activeTplFilterSectionId !== 'ALL' && tplCards.some(c => c.id === Number(activeTplFilterSectionId))) {
                     secSelect.value = activeTplFilterSectionId;
+                } else if (tplCards.length > 0) {
+                    secSelect.value = tplCards[0].id;
                 }
             }
             renderTplSectionTabs();
@@ -3119,17 +3131,20 @@
             if (!subMenu) return;
             subMenu.innerHTML = '';
 
+            const tplCards = mainCards.filter(c => !isFairytaleCard(c));
+            const totalCount = templates.filter(t => tplCards.some(c => Number(c.id) === Number(t.sectionId))).length;
+
             const allBtn = document.createElement('button');
             allBtn.type = 'button';
             allBtn.className = `sidebar-sub-item ${activeTplFilterSectionId === 'ALL' ? 'active' : ''}`;
             allBtn.onclick = () => selectTplSection('ALL');
             allBtn.innerHTML = `
                 <span>🌟 Все разделы</span>
-                <span class="sidebar-sub-badge">${templates.length}</span>
+                <span class="sidebar-sub-badge">${totalCount}</span>
             `;
             subMenu.appendChild(allBtn);
 
-            mainCards.forEach(c => {
+            tplCards.forEach(c => {
                 const count = templates.filter(t => Number(t.sectionId) === Number(c.id)).length;
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -3148,18 +3163,21 @@
             if (!container) return;
             container.innerHTML = '';
 
+            const tplCards = mainCards.filter(c => !isFairytaleCard(c));
+            const totalCount = templates.filter(t => tplCards.some(c => Number(c.id) === Number(t.sectionId))).length;
+
             // 1. Кнопка "Все разделы"
             const allChip = document.createElement('div');
             allChip.className = `section-tab-chip ${activeTplFilterSectionId === 'ALL' ? 'active' : ''}`;
             allChip.onclick = () => selectTplSection('ALL');
             allChip.innerHTML = `
                 <span>🌟 Все разделы</span>
-                <span class="section-tab-count">${templates.length}</span>
+                <span class="section-tab-count">${totalCount}</span>
             `;
             container.appendChild(allChip);
 
-            // 2. Кнопки для каждого раздела (Фото, Видео, Тренды, Примерка)
-            mainCards.forEach(c => {
+            // 2. Кнопки для каждого раздела (Фото, Видео, Тренды, Примерка) без Сказки
+            tplCards.forEach(c => {
                 const count = templates.filter(t => Number(t.sectionId) === Number(c.id)).length;
                 const chip = document.createElement('div');
                 chip.className = `section-tab-chip ${activeTplFilterSectionId === c.id ? 'active' : ''}`;
@@ -3670,15 +3688,18 @@
             if (!container) return;
             container.innerHTML = '';
 
+            const tplCards = mainCards.filter(c => !isFairytaleCard(c));
             if (activeTplFilterSectionId !== 'ALL') {
                 // Показываем конкретный выбранный раздел (Фото, Видео, Тренды, Примерка)
-                const card = mainCards.find(c => c.id === Number(activeTplFilterSectionId)) || mainCards[0];
-                const sectionItems = templates.filter(t => Number(t.sectionId) === Number(card.id));
-                const cardEl = buildSectionGroupCard(card, sectionItems, true);
-                container.appendChild(cardEl);
+                const card = tplCards.find(c => c.id === Number(activeTplFilterSectionId)) || tplCards[0];
+                if (card) {
+                    const sectionItems = templates.filter(t => Number(t.sectionId) === Number(card.id));
+                    const cardEl = buildSectionGroupCard(card, sectionItems, true);
+                    container.appendChild(cardEl);
+                }
             } else {
-                // Показываем все разделы, но аккуратно разделенные по отдельным блокам-карточкам!
-                mainCards.forEach(c => {
+                // Показываем все разрешенные разделы (без Сказки)
+                tplCards.forEach(c => {
                     const sectionItems = templates.filter(t => Number(t.sectionId) === Number(c.id));
                     const cardEl = buildSectionGroupCard(c, sectionItems, false);
                     container.appendChild(cardEl);

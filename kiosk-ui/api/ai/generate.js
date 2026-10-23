@@ -8,6 +8,18 @@
 // 5. 'kling-video'    -> kling-2.6/image-to-video (Высокодетализированное видео из фото)
 // ============================================================
 
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const { spawnSync } = require('child_process');
+
+let ffmpegStatic = null;
+try {
+    ffmpegStatic = require('ffmpeg-static');
+} catch (e) {
+    console.warn('[AI Hub] ffmpeg-static модуль не загружен:', e.message);
+}
+
 const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
 const SUPABASE_BUCKET = 'kiosk-media';
@@ -170,8 +182,248 @@ function sanitizeForOpenAI(p) {
         .replace(/\binstagram\b/gi, 'social media aesthetic');
 }
 
-// 4b. Прямой синтез детской аудиосказки через новейший ElevenLabs 4 (модель eleven_v4)
-async function generateViaElevenLabsDirect({ apiKey, voiceId, text, orderId, modelId = 'eleven_v4' }) {
+// 4a. Генерация субтитров формата Advanced SubStation Alpha (.ass) для красивого наложения на видео
+function generateAssSubtitles(text, totalDurationSec, assPath) {
+    const rawSentences = (text || '')
+        .split(/(?<=[.!?])\s+/)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+    const sentences = [];
+    rawSentences.forEach(s => {
+        const words = s.split(/\s+/);
+        if (words.length > 9) {
+            const mid = Math.ceil(words.length / 2);
+            sentences.push(words.slice(0, mid).join(' '));
+            sentences.push(words.slice(mid).join(' '));
+        } else {
+            sentences.push(s);
+        }
+    });
+
+    if (sentences.length === 0) {
+        sentences.push(text || 'Волшебная сказка');
+    }
+
+    const totalChars = sentences.reduce((acc, s) => acc + s.length, 0) || 1;
+    const dur = Math.max(3, totalDurationSec);
+
+    let currentTime = 0.5;
+    const availableTime = Math.max(1, dur - 1.0);
+
+    const formatAssTime = (sec) => {
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = Math.floor(sec % 60);
+        const cs = Math.floor((sec % 1) * 100);
+        return `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}.${cs < 10 ? '0' : ''}${cs}`;
+    };
+
+    let events = '';
+    sentences.forEach((sentence, idx) => {
+        const sentenceWeight = sentence.length / totalChars;
+        const sentenceDuration = Math.max(2.0, sentenceWeight * availableTime);
+        const startTime = currentTime;
+        const endTime = (idx === sentences.length - 1) ? dur : Math.min(dur, startTime + sentenceDuration);
+
+        const safeText = sentence.replace(/\\/g, '').replace(/{/g, '').replace(/}/g, '').trim();
+        events += `Dialogue: 0,${formatAssTime(startTime)},${formatAssTime(endTime)},Default,,0,0,0,,{\\b1}${safeText}{\\b0}\n`;
+
+        currentTime = endTime + 0.15;
+    });
+
+    const assHeader = `[Script Info]
+ScriptType: v4.00+
+PlayResX: 896
+PlayResY: 1200
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,36,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,3,2,2,40,40,90,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+${events}`;
+
+    fs.writeFileSync(assPath, assHeader, 'utf8');
+}
+
+// Измерение точной длительности аудио через FFmpeg
+function getAudioDuration(filePath) {
+    if (!ffmpegStatic) return 30;
+    try {
+        const res = spawnSync(ffmpegStatic, ['-i', filePath, '-hide_banner'], { encoding: 'utf8' });
+        const output = (res.stderr || '') + (res.stdout || '');
+        const match = output.match(/Duration:\s*(\d+):(\d+):(\d+\.?\d*)/);
+        if (match) {
+            const h = parseFloat(match[1]);
+            const m = parseFloat(match[2]);
+            const s = parseFloat(match[3]);
+            return (h * 3600) + (m * 60) + s;
+        }
+    } catch (e) {
+        console.warn('[Fairytale Video] Ошибка замера длительности аудио:', e.message);
+    }
+    return 30;
+}
+
+// Сборка полноценного MP4 видео сказки (обложка + голос ElevenLabs 4 + фоновая музыка + наложенные субтитры)
+async function assembleFairytaleVideo({ voiceBuffer, voiceUrl, text, bgTrackUrl, orderId }) {
+    if (!ffmpegStatic) {
+        console.warn('[Fairytale Video] FFmpeg недоступен для видеорендеринга сказки');
+        return null;
+    }
+
+    const tempDir = os.tmpdir();
+    const safeOrder = (orderId || Date.now()).toString().replace(/[^a-zA-Z0-9_-]/g, '_');
+    const tmpVoice = path.join(tempDir, `tf_voice_${safeOrder}_${Date.now()}.mp3`);
+    const tmpBg = path.join(tempDir, `tf_bg_${safeOrder}_${Date.now()}.mp3`);
+    const tmpAss = path.join(tempDir, `tf_sub_${safeOrder}_${Date.now()}.ass`);
+    const outVideo = path.join(tempDir, `tf_video_${safeOrder}_${Date.now()}.mp4`);
+
+    let hasBg = false;
+
+    try {
+        // 1. Сохраняем голосовой файл
+        if (voiceBuffer) {
+            fs.writeFileSync(tmpVoice, voiceBuffer);
+        } else if (voiceUrl) {
+            const resp = await fetch(voiceUrl);
+            if (!resp.ok) throw new Error('Не удалось скачать аудио сказки');
+            const ab = await resp.arrayBuffer();
+            fs.writeFileSync(tmpVoice, Buffer.from(ab));
+        } else {
+            throw new Error('Отсутствуют аудиоданные сказки для видео');
+        }
+
+        // 2. Длительность озвучки
+        const duration = Math.max(3, getAudioDuration(tmpVoice));
+        console.log(`[Fairytale Video] Хронометраж озвучки сказки: ${duration.toFixed(1)} сек`);
+
+        // 3. Загружаем фоновый трек, если он предоставлен
+        if (bgTrackUrl && typeof bgTrackUrl === 'string' && bgTrackUrl.startsWith('http')) {
+            try {
+                const bgResp = await fetch(bgTrackUrl);
+                if (bgResp.ok) {
+                    const bgAb = await bgResp.arrayBuffer();
+                    fs.writeFileSync(tmpBg, Buffer.from(bgAb));
+                    hasBg = true;
+                    console.log(`[Fairytale Video] Фоновая музыка загружена (${fs.statSync(tmpBg).size} байт)`);
+                }
+            } catch (e) {
+                console.warn('[Fairytale Video] Ошибка загрузки фонового трека:', e.message);
+            }
+        }
+
+        // 4. Генерируем субтитры
+        generateAssSubtitles(text, duration, tmpAss);
+
+        // 5. Поиск файла обложки fairytale_cover.jpg
+        let coverPath = path.join(__dirname, '..', '..', 'images', 'fairytale_cover.jpg');
+        if (!fs.existsSync(coverPath)) {
+            coverPath = path.join(__dirname, 'images', 'fairytale_cover.jpg');
+        }
+        if (!fs.existsSync(coverPath)) {
+            coverPath = path.join(process.cwd(), 'images', 'fairytale_cover.jpg');
+        }
+        if (!fs.existsSync(coverPath)) {
+            coverPath = path.join(process.cwd(), 'kiosk-ui', 'images', 'fairytale_cover.jpg');
+        }
+
+        if (!fs.existsSync(coverPath)) {
+            console.warn('[Fairytale Video] Обложка fairytale_cover.jpg не найдена, генерация фонового кадра');
+            const fallbackCover = path.join(tempDir, `tf_fb_${Date.now()}.jpg`);
+            spawnSync(ffmpegStatic, ['-y', '-f', 'lavfi', '-i', 'color=c=#15092a:s=896x1200', '-vframes', '1', fallbackCover]);
+            coverPath = fallbackCover;
+        }
+
+        const normalizedCover = coverPath.replace(/\\/g, '/');
+        const escapedAss = tmpAss.replace(/\\/g, '/').replace(/:/g, '\\:');
+
+        // 6. Формирование параметров FFmpeg
+        const ffmpegArgs = ['-y'];
+
+        // Вход 0: обложка (зациклена)
+        ffmpegArgs.push('-loop', '1', '-i', normalizedCover);
+
+        // Вход 1: голос диктора ElevenLabs
+        ffmpegArgs.push('-i', tmpVoice.replace(/\\/g, '/'));
+
+        // Вход 2: фоновый трек (если есть, зациклен)
+        if (hasBg) {
+            ffmpegArgs.push('-stream_loop', '-1', '-i', tmpBg.replace(/\\/g, '/'));
+            ffmpegArgs.push(
+                '-filter_complex',
+                `[1:a]volume=1.0[v];[2:a]volume=0.18[m];[v][m]amix=inputs=2:duration=first:dropout_transition=2[aout];[0:v]scale=896:1200,subtitles='${escapedAss}'[vout]`,
+                '-map', '[vout]',
+                '-map', '[aout]'
+            );
+        } else {
+            ffmpegArgs.push(
+                '-filter_complex',
+                `[0:v]scale=896:1200,subtitles='${escapedAss}'[vout]`,
+                '-map', '[vout]',
+                '-map', '1:a'
+            );
+        }
+
+        ffmpegArgs.push(
+            '-c:v', 'libx264',
+            '-preset', 'ultrafast',
+            '-crf', '23',
+            '-pix_fmt', 'yuv420p',
+            '-c:a', 'aac',
+            '-b:a', '192k',
+            '-t', duration.toFixed(2),
+            outVideo
+        );
+
+        console.log('[Fairytale Video] Рендеринг видеоролика сказки в MP4 с субтитрами...');
+        const renderRes = spawnSync(ffmpegStatic, ffmpegArgs, { encoding: 'utf8' });
+
+        if (!fs.existsSync(outVideo) || fs.statSync(outVideo).size === 0) {
+            console.warn('[Fairytale Video] FFmpeg не сформировал файл видео:', renderRes.stderr?.slice(-350));
+            return null;
+        }
+
+        const videoSize = fs.statSync(outVideo).size;
+        console.log(`[Fairytale Video] Видеосказка успешно отрендерена: ${(videoSize / 1024 / 1024).toFixed(2)} МБ`);
+
+        // 7. Загружаем готовый видеофайл MP4 в Supabase Storage
+        const videoBuffer = fs.readFileSync(outVideo);
+        const filename = `results/fairytale_video_${safeOrder}_${Math.random().toString(36).substring(7)}.mp4`;
+
+        const supaRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'video/mp4',
+                'x-upsert': 'true'
+            },
+            body: videoBuffer
+        });
+
+        if (supaRes.ok) {
+            const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${filename}`;
+            console.log('[Fairytale Video] Видеосказка загружена в Supabase CDN:', publicUrl);
+            return publicUrl;
+        } else {
+            console.warn('[Fairytale Video] Ошибка загрузки видеосказки в Supabase CDN');
+            return null;
+        }
+    } catch (err) {
+        console.warn('[Fairytale Video] Ошибка при сборке видеосказки:', err.message);
+        return null;
+    } finally {
+        try { if (fs.existsSync(tmpVoice)) fs.unlinkSync(tmpVoice); } catch (e) {}
+        try { if (fs.existsSync(tmpBg)) fs.unlinkSync(tmpBg); } catch (e) {}
+        try { if (fs.existsSync(tmpAss)) fs.unlinkSync(tmpAss); } catch (e) {}
+        try { if (fs.existsSync(outVideo)) fs.unlinkSync(outVideo); } catch (e) {}
+    }
+}
+
+// 4b. Прямой синтез детской сказки через новейший ElevenLabs 4 (модель eleven_v4) с генерацией видео MP4
+async function generateViaElevenLabsDirect({ apiKey, voiceId, text, orderId, modelId = 'eleven_v4', bgTrackUrl = null }) {
     if (!apiKey || !text) return null;
     const cleanVoiceId = (voiceId || 'JBFqnCBsd6RMkjVDRZzb').trim();
     const endpoint = `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(cleanVoiceId)}`;
@@ -222,6 +474,33 @@ async function generateViaElevenLabsDirect({ apiKey, voiceId, text, orderId, mod
         if (supaRes.ok) {
             const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${filename}`;
             console.log(`[ElevenLabs 4] Аудиосказка успешно сгенерирована и сохранена в Supabase CDN:`, publicUrl);
+
+            // Автоматическая сборка видео (.MP4) с обложкой и субтитрами
+            let videoUrl = null;
+            try {
+                videoUrl = await assembleFairytaleVideo({
+                    voiceBuffer: buffer,
+                    text,
+                    bgTrackUrl,
+                    orderId
+                });
+            } catch (vErr) {
+                console.warn('[ElevenLabs 4] Сборка видеосказки завершилась с ошибкой:', vErr.message);
+            }
+
+            if (videoUrl) {
+                return {
+                    success: true,
+                    resultUrl: videoUrl,
+                    mediaUrl: videoUrl,
+                    videoUrl: videoUrl,
+                    audioUrl: publicUrl,
+                    isVideo: true,
+                    isFairytale: true,
+                    model: targetModel
+                };
+            }
+
             return {
                 success: true,
                 resultUrl: publicUrl,
@@ -935,7 +1214,8 @@ module.exports = async (req, res) => {
                     voiceId: activeVoiceId,
                     text: fairytaleNarrative || prompt,
                     orderId,
-                    modelId: elModel
+                    modelId: elModel,
+                    bgTrackUrl: selectedBgTrackUrl
                 });
             }
         }
@@ -1008,6 +1288,36 @@ module.exports = async (req, res) => {
 
         // Если это аудиозадача (сказка ElevenLabs или трек Suno)
         if (generationOutcome && generationOutcome.isAudio && generatedImageUrl) {
+            if (isFairytaleReq) {
+                try {
+                    const videoUrl = await assembleFairytaleVideo({
+                        voiceUrl: generatedImageUrl,
+                        text: fairytaleNarrative || prompt,
+                        bgTrackUrl: selectedBgTrackUrl,
+                        orderId
+                    });
+                    if (videoUrl) {
+                        return res.status(200).json({
+                            success: true,
+                            pending: false,
+                            state: 'success',
+                            orderId,
+                            taskId: generationOutcome?.taskId || null,
+                            model: effectiveModelName,
+                            resultUrl: videoUrl,
+                            mediaUrl: videoUrl,
+                            videoUrl: videoUrl,
+                            isVideo: true,
+                            isFairytale: true,
+                            title: title || 'Волшебная сказка',
+                            message: `Сказка с видеообложкой и субтитрами создана через ${effectiveModelName}`
+                        });
+                    }
+                } catch (e) {
+                    console.warn('[AI Hub] Не удалось собрать видеосказку из Kie аудио:', e.message);
+                }
+            }
+
             return res.status(200).json({
                 success: true,
                 pending: false,
@@ -1036,6 +1346,9 @@ module.exports = async (req, res) => {
             });
         }
 
+        const isVideoFinal = Boolean(generationOutcome?.isVideo) ||
+            (typeof generatedImageUrl === 'string' && (generatedImageUrl.endsWith('.mp4') || generatedImageUrl.includes('.mp4?')));
+
         return res.status(200).json({
             success: true,
             pending: false,
@@ -1044,11 +1357,15 @@ module.exports = async (req, res) => {
             taskId: generationOutcome?.taskId || null,
             model: effectiveModelName,
             resolution: generationOutcome?.resolution || targetResolution,
-            title: title || 'Портрет',
+            title: title || (isFairytaleReq ? 'Волшебная сказка' : 'Портрет'),
             prompt: prompt || '',
             location: location || '',
             isTryOn: Boolean(isTryOn),
+            isVideo: isVideoFinal,
+            isFairytale: Boolean(isFairytaleReq),
             resultUrl: generatedImageUrl,
+            mediaUrl: generatedImageUrl,
+            videoUrl: isVideoFinal ? generatedImageUrl : null,
             audioUrl: null,
             speechText: '',
             mode: effectiveKey ? 'live' : 'preview',

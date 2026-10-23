@@ -574,7 +574,20 @@
 
             } else if (isVideo) {
                 // ── Видео-режим ──
+                const isFairytaleVideo = (title && title.toLowerCase().includes('сказк')) ||
+                    fileUrl.toLowerCase().includes('fairytale');
+
+                if (isFairytaleVideo) {
+                    document.getElementById('page-subtitle').textContent = 'Ваша видеосказка готова 🪄';
+                    btnDownloadText.textContent = 'СКАЧАТЬ ВИДЕОСКАЗКУ (MP4) 🪄';
+                } else {
+                    document.getElementById('page-subtitle').textContent = 'Ваше видео готово 🎬';
+                    btnDownloadText.textContent = 'СКАЧАТЬ ВИДЕО (MP4) 🎬';
+                }
+
                 videoEl.src = fileUrl;
+                videoEl.muted = false; // Включаем звук для воспроизведения видеосказки
+                videoEl.controls = true;
                 videoEl.onloadeddata = () => {
                     loader.style.display = 'none';
                     videoEl.style.display = 'block';
@@ -586,7 +599,7 @@
 
                 async function triggerDownload() {
                     const orig = btnDownloadText.textContent;
-                    btnDownloadText.textContent = '⏳ СОХРАНЕНИЕ...';
+                    btnDownloadText.textContent = '⏳ СОХРАНЕНИЕ В ГАЛЕРЕЮ...';
                     try {
                         const resp = await fetch(fileUrl);
                         if (!resp.ok) throw new Error('Fetch failed');
@@ -594,7 +607,7 @@
                         const objectUrl = URL.createObjectURL(blob);
                         const link = document.createElement('a');
                         link.href = objectUrl;
-                        link.download = 'TRENDUM_VIDEO.mp4';
+                        link.download = isFairytaleVideo ? 'TRENDUM_FAIRYTALE.mp4' : 'TRENDUM_VIDEO.mp4';
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
