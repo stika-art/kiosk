@@ -309,6 +309,11 @@
             <div class="audio-title" id="dl-audio-title">ВАШ ПЕРСОНАЛЬНЫЙ ТРЕК</div>
             <div class="audio-genre" id="dl-audio-genre">🎵 Студийная запись • Персональный трек</div>
             <audio id="dl-audio-player" controls></audio>
+            <audio id="dl-audio-bg-player" preload="auto" loop style="display: none;"></audio>
+            <div id="dl-bg-badge" style="display: none; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: #f3d289; margin-top: 10px; font-weight: 700; background: rgba(212,160,67,0.12); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(212,160,67,0.3);">
+                <span>🪄 Фоновая музыка:</span>
+                <span id="dl-bg-title" style="color: #fff;"></span>
+            </div>
             <div class="audio-variants" id="dl-audio-variants">
                 <button class="audio-var-btn active" id="dl-btn-var1">🎵 ВАРИАНТ 1</button>
                 <button class="audio-var-btn" id="dl-btn-var2">🎵 ВАРИАНТ 2</button>
@@ -487,6 +492,34 @@
                 // Название трека
                 if (title) audioTitle.textContent = title;
                 if (title) audioGenre.textContent = `🎵 Студийная запись • ${title}`;
+
+                // Фоновая музыка сказки (BGM)
+                const bgTrackUrl = params.get('bg') || '';
+                const bgTrackTitle = params.get('bgTitle') || 'Сказочная мелодия';
+                const dlBgAudio = document.getElementById('dl-audio-bg-player');
+                const dlBgBadge = document.getElementById('dl-bg-badge');
+                const dlBgTitle = document.getElementById('dl-bg-title');
+
+                if (bgTrackUrl) {
+                    document.getElementById('page-subtitle').textContent = 'Ваша аудиосказка готова 🪄';
+                    if (dlBgAudio) {
+                        dlBgAudio.src = bgTrackUrl;
+                        dlBgAudio.volume = 0.18;
+                    }
+                    if (dlBgBadge) {
+                        dlBgBadge.style.display = 'inline-flex';
+                        if (dlBgTitle) dlBgTitle.textContent = bgTrackTitle;
+                    }
+                    audioPlayer.addEventListener('play', () => {
+                        if (dlBgAudio && dlBgAudio.src) dlBgAudio.play().catch(() => {});
+                    });
+                    audioPlayer.addEventListener('pause', () => {
+                        if (dlBgAudio) dlBgAudio.pause();
+                    });
+                    audioPlayer.addEventListener('ended', () => {
+                        if (dlBgAudio) { dlBgAudio.pause(); dlBgAudio.currentTime = 0; }
+                    });
+                }
 
                 // Установить активный трек
                 let activeIdx = 0;

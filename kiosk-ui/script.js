@@ -2780,10 +2780,17 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) { }
         }
         const resultAudioPlayer = document.getElementById('result-audio-player');
+        const resultAudioBgPlayer = document.getElementById('result-audio-bg-player');
         if (resultAudioPlayer) {
             try {
                 resultAudioPlayer.pause();
                 resultAudioPlayer.src = '';
+            } catch (e) { }
+        }
+        if (resultAudioBgPlayer) {
+            try {
+                resultAudioBgPlayer.pause();
+                resultAudioBgPlayer.src = '';
             } catch (e) { }
         }
         const studioCustomPlayer = document.getElementById('studio-custom-player');
@@ -4348,6 +4355,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     fairytaleData: guestFairytaleData,
                     elevenlabsApiKey,
                     elevenlabsModel,
+                    fairytaleBgTracks: JSON.parse(localStorage.getItem('kiosk_fairytale_bg_tracks') || '[]'),
                     resolution: '1K',
                     duration: selectedVideoDuration || 5,
                     aggregatorUrl,
@@ -4542,10 +4550,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const resultAudioBox = document.getElementById('result-audio-box');
         const resultAudioPlayer = document.getElementById('result-audio-player');
+        const resultAudioBgPlayer = document.getElementById('result-audio-bg-player');
+        const studioBgBadge = document.getElementById('studio-bg-track-badge');
+        const studioBgName = document.getElementById('studio-bg-track-name');
         const resultAudioTitle = document.getElementById('result-audio-title');
         const resultAudioGenre = document.getElementById('result-audio-genre');
         const stepResultTitle = document.querySelector('#step-result .modal-title');
         const stepResultSubtitle = document.querySelector('#step-result .modal-subtitle');
+
+        let currentBgTrackUrl = null;
+        let currentBgTrackName = null;
 
         if (isAudioResult && resultAudioBox && resultAudioPlayer) {
             if (resultImg) resultImg.style.display = 'none';
@@ -4555,16 +4569,58 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             resultAudioBox.style.display = 'flex';
 
-            // Настройка солидных заголовков для музыкального сингла
-            if (stepResultTitle) stepResultTitle.textContent = 'ВАШ МУЗЫКАЛЬНЫЙ ХИТ ГОТОВ! 🎵';
-            if (stepResultSubtitle) stepResultSubtitle.textContent = 'Послушайте созданные варианты и отсканируйте QR-код для загрузки MP3';
+            if (isFairytaleSelection) {
+                if (stepResultTitle) stepResultTitle.textContent = 'ВАША ВОЛШЕБНАЯ СКАЗКА ГОТОВА! 🪄';
+                if (stepResultSubtitle) stepResultSubtitle.textContent = 'Послушайте сказку в исполнении ElevenLabs 4 и отсканируйте QR-код для загрузки';
+                if (resultAudioTitle) {
+                    const childName = guestFairytaleData?.childName || 'малыш';
+                    resultAudioTitle.textContent = `Сказка для ${childName}`;
+                }
+                if (resultAudioGenre) {
+                    resultAudioGenre.textContent = '🪄 ДЕТСКАЯ АУДИОКНИГА • ELEVENLABS 4';
+                }
 
-            if (resultAudioTitle) {
-                const themeClean = guestMusicTheme ? guestMusicTheme.trim() : '';
-                resultAudioTitle.textContent = themeClean ? `«${themeClean}»` : (selectedStyle ? `Хит: ${selectedStyle}` : 'Ваш персональный трек');
-            }
-            if (resultAudioGenre) {
-                resultAudioGenre.textContent = `🎵 ${selectedStyle || 'ХИТ'} • СТУДИЙНАЯ ЗАПИСЬ`;
+                currentBgTrackUrl = data.bgTrackUrl || null;
+                currentBgTrackName = data.bgTrackName || 'Сказочная мелодия';
+
+                if (!currentBgTrackUrl) {
+                    try {
+                        const localBgs = JSON.parse(localStorage.getItem('kiosk_fairytale_bg_tracks') || '[]')
+                            .filter(t => t && t.active !== false && t.url);
+                        if (localBgs.length > 0) {
+                            const rnd = localBgs[Math.floor(Math.random() * localBgs.length)];
+                            currentBgTrackUrl = rnd.url;
+                            currentBgTrackName = rnd.name || 'Сказочная мелодия';
+                        }
+                    } catch(e) {}
+                }
+
+                if (resultAudioBgPlayer && currentBgTrackUrl) {
+                    resultAudioBgPlayer.src = currentBgTrackUrl;
+                    resultAudioBgPlayer.volume = 0.18;
+                    resultAudioBgPlayer.currentTime = 0;
+                }
+                if (studioBgBadge && currentBgTrackUrl) {
+                    studioBgBadge.style.display = 'inline-flex';
+                    if (studioBgName) studioBgName.textContent = currentBgTrackName;
+                } else if (studioBgBadge) {
+                    studioBgBadge.style.display = 'none';
+                }
+            } else {
+                if (stepResultTitle) stepResultTitle.textContent = 'ВАШ МУЗЫКАЛЬНЫЙ ХИТ ГОТОВ! 🎵';
+                if (stepResultSubtitle) stepResultSubtitle.textContent = 'Послушайте созданные варианты и отсканируйте QR-код для загрузки MP3';
+                if (resultAudioTitle) {
+                    const themeClean = guestMusicTheme ? guestMusicTheme.trim() : '';
+                    resultAudioTitle.textContent = themeClean ? `«${themeClean}»` : (selectedStyle ? `Хит: ${selectedStyle}` : 'Ваш персональный трек');
+                }
+                if (resultAudioGenre) {
+                    resultAudioGenre.textContent = `🎵 ${selectedStyle || 'ХИТ'} • СТУДИЙНАЯ ЗАПИСЬ`;
+                }
+                if (studioBgBadge) studioBgBadge.style.display = 'none';
+                if (resultAudioBgPlayer) {
+                    resultAudioBgPlayer.pause();
+                    resultAudioBgPlayer.src = '';
+                }
             }
 
             // Кастомный студийный плеер Trendum Sound
@@ -4598,13 +4654,25 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             // Привязка событий воспроизведения
-            resultAudioPlayer.onplay = () => updateStudioPlayerState(true);
-            resultAudioPlayer.onpause = () => updateStudioPlayerState(false);
+            resultAudioPlayer.onplay = () => {
+                updateStudioPlayerState(true);
+                if (isFairytaleSelection && resultAudioBgPlayer && resultAudioBgPlayer.src) {
+                    resultAudioBgPlayer.play().catch(e => console.warn('BGM play error:', e));
+                }
+            };
+            resultAudioPlayer.onpause = () => {
+                updateStudioPlayerState(false);
+                if (resultAudioBgPlayer) resultAudioBgPlayer.pause();
+            };
             resultAudioPlayer.onended = () => {
                 updateStudioPlayerState(false);
                 if (studioProgressFill) studioProgressFill.style.width = '0%';
                 if (studioProgressThumb) studioProgressThumb.style.left = '0%';
                 if (studioCurrentTime) studioCurrentTime.textContent = '0:00';
+                if (resultAudioBgPlayer) {
+                    resultAudioBgPlayer.pause();
+                    resultAudioBgPlayer.currentTime = 0;
+                }
             };
             resultAudioPlayer.ontimeupdate = () => {
                 const cur = resultAudioPlayer.currentTime || 0;
@@ -4687,6 +4755,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (resultAudioBox) {
                 if (resultAudioPlayer) resultAudioPlayer.pause();
+                if (resultAudioBgPlayer) resultAudioBgPlayer.pause();
                 resultAudioBox.style.display = 'none';
             }
             resultVideo.src = finalResultUrl;
@@ -4702,6 +4771,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (stepResultSubtitle) stepResultSubtitle.textContent = 'Отсканируйте QR-код камерой телефона, чтобы сохранить фото';
             if (resultAudioBox) {
                 if (resultAudioPlayer) resultAudioPlayer.pause();
+                if (resultAudioBgPlayer) resultAudioBgPlayer.pause();
                 resultAudioBox.style.display = 'none';
             }
             resultImg.src = finalResultUrl;
@@ -4724,11 +4794,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     loc: selectedStyleLocation || '',
                     price: selectedStylePrice || ''
                 });
-                // Если музыка — передаем mode=audio и второй трек (если есть)
+                // Если музыка или сказка — передаем mode=audio и фон
                 if (isAudioResult) {
                     query.set('mode', 'audio');
                     if (finalAudioUrls.length >= 2) {
                         query.set('file2', finalAudioUrls[1]);
+                    }
+                    if (isFairytaleSelection && currentBgTrackUrl) {
+                        query.set('bg', currentBgTrackUrl);
+                        if (currentBgTrackName) query.set('bgTitle', currentBgTrackName);
                     }
                 }
                 qrDownloadUrl = `${window.location.origin}/download?${query.toString()}`;
@@ -4897,6 +4971,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (data.pixverse_markup) {
                     try { localStorage.setItem('kiosk_pixverse_markup', data.pixverse_markup.toString()); } catch (e) { }
+                }
+                if (Array.isArray(data.fairytale_bg_tracks)) {
+                    try { localStorage.setItem('kiosk_fairytale_bg_tracks', JSON.stringify(data.fairytale_bg_tracks)); } catch(e){}
+                }
+                if (data.elevenlabs_api_key) {
+                    try { localStorage.setItem('kiosk_elevenlabs_api_key', data.elevenlabs_api_key); } catch(e){}
+                }
+                if (data.elevenlabs_model) {
+                    try { localStorage.setItem('kiosk_elevenlabs_model', data.elevenlabs_model); } catch(e){}
                 }
                 let delIds = [];
                 if (Array.isArray(data.deleted_template_ids) && data.deleted_template_ids.length > 0) {

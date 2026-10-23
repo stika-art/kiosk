@@ -3274,6 +3274,7 @@
                         <div class="studio-custom-player" id="studio-custom-player">
                             <!-- Скрытый нативный аудиоплеер для воспроизведения звука через JS -->
                             <audio id="result-audio-player" preload="auto" style="display: none;"></audio>
+                            <audio id="result-audio-bg-player" preload="auto" loop style="display: none;"></audio>
 
                             <!-- Анимированный спектральный эквалайзер -->
                             <div class="studio-eq-spectrum" id="studio-eq-spectrum">
@@ -3319,6 +3320,13 @@
                                 <button type="button" class="studio-btn-seek" id="studio-seek-forward" title="Вперед на 10 сек">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>
                                 </button>
+                            </div>
+
+                            <!-- Бейдж фоновой сказочной музыки -->
+                            <div id="studio-bg-track-badge" style="display: none; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: #f3d289; margin-top: 12px; font-weight: 700; background: rgba(212,160,67,0.12); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(212,160,67,0.3);">
+                                <span>🪄 Фоновая музыка:</span>
+                                <span id="studio-bg-track-name" style="color: #fff;"></span>
+                                <span style="font-size: 11px; opacity: 0.75;">(BGM ~18%)</span>
                             </div>
                         </div>
                     </div>

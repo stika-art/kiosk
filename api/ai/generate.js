@@ -859,6 +859,8 @@ module.exports = async (req, res) => {
         // Подбор активного Voice ID из Supabase settings для сказки
         let activeVoiceId = null;
         let fairytaleNarrative = prompt;
+        let selectedBgTrackUrl = null;
+        let selectedBgTrackName = null;
 
         if (isFairytaleReq) {
             const langCode = (fairytaleData?.lang || 'ru').toLowerCase();
@@ -874,9 +876,22 @@ module.exports = async (req, res) => {
                         const randomVoice = activeVoices[Math.floor(Math.random() * activeVoices.length)];
                         activeVoiceId = randomVoice.id || randomVoice.name;
                     }
+
+                    // Случайный выбор фоновой сказочной музыки (BGM)
+                    let bgList = body.fairytaleBgTracks;
+                    if (!Array.isArray(bgList) || bgList.length === 0) {
+                        bgList = cfg.fairytale_bg_tracks || [];
+                    }
+                    const activeBgList = (bgList || []).filter(t => t && t.active !== false && t.url);
+                    if (activeBgList.length > 0) {
+                        const randomBg = activeBgList[Math.floor(Math.random() * activeBgList.length)];
+                        selectedBgTrackUrl = randomBg.url;
+                        selectedBgTrackName = randomBg.name || 'Сказочная мелодия';
+                        console.log(`[AI Hub] Выбран случайный фоновый трек сказки: "${selectedBgTrackName}" (${selectedBgTrackUrl})`);
+                    }
                 }
             } catch(e) {
-                console.warn('[AI Hub] Не удалось загрузить голоса из Supabase settings:', e.message);
+                console.warn('[AI Hub] Не удалось загрузить голоса/треки из Supabase settings:', e.message);
             }
 
             if (!activeVoiceId) {
@@ -1003,6 +1018,8 @@ module.exports = async (req, res) => {
                 resultUrl: generatedImageUrl,
                 audioUrls: generationOutcome.audioUrls || [generatedImageUrl],
                 isAudio: true,
+                bgTrackUrl: selectedBgTrackUrl,
+                bgTrackName: selectedBgTrackName,
                 title: title || 'Аудиосказка',
                 message: `Успешно создано через ${effectiveModelName}`
             });
