@@ -73,7 +73,8 @@ function normalizeMainCards(cards) {
         list = [
             { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
             { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
-            { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] }
+            { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] },
+            { id: 8, title: 'АУДИОСКАЗКА', badge: '🪄 ДЕТСКАЯ АУДИОКНИГА • ИИ', subtitle: 'ПЕРСОНАЛЬНАЯ СКАЗКА ДЛЯ РЕБЕНКА С ОБЛОЖКОЙ И ГОЛОСОМ', filter: 'FAIRYTALE', category: 'СКАЗКА', img: 'images/fairytale_cover.jpg', categories: ['СКАЗКИ', 'ПРИКЛЮЧЕНИЯ', 'КОЛЫБЕЛЬНЫЕ', 'ПОУЧИТЕЛЬНЫЕ'] }
         ];
     } else {
         let musicCard = list.find(c => c.id === 6 || (c.filter && c.filter.toUpperCase() === 'MUSIC') || (c.title && c.title.toUpperCase().includes('ТРЕК')));
@@ -89,6 +90,19 @@ function normalizeMainCards(cards) {
                 categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК']
             });
         }
+        let fairytaleCard = list.find(c => c.id === 8 || (c.filter && c.filter.toUpperCase() === 'FAIRYTALE') || (c.title && c.title.toUpperCase().includes('СКАЗК')));
+        if (!fairytaleCard) {
+            list.push({
+                id: 8,
+                title: 'АУДИОСКАЗКА',
+                badge: '🪄 ДЕТСКАЯ АУДИОКНИГА • ИИ',
+                subtitle: 'ПЕРСОНАЛЬНАЯ СКАЗКА ДЛЯ РЕБЕНКА С ОБЛОЖКОЙ И ГОЛОСОМ',
+                filter: 'FAIRYTALE',
+                category: 'СКАЗКА',
+                img: 'images/fairytale_cover.jpg',
+                categories: ['СКАЗКИ', 'ПРИКЛЮЧЕНИЯ', 'КОЛЫБЕЛЬНЫЕ', 'ПОУЧИТЕЛЬНЫЕ']
+            });
+        }
     }
 
     return list.map(c => {
@@ -101,6 +115,8 @@ function normalizeMainCards(cards) {
                 cats = ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'];
             } else if (c.id === 6 || titleUp.includes('ТРЕК') || titleUp.includes('МУЗЫК')) {
                 cats = ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'];
+            } else if (c.id === 8 || titleUp.includes('СКАЗК')) {
+                cats = ['СКАЗКИ', 'ПРИКЛЮЧЕНИЯ', 'КОЛЫБЕЛЬНЫЕ', 'ПОУЧИТЕЛЬНЫЕ'];
             } else {
                 cats = [c.title || 'ОБЩЕЕ'];
             }
@@ -1301,6 +1317,20 @@ function openTemplateGallery(cardIdOrMode) {
         }
     }
 
+    const isFairytaleSec = activeCard && (
+        activeCard.id === 8 ||
+        (activeCard.filter && activeCard.filter.toUpperCase() === 'FAIRYTALE') ||
+        (activeCard.title && activeCard.title.toUpperCase().includes('СКАЗК')) ||
+        (activeCard.category && activeCard.category.toUpperCase().includes('СКАЗК'))
+    );
+
+    if (isFairytaleSec) {
+        if (typeof window.openDirectFairytaleStudio === 'function') {
+            window.openDirectFairytaleStudio(activeCard);
+            return;
+        }
+    }
+
     const isArSec = activeCard && (
         activeCard.id === 7 ||
         (activeCard.filter && activeCard.filter.toUpperCase() === 'AR') ||
@@ -2106,6 +2136,246 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ========================================================
+    // СТУДИЯ АУДИОСКАЗОК (FAIRYTALE STUDIO)
+    // ========================================================
+    const fairytaleInputChild = document.getElementById('fairytale-input-child');
+    const fairytaleInputTheme = document.getElementById('fairytale-input-theme');
+    const fairytaleChildClearBtn = document.getElementById('fairytale-child-clear-btn');
+    const fairytaleThemeClearBtn = document.getElementById('fairytale-theme-clear-btn');
+    const fairytaleVirtualKeyboard = document.getElementById('fairytale-virtual-keyboard');
+    const fairytaleCancelBtn = document.getElementById('fairytale-cancel-btn');
+    const fairytaleCreateBtn = document.getElementById('fairytale-create-btn');
+
+    let activeFairytaleInput = fairytaleInputChild;
+    let ftVkCurrentLayout = 'RU';
+    let guestFairytaleData = null;
+
+    function setActiveFairytaleInput(inputEl) {
+        activeFairytaleInput = inputEl;
+        if (fairytaleInputChild) {
+            fairytaleInputChild.classList.toggle('active-focus', fairytaleInputChild === inputEl);
+        }
+        if (fairytaleInputTheme) {
+            fairytaleInputTheme.classList.toggle('active-focus', fairytaleInputTheme === inputEl);
+        }
+    }
+
+    function handleFtVkChar(char) {
+        const target = activeFairytaleInput || fairytaleInputChild;
+        if (!target) return;
+        target.value = (target.value || '') + char;
+        target.focus();
+    }
+
+    function handleFtVkAction(action) {
+        const target = activeFairytaleInput || fairytaleInputChild;
+        if (!target) return;
+        if (action === 'backspace') {
+            target.value = (target.value || '').slice(0, -1);
+            target.focus();
+        }
+    }
+
+    function renderFairytaleVirtualKeyboard() {
+        if (!fairytaleVirtualKeyboard) return;
+        fairytaleVirtualKeyboard.innerHTML = '';
+
+        let layout = VK_LAYOUTS.RU;
+        if (ftVkCurrentLayout === 'EN') layout = VK_LAYOUTS.EN;
+        else if (ftVkCurrentLayout === 'NUM') layout = VK_LAYOUTS.NUM;
+
+        layout.forEach(row => {
+            const rowEl = document.createElement('div');
+            rowEl.className = 'vk-row';
+            row.forEach(item => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'vk-key';
+                if (typeof item === 'object') {
+                    btn.textContent = item.label;
+                    if (item.special) btn.classList.add('vk-key-special');
+                    btn.onclick = () => handleFtVkAction(item.action);
+                } else {
+                    btn.textContent = item;
+                    btn.onclick = () => handleFtVkChar(item);
+                }
+                rowEl.appendChild(btn);
+            });
+            fairytaleVirtualKeyboard.appendChild(rowEl);
+        });
+
+        const bottomRow = document.createElement('div');
+        bottomRow.className = 'vk-row';
+
+        const numBtn = document.createElement('button');
+        numBtn.type = 'button';
+        numBtn.className = 'vk-key vk-key-special';
+        numBtn.textContent = ftVkCurrentLayout === 'NUM' ? (ftVkCurrentLayout === 'RU' ? 'АБВ' : 'ABC') : '123';
+        numBtn.onclick = () => {
+            ftVkCurrentLayout = ftVkCurrentLayout === 'NUM' ? 'RU' : 'NUM';
+            renderFairytaleVirtualKeyboard();
+        };
+        bottomRow.appendChild(numBtn);
+
+        const langBtn = document.createElement('button');
+        langBtn.type = 'button';
+        langBtn.className = 'vk-key vk-key-special';
+        langBtn.textContent = ftVkCurrentLayout === 'RU' ? 'EN' : 'RU';
+        langBtn.onclick = () => {
+            ftVkCurrentLayout = ftVkCurrentLayout === 'RU' ? 'EN' : 'RU';
+            renderFairytaleVirtualKeyboard();
+        };
+        bottomRow.appendChild(langBtn);
+
+        const spaceBtn = document.createElement('button');
+        spaceBtn.type = 'button';
+        spaceBtn.className = 'vk-key vk-key-space';
+        spaceBtn.textContent = 'ПРОБЕЛ';
+        spaceBtn.onclick = () => handleFtVkChar(' ');
+        bottomRow.appendChild(spaceBtn);
+
+        const clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'vk-key vk-key-special';
+        clearBtn.textContent = 'Сброс';
+        clearBtn.onclick = () => {
+            const target = activeFairytaleInput || fairytaleInputChild;
+            if (target) {
+                target.value = '';
+                target.focus();
+            }
+        };
+        bottomRow.appendChild(clearBtn);
+
+        fairytaleVirtualKeyboard.appendChild(bottomRow);
+    }
+
+    if (fairytaleInputChild) {
+        fairytaleInputChild.addEventListener('focus', () => setActiveFairytaleInput(fairytaleInputChild));
+        fairytaleInputChild.addEventListener('click', () => setActiveFairytaleInput(fairytaleInputChild));
+        fairytaleInputChild.addEventListener('pointerdown', () => setActiveFairytaleInput(fairytaleInputChild));
+    }
+    if (fairytaleInputTheme) {
+        fairytaleInputTheme.addEventListener('focus', () => setActiveFairytaleInput(fairytaleInputTheme));
+        fairytaleInputTheme.addEventListener('click', () => setActiveFairytaleInput(fairytaleInputTheme));
+        fairytaleInputTheme.addEventListener('pointerdown', () => setActiveFairytaleInput(fairytaleInputTheme));
+    }
+
+    if (fairytaleChildClearBtn && fairytaleInputChild) {
+        fairytaleChildClearBtn.addEventListener('click', () => {
+            fairytaleInputChild.value = '';
+            setActiveFairytaleInput(fairytaleInputChild);
+        });
+    }
+    if (fairytaleThemeClearBtn && fairytaleInputTheme) {
+        fairytaleThemeClearBtn.addEventListener('click', () => {
+            fairytaleInputTheme.value = '';
+            setActiveFairytaleInput(fairytaleInputTheme);
+        });
+    }
+
+    document.querySelectorAll('#fairytale-lang-chips .lang-choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#fairytale-lang-chips .lang-choice-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
+
+    document.querySelectorAll('#fairytale-theme-chips .lang-choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#fairytale-theme-chips .lang-choice-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const themeText = btn.dataset.theme || btn.textContent.trim();
+            if (fairytaleInputTheme) {
+                fairytaleInputTheme.value = themeText;
+                setActiveFairytaleInput(fairytaleInputTheme);
+            }
+        });
+    });
+
+    document.querySelectorAll('#fairytale-mood-chips .lang-choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#fairytale-mood-chips .lang-choice-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
+
+    if (fairytaleCancelBtn) {
+        fairytaleCancelBtn.addEventListener('click', () => {
+            closeKioskFlow();
+        });
+    }
+
+    window.openDirectFairytaleStudio = function (card) {
+        if (typeof window.hideAttractScreen === 'function') {
+            window.hideAttractScreen();
+        }
+        const templateModal = document.getElementById('template-modal');
+        if (templateModal) templateModal.classList.add('hidden');
+
+        activeSectionCard = card || (Array.isArray(mainCardsConfig) ? mainCardsConfig.find(c => c.id === 8) : null);
+        selectedStylePrice = 290;
+
+        const createBtn = document.getElementById('fairytale-create-btn');
+        if (createBtn) {
+            createBtn.innerHTML = `🪄 СОЗДАТЬ СКАЗКУ • ${selectedStylePrice} СОМ ➔`;
+        }
+
+        const kioskModal = document.getElementById('kiosk-modal');
+        if (kioskModal) kioskModal.style.display = 'flex';
+
+        const stepEl = document.getElementById('step-fairytale');
+        showStep(stepEl);
+
+        const inpChild = document.getElementById('fairytale-input-child');
+        setActiveFairytaleInput(inpChild);
+        if (inpChild) {
+            setTimeout(() => inpChild.focus(), 150);
+        }
+
+        renderFairytaleVirtualKeyboard();
+    };
+
+    if (fairytaleCreateBtn) {
+        fairytaleCreateBtn.addEventListener('click', () => {
+            const childVal = (fairytaleInputChild ? fairytaleInputChild.value.trim() : '');
+            const themeVal = (fairytaleInputTheme ? fairytaleInputTheme.value.trim() : '');
+
+            const activeLangBtn = document.querySelector('#fairytale-lang-chips .lang-choice-btn.active');
+            const langCode = activeLangBtn ? (activeLangBtn.dataset.langCode || 'ru') : 'ru';
+            const langName = activeLangBtn ? (activeLangBtn.dataset.lang || 'Русский') : 'Русский';
+
+            const activeMoodBtn = document.querySelector('#fairytale-mood-chips .lang-choice-btn.active');
+            const moodName = activeMoodBtn ? (activeMoodBtn.dataset.mood || 'Колыбельная на ночь') : 'Колыбельная на ночь';
+
+            const finalChild = childVal || 'Малыш';
+            const finalTheme = themeVal || 'Волшебные приключения и верные друзья';
+
+            guestFairytaleData = {
+                childName: finalChild,
+                theme: finalTheme,
+                mood: moodName,
+                lang: langCode,
+                langName: langName
+            };
+
+            selectedStyle = `Сказка для ${finalChild}`;
+            selectedStyleCategory = 'СКАЗКА';
+            selectedStylePrice = 290;
+            selectedStyleModel = 'fairytale';
+            selectedStylePhoto = 'images/fairytale_cover.jpg';
+            selectedStyleLocation = '';
+            selectedStyleResolution = 'VIDEO';
+
+            let fullPrompt = `Детская волшебная сказка для ребенка ${finalChild}. Тема: ${finalTheme}. Характер: ${moodName}. Язык: ${langName}. 3D Pixar book cover, warm magical atmosphere.`;
+            selectedStylePrompt = fullPrompt;
+
+            showStep(stepPayment);
+            initiatePaymentOrder();
+        });
+    }
+
+    // ========================================================
     // СТУДИЯ ДОПОЛНЕННОЙ РЕАЛЬНОСТИ (WEB AR STUDIO)
     // ========================================================
     let currentArMarker = 'images/photo1.jpg';
@@ -2435,6 +2705,8 @@ document.addEventListener('DOMContentLoaded', () => {
             closeKioskFlow();
             if (selectedStyleModel === 'suno' || (activeSectionCard && (activeSectionCard.id === 6 || (activeSectionCard.filter && activeSectionCard.filter.toUpperCase() === 'MUSIC')))) {
                 openDirectMusicStudio(activeSectionCard);
+            } else if (selectedStyleModel === 'fairytale' || (activeSectionCard && (activeSectionCard.id === 8 || (activeSectionCard.filter && activeSectionCard.filter.toUpperCase() === 'FAIRYTALE')))) {
+                openDirectFairytaleStudio(activeSectionCard);
             } else {
                 openTemplateGallery();
             }
@@ -2537,7 +2809,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showStep(stepEl) {
-        [stepMusicTheme, stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepRoastResult].forEach(s => {
+        const stepFairytale = document.getElementById('step-fairytale');
+        [stepMusicTheme, stepFairytale, stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepRoastResult].forEach(s => {
             if (s) s.style.display = 'none';
         });
         if (stepEl) stepEl.style.display = 'block';
@@ -2913,15 +3186,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            const isFairytalePaid = modelLow === 'fairytale' ||
+                modelLow.includes('fairytale') ||
+                modelLow.includes('elevenlabs') ||
+                catUp === 'СКАЗКА' ||
+                catUp.includes('СКАЗК');
+
             const isMusicPaid = modelLow === 'suno' ||
                 modelLow.includes('suno') ||
                 modelLow.includes('music') ||
                 ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'МУЗЫКА'].includes(catUp);
 
-            if (isMusicPaid) {
-                // Для музыки камера не нужна — сразу запускаем генерацию
+            if (isFairytalePaid || isMusicPaid) {
+                // Для сказки и музыки камера не нужна — сразу запускаем генерацию
                 if (paymentStatusText) {
-                    paymentStatusText.textContent = '✅ Оплата получена! Запускаем генерацию...';
+                    paymentStatusText.textContent = isFairytalePaid 
+                        ? '✅ Оплата получена! Создаем сказку...'
+                        : '✅ Оплата получена! Запускаем генерацию...';
                 }
                 showStep(stepProcessing);
                 runAIGeneration();
@@ -3936,20 +4217,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const isMotionControl = false; // Kling Motion Control удалён
 
-        const isMusicSelection = selectedStyleModel === 'suno' ||
+        const isFairytaleSelection = selectedStyleModel === 'fairytale' ||
+            (selectedStyleCategory && selectedStyleCategory.toUpperCase() === 'СКАЗКА') ||
+            (selectedStyle && selectedStyle.toUpperCase().includes('СКАЗК'));
+
+        const isMusicSelection = !isFairytaleSelection && (selectedStyleModel === 'suno' ||
             selectedStyleModel.includes('suno') ||
             selectedStyleModel.includes('music') ||
-            (selectedStyleCategory && ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА'].includes(selectedStyleCategory.toUpperCase()));
+            (selectedStyleCategory && ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА'].includes(selectedStyleCategory.toUpperCase())));
 
-        const isVideoSelection = !isMusicSelection && (
+        const isVideoSelection = !isMusicSelection && !isFairytaleSelection && (
             selectedStyleModel === 'omni-flash' ||
             selectedStyleModel.includes('omni') ||
             selectedStyleModel.includes('gemini') ||
             selectedStyleModel.includes('video'));
 
-        const genTitle = isMusicSelection ? 'СОЗДАНИЕ ПЕСНИ' : isMotionControl ? 'СОЗДАНИЕ ТАНЦА' : isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
+        const genTitle = isFairytaleSelection ? 'СОЗДАНИЕ ВОЛШЕБНОЙ СКАЗКИ' : isMusicSelection ? 'СОЗДАНИЕ ПЕСНИ' : isMotionControl ? 'СОЗДАНИЕ ТАНЦА' : isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
         resetAiProgress(genTitle, selectedStyleModel, currentAiResolution);
 
+        const fairytaleInitialStatuses = [
+            `Придумывание волшебного сюжета для вашего ребенка...`,
+            `Генерация 3D-обложки книги в стиле сказочной анимации...`,
+            `Озвучивание сказки живым профессиональным голосом...`,
+            `Подготовка персональной аудиокниги и субтитров...`
+        ];
         const musicInitialStatuses = [
             `Создание оригинальной мелодии и аранжировки...`,
             `Написание текста песни и куплетов...`,
@@ -3967,7 +4258,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `Генерация динамики и траектории движения...`,
             `Подготовка видеопотока...`
         ];
-        const statuses = isMusicSelection ? musicInitialStatuses : isMotionControl ? motionInitialStatuses : isVideoSelection ? videoInitialStatuses : isTryOnMode ? [
+        const statuses = isFairytaleSelection ? fairytaleInitialStatuses : isMusicSelection ? musicInitialStatuses : isMotionControl ? motionInitialStatuses : isVideoSelection ? videoInitialStatuses : isTryOnMode ? [
             `Анализ силуэта и позы...`,
             `Подбор размера и примерка кроя...`,
             `Сохранение черт лица и индивидуальности...`,
@@ -4051,6 +4342,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     orderId: currentOrderId,
                     location: selectedStyleLocation,
                     isTryOn: isTryOnMode,
+                    isFairytale: isFairytaleSelection,
+                    fairytaleData: guestFairytaleData,
                     resolution: '1K',
                     duration: selectedVideoDuration || 5,
                     aggregatorUrl,
@@ -4066,6 +4359,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         clearInterval(interval);
                         console.log(`[AI Polling] Задача ${data.taskId} в процессе генерации, запускаем поллинг...`);
                         const isVideoTask = Boolean(data.isVideo) || isVideoSelection;
+                        const fairytalePollStatuses = [
+                            `Придумывание волшебного сюжета для сказки...`,
+                            `Отрисовка 3D-обложки книги в стиле сказочной анимации...`,
+                            `Синтез сказочного голоса диктора через ElevenLabs...`,
+                            `Сведение звука и подготовка субтитров...`,
+                            `Финальная подготовка аудиокниги для сохранения...`
+                        ];
                         const musicPollStatuses = [
                             `Студийное создание мелодии и ритма...`,
                             `Написание текста песни и рифм по вашей теме...`,
@@ -4101,15 +4401,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             `Цветокоррекция и сглаживание анимации...`,
                             `Финальная сборка видеоролика...`
                         ];
-                        const activePollStatuses = isMusicSelection
-                            ? musicPollStatuses
-                            : isMotionControl
-                                ? motionPollStatuses
-                                : isVideoTask
-                                    ? videoPollStatuses
-                                    : (isTryOnMode || selectedStyleModel === 'nano-banana-2')
-                                        ? tryOnPollStatuses
-                                        : photoPollStatuses;
+                        const activePollStatuses = isFairytaleSelection
+                            ? fairytalePollStatuses
+                            : isMusicSelection
+                                ? musicPollStatuses
+                                : isMotionControl
+                                    ? motionPollStatuses
+                                    : isVideoTask
+                                        ? videoPollStatuses
+                                        : (isTryOnMode || selectedStyleModel === 'nano-banana-2')
+                                            ? tryOnPollStatuses
+                                            : photoPollStatuses;
 
                         let pollIdx = 0;
                         let pollAttempts = 0;
@@ -4372,16 +4674,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } else if (isVideoResult && resultVideo) {
-            if (stepResultTitle) stepResultTitle.textContent = 'ВАШ РЕЗУЛЬТАТ ГОТОВ!';
-            if (stepResultSubtitle) stepResultSubtitle.textContent = 'Отсканируйте QR-код камерой телефона, чтобы сохранить фото или видео';
+            if (isFairytaleSelection) {
+                if (stepResultTitle) stepResultTitle.textContent = 'ВАША ВОЛШЕБНАЯ СКАЗКА ГОТОВА! 🪄';
+                if (stepResultSubtitle) stepResultSubtitle.textContent = 'Отсканируйте QR-код, чтобы сохранить видеосказку в галерею смартфона';
+            } else {
+                if (stepResultTitle) stepResultTitle.textContent = 'ВАШ РЕЗУЛЬТАТ ГОТОВ!';
+                if (stepResultSubtitle) stepResultSubtitle.textContent = 'Отсканируйте QR-код камерой телефона, чтобы сохранить фото или видео';
+            }
             if (resultAudioBox) {
                 if (resultAudioPlayer) resultAudioPlayer.pause();
                 resultAudioBox.style.display = 'none';
             }
             resultVideo.src = finalResultUrl;
-            resultVideo.muted = true;
+            resultVideo.muted = isFairytaleSelection ? false : true;
             resultVideo.style.display = 'block';
-            resultVideo.play().catch(e => console.warn('Video play error:', e));
+            resultVideo.play().catch(e => {
+                resultVideo.muted = true;
+                resultVideo.play().catch(() => {});
+            });
             if (resultImg) resultImg.style.display = 'none';
         } else if (resultImg) {
             if (stepResultTitle) stepResultTitle.textContent = 'ВАШ РЕЗУЛЬТАТ ГОТОВ!';

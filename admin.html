@@ -2461,7 +2461,8 @@
                 list = [
                     { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
                     { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
-                    { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] }
+                    { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] },
+                    { id: 8, title: 'АУДИОСКАЗКА', badge: '🪄 ДЕТСКАЯ АУДИОКНИГА • ИИ', subtitle: 'ПЕРСОНАЛЬНАЯ СКАЗКА ДЛЯ РЕБЕНКА С ОБЛОЖКОЙ И ГОЛОСОМ', filter: 'FAIRYTALE', category: 'СКАЗКА', img: 'images/fairytale_cover.jpg', categories: ['СКАЗКИ', 'ПРИКЛЮЧЕНИЯ', 'КОЛЫБЕЛЬНЫЕ', 'ПОУЧИТЕЛЬНЫЕ'] }
                 ];
             } else {
                 let musicCard = list.find(c => c.id === 6 || (c.filter && c.filter.toUpperCase() === 'MUSIC') || (c.title && c.title.toUpperCase().includes('ТРЕК')));
@@ -2477,6 +2478,19 @@
                         categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК']
                     });
                 }
+                let fairytaleCard = list.find(c => c.id === 8 || (c.filter && c.filter.toUpperCase() === 'FAIRYTALE') || (c.title && c.title.toUpperCase().includes('СКАЗК')));
+                if (!fairytaleCard) {
+                    list.push({
+                        id: 8,
+                        title: 'АУДИОСКАЗКА',
+                        badge: '🪄 ДЕТСКАЯ АУДИОКНИГА • ИИ',
+                        subtitle: 'ПЕРСОНАЛЬНАЯ СКАЗКА ДЛЯ РЕБЕНКА С ОБЛОЖКОЙ И ГОЛОСОМ',
+                        filter: 'FAIRYTALE',
+                        category: 'СКАЗКА',
+                        img: 'images/fairytale_cover.jpg',
+                        categories: ['СКАЗКИ', 'ПРИКЛЮЧЕНИЯ', 'КОЛЫБЕЛЬНЫЕ', 'ПОУЧИТЕЛЬНЫЕ']
+                    });
+                }
             }
 
             return list.map(c => {
@@ -2489,6 +2503,8 @@
                         cats = ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'];
                     } else if (c.id === 6 || titleUp.includes('ТРЕК') || titleUp.includes('МУЗЫК')) {
                         cats = ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'];
+                    } else if (c.id === 8 || titleUp.includes('СКАЗК')) {
+                        cats = ['СКАЗКИ', 'ПРИКЛЮЧЕНИЯ', 'КОЛЫБЕЛЬНЫЕ', 'ПОУЧИТЕЛЬНЫЕ'];
                     } else {
                         cats = [c.title || 'ОБЩЕЕ'];
                     }

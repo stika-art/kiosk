@@ -621,11 +621,11 @@
         }
 
         /* =====================================================
-           MAIN SELECTION CARDS (3 ROWS)
+           MAIN SELECTION CARDS (4 ROWS)
         ===================================================== */
         .card {
-            height: clamp(220px, 20vh, 360px);
-            margin-bottom: 20px;
+            height: clamp(170px, 17.5vh, 320px);
+            margin-bottom: 14px;
             position: relative;
             overflow: hidden;
             background: var(--card-bg);
@@ -2805,6 +2805,14 @@
             <div class="title">СОЗДАЙ СВОЙ ТРЕК</div>
             <div class="subtitle">СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ</div>
         </section>
+
+        <!-- CARD 4 — АУДИОСКАЗКА -->
+        <section class="card card-4" onclick="selectCard(this, 8)">
+            <div class="card-image" style="background-image: url('images/fairytale_cover.jpg');"></div>
+            <div class="point">🪄 ДЕТСКАЯ АУДИОКНИГА • ИИ</div>
+            <div class="title">АУДИОСКАЗКА</div>
+            <div class="subtitle">ПЕРСОНАЛЬНАЯ СКАЗКА ДЛЯ РЕБЕНКА С ОБЛОЖКОЙ И ГОЛОСОМ</div>
+        </section>
     </div>
 
 </div>
@@ -2924,101 +2932,73 @@
             </div>
         </div>
 
-        <!-- STEP 0.6: DIRECT AR STUDIO (ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ) -->
-        <div id="step-ar-studio" class="step-view" style="display:none;">
-            <div style="text-align: center; margin-bottom: 8px;">
-                <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(0, 242, 254, 0.12); border: 1px solid rgba(0, 242, 254, 0.35); color: #00f2fe; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 800; letter-spacing: 0.5px;">
-                    <span>✨</span>
-                    <span>ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ • WEB AR</span>
-                </div>
+        <!-- STEP 0.7: DIRECT FAIRYTALE STUDIO (АУДИОСКАЗКА) -->
+        <div id="step-fairytale" class="step-view" style="display:none; max-width: 760px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 6px;">
+                <span class="step-badge" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; background: rgba(212, 160, 67, 0.15); border: 1px solid rgba(212, 160, 67, 0.5); color: var(--primary, #d4a043); letter-spacing: 0.5px;">
+                    🪄 ВОЛШЕБНАЯ АУДИОКНИГА • ИИ
+                </span>
             </div>
-            <h2 class="modal-title" style="margin-top: 0; text-align: center;">НАСТРОЙКА ОЖИВАЮЩЕГО ФОТО</h2>
-            <p class="modal-subtitle" style="text-align: center; max-width: 640px; margin: 0 auto 12px auto;">
-                Загрузите фото и видео со смартфона. Отрегулируйте размер и точное положение оживающего видео на фото!
+            <h2 class="modal-title" style="margin-top: 4px; margin-bottom: 4px; text-align: center; font-size: 24px; font-weight: 800;">ПЕРСОНАЛЬНАЯ СКАЗКА</h2>
+            <p class="modal-subtitle" style="text-align: center; max-width: 580px; margin: 0 auto 12px auto; font-size: 13px; color: var(--text-dim, #94a3b8);">
+                Укажите имя ребенка, выберите тему и настроение. ИИ создаст красивую 3D-обложку, напишет добрую сказку и озвучит живым сказочным голосом!
             </p>
 
-            <!-- Кнопки загрузки с телефона -->
-            <div style="display: flex; gap: 12px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap;">
-                <button type="button" class="ar-small-btn" id="ar-btn-phone-marker" style="padding: 10px 18px; border-color: #00f2fe; color: #00f2fe;">
-                    📱 1. Загрузить фото-маркер (QR)
-                </button>
-                <button type="button" class="ar-small-btn" id="ar-btn-phone-media" style="padding: 10px 18px; border-color: #d4a043; color: #d4a043;">
-                    📱 2. Загрузить видеоролик (QR)
-                </button>
-            </div>
-
-            <div class="ar-studio-container" style="position: relative;">
-                <!-- ХОЛСТ ВЫРАВНИВАНИЯ: МАРКЕР + ОВЕРЛЕЙ -->
-                <div class="ar-composite-preview" id="ar-composite-box">
-                    <img id="ar-marker-img" class="ar-base-marker-img" src="images/photo1.jpg" alt="Маркер">
-                    
-                    <div class="ar-floating-overlay" id="ar-floating-layer">
-                        <video id="ar-media-vid" src="" autoplay loop muted playsinline style="display:none;"></video>
-                        <img id="ar-media-img" src="assets/hero_robot.jpg" alt="Оверлей">
-                    </div>
-
-                    <div style="position:absolute; bottom:6px; left:8px; right:8px; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); border-radius:8px; font-size:11px; padding:3px 8px; color:#fff; text-align:center;">
-                        Интерактивный вид в дополненной реальности
-                    </div>
-                </div>
-
-                <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ПОЛОЖЕНИЕМ И РАЗМЕРОМ -->
-                <div class="ar-controls-panel">
-                    <!-- 1. РАЗМЕР -->
-                    <div class="ar-ctrl-row">
-                        <span class="ar-ctrl-label">📐 РАЗМЕР ВИДЕО:</span>
-                        <div class="ar-ctrl-btns">
-                            <button type="button" class="ar-small-btn" id="ar-ctrl-scale-down">➖</button>
-                            <span class="ar-val-badge" id="ar-val-scale">100%</span>
-                            <button type="button" class="ar-small-btn" id="ar-ctrl-scale-up">➕</button>
-                            <button type="button" class="ar-small-btn" id="ar-ctrl-scale-fit" style="font-size:11px;">НА ВСЁ ФОТО</button>
-                        </div>
-                    </div>
-
-                    <!-- 2. СМЕЩЕНИЕ ПО ГОРИЗОНТАЛИ -->
-                    <div class="ar-ctrl-row">
-                        <span class="ar-ctrl-label">↔️ СМЕЩЕНИЕ X:</span>
-                        <div class="ar-ctrl-btns">
-                            <button type="button" class="ar-small-btn" id="ar-ctrl-x-left">⬅️ Влево</button>
-                            <span class="ar-val-badge" id="ar-val-x">0px</span>
-                            <button type="button" class="ar-small-btn" id="ar-ctrl-x-right">➡️ Вправо</button>
-                        </div>
-                    </div>
-
-                    <!-- 3. СМЕЩЕНИЕ ПО ВЕРТИКАЛИ -->
-                    <div class="ar-ctrl-row">
-                        <span class="ar-ctrl-label">↕️ СМЕЩЕНИЕ Y:</span>
-                        <div class="ar-ctrl-btns">
-                            <button type="button" class="ar-small-btn" id="ar-ctrl-y-up">⬆️ Вверх</button>
-                            <span class="ar-val-badge" id="ar-val-y">0px</span>
-                            <button type="button" class="ar-small-btn" id="ar-ctrl-y-down">⬇️ Вниз</button>
-                        </div>
-                    </div>
-
-                    <!-- 4. СБРОС В ЦЕНТР -->
-                    <div style="text-align: right; margin-top: 4px;">
-                        <button type="button" class="ar-small-btn" id="ar-ctrl-reset-pos" style="padding: 6px 14px; font-size: 11.5px; border-color: rgba(255,255,255,0.2);">
-                            🎯 Центрировать видео
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Всплывающий QR-код для загрузки с телефона -->
-                <div class="ar-phone-qr-popup" id="ar-popup-marker-qr">
-                    <div style="font-size:15px; font-weight:800; color:#00f2fe;">СКАНИРУЙТЕ ТЕЛЕФОНОМ</div>
-                    <div style="font-size:11.5px; color:#ccc; max-width:240px;">Откроется быстрая загрузка фото и видео прямо из галереи</div>
-                    <div id="ar-phone-qr-img" style="width:160px; height:160px; background:#fff; border-radius:12px; padding:6px; margin: 4px auto;"></div>
-                    <div id="ar-phone-poll-status" style="font-size:12px; color:#D4A043; font-weight:700;">Ожидание файлов...</div>
-                    <button type="button" class="ar-small-btn" id="ar-btn-close-qr" style="margin-top:6px; padding:8px 20px;">Закрыть</button>
+            <!-- 1. ЯЗЫК СКАЗКИ -->
+            <div class="music-form-group" style="margin-bottom: 12px;">
+                <label class="music-group-label">ЯЗЫК СКАЗКИ И ОЗВУЧКИ:</label>
+                <div class="music-selector-chips" id="fairytale-lang-chips">
+                    <button type="button" class="lang-choice-btn active" data-lang="Русский" data-lang-code="ru">🇷🇺 Русский</button>
+                    <button type="button" class="lang-choice-btn" data-lang="Кыргызча" data-lang-code="kg">🇰🇬 Кыргызча</button>
                 </div>
             </div>
+
+            <!-- 2. ИМЯ И ВОЗРАСТ РЕБЕНКА -->
+            <div class="music-form-group">
+                <label class="music-group-label">ИМЯ И ВОЗРАСТ ГЛАВНОГО ГЕРОЯ (РЕБЕНКА):</label>
+                <div class="music-input-wrap">
+                    <input type="text" id="fairytale-input-child" class="kiosk-touch-input active-focus" placeholder="Например: Амир, 5 лет (любит звезды и динозавров)..." maxlength="100" autocomplete="off" inputmode="none" readonly style="cursor: pointer;">
+                    <button type="button" id="fairytale-child-clear-btn" class="input-clear-btn" title="Очистить">&times;</button>
+                </div>
+            </div>
+
+            <!-- 3. ТЕМА СКАЗКИ (БЫСТРЫЕ ЧИПЫ + ПОЛЕ) -->
+            <div class="music-form-group">
+                <label class="music-group-label">О ЧЁМ СКАЗКА (ВЫБЕРИТЕ ИЛИ НАПИШИТЕ):</label>
+                <div class="music-selector-chips" id="fairytale-theme-chips" style="margin-bottom: 8px;">
+                    <button type="button" class="lang-choice-btn" data-theme="Космос и звездолет">🚀 Космос и звезды</button>
+                    <button type="button" class="lang-choice-btn" data-theme="Дружелюбный динозаврик">🦖 Динозаврик</button>
+                    <button type="button" class="lang-choice-btn" data-theme="Принцесса и волшебный замок">👑 Принцесса и замок</button>
+                    <button type="button" class="lang-choice-btn" data-theme="Тайна волшебного леса">🌲 Волшебный лес</button>
+                    <button type="button" class="lang-choice-btn" data-theme="Ожившие любимые игрушки">🧸 Ожившие игрушки</button>
+                    <button type="button" class="lang-choice-btn" data-theme="Храбрый маленький львенок">🦁 Храбрый львенок</button>
+                    <button type="button" class="lang-choice-btn" data-theme="Первый день в садике">🎒 Первый день в садике</button>
+                </div>
+                <div class="music-input-wrap">
+                    <input type="text" id="fairytale-input-theme" class="kiosk-touch-input" placeholder="Или напишите свою тему (например: подводное царство...)" maxlength="120" autocomplete="off" inputmode="none" readonly style="cursor: pointer;">
+                    <button type="button" id="fairytale-theme-clear-btn" class="input-clear-btn" title="Очистить">&times;</button>
+                </div>
+            </div>
+
+            <!-- 4. НАСТРОЕНИЕ И ХАРАКТЕР -->
+            <div class="music-form-group" style="margin-bottom: 12px;">
+                <label class="music-group-label">ХАРАКТЕР И НАСТРОЕНИЕ СКАЗКИ:</label>
+                <div class="music-selector-chips" id="fairytale-mood-chips">
+                    <button type="button" class="lang-choice-btn active" data-mood="Колыбельная на ночь">🌙 Успокаивающая колыбельная (на ночь)</button>
+                    <button type="button" class="lang-choice-btn" data-mood="Веселое приключение">✨ Захватывающее приключение</button>
+                    <button type="button" class="lang-choice-btn" data-mood="О дружбе и доброте">💖 О доброте и дружбе</button>
+                </div>
+            </div>
+
+            <!-- Сенсорная клавиатура на экране -->
+            <div id="fairytale-virtual-keyboard" class="virtual-keyboard-box"></div>
 
             <div class="modal-actions" style="margin-top: 14px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
-                <button type="button" id="ar-studio-cancel-btn" class="action-btn cancel-btn" style="min-width: 170px;">
+                <button type="button" id="fairytale-cancel-btn" class="action-btn cancel-btn" style="min-width: 170px;">
                     ← НА ГЛАВНУЮ
                 </button>
-                <button type="button" id="ar-studio-create-btn" class="action-btn primary-btn" style="min-width: 290px; font-weight: 800; font-size: 16px; background: linear-gradient(135deg, #00f2fe, #4facfe); border: none; color:#000; box-shadow: 0 0 25px rgba(0,242,254,0.5);">
-                    ✨ СОЗДАТЬ AR • 290 СОМ ➔
+                <button type="button" id="fairytale-create-btn" class="action-btn primary-btn" style="min-width: 290px; font-weight: 800; font-size: 15px; background: linear-gradient(135deg, #d4a043 0%, #f59e0b 50%, #b45309 100%); color: #000; border: none; box-shadow: 0 4px 25px rgba(212,160,67,0.45);">
+                    🪄 СОЗДАТЬ СКАЗКУ • 290 СОМ ➔
                 </button>
             </div>
         </div>

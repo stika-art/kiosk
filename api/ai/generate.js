@@ -171,9 +171,10 @@ function sanitizeForOpenAI(p) {
 }
 
 // 5. Вызов Kie.ai API и ожидание результата задачи генерации изображения или видео
-async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution, orderId, title, duration }) {
+async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution, orderId, title, duration, isFairytale, fairytaleData, voiceId }) {
     const isMusicTarget = (model === 'suno' || (model && model.toLowerCase().includes('suno')) || (model && model.toLowerCase().includes('music')));
-    if (!apiKey || (!isMusicTarget && !publicPhotoUrl && !guestVideoUrl && !templateImgUrl)) return null;
+    const isFairytaleTarget = Boolean(isFairytale) || model === 'fairytale' || (model && model.toLowerCase().includes('fairytale')) || (model && model.toLowerCase().includes('elevenlabs'));
+    if (!apiKey || (!isMusicTarget && !isFairytaleTarget && !publicPhotoUrl && !guestVideoUrl && !templateImgUrl)) return null;
 
     // Разрешение: строго 1K для ультра-быстрой генерации 5-8 сек на киоске
     const targetResolution = '1K';
@@ -207,6 +208,9 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     } else if (model === 'suno' || model === 'suno-v6' || model === 'suno-v6-mini' || model === 'suno-v6-wild' || model === 'suno-v4' || model === 'suno-v3.5' || model === 'ai-music-api/generate' || (typeof model === 'string' && (model.includes('suno') || model.includes('music') || model.includes('трек') || model.includes('песн')))) {
         // Suno AI (V6) — Генерация музыки и песен через официальный API Kie.ai
         kieModel = 'ai-music-api/generate';
+    } else if (model === 'fairytale' || isFairytaleTarget || (typeof model === 'string' && (model.includes('elevenlabs') || model.includes('fairytale') || model.includes('сказк')))) {
+        // ElevenLabs Multilingual V2 — Синтез сказочного голоса диктора
+        kieModel = 'elevenlabs/text-to-speech-multilingual-v2';
     } else if (model && model !== 'default') {
         kieModel = model;
     } else {
@@ -217,7 +221,8 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     const isPixverse = kieModel === 'pixverse/v6/image-to-video' || kieModel.includes('pixverse');
     const isGeminiOmni = kieModel === 'gemini-omni-video' || kieModel.includes('gemini') || kieModel.includes('omni');
     const isMusicModel = kieModel === 'ai-music-api/generate' || kieModel.includes('music') || kieModel.includes('suno');
-    const isVideoModel = !isMusicModel && (isPixverse ||
+    const isFairytaleModel = kieModel === 'elevenlabs/text-to-speech-multilingual-v2' || kieModel.includes('elevenlabs') || isFairytaleTarget;
+    const isVideoModel = !isMusicModel && !isFairytaleModel && (isPixverse ||
                          isGeminiOmni ||
                          kieModel.includes('video') ||
                          kieModel.includes('kling') ||
@@ -225,13 +230,23 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
                          kieModel.includes('luma') ||
                          kieModel.includes('hailuo'));
 
-    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isMusic=${isMusicModel}, isPixverse=${isPixverse}, duration=${duration || 5}s, isTryOn=${Boolean(isTryOn)})...`);
+    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isMusic=${isMusicModel}, isFairytale=${isFairytaleModel}, isPixverse=${isPixverse}, duration=${duration || 5}s, isTryOn=${Boolean(isTryOn)})...`);
 
     const safePrompt = sanitizeForOpenAI(prompt);
 
     // Формирование входных данных под выбранный тип модели
     let inputPayload = {};
-    if (isMusicModel) {
+    if (isFairytaleModel) {
+        // Озвучивание сказки через ElevenLabs Multilingual V2 в Kie.ai
+        const targetVoice = voiceId || 'James';
+        const storyText = safePrompt || 'Жил-был на свете маленький герой, который очень любил волшебные приключения.';
+        inputPayload = {
+            text: storyText,
+            voice: targetVoice,
+            stability: 0.55,
+            similarity_boost: 0.75
+        };
+    } else if (isMusicModel) {
         // Генерация полноценной музыки и песен через Suno AI (актуальная флагманская версия V6 в Kie.ai)
         const musicPrompt = (safePrompt && safePrompt.trim().length > 3)
             ? safePrompt.trim()
@@ -424,7 +439,9 @@ CRITICAL MANDATORY INSTRUCTIONS:
                                 targetModel.includes('hailuo');
             const isAudioTask = targetModel.includes('music') ||
                                 targetModel.includes('suno') ||
-                                targetModel.includes('audio');
+                                targetModel.includes('audio') ||
+                                targetModel.includes('elevenlabs') ||
+                                targetModel.includes('fairytale');
 
             if (!taskId) {
                 const failReason = (createData && (createData.msg || createData.message)) 
@@ -712,7 +729,7 @@ module.exports = async (req, res) => {
         triggerBackgroundCleanup();
 
         const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-        const { photoData, videoUrl, guestVideoUrl, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey, duration } = body;
+        const { photoData, videoUrl, guestVideoUrl, templateImg, prompt, model, title, price, orderId, location, isTryOn, resolution, aggregatorUrl, aggregatorKey, duration, isFairytale, fairytaleData } = body;
 
         // 0. Защита от дублирования запросов с одного киоска по одному и тому же заказу
         if (orderId && activeOrderTasks.has(orderId)) {
@@ -741,7 +758,9 @@ module.exports = async (req, res) => {
 
         // Защита от списания кредитов Kie.ai без реальных данных
         const isMusicReq = (model === 'suno' || (typeof model === 'string' && (model.includes('suno') || model.includes('music') || model.includes('трек') || model.includes('песн'))));
-        if (!isMusicReq && !photoData && !templateImg && !videoUrl && !guestVideoUrl) {
+        const isFairytaleReq = Boolean(isFairytale) || model === 'fairytale' || (typeof model === 'string' && (model.includes('fairytale') || model.includes('сказк') || model.includes('elevenlabs')));
+
+        if (!isMusicReq && !isFairytaleReq && !photoData && !templateImg && !videoUrl && !guestVideoUrl) {
             console.log('[AI Hub] Входные медиаданные отсутствуют. Обращение к Kie.ai пропущено для защиты кредитов.');
             return res.status(200).json({
                 success: true,
@@ -757,7 +776,7 @@ module.exports = async (req, res) => {
         const rawGuestVideo = guestVideoUrl || videoUrl;
         const publicGuestVideoUrl = rawGuestVideo ? await uploadImageToCDN(rawGuestVideo, 'guests', orderId) : null;
 
-        if (!isMusicReq && !publicPhotoUrl && !publicTemplateUrl && !publicGuestVideoUrl) {
+        if (!isMusicReq && !isFairytaleReq && !publicPhotoUrl && !publicTemplateUrl && !publicGuestVideoUrl) {
             console.log('[AI Hub] Изображения не загружены в CDN. Обращение к Kie.ai отменено для защиты кредитов.');
             return res.status(200).json({
                 success: true,
@@ -767,15 +786,57 @@ module.exports = async (req, res) => {
             });
         }
 
+        // Подбор активного Voice ID из Supabase settings для сказки
+        let activeVoiceId = null;
+        let fairytaleNarrative = prompt;
+
+        if (isFairytaleReq) {
+            const langCode = (fairytaleData?.lang || 'ru').toLowerCase();
+            try {
+                const cfgRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?_t=${Date.now()}`);
+                if (cfgRes.ok) {
+                    const cfg = await cfgRes.json();
+                    const voiceList = (langCode === 'kg' || langCode === 'kyrgyz')
+                        ? (cfg.fairytale_voices_kyrgyz || [])
+                        : (cfg.fairytale_voices_foreign || []);
+                    const activeVoices = voiceList.filter(v => v.active !== false && (v.id || v.name));
+                    if (activeVoices.length > 0) {
+                        const randomVoice = activeVoices[Math.floor(Math.random() * activeVoices.length)];
+                        activeVoiceId = randomVoice.id || randomVoice.name;
+                    }
+                }
+            } catch(e) {
+                console.warn('[AI Hub] Не удалось загрузить голоса из Supabase settings:', e.message);
+            }
+
+            if (!activeVoiceId) {
+                activeVoiceId = (langCode === 'kg' || langCode === 'kyrgyz') ? 'James' : 'Rachel';
+            }
+
+            if (fairytaleData) {
+                const child = fairytaleData.childName || 'малыш';
+                const theme = fairytaleData.theme || 'волшебные приключения';
+                const mood = fairytaleData.mood || 'добрая сказка';
+                if (langCode === 'kg' || langCode === 'kyrgyz') {
+                    fairytaleNarrative = `Бир бар экен, бир жок экен, илгери өткөн заманда ${child} аттуу адептүү жана акылдуу бала жашаптыр. Анын эң чоң кыялы — ${theme} тууралуу экен. Бул ${mood} жомогу анын эр жүрөктүүлүгү жана боорукерлиги жөнүндө баяндайт.`;
+                } else {
+                    fairytaleNarrative = `Жил-был добрый и любознательный герой по имени ${child}. Больше всего на свете ${child} мечтал про ${theme}. И вот однажды сказочные огни осветили дорогу в удивительный мир. Это история про дружбу, чудеса и смелость.`;
+                }
+            }
+        }
+
         // 2. Запуск генерации через выбранную модель (Kie.ai)
         const generationOutcome = effectiveKey ? await generateViaKie({
             apiKey: effectiveKey,
             model: model || 'chatgpt-2.5',
-            prompt,
+            prompt: fairytaleNarrative || prompt,
             publicPhotoUrl,
             guestVideoUrl: publicGuestVideoUrl,
             templateImgUrl: publicTemplateUrl,
             isTryOn: Boolean(isTryOn),
+            isFairytale: isFairytaleReq,
+            fairytaleData,
+            voiceId: activeVoiceId,
             resolution: targetResolution,
             orderId,
             title,
