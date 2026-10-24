@@ -4387,6 +4387,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let finalResultUrl = null;
         let finalAudioUrls = [];
         let generationError = null;
+        let generationData = null;
 
         // Если гостем было записано живое видео — сначала загружаем его в Supabase Storage
         let guestVideoUrl = null;
@@ -4457,6 +4458,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (resp.ok) {
                 const data = await resp.json();
+                generationData = data;
                 if (data.success) {
 
                     if (data.pending && data.taskId) {
@@ -4664,9 +4666,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (stepResultSubtitle) stepResultSubtitle.textContent = 'Отсканируйте QR-код, чтобы сохранить видеосказку в галерею смартфона';
 
             // 1. Если доступно скомпилированное MP4 видео
-            if (isVideoResult && resultVideo) {
+            const hasVideoResult = (isVideoResult && resultVideo) || (generationData && generationData.videoUrl && resultVideo);
+            if (hasVideoResult) {
                 if (resultFairytaleBox) resultFairytaleBox.style.display = 'none';
-                resultVideo.src = finalResultUrl;
+                resultVideo.src = generationData?.videoUrl || finalResultUrl;
                 resultVideo.muted = false;
                 resultVideo.style.display = 'block';
                 resultVideo.play().catch(() => {
@@ -4674,12 +4677,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     resultVideo.play().catch(() => {});
                 });
             } else {
-                // 2. Если результат передан аудиопотоком (на Vercel) — воспроизведение видеосказки через обложку и живые субтитры
+                // 2. Воспроизведение видеосказки через обложку и живые субтитры
                 if (resultVideo) resultVideo.style.display = 'none';
                 if (resultFairytaleBox) resultFairytaleBox.style.display = 'block';
 
-                currentBgTrackUrl = data.bgTrackUrl || null;
-                currentBgTrackName = data.bgTrackName || 'Сказочная мелодия';
+                // Устанавливаем сгенерированную 3D-обложку книги сказок с лицом ребенка
+                const ftCoverImg = document.getElementById('fairytale-cover-img');
+                if (ftCoverImg) {
+                    const coverUrl = generationData?.coverUrl || generationData?.resultUrl || selectedStylePhoto;
+                    ftCoverImg.src = coverUrl;
+                }
+
+                currentBgTrackUrl = generationData?.bgTrackUrl || null;
+                currentBgTrackName = generationData?.bgTrackName || 'Сказочная мелодия';
 
                 if (!currentBgTrackUrl) {
                     try {
@@ -4716,7 +4726,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Живая синхронизация субтитров со звуком
                     const childName = guestFairytaleData?.childName || 'малыш';
-                    const narrativeText = data.speechText || data.prompt || selectedStylePrompt || `Сказка для ${childName}`;
+                    const narrativeText = generationData?.speechText || generationData?.prompt || selectedStylePrompt || `Сказка для ${childName}`;
                     const sentences = narrativeText.split(/(?<=[.!?])\s+/).filter(Boolean);
                     if (fairytaleSubtitlesText) {
                         fairytaleSubtitlesText.textContent = sentences[0] || `Сказка для ${childName}`;
