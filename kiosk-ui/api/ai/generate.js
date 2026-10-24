@@ -1,9 +1,9 @@
 // ============================================================
 // TRENDUM KIOSK — UNIVERSAL AI GATEWAY (KIE.AI & CUSTOM AGGREGATORS)
 // Models supported:
-// 1. 'nano-banana-2'  -> google/nano-banana-edit (Фото с сохранением лица / Примерка одежды)
-// 2. 'chatgpt-2.5'    -> gpt-image-2-image-to-image (Базовый GPT Image 2)
-// 3. 'pixverse-v6'    -> pixverse/v6/image-to-video (PixVerse V6 — Реалистичное оживление фото в видео)
+// 1. 'nano-banana-2'         -> google/nano-banana-edit (Фото с сохранением лица / Примерка одежды)
+// 2. 'chatgpt-2.5-sunburst'  -> gpt-image-2-5-sunburst-image-to-image (Флагман GPT Image 2.5 Sunburst — лучшая и последняя модель)
+// 3. 'pixverse-v6'           -> pixverse/v6/image-to-video (PixVerse V6 — Реалистичное оживление фото в видео)
 // 4. 'kling-turbo'    -> kling/v2-5-turbo-image-to-video (Ультра-быстрая генерация видео из фото)
 // 5. 'kling-video'    -> kling-2.6/image-to-video (Высокодетализированное видео из фото)
 // ============================================================
@@ -470,7 +470,7 @@ CRITICAL MANDATORY INSTRUCTIONS:
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'gpt-image-2-image-to-image',
+                model: 'gpt-image-2-5-sunburst-image-to-image',
                 input: {
                     prompt: promptText,
                     input_urls: [photoUrl],
@@ -630,24 +630,15 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     const targetResolution = '1K';
 
     // Сопоставление моделей:
-    // По умолчанию GPT Image 2 — быстрая генерация 5-15 сек для киоска.
-    let kieModel = 'gpt-image-2-image-to-image';
+    // Флагман GPT Image 2.5 Sunburst — лучшая и последняя модель с максимальным качеством и идеальным сохранением лица
+    let kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     if (isTryOn) {
-        // Виртуальная примерка одежды -> GPT Image 2 (понимает "Одень одежду с первой фото")
+        // Виртуальная примерка одежды -> nano-banana или GPT Image 2.5 Sunburst
         kieModel = model === 'nano-banana-2' || model === 'google/nano-banana-edit'
             ? 'google/nano-banana-edit'
-            : 'gpt-image-2-image-to-image';
+            : 'gpt-image-2-5-sunburst-image-to-image';
     } else if (model === 'nano-banana-2' || model === 'google/nano-banana-edit') {
         kieModel = 'google/nano-banana-edit';
-    } else if (model === 'gpt-image-2-5-sunburst' || model === 'chatgpt-2.5-sunburst' || model === 'gpt-image-2-5-sunburst-image-to-image') {
-        // GPT Image 2.5 Sunburst — максимальная детализация (медленнее), только при явном выборе
-        kieModel = 'gpt-image-2-5-sunburst-image-to-image';
-    } else if (model === 'gpt-image-2-5-flare' || model === 'chatgpt-2.5-flare' || model === 'gpt-image-2-5-flare-image-to-image') {
-        // GPT Image 2.5 Flare — скоростная версия 2.5
-        kieModel = 'gpt-image-2-5-flare-image-to-image';
-    } else if (model === 'gpt-image-2' || model === 'chatgpt-2' || model === 'chatgpt-2.5' || model === 'gpt-image-2-image-to-image') {
-        // GPT Image 2 — быстрая генерация (дефолт для всех карточек с chatgpt-2 / chatgpt-2.5)
-        kieModel = 'gpt-image-2-image-to-image';
     } else if (model === 'pixverse-v6' || model === 'pixverse' || model === 'pixverse/v6/image-to-video' || model === 'pixverse-v6/image-to-video' || model === 'omni-flash' || model === 'google-omni-flash' || model === 'gemini-omni-video' || (typeof model === 'string' && (model.includes('pixverse') || model.includes('omni') || model.includes('gemini')))) {
         // PixVerse V6 — Флагманское кинематографичное оживление фото в видео (официальная модель Kie.ai: pixverse/v6/image-to-video)
         kieModel = 'pixverse/v6/image-to-video';
@@ -661,11 +652,14 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     } else if (model === 'fairytale' || isFairytaleTarget || (typeof model === 'string' && (model.includes('elevenlabs') || model.includes('fairytale') || model.includes('сказк')))) {
         // ElevenLabs Multilingual V2 — Синтез сказочного голоса диктора
         kieModel = 'elevenlabs/text-to-speech-multilingual-v2';
-    } else if (model && model !== 'default') {
+    } else if (model === 'gpt-image-2-5-flare' || model === 'chatgpt-2.5-flare' || model === 'gpt-image-2-5-flare-image-to-image') {
+        // GPT Image 2.5 Flare — скоростная версия 2.5 (только при явном указании flare)
+        kieModel = 'gpt-image-2-5-flare-image-to-image';
+    } else if (model && model !== 'default' && !model.includes('chatgpt') && !model.includes('gpt-image')) {
         kieModel = model;
     } else {
-        // Дефолт — GPT Image 2 (быстро, 5-15 сек)
-        kieModel = 'gpt-image-2-image-to-image';
+        // ДЛЯ ВСЕХ ОСТАЛЬНЫХ ФОТО (chatgpt-2, chatgpt-2.5, gpt-image-2, chatgpt-2.5-sunburst, дефолт) — Флагман GPT Image 2.5 Sunburst!
+        kieModel = 'gpt-image-2-5-sunburst-image-to-image';
     }
 
     const isPixverse = kieModel === 'pixverse/v6/image-to-video' || kieModel.includes('pixverse');
@@ -1383,7 +1377,7 @@ module.exports = async (req, res) => {
             }) : null;
         }
 
-        const effectiveModelName = generationOutcome?.model || model || (isTryOn ? 'nano-banana-2' : 'chatgpt-2.5');
+        const effectiveModelName = generationOutcome?.model || model || (isTryOn ? 'nano-banana-2' : 'chatgpt-2.5-sunburst');
 
         // Если целевая модель вернула явную ошибку (без скрытых фоллбэков)
         if (generationOutcome && generationOutcome.failed) {

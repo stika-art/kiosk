@@ -4353,7 +4353,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     guestVideoUrl: guestVideoUrl,
                     templateImg: selectedStylePhoto,
                     prompt: finalPrompt,
-                    model: selectedStyleModel || 'chatgpt-2',
+                    model: selectedStyleModel || 'chatgpt-2.5-sunburst',
                     title: finalTitle,
                     price: selectedStylePrice,
                     orderId: currentOrderId,
