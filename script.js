@@ -2802,86 +2802,98 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function closeKioskFlow() {
-        stopPaymentPolling();
-        isPaymentSuccessHandled = false;
-        isAiGenerating = false;
-        if (simPayBtn) simPayBtn.disabled = false;
-        stopWebcam();
-        stopPhoneCamPolling();
-        if (capturedVideoUrl) {
-            URL.revokeObjectURL(capturedVideoUrl);
-            capturedVideoUrl = null;
-        }
-        capturedVideoBlob = null;
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
-            try { mediaRecorder.stop(); } catch (e) { }
-        }
-        if (videoPreviewConfirm) {
-            videoPreviewConfirm.pause();
-            videoPreviewConfirm.src = '';
-            videoPreviewConfirm.style.display = 'none';
-        }
-        // Удаляем файл телефонной сессии из Supabase при выходе
-        if (phoneCamSessionId) {
-            fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/phone-cam/${phoneCamSessionId}.jpg`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-            }).catch(() => { });
-        }
-        phoneCamMode = false;
-        phoneCamSessionId = null;
-        if (photoPreviewConfirm) photoPreviewConfirm.src = '';
-        if (resultVideo) {
-            try {
-                resultVideo.pause();
-                resultVideo.src = '';
-            } catch (e) { }
-        }
-        const resultAudioPlayer = document.getElementById('result-audio-player');
-        const resultAudioBgPlayer = document.getElementById('result-audio-bg-player');
-        if (resultAudioPlayer) {
-            try {
-                resultAudioPlayer.pause();
-                resultAudioPlayer.src = '';
-            } catch (e) { }
-        }
-        if (resultAudioBgPlayer) {
-            try {
-                resultAudioBgPlayer.pause();
-                resultAudioBgPlayer.src = '';
-            } catch (e) { }
-        }
-        const studioCustomPlayer = document.getElementById('studio-custom-player');
-        if (studioCustomPlayer) studioCustomPlayer.classList.remove('playing');
-        if (studioVinylDisc) studioVinylDisc.classList.remove('playing');
-        const studioProgressFill = document.getElementById('studio-progress-fill');
-        if (studioProgressFill) studioProgressFill.style.width = '0%';
-        const studioProgressThumb = document.getElementById('studio-progress-thumb');
-        if (studioProgressThumb) studioProgressThumb.style.left = '0%';
-        const studioCurrentTime = document.getElementById('studio-current-time');
-        if (studioCurrentTime) studioCurrentTime.textContent = '0:00';
-        const resultAudioBox = document.getElementById('result-audio-box');
-        if (resultAudioBox) resultAudioBox.style.display = 'none';
+        // 1. МГНОВЕННО скрываем модальные окна и экраны
+        try {
+            const kioskModalEl = document.getElementById('kiosk-modal');
+            if (kioskModalEl) kioskModalEl.style.display = 'none';
+            const tplModalEl = document.getElementById('template-modal');
+            if (tplModalEl) {
+                tplModalEl.classList.add('hidden');
+                tplModalEl.style.display = 'none';
+            }
+            if (modal) modal.style.display = 'none';
 
-        if (musicInputAbout) musicInputAbout.value = '';
-        if (musicInputFor) musicInputFor.value = '';
-        document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
-
-        if (tryonLocationInfoCard) tryonLocationInfoCard.style.display = 'none';
-        const kioskModalEl = document.getElementById('kiosk-modal');
-        if (kioskModalEl) kioskModalEl.style.display = 'none';
-        const tplModalEl = document.getElementById('template-modal');
-        if (tplModalEl) {
-            tplModalEl.classList.add('hidden');
-            tplModalEl.style.display = 'none';
+            // Скрываем все внутренние экраны/шаги
+            const stepFairytaleEl = document.getElementById('step-fairytale');
+            [stepMusicTheme, stepFairytaleEl, stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepRoastResult].forEach(s => {
+                if (s) s.style.display = 'none';
+            });
+        } catch (e) {
+            console.warn('Modal close error:', e);
         }
-        if (modal) modal.style.display = 'none';
 
-        // Скрываем все внутренние экраны/шаги
-        const stepFairytaleEl = document.getElementById('step-fairytale');
-        [stepMusicTheme, stepFairytaleEl, stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepRoastResult].forEach(s => {
-            if (s) s.style.display = 'none';
-        });
+        // 2. Фоновые остановки и очистки
+        try {
+            stopPaymentPolling();
+            isPaymentSuccessHandled = false;
+            isAiGenerating = false;
+            if (simPayBtn) simPayBtn.disabled = false;
+            stopWebcam();
+            stopPhoneCamPolling();
+            if (capturedVideoUrl) {
+                URL.revokeObjectURL(capturedVideoUrl);
+                capturedVideoUrl = null;
+            }
+            capturedVideoBlob = null;
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                try { mediaRecorder.stop(); } catch (e) { }
+            }
+            if (videoPreviewConfirm) {
+                videoPreviewConfirm.pause();
+                videoPreviewConfirm.src = '';
+                videoPreviewConfirm.style.display = 'none';
+            }
+            // Удаляем файл телефонной сессии из Supabase при выходе
+            if (phoneCamSessionId) {
+                fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/phone-cam/${phoneCamSessionId}.jpg`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+                }).catch(() => { });
+            }
+            phoneCamMode = false;
+            phoneCamSessionId = null;
+            if (photoPreviewConfirm) photoPreviewConfirm.src = '';
+            if (resultVideo) {
+                try {
+                    resultVideo.pause();
+                    resultVideo.src = '';
+                } catch (e) { }
+            }
+            const resultAudioPlayer = document.getElementById('result-audio-player');
+            const resultAudioBgPlayer = document.getElementById('result-audio-bg-player');
+            if (resultAudioPlayer) {
+                try {
+                    resultAudioPlayer.pause();
+                    resultAudioPlayer.src = '';
+                } catch (e) { }
+            }
+            if (resultAudioBgPlayer) {
+                try {
+                    resultAudioBgPlayer.pause();
+                    resultAudioBgPlayer.src = '';
+                } catch (e) { }
+            }
+            const studioCustomPlayer = document.getElementById('studio-custom-player');
+            if (studioCustomPlayer) studioCustomPlayer.classList.remove('playing');
+            const studioVinylDiscEl = document.getElementById('studio-vinyl-disc');
+            if (studioVinylDiscEl) studioVinylDiscEl.classList.remove('playing');
+            const studioProgressFill = document.getElementById('studio-progress-fill');
+            if (studioProgressFill) studioProgressFill.style.width = '0%';
+            const studioProgressThumb = document.getElementById('studio-progress-thumb');
+            if (studioProgressThumb) studioProgressThumb.style.left = '0%';
+            const studioCurrentTime = document.getElementById('studio-current-time');
+            if (studioCurrentTime) studioCurrentTime.textContent = '0:00';
+            const resultAudioBox = document.getElementById('result-audio-box');
+            if (resultAudioBox) resultAudioBox.style.display = 'none';
+
+            if (musicInputAbout) musicInputAbout.value = '';
+            if (musicInputFor) musicInputFor.value = '';
+            document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
+
+            if (tryonLocationInfoCard) tryonLocationInfoCard.style.display = 'none';
+        } catch (e) {
+            console.warn('Cleanup error:', e);
+        }
 
         resetState();
         syncCloudConfig(); // Обновление при завершении сессии заказа
