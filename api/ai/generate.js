@@ -268,7 +268,7 @@ function getAudioDuration(filePath) {
 }
 
 // Сборка полноценного MP4 видео сказки (обложка + голос ElevenLabs 4 + фоновая музыка + наложенные субтитры)
-async function assembleFairytaleVideo({ voiceBuffer, voiceUrl, text, bgTrackUrl, orderId }) {
+async function assembleFairytaleVideo({ voiceBuffer, voiceUrl, text, bgTrackUrl, orderId, customCoverUrl = null }) {
     if (!ffmpegStatic) {
         console.warn('[Fairytale Video] FFmpeg недоступен для видеорендеринга сказки');
         return null;
@@ -280,6 +280,7 @@ async function assembleFairytaleVideo({ voiceBuffer, voiceUrl, text, bgTrackUrl,
     const tmpBg = path.join(tempDir, `tf_bg_${safeOrder}_${Date.now()}.mp3`);
     const tmpAss = path.join(tempDir, `tf_sub_${safeOrder}_${Date.now()}.ass`);
     const outVideo = path.join(tempDir, `tf_video_${safeOrder}_${Date.now()}.mp4`);
+    let tmpCustomCover = null;
 
     let hasBg = false;
 
@@ -318,19 +319,34 @@ async function assembleFairytaleVideo({ voiceBuffer, voiceUrl, text, bgTrackUrl,
         // 4. Генерируем субтитры
         generateAssSubtitles(text, duration, tmpAss);
 
-        // 5. Поиск файла обложки fairytale_cover.jpg
-        let coverPath = path.join(__dirname, '..', '..', 'images', 'fairytale_cover.jpg');
-        if (!fs.existsSync(coverPath)) {
-            coverPath = path.join(__dirname, 'images', 'fairytale_cover.jpg');
-        }
-        if (!fs.existsSync(coverPath)) {
-            coverPath = path.join(process.cwd(), 'images', 'fairytale_cover.jpg');
-        }
-        if (!fs.existsSync(coverPath)) {
-            coverPath = path.join(process.cwd(), 'kiosk-ui', 'images', 'fairytale_cover.jpg');
+        // 5. Поиск файла обложки (приоритет: персонализированная обложка с лицом ребенка)
+        let coverPath = null;
+        if (customCoverUrl && typeof customCoverUrl === 'string' && customCoverUrl.startsWith('http')) {
+            try {
+                console.log(`[Fairytale Video] Скачивание персонализированной обложки с лицом ребенка: ${customCoverUrl}`);
+                const cResp = await fetch(customCoverUrl);
+                if (cResp.ok) {
+                    const cAb = await cResp.arrayBuffer();
+                    tmpCustomCover = path.join(tempDir, `tf_cov_${safeOrder}_${Date.now()}.jpg`);
+                    fs.writeFileSync(tmpCustomCover, Buffer.from(cAb));
+                    if (fs.existsSync(tmpCustomCover) && fs.statSync(tmpCustomCover).size > 1000) {
+                        coverPath = tmpCustomCover;
+                        console.log(`[Fairytale Video] Обложка с лицом ребенка успешно подготовлена (${fs.statSync(tmpCustomCover).size} байт)`);
+                    }
+                }
+            } catch (ce) {
+                console.warn('[Fairytale Video] Не удалось скачать customCoverUrl, fallback:', ce.message);
+            }
         }
 
-        if (!fs.existsSync(coverPath)) {
+        if (!coverPath) {
+            coverPath = path.join(__dirname, '..', '..', 'images', 'fairytale_cover.jpg');
+            if (!fs.existsSync(coverPath)) coverPath = path.join(__dirname, 'images', 'fairytale_cover.jpg');
+            if (!fs.existsSync(coverPath)) coverPath = path.join(process.cwd(), 'images', 'fairytale_cover.jpg');
+            if (!fs.existsSync(coverPath)) coverPath = path.join(process.cwd(), 'kiosk-ui', 'images', 'fairytale_cover.jpg');
+        }
+
+        if (!coverPath || !fs.existsSync(coverPath)) {
             console.warn('[Fairytale Video] Обложка fairytale_cover.jpg не найдена, генерация фонового кадра');
             const fallbackCover = path.join(tempDir, `tf_fb_${Date.now()}.jpg`);
             spawnSync(ffmpegStatic, ['-y', '-f', 'lavfi', '-i', 'color=c=#15092a:s=896x1200', '-vframes', '1', fallbackCover]);
@@ -354,14 +370,14 @@ async function assembleFairytaleVideo({ voiceBuffer, voiceUrl, text, bgTrackUrl,
             ffmpegArgs.push('-stream_loop', '-1', '-i', tmpBg.replace(/\\/g, '/'));
             ffmpegArgs.push(
                 '-filter_complex',
-                `[1:a]volume=1.0[v];[2:a]volume=0.18[m];[v][m]amix=inputs=2:duration=first:dropout_transition=2[aout];[0:v]scale=896:1200,subtitles='${escapedAss}'[vout]`,
+                `[1:a]volume=1.0[v];[2:a]volume=0.18[m];[v][m]amix=inputs=2:duration=first:dropout_transition=2[aout];[0:v]scale=896:1200:force_original_aspect_ratio=increase,crop=896:1200,subtitles='${escapedAss}'[vout]`,
                 '-map', '[vout]',
                 '-map', '[aout]'
             );
         } else {
             ffmpegArgs.push(
                 '-filter_complex',
-                `[0:v]scale=896:1200,subtitles='${escapedAss}'[vout]`,
+                `[0:v]scale=896:1200:force_original_aspect_ratio=increase,crop=896:1200,subtitles='${escapedAss}'[vout]`,
                 '-map', '[vout]',
                 '-map', '1:a'
             );
@@ -419,11 +435,95 @@ async function assembleFairytaleVideo({ voiceBuffer, voiceUrl, text, bgTrackUrl,
         try { if (fs.existsSync(tmpBg)) fs.unlinkSync(tmpBg); } catch (e) {}
         try { if (fs.existsSync(tmpAss)) fs.unlinkSync(tmpAss); } catch (e) {}
         try { if (fs.existsSync(outVideo)) fs.unlinkSync(outVideo); } catch (e) {}
+        try { if (tmpCustomCover && fs.existsSync(tmpCustomCover)) fs.unlinkSync(tmpCustomCover); } catch (e) {}
     }
 }
 
-// 4b. Прямой синтез детской сказки через новейший ElevenLabs 4 (модель eleven_v4) с генерацией видео MP4
-async function generateViaElevenLabsDirect({ apiKey, voiceId, text, orderId, modelId = 'eleven_v4', bgTrackUrl = null }) {
+// 4b. Генерация 3D обложки книги сказок с сохранением черт лица ребенка из фотографии
+async function generateFairytaleCover({ apiKey, photoUrl, childName, theme, mood, langCode, orderId }) {
+    if (!apiKey || !photoUrl || typeof photoUrl !== 'string' || !photoUrl.startsWith('http')) {
+        return null;
+    }
+
+    console.log(`[Fairytale Cover] Запуск генерации 3D-обложки книги сказок с лицом ребенка (order: ${orderId})...`);
+    const cleanChild = sanitizeForOpenAI(childName || 'Child');
+    const cleanTheme = sanitizeForOpenAI(theme || 'Magical adventure');
+    const cleanMood = sanitizeForOpenAI(mood || 'Inspiring, joyful and kind');
+
+    const promptText = `IMAGE EDITING DIRECTIVE — DO NOT GENERATE A NEW PERSON OR FACE FROM SCRATCH:
+A real input photo of a child is provided.
+CRITICAL MANDATORY INSTRUCTIONS:
+1. Turn this photo into an enchanting 3D Disney Pixar animation fairytale storybook cover.
+2. ABSOLUTE FACE & LIKENESS PRESERVATION:
+   - Strictly keep the exact face, facial features, smiling eyes, nose, lips, hair color, haircut and recognizable identity of the child from the input photo completely preserved.
+   - The child must be undeniably recognized as the EXACT SAME real individual from the photo, rendered in charming 3D Disney Pixar animation style.
+3. STORYBOOK COVER AESTHETIC:
+   - The child is the heroic center of a magical fairytale book cover adventure about ${cleanTheme}.
+   - Mood: ${cleanMood}.
+   - Glowing golden sparkles, enchanted fairytale lighting, rich magical colors, ornate storybook border framing, 8k render, masterpiece.`;
+
+    try {
+        const createRes = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'gpt-image-2-image-to-image',
+                input: {
+                    prompt: promptText,
+                    input_urls: [photoUrl],
+                    aspect_ratio: '3:4',
+                    resolution: '1K',
+                    background: 'auto'
+                }
+            })
+        });
+
+        if (!createRes.ok) {
+            console.warn('[Fairytale Cover] Kie.ai createTask error:', createRes.status);
+            return null;
+        }
+
+        const createData = await createRes.json();
+        const taskId = createData?.data?.taskId || createData?.taskId;
+        if (!taskId) return null;
+
+        console.log(`[Fairytale Cover] Задача генерации обложки отправлена в Kie.ai (${taskId}), ожидаем результат...`);
+
+        const startWait = Date.now();
+        while (Date.now() - startWait < 30000) {
+            await new Promise(r => setTimeout(r, 2000));
+            const statRes = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
+                headers: { 'Authorization': `Bearer ${apiKey}` }
+            });
+            if (!statRes.ok) continue;
+
+            const statData = await statRes.json();
+            const rec = statData?.data || statData;
+            const state = (rec?.state || rec?.status || '').toLowerCase();
+
+            if (state === 'success') {
+                let imgUrl = rec.resultUrl || (Array.isArray(rec.resultUrls) && rec.resultUrls[0]) || rec.mediaUrl || rec.output?.image_url;
+                if (imgUrl) {
+                    console.log('[Fairytale Cover] Обложка книги сказок с лицом ребенка успешно сгенерирована:', imgUrl);
+                    const cdnUrl = await persistResultToSupabase(imgUrl, orderId, false);
+                    return cdnUrl || imgUrl;
+                }
+            } else if (state === 'fail' || state === 'failed') {
+                console.warn('[Fairytale Cover] Ошибка генерации обложки:', rec?.failReason || rec?.error);
+                break;
+            }
+        }
+    } catch (e) {
+        console.warn('[Fairytale Cover] Исключение при создании обложки сказки:', e.message);
+    }
+    return null;
+}
+
+// 4c. Прямой синтез детской сказки через новейший ElevenLabs 4 (модель eleven_v4) с генерацией видео MP4
+async function generateViaElevenLabsDirect({ apiKey, voiceId, text, orderId, modelId = 'eleven_v4', bgTrackUrl = null, customCoverUrl = null }) {
     if (!apiKey || !text) return null;
     const cleanVoiceId = (voiceId || 'JBFqnCBsd6RMkjVDRZzb').trim();
     const endpoint = `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(cleanVoiceId)}`;
@@ -482,7 +582,8 @@ async function generateViaElevenLabsDirect({ apiKey, voiceId, text, orderId, mod
                     voiceBuffer: buffer,
                     text,
                     bgTrackUrl,
-                    orderId
+                    orderId,
+                    customCoverUrl
                 });
             } catch (vErr) {
                 console.warn('[ElevenLabs 4] Сборка видеосказки завершилась с ошибкой:', vErr.message);
@@ -495,6 +596,7 @@ async function generateViaElevenLabsDirect({ apiKey, voiceId, text, orderId, mod
                     mediaUrl: videoUrl,
                     videoUrl: videoUrl,
                     audioUrl: publicUrl,
+                    coverUrl: customCoverUrl,
                     isVideo: true,
                     isFairytale: true,
                     model: targetModel
@@ -506,6 +608,7 @@ async function generateViaElevenLabsDirect({ apiKey, voiceId, text, orderId, mod
                 resultUrl: publicUrl,
                 mediaUrl: publicUrl,
                 audioUrls: [publicUrl],
+                coverUrl: customCoverUrl,
                 isAudio: true,
                 model: targetModel
             };
@@ -1137,6 +1240,7 @@ module.exports = async (req, res) => {
 
         // Подбор активного Voice ID из Supabase settings для сказки
         let activeVoiceId = null;
+        let fairytaleCoverUrl = null;
         let fairytaleNarrative = prompt;
         let selectedBgTrackUrl = null;
         let selectedBgTrackName = null;
@@ -1147,10 +1251,16 @@ module.exports = async (req, res) => {
                 const cfgRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?_t=${Date.now()}`);
                 if (cfgRes.ok) {
                     const cfg = await cfgRes.json();
-                    const voiceList = (langCode === 'kg' || langCode === 'kyrgyz')
-                        ? (cfg.fairytale_voices_kyrgyz || [])
-                        : (cfg.fairytale_voices_foreign || []);
-                    const activeVoices = voiceList.filter(v => v.active !== false && (v.id || v.name));
+                    let voiceList = [];
+                    if (langCode === 'en' || langCode === 'english') {
+                        voiceList = cfg.fairytale_voices_english || [];
+                    } else if (langCode === 'kg' || langCode === 'kyrgyz') {
+                        voiceList = cfg.fairytale_voices_kyrgyz || [];
+                    } else {
+                        voiceList = cfg.fairytale_voices_foreign || cfg.fairytale_voices_russian || [];
+                    }
+
+                    const activeVoices = (voiceList || []).filter(v => v.active !== false && (v.id || v.name));
                     if (activeVoices.length > 0) {
                         const randomVoice = activeVoices[Math.floor(Math.random() * activeVoices.length)];
                         activeVoiceId = randomVoice.id || randomVoice.name;
@@ -1174,17 +1284,49 @@ module.exports = async (req, res) => {
             }
 
             if (!activeVoiceId) {
-                activeVoiceId = (langCode === 'kg' || langCode === 'kyrgyz') ? 'James' : 'Rachel';
+                if (langCode === 'en' || langCode === 'english') {
+                    const enVoices = ['pNInz6obpgDQGcFmaJgB', 'EXAVITQu4vr4xnSDxMaL', 'IKne3meq5aSn9XLyUdCD', '21m00Tcm4TlvDq8ikWAM', 'CwhRBWXzGAHq8TQ4Fs17'];
+                    activeVoiceId = enVoices[Math.floor(Math.random() * enVoices.length)];
+                } else if (langCode === 'kg' || langCode === 'kyrgyz') {
+                    const kgVoices = ['James', 'Arnold', 'Adam'];
+                    activeVoiceId = kgVoices[Math.floor(Math.random() * kgVoices.length)];
+                } else {
+                    const ruVoices = ['JBFqnCBsd6RMkjVDRZzb', 'pNInz6obpgDQGcFmaJgB', '21m00Tcm4TlvDq8ikWAM', 'EXAVITQu4vr4xnSDxMaL'];
+                    activeVoiceId = ruVoices[Math.floor(Math.random() * ruVoices.length)];
+                }
             }
 
             if (fairytaleData) {
-                const child = fairytaleData.childName || 'малыш';
-                const theme = fairytaleData.theme || 'волшебные приключения';
-                const mood = fairytaleData.mood || 'добрая сказка';
-                if (langCode === 'kg' || langCode === 'kyrgyz') {
-                    fairytaleNarrative = `Бир бар экен, бир жок экен, илгери өткөн заманда ${child} аттуу адептүү жана акылдуу бала жашаптыр. Анын эң чоң кыялы — ${theme} тууралуу экен. Бул ${mood} жомогу анын эр жүрөктүүлүгү жана боорукерлиги жөнүндө баяндайт.`;
+                const child = (fairytaleData.childName || 'малыш').trim();
+                const theme = (fairytaleData.theme || 'волшебные приключения').trim();
+                const mood = (fairytaleData.mood || 'добрая сказка').trim();
+
+                if (langCode === 'en' || langCode === 'english') {
+                    fairytaleNarrative = `Once upon a time, in a peaceful world filled with wonder and twinkling stars, there lived a brave and kind-hearted explorer named ${child}. ${child} had a curious spirit and dreamed of extraordinary journeys. One magical evening, an enchanted glowing portal opened wide, leading into a secret kingdom all about ${theme}. The atmosphere was warm and breathtaking, with soft golden sparkles drifting in the air. Showing a truly ${mood} character, ${child} stepped forward with courage, helped a little forest creature in need, and unlocked the grand secret of the enchanted realm. Together with cheerful magical friends, ${child} brought harmony and dazzling light back to the kingdom. From that day on, everyone knew that kindness, a brave heart, and believing in dreams can create the greatest magic of all!`;
+                } else if (langCode === 'kg' || langCode === 'kyrgyz') {
+                    fairytaleNarrative = `Бир бар экен, бир жок экен, илгери-илгери өткөн заманда, асман тиреген бийик тоолордун арасында ${child} аттуу өтө адептүү, акылдуу жана боорукер бала жашаптыр. Анын эң чоң кыялы — ${theme} тууралуу кереметтүү сырларды ачуу экен. Бир күнү таң заарда тоо башынан сыйкырдуу алтын нурлар чачырап, жомоктогудай керемет дүйнөнүн эшиги ачылат. Ал жерде ${mood} мүнөзү менен өзгөчөлөнгөн ${child} эч бир кыйынчылыктан коркпой, жаңы досторуна чын жүрөктөн жардам берип, өзүнүн эр жүрөктүүлүгүн жана тапкычтыгын көрсөтөт. Бардык тоскоолдуктар жеңилип, сыйкырдуу өлкөгө бейпилдик жана чексиз кубаныч орнойт. Ошондон бери ${child} таза жүрөк, жакшылык жана бекем достук эң чоң кереметтерди жаратарын жакшы билет!`;
                 } else {
-                    fairytaleNarrative = `Жил-был добрый и любознательный герой по имени ${child}. Больше всего на свете ${child} мечтал про ${theme}. И вот однажды сказочные огни осветили дорогу в удивительный мир. Это история про дружбу, чудеса и смелость.`;
+                    fairytaleNarrative = `В одном уютном и светлом городке жил любознательный и смелый герой по имени ${child}. Больше всего на свете ${child} любил мечтать и искренне верил в настоящие чудеса. И вот однажды, когда на вечернем небе зажглись первые золотистые звезды, перед ним открылась тайная тропинка в сказочную страну, где развернулась удивительная история про ${theme}. Вокруг парили светящиеся искорки, а воздух был наполнен предвкушением волшебства. В этом удивительном путешествии во всей красе проявился ${mood} характер нашего героя: ${child} смело шагнул навстречу приключениям, протянул руку помощи новым друзьям и помог разгадать древнюю добрую тайну. Благодаря дружбе и доброте все преграды растаяли, а сказочный мир засиял яркими праздничными огнями. С тех пор ${child} твердо знает: искреннее сердце, смелость и доброта способны сотворить самое настоящее чудо!`;
+                }
+            }
+
+            // Создание персонализированной обложки книги сказок с лицом ребенка
+            if (publicPhotoUrl) {
+                try {
+                    fairytaleCoverUrl = await generateFairytaleCover({
+                        apiKey: effectiveApiKey,
+                        photoUrl: publicPhotoUrl,
+                        childName: fairytaleData?.childName,
+                        theme: fairytaleData?.theme,
+                        mood: fairytaleData?.mood,
+                        langCode,
+                        orderId
+                    });
+                } catch (covErr) {
+                    console.warn('[AI Hub] Ошибка генерации обложки сказки:', covErr.message);
+                }
+                if (!fairytaleCoverUrl) {
+                    fairytaleCoverUrl = publicPhotoUrl;
                 }
             }
         }
@@ -1215,7 +1357,8 @@ module.exports = async (req, res) => {
                     text: fairytaleNarrative || prompt,
                     orderId,
                     modelId: elModel,
-                    bgTrackUrl: selectedBgTrackUrl
+                    bgTrackUrl: selectedBgTrackUrl,
+                    customCoverUrl: fairytaleCoverUrl
                 });
             }
         }
@@ -1294,7 +1437,8 @@ module.exports = async (req, res) => {
                         voiceUrl: generatedImageUrl,
                         text: fairytaleNarrative || prompt,
                         bgTrackUrl: selectedBgTrackUrl,
-                        orderId
+                        orderId,
+                        customCoverUrl: fairytaleCoverUrl
                     });
                     if (videoUrl) {
                         return res.status(200).json({
@@ -1307,6 +1451,8 @@ module.exports = async (req, res) => {
                             resultUrl: videoUrl,
                             mediaUrl: videoUrl,
                             videoUrl: videoUrl,
+                            audioUrl: generatedImageUrl,
+                            coverUrl: fairytaleCoverUrl,
                             isVideo: true,
                             isFairytale: true,
                             title: title || 'Волшебная сказка',
@@ -1327,6 +1473,7 @@ module.exports = async (req, res) => {
                 model: effectiveModelName,
                 resultUrl: generatedImageUrl,
                 audioUrls: generationOutcome.audioUrls || [generatedImageUrl],
+                coverUrl: fairytaleCoverUrl,
                 isAudio: true,
                 bgTrackUrl: selectedBgTrackUrl,
                 bgTrackName: selectedBgTrackName,

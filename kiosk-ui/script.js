@@ -2140,8 +2140,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ========================================================
     const fairytaleInputChild = document.getElementById('fairytale-input-child');
     const fairytaleInputTheme = document.getElementById('fairytale-input-theme');
+    const fairytaleInputMood = document.getElementById('fairytale-input-mood');
     const fairytaleChildClearBtn = document.getElementById('fairytale-child-clear-btn');
     const fairytaleThemeClearBtn = document.getElementById('fairytale-theme-clear-btn');
+    const fairytaleMoodClearBtn = document.getElementById('fairytale-mood-clear-btn');
     const fairytaleVirtualKeyboard = document.getElementById('fairytale-virtual-keyboard');
     const fairytaleCancelBtn = document.getElementById('fairytale-cancel-btn');
     const fairytaleCreateBtn = document.getElementById('fairytale-create-btn');
@@ -2157,6 +2159,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (fairytaleInputTheme) {
             fairytaleInputTheme.classList.toggle('active-focus', fairytaleInputTheme === inputEl);
+        }
+        if (fairytaleInputMood) {
+            fairytaleInputMood.classList.toggle('active-focus', fairytaleInputMood === inputEl);
         }
     }
 
@@ -2260,6 +2265,11 @@ document.addEventListener('DOMContentLoaded', () => {
         fairytaleInputTheme.addEventListener('click', () => setActiveFairytaleInput(fairytaleInputTheme));
         fairytaleInputTheme.addEventListener('pointerdown', () => setActiveFairytaleInput(fairytaleInputTheme));
     }
+    if (fairytaleInputMood) {
+        fairytaleInputMood.addEventListener('focus', () => setActiveFairytaleInput(fairytaleInputMood));
+        fairytaleInputMood.addEventListener('click', () => setActiveFairytaleInput(fairytaleInputMood));
+        fairytaleInputMood.addEventListener('pointerdown', () => setActiveFairytaleInput(fairytaleInputMood));
+    }
 
     if (fairytaleChildClearBtn && fairytaleInputChild) {
         fairytaleChildClearBtn.addEventListener('click', () => {
@@ -2273,29 +2283,16 @@ document.addEventListener('DOMContentLoaded', () => {
             setActiveFairytaleInput(fairytaleInputTheme);
         });
     }
+    if (fairytaleMoodClearBtn && fairytaleInputMood) {
+        fairytaleMoodClearBtn.addEventListener('click', () => {
+            fairytaleInputMood.value = '';
+            setActiveFairytaleInput(fairytaleInputMood);
+        });
+    }
 
     document.querySelectorAll('#fairytale-lang-chips .lang-choice-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('#fairytale-lang-chips .lang-choice-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        });
-    });
-
-    document.querySelectorAll('#fairytale-theme-chips .lang-choice-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('#fairytale-theme-chips .lang-choice-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const themeText = btn.dataset.theme || btn.textContent.trim();
-            if (fairytaleInputTheme) {
-                fairytaleInputTheme.value = themeText;
-                setActiveFairytaleInput(fairytaleInputTheme);
-            }
-        });
-    });
-
-    document.querySelectorAll('#fairytale-mood-chips .lang-choice-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('#fairytale-mood-chips .lang-choice-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         });
     });
@@ -2318,7 +2315,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const createBtn = document.getElementById('fairytale-create-btn');
         if (createBtn) {
-            createBtn.innerHTML = `🪄 СОЗДАТЬ СКАЗКУ • ${selectedStylePrice} СОМ ➔`;
+            createBtn.innerHTML = `📸 ДАЛЕЕ: ФОТО РЕБЁНКА ➔`;
         }
 
         const kioskModal = document.getElementById('kiosk-modal');
@@ -2340,21 +2337,24 @@ document.addEventListener('DOMContentLoaded', () => {
         fairytaleCreateBtn.addEventListener('click', () => {
             const childVal = (fairytaleInputChild ? fairytaleInputChild.value.trim() : '');
             const themeVal = (fairytaleInputTheme ? fairytaleInputTheme.value.trim() : '');
+            const moodVal = (fairytaleInputMood ? fairytaleInputMood.value.trim() : '');
 
             const activeLangBtn = document.querySelector('#fairytale-lang-chips .lang-choice-btn.active');
             const langCode = activeLangBtn ? (activeLangBtn.dataset.langCode || 'ru') : 'ru';
             const langName = activeLangBtn ? (activeLangBtn.dataset.lang || 'Русский') : 'Русский';
 
-            const activeMoodBtn = document.querySelector('#fairytale-mood-chips .lang-choice-btn.active');
-            const moodName = activeMoodBtn ? (activeMoodBtn.dataset.mood || 'Колыбельная на ночь') : 'Колыбельная на ночь';
+            const defaultChild = langCode === 'en' ? 'Little Explorer' : (langCode === 'kg' ? 'Балакай' : 'Малыш');
+            const defaultTheme = langCode === 'en' ? 'Magical space adventure and kind dragon' : (langCode === 'kg' ? 'Сыйкырдуу жылдыздар жана боорукер дос' : 'Волшебные приключения и верные друзья');
+            const defaultMood = langCode === 'en' ? 'Kind, brave and inspiring fairytale' : (langCode === 'kg' ? 'Боорукер, тайманбас жана акылдуу' : 'Добрый, смелый и поучительный');
 
-            const finalChild = childVal || 'Малыш';
-            const finalTheme = themeVal || 'Волшебные приключения и верные друзья';
+            const finalChild = childVal || defaultChild;
+            const finalTheme = themeVal || defaultTheme;
+            const finalMood = moodVal || defaultMood;
 
             guestFairytaleData = {
                 childName: finalChild,
                 theme: finalTheme,
-                mood: moodName,
+                mood: finalMood,
                 lang: langCode,
                 langName: langName
             };
@@ -2367,11 +2367,13 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedStyleLocation = '';
             selectedStyleResolution = 'VIDEO';
 
-            let fullPrompt = `Детская волшебная сказка для ребенка ${finalChild}. Тема: ${finalTheme}. Характер: ${moodName}. Язык: ${langName}. 3D Pixar book cover, warm magical atmosphere.`;
+            let fullPrompt = `Children 3D Pixar book cover fairytale for ${finalChild}. Theme: ${finalTheme}. Mood: ${finalMood}. Language: ${langName}. 3D Disney Pixar animation style.`;
             selectedStylePrompt = fullPrompt;
 
-            showStep(stepPayment);
-            initiatePaymentOrder();
+            // Переходим к съёмке фото ребёнка (на веб-камеру киоска или загрузке по QR с телефона)
+            resetCameraStep();
+            showStep(stepCamera);
+            startWebcam();
         });
     }
 
@@ -2738,6 +2740,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (confirmPhotoBtn) {
         confirmPhotoBtn.addEventListener('click', () => {
+            if (selectedStyleModel === 'fairytale') {
+                // Для сказки фото ребенка подтверждено — переходим к оплате
+                showStep(stepPayment);
+                initiatePaymentOrder();
+                return;
+            }
             showStep(stepProcessing);
             runAIGeneration();
         });

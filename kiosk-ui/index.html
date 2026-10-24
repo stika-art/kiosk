@@ -2950,6 +2950,7 @@
                 <div class="music-selector-chips" id="fairytale-lang-chips">
                     <button type="button" class="lang-choice-btn active" data-lang="Русский" data-lang-code="ru">🇷🇺 Русский</button>
                     <button type="button" class="lang-choice-btn" data-lang="Кыргызча" data-lang-code="kg">🇰🇬 Кыргызча</button>
+                    <button type="button" class="lang-choice-btn" data-lang="English" data-lang-code="en">🇬🇧 English</button>
                 </div>
             </div>
 
@@ -2957,36 +2958,26 @@
             <div class="music-form-group">
                 <label class="music-group-label">ИМЯ И ВОЗРАСТ ГЛАВНОГО ГЕРОЯ (РЕБЕНКА):</label>
                 <div class="music-input-wrap">
-                    <input type="text" id="fairytale-input-child" class="kiosk-touch-input active-focus" placeholder="Например: Амир, 5 лет (любит звезды и динозавров)..." maxlength="100" autocomplete="off" inputmode="none" readonly style="cursor: pointer;">
+                    <input type="text" id="fairytale-input-child" class="kiosk-touch-input active-focus" placeholder="Например: Амир, 5 лет (любит динозавров и космос)..." maxlength="100" autocomplete="off" inputmode="none" readonly style="cursor: pointer;">
                     <button type="button" id="fairytale-child-clear-btn" class="input-clear-btn" title="Очистить">&times;</button>
                 </div>
             </div>
 
-            <!-- 3. ТЕМА СКАЗКИ (БЫСТРЫЕ ЧИПЫ + ПОЛЕ) -->
+            <!-- 3. О ЧЁМ СКАЗКА (ПОЛЕ ВВОДА ГОСТЯ) -->
             <div class="music-form-group">
-                <label class="music-group-label">О ЧЁМ СКАЗКА (ВЫБЕРИТЕ ИЛИ НАПИШИТЕ):</label>
-                <div class="music-selector-chips" id="fairytale-theme-chips" style="margin-bottom: 8px;">
-                    <button type="button" class="lang-choice-btn" data-theme="Космос и звездолет">🚀 Космос и звезды</button>
-                    <button type="button" class="lang-choice-btn" data-theme="Дружелюбный динозаврик">🦖 Динозаврик</button>
-                    <button type="button" class="lang-choice-btn" data-theme="Принцесса и волшебный замок">👑 Принцесса и замок</button>
-                    <button type="button" class="lang-choice-btn" data-theme="Тайна волшебного леса">🌲 Волшебный лес</button>
-                    <button type="button" class="lang-choice-btn" data-theme="Ожившие любимые игрушки">🧸 Ожившие игрушки</button>
-                    <button type="button" class="lang-choice-btn" data-theme="Храбрый маленький львенок">🦁 Храбрый львенок</button>
-                    <button type="button" class="lang-choice-btn" data-theme="Первый день в садике">🎒 Первый день в садике</button>
-                </div>
+                <label class="music-group-label">О ЧЁМ СКАЗКА (СЮЖЕТ ИЛИ ПОЖЕЛАНИЯ):</label>
                 <div class="music-input-wrap">
-                    <input type="text" id="fairytale-input-theme" class="kiosk-touch-input" placeholder="Или напишите свою тему (например: подводное царство...)" maxlength="120" autocomplete="off" inputmode="none" readonly style="cursor: pointer;">
+                    <input type="text" id="fairytale-input-theme" class="kiosk-touch-input" placeholder="Например: полет на ракете к звездам, дружба с добрым драконом..." maxlength="150" autocomplete="off" inputmode="none" readonly style="cursor: pointer;">
                     <button type="button" id="fairytale-theme-clear-btn" class="input-clear-btn" title="Очистить">&times;</button>
                 </div>
             </div>
 
-            <!-- 4. НАСТРОЕНИЕ И ХАРАКТЕР -->
+            <!-- 4. ХАРАКТЕР И НАСТРОЕНИЕ (ПОЛЕ ВВОДА ГОСТЯ) -->
             <div class="music-form-group" style="margin-bottom: 12px;">
                 <label class="music-group-label">ХАРАКТЕР И НАСТРОЕНИЕ СКАЗКИ:</label>
-                <div class="music-selector-chips" id="fairytale-mood-chips">
-                    <button type="button" class="lang-choice-btn active" data-mood="Колыбельная на ночь">🌙 Успокаивающая колыбельная (на ночь)</button>
-                    <button type="button" class="lang-choice-btn" data-mood="Веселое приключение">✨ Захватывающее приключение</button>
-                    <button type="button" class="lang-choice-btn" data-mood="О дружбе и доброте">💖 О доброте и дружбе</button>
+                <div class="music-input-wrap">
+                    <input type="text" id="fairytale-input-mood" class="kiosk-touch-input" placeholder="Например: добрый, смелый, веселый, поучительный, колыбельная..." maxlength="120" autocomplete="off" inputmode="none" readonly style="cursor: pointer;">
+                    <button type="button" id="fairytale-mood-clear-btn" class="input-clear-btn" title="Очистить">&times;</button>
                 </div>
             </div>
 
@@ -2998,7 +2989,7 @@
                     ← НА ГЛАВНУЮ
                 </button>
                 <button type="button" id="fairytale-create-btn" class="action-btn primary-btn" style="min-width: 290px; font-weight: 800; font-size: 15px; background: linear-gradient(135deg, #d4a043 0%, #f59e0b 50%, #b45309 100%); color: #000; border: none; box-shadow: 0 4px 25px rgba(212,160,67,0.45);">
-                    🪄 СОЗДАТЬ СКАЗКУ • 290 СОМ ➔
+                    📸 ДАЛЕЕ: ФОТО РЕБЁНКА ➔
                 </button>
             </div>
         </div>
