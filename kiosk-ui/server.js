@@ -249,8 +249,15 @@ const server = http.createServer(async (req, res) => {
     if (cleanPath === '/admin' || cleanPath === '/admin/') {
         reqPath = '/admin.html';
     }
+    if (cleanPath === '/download' || cleanPath === '/download/') {
+        reqPath = '/download.html';
+    }
     let filePath = path.join(PUBLIC_DIR, reqPath);
-    const ext = path.extname(filePath).toLowerCase();
+    let ext = path.extname(filePath).toLowerCase();
+    if (!ext && fs.existsSync(filePath + '.html')) {
+        filePath += '.html';
+        ext = '.html';
+    }
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
     fs.readFile(filePath, (err, content) => {
