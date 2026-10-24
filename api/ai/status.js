@@ -50,11 +50,125 @@ async function persistResultToSupabase(mediaUrl, orderId, isVideo = false) {
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, xi-api-key, x-api-key');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
+
+    // 0. ОБРАБОТКА ЗАПРОСОВ БАЛАНСОВ (ELEVENLABS & KIE.AI)
+    const action = (req.query.action || req.body?.action || '').toLowerCase();
+    const provider = (req.query.provider || req.body?.provider || '').toLowerCase();
+
+    if (action === 'balance' || provider === 'elevenlabs' || provider === 'eleven' || (provider === 'kie' && !req.query.taskId)) {
+        let reqApiKey = req.query.apiKey || req.body?.apiKey;
+
+        if (!reqApiKey) {
+            try {
+                const cfgRes = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/config/settings.json?_t=${Date.now()}`);
+                if (cfgRes.ok) {
+                    const cfg = await cfgRes.json();
+                    if (provider === 'elevenlabs' || provider === 'eleven') {
+                        reqApiKey = cfg.elevenlabs_api_key;
+                    } else if (provider === 'kie') {
+                        reqApiKey = cfg.aggregator_key;
+                    }
+                }
+            } catch (e) {
+                console.warn('[Balance API] Не удалось прочитать settings.json:', e.message);
+            }
+        }
+
+        if (!reqApiKey && (provider === 'elevenlabs' || provider === 'eleven')) {
+            reqApiKey = process.env.ELEVENLABS_API_KEY;
+        }
+
+        if (!reqApiKey && provider === 'kie') {
+            reqApiKey = process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || 'fde11cd9f361b989eb19b8ef8530bfbd';
+        }
+
+        if (!reqApiKey) {
+            return res.status(200).json({
+                success: false,
+                error: 'API-ключ не указан. Введите ключ в настройках админ-панели.'
+            });
+        }
+
+        // БАЛАНС ELEVENLABS
+        if (provider === 'elevenlabs' || provider === 'eleven') {
+            try {
+                const elRes = await fetch('https://api.elevenlabs.io/v1/user/subscription', {
+                    headers: { 'xi-api-key': reqApiKey.trim() }
+                });
+
+                if (!elRes.ok) {
+                    const errText = await elRes.text();
+                    let errMsg = `Ошибка ElevenLabs (HTTP ${elRes.status})`;
+                    try {
+                        const errJson = JSON.parse(errText);
+                        errMsg = errJson.detail?.message || errJson.message || errMsg;
+                    } catch (_) {}
+                    return res.status(200).json({ success: false, error: errMsg });
+                }
+
+                const sub = await elRes.json();
+                const used = Number(sub.character_count) || 0;
+                const limit = Number(sub.character_limit) || 0;
+                const remaining = Math.max(0, limit - used);
+                const percentUsed = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+                const percentRemaining = 100 - percentUsed;
+                const formatNum = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+                return res.status(200).json({
+                    success: true,
+                    provider: 'elevenlabs',
+                    tier: sub.tier || 'free',
+                    status: sub.status || 'active',
+                    usedCharacters: used,
+                    totalCharacters: limit,
+                    remainingCharacters: remaining,
+                    percentUsed,
+                    percentRemaining,
+                    formattedRemaining: `${formatNum(remaining)} символов`,
+                    formattedTotal: `${formatNum(limit)} символов`,
+                    formattedUsed: `${formatNum(used)} символов`,
+                    summary: `${formatNum(remaining)} из ${formatNum(limit)} символов (${sub.tier || 'активен'})`,
+                    nextResetUnix: sub.next_character_count_reset_unix || null
+                });
+            } catch (err) {
+                return res.status(200).json({ success: false, error: `Ошибка запроса к ElevenLabs: ${err.message}` });
+            }
+        }
+
+        // БАЛАНС KIE.AI
+        if (provider === 'kie') {
+            try {
+                const kieRes = await fetch('https://api.kie.ai/api/v1/chat/credit', {
+                    headers: { 'Authorization': `Bearer ${reqApiKey.trim()}` }
+                });
+
+                if (!kieRes.ok) {
+                    return res.status(200).json({ success: false, error: `Ошибка Kie.ai (HTTP ${kieRes.status})` });
+                }
+
+                const data = await kieRes.json();
+                const credits = data.data !== undefined ? data.data : 0;
+                const usd = (credits * 0.005).toFixed(2);
+
+                return res.status(200).json({
+                    success: true,
+                    provider: 'kie',
+                    credits,
+                    usd,
+                    formatted: `${credits} кредитов ($${usd})`
+                });
+            } catch (err) {
+                return res.status(200).json({ success: false, error: `Ошибка запроса к Kie.ai: ${err.message}` });
+            }
+        }
+
+        return res.status(400).json({ error: 'Неизвестный провайдер (ожидается elevenlabs или kie)' });
+    }
 
     const taskId = req.query.taskId;
     const apiKey = req.query.apiKey || process.env.AI_AGGREGATOR_KEY || process.env.KIE_API_KEY || 'fde11cd9f361b989eb19b8ef8530bfbd';

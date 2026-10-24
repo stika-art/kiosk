@@ -12,6 +12,7 @@
     }
   ],
   "rewrites": [
+    { "source": "/api/ai/balance", "destination": "/api/ai/status?action=balance" },
     { "source": "/script.js", "destination": "/kiosk-ui/script.js" },
     { "source": "/download", "destination": "/kiosk-ui/download" },
     { "source": "/download/", "destination": "/kiosk-ui/download" },

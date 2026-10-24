@@ -5265,11 +5265,11 @@
             if (!balEl) return;
             balEl.textContent = '⏳ Проверка...';
             try {
-                // Сначала пробуем через серверный прокси /api/ai/balance для обхода CORS
+                // Сначала пробуем через серверный эндпоинт /api/ai/status?action=balance для обхода CORS
                 let credits = null;
                 let usd = null;
                 try {
-                    const proxyRes = await fetch(`/api/ai/balance?provider=kie&apiKey=${encodeURIComponent(key)}`);
+                    const proxyRes = await fetch(`/api/ai/status?action=balance&provider=kie&apiKey=${encodeURIComponent(key)}`);
                     if (proxyRes.ok) {
                         const pData = await proxyRes.json();
                         if (pData.success) {
@@ -5329,7 +5329,7 @@
             setAll('⏳ Проверка...', 'var(--primary)');
 
             try {
-                const res = await fetch(`/api/ai/balance?provider=elevenlabs&apiKey=${encodeURIComponent(key)}`);
+                const res = await fetch(`/api/ai/status?action=balance&provider=elevenlabs&apiKey=${encodeURIComponent(key)}`);
                 const data = await res.json();
 
                 if (data.success) {
