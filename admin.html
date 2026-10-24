@@ -1301,13 +1301,34 @@
                     <button class="btn-primary" onclick="saveAggregatorSettings()">Сохранить параметры агрегатора</button>
                     <div id="aggregator-status" class="status-msg" style="margin-top: 10px;"></div>
 
-                    <!-- BALANCE WIDGET -->
-                    <div style="margin-top: 20px; padding: 16px 20px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 14px; display: flex; align-items: center; justify-content: space-between;">
-                        <div>
-                            <span style="font-size: 12px; color: var(--text-muted); display: block; font-weight: 600;">Баланс кредитов Kie.ai:</span>
-                            <strong id="kie-balance-val" style="font-size: 18px; color: var(--primary);">—</strong>
+                    <!-- BALANCE WIDGET (KIE.AI & ELEVENLABS) -->
+                    <div style="margin-top: 22px; padding: 18px 20px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 16px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                            <div style="font-size: 13px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 16px;">💳</span> БАЛАНСЫ НЕЙРОСЕТЕЙ И КРЕДИТЫ API
+                            </div>
+                            <button type="button" class="btn-primary" style="padding: 7px 16px; font-size: 12px; font-weight: 800;" onclick="checkAllBalances()">🔄 Обновить оба баланса</button>
                         </div>
-                        <button type="button" class="btn-primary" style="padding: 9px 18px; font-size: 13px;" onclick="checkKieBalance()">🔄 Проверить баланс</button>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+                            <!-- Баланс Kie.ai -->
+                            <div style="padding: 14px 18px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span style="font-size: 11px; color: var(--text-muted); display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Kie.ai (Фото, Видео, Музыка Suno):</span>
+                                    <strong id="kie-balance-val" style="font-size: 17px; color: var(--primary);">—</strong>
+                                </div>
+                                <button type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="checkKieBalance()" title="Проверить баланс Kie.ai">🔄</button>
+                            </div>
+
+                            <!-- Баланс ElevenLabs -->
+                            <div style="padding: 14px 18px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span style="font-size: 11px; color: var(--text-muted); display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">ElevenLabs (Озвучивание сказок):</span>
+                                    <strong id="eleven-balance-val" style="font-size: 15px; color: var(--primary);">—</strong>
+                                </div>
+                                <button type="button" class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="checkElevenLabsBalance()" title="Проверить баланс ElevenLabs">🔄</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1533,7 +1554,15 @@
                     <div>
                         <button class="btn-primary" type="button" style="padding: 12px 24px; font-weight: 800;" onclick="saveFairytaleElevenSettings()">💾 Сохранить ElevenLabs 4</button>
                     </div>
+                <!-- ВИДЖЕТ БАЛАНСА ELEVENLABS НА ВКЛАДКЕ СКАЗКИ -->
+                <div style="margin-top: 18px; padding: 14px 18px; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(212,160,67,0.35); border-radius: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <span style="font-size: 11px; color: var(--text-dim); display: block; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Текущий баланс ElevenLabs (остаток символов):</span>
+                        <strong id="fairytale-eleven-balance-val" style="font-size: 17px; color: var(--primary);">—</strong>
+                    </div>
+                    <button type="button" class="btn-primary" style="padding: 8px 18px; font-size: 12px; font-weight: 800;" onclick="checkElevenLabsBalance()">🔄 Проверить баланс ElevenLabs</button>
                 </div>
+
                 <div id="fairytale-key-status" class="status-msg"></div>
             </div>
 
@@ -5231,18 +5260,38 @@
         }
 
         async function checkKieBalance() {
-            const key = localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd';
+            const key = (document.getElementById('aggregator-key-input')?.value || localStorage.getItem('kiosk_aggregator_key') || 'fde11cd9f361b989eb19b8ef8530bfbd').trim();
             const balEl = document.getElementById('kie-balance-val');
             if (!balEl) return;
             balEl.textContent = '⏳ Проверка...';
             try {
-                const res = await fetch('https://api.kie.ai/api/v1/chat/credit', {
-                    headers: { 'Authorization': `Bearer ${key}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    const credits = data.data !== undefined ? data.data : 0;
-                    const usd = (credits * 0.005).toFixed(2);
+                // Сначала пробуем через серверный прокси /api/ai/balance для обхода CORS
+                let credits = null;
+                let usd = null;
+                try {
+                    const proxyRes = await fetch(`/api/ai/balance?provider=kie&apiKey=${encodeURIComponent(key)}`);
+                    if (proxyRes.ok) {
+                        const pData = await proxyRes.json();
+                        if (pData.success) {
+                            credits = pData.credits;
+                            usd = pData.usd;
+                        }
+                    }
+                } catch(_) {}
+
+                // Фоллбэк на прямой запрос к Kie.ai
+                if (credits === null) {
+                    const res = await fetch('https://api.kie.ai/api/v1/chat/credit', {
+                        headers: { 'Authorization': `Bearer ${key}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        credits = data.data !== undefined ? data.data : 0;
+                        usd = (credits * 0.005).toFixed(2);
+                    }
+                }
+
+                if (credits !== null) {
                     balEl.textContent = `${credits} кредитов ($${usd})`;
                     balEl.style.color = credits > 0 ? '#34c759' : '#ff3b30';
                 } else {
@@ -5253,6 +5302,54 @@
                 balEl.textContent = '0 кредитов ($0.00)';
                 balEl.style.color = '#ff3b30';
             }
+        }
+
+        async function checkElevenLabsBalance() {
+            const keyInp = document.getElementById('fairytale-elevenlabs-key');
+            const key = (keyInp?.value || localStorage.getItem('kiosk_elevenlabs_api_key') || '').trim();
+            const balMainEl = document.getElementById('eleven-balance-val');
+            const balFtEl = document.getElementById('fairytale-eleven-balance-val');
+
+            const setAll = (text, color) => {
+                if (balMainEl) {
+                    balMainEl.textContent = text;
+                    if (color) balMainEl.style.color = color;
+                }
+                if (balFtEl) {
+                    balFtEl.textContent = text;
+                    if (color) balFtEl.style.color = color;
+                }
+            };
+
+            if (!key) {
+                setAll('— (ключ не указан)', '#ff9500');
+                return;
+            }
+
+            setAll('⏳ Проверка...', 'var(--primary)');
+
+            try {
+                const res = await fetch(`/api/ai/balance?provider=elevenlabs&apiKey=${encodeURIComponent(key)}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    const rem = data.remainingCharacters || 0;
+                    const color = rem > 1000 ? '#34c759' : (rem > 0 ? '#ff9500' : '#ff3b30');
+                    const text = `${data.formattedRemaining} / ${data.formattedTotal} (${data.tier || 'активен'})`;
+                    setAll(text, color);
+                } else {
+                    setAll(`⚠️ ${data.error || 'Ошибка проверки'}`, '#ff3b30');
+                }
+            } catch (e) {
+                setAll(`⚠️ Ошибка сети: ${e.message}`, '#ff3b30');
+            }
+        }
+
+        async function checkAllBalances() {
+            await Promise.allSettled([
+                checkKieBalance(),
+                checkElevenLabsBalance()
+            ]);
         }
 
         // ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ НАСТРОЕК И ПЛЕЙЛИСТОВ (SUPABASE STORAGE)
@@ -5775,6 +5872,7 @@
                     status.className = 'status-msg success';
                     setTimeout(() => { if (status.textContent.includes('успешно')) status.textContent = ''; }, 4000);
                 }
+                checkElevenLabsBalance();
             } catch(e) {
                 if (status) {
                     status.textContent = '❌ Ошибка сохранения: ' + e.message;
@@ -6173,7 +6271,7 @@
         loadPaymentSettings();
         loadMusicPriceSettings();
         loadPixverseMarkupSettings();
-        checkKieBalance();
+        checkAllBalances();
         checkSupabaseStatus();
         loadFairytaleVoices();
         fetchCloudConfig();

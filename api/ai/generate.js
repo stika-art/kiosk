@@ -620,11 +620,10 @@ async function generateViaElevenLabsDirect({ apiKey, voiceId, text, orderId, mod
     }
 }
 
-// 5. Вызов Kie.ai API и ожидание результата задачи генерации изображения или видео
-async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution, orderId, title, duration, isFairytale, fairytaleData, voiceId }) {
+// 5. Вызов Kie.ai API и ожидание результата задачи генерации изображения или видео (GPT Image 2.5 Sunburst / PixVerse / Suno)
+async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVideoUrl, templateImgUrl, isTryOn, resolution, orderId, title, duration }) {
     const isMusicTarget = (model === 'suno' || (model && model.toLowerCase().includes('suno')) || (model && model.toLowerCase().includes('music')));
-    const isFairytaleTarget = Boolean(isFairytale) || model === 'fairytale' || (model && model.toLowerCase().includes('fairytale')) || (model && model.toLowerCase().includes('elevenlabs'));
-    if (!apiKey || (!isMusicTarget && !isFairytaleTarget && !publicPhotoUrl && !guestVideoUrl && !templateImgUrl)) return null;
+    if (!apiKey || (!isMusicTarget && !publicPhotoUrl && !guestVideoUrl && !templateImgUrl)) return null;
 
     // Разрешение: строго 1K для ультра-быстрой генерации 5-8 сек на киоске
     const targetResolution = '1K';
@@ -649,9 +648,6 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     } else if (model === 'suno' || model === 'suno-v6' || model === 'suno-v6-mini' || model === 'suno-v6-wild' || model === 'suno-v4' || model === 'suno-v3.5' || model === 'ai-music-api/generate' || (typeof model === 'string' && (model.includes('suno') || model.includes('music') || model.includes('трек') || model.includes('песн')))) {
         // Suno AI (V6) — Генерация музыки и песен через официальный API Kie.ai
         kieModel = 'ai-music-api/generate';
-    } else if (model === 'fairytale' || isFairytaleTarget || (typeof model === 'string' && (model.includes('elevenlabs') || model.includes('fairytale') || model.includes('сказк')))) {
-        // ElevenLabs Multilingual V2 — Синтез сказочного голоса диктора
-        kieModel = 'elevenlabs/text-to-speech-multilingual-v2';
     } else if (model === 'gpt-image-2-5-flare' || model === 'chatgpt-2.5-flare' || model === 'gpt-image-2-5-flare-image-to-image') {
         // GPT Image 2.5 Flare — скоростная версия 2.5 (только при явном указании flare)
         kieModel = 'gpt-image-2-5-flare-image-to-image';
@@ -665,8 +661,7 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
     const isPixverse = kieModel === 'pixverse/v6/image-to-video' || kieModel.includes('pixverse');
     const isGeminiOmni = kieModel === 'gemini-omni-video' || kieModel.includes('gemini') || kieModel.includes('omni');
     const isMusicModel = kieModel === 'ai-music-api/generate' || kieModel.includes('music') || kieModel.includes('suno');
-    const isFairytaleModel = kieModel === 'elevenlabs/text-to-speech-multilingual-v2' || kieModel.includes('elevenlabs') || isFairytaleTarget;
-    const isVideoModel = !isMusicModel && !isFairytaleModel && (isPixverse ||
+    const isVideoModel = !isMusicModel && (isPixverse ||
                          isGeminiOmni ||
                          kieModel.includes('video') ||
                          kieModel.includes('kling') ||
@@ -674,25 +669,13 @@ async function generateViaKie({ apiKey, model, prompt, publicPhotoUrl, guestVide
                          kieModel.includes('luma') ||
                          kieModel.includes('hailuo'));
 
-    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isMusic=${isMusicModel}, isFairytale=${isFairytaleModel}, isPixverse=${isPixverse}, duration=${duration || 5}s, isTryOn=${Boolean(isTryOn)})...`);
+    console.log(`[Kie.ai AI Hub] Запуск задачи "${kieModel}" [${targetResolution}] (isVideo=${isVideoModel}, isMusic=${isMusicModel}, isPixverse=${isPixverse}, duration=${duration || 5}s, isTryOn=${Boolean(isTryOn)})...`);
 
     const safePrompt = sanitizeForOpenAI(prompt);
 
     // Формирование входных данных под выбранный тип модели
     let inputPayload = {};
-    if (isFairytaleModel) {
-        // Озвучивание сказки через ElevenLabs 4 (eleven_v4) в Kie.ai
-        const targetVoice = voiceId || 'James';
-        const storyText = safePrompt || 'Жил-был на свете маленький герой, который очень любил волшебные приключения.';
-        inputPayload = {
-            text: storyText,
-            voice: targetVoice,
-            model_id: 'eleven_v4',
-            model: 'eleven_v4',
-            stability: 0.55,
-            similarity_boost: 0.75
-        };
-    } else if (isMusicModel) {
+    if (isMusicModel) {
         // Генерация полноценной музыки и песен через Suno AI (актуальная флагманская версия V6 в Kie.ai)
         const musicPrompt = (safePrompt && safePrompt.trim().length > 3)
             ? safePrompt.trim()
@@ -1325,7 +1308,7 @@ module.exports = async (req, res) => {
             }
         }
 
-        // 2. Для аудиосказки: приоритетный вызов официального ElevenLabs 4 (eleven_v4)
+        // 2. Для аудиосказки: СТРОГО официальный новейший ElevenLabs (eleven_v4) без старых моделей Kie
         let generationOutcome = null;
 
         if (isFairytaleReq) {
@@ -1343,33 +1326,48 @@ module.exports = async (req, res) => {
                 } catch (e) { }
             }
 
-            if (elKey) {
-                console.log(`[AI Hub] Вызов официального ElevenLabs 4 (${elModel}) для сказки (voice: ${activeVoiceId})...`);
-                generationOutcome = await generateViaElevenLabsDirect({
-                    apiKey: elKey,
-                    voiceId: activeVoiceId,
-                    text: fairytaleNarrative || prompt,
-                    orderId,
-                    modelId: elModel,
-                    bgTrackUrl: selectedBgTrackUrl,
-                    customCoverUrl: fairytaleCoverUrl
+            if (!elKey) {
+                console.warn('[AI Hub] Ошибка: API-ключ ElevenLabs не настроен в админ-панели');
+                return res.status(200).json({
+                    success: false,
+                    error: 'Для создания аудиосказки требуется указать официальный API-ключ ElevenLabs в админ-панели.',
+                    model: elModel || 'eleven_v4',
+                    orderId
+                });
+            }
+
+            console.log(`[AI Hub] Синтез аудиосказки СТРОГО через официальный ElevenLabs (${elModel}, voice: ${activeVoiceId})...`);
+            generationOutcome = await generateViaElevenLabsDirect({
+                apiKey: elKey,
+                voiceId: activeVoiceId,
+                text: fairytaleNarrative || prompt,
+                orderId,
+                modelId: elModel,
+                bgTrackUrl: selectedBgTrackUrl,
+                customCoverUrl: fairytaleCoverUrl
+            });
+
+            if (!generationOutcome || generationOutcome.failed) {
+                console.warn('[AI Hub] Ошибка синтеза ElevenLabs:', generationOutcome?.error);
+                return res.status(200).json({
+                    success: false,
+                    error: generationOutcome?.error || 'Не удалось озвучить сказку через ElevenLabs. Проверьте баланс символов и ключ в админ-панели.',
+                    model: elModel || 'eleven_v4',
+                    orderId
                 });
             }
         }
 
-        // Если прямой вызов не был настроен или не вернул результат — запуск через Kie.ai
-        if (!generationOutcome) {
+        // Если это фото, видео или музыка Suno — запуск через Kie.ai
+        if (!isFairytaleReq && !generationOutcome) {
             generationOutcome = effectiveKey ? await generateViaKie({
                 apiKey: effectiveKey,
-                model: isFairytaleReq ? 'elevenlabs/text-to-speech-multilingual-v2' : (model || 'chatgpt-2.5'),
-                prompt: fairytaleNarrative || prompt,
+                model: model || 'chatgpt-2.5',
+                prompt: prompt,
                 publicPhotoUrl,
                 guestVideoUrl: publicGuestVideoUrl,
                 templateImgUrl: publicTemplateUrl,
                 isTryOn: Boolean(isTryOn),
-                isFairytale: isFairytaleReq,
-                fairytaleData,
-                voiceId: activeVoiceId,
                 resolution: targetResolution,
                 orderId,
                 title,
