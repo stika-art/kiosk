@@ -810,12 +810,16 @@
             cursor: pointer;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
-            transition: all 0.25s ease;
+            transition: all 0.2s ease;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .grid-back-btn:hover {
+        .grid-back-btn:hover, .grid-back-btn:active {
             background: var(--primary);
             color: #141414;
             border-color: var(--primary);
@@ -1080,18 +1084,32 @@
         .modal-close-btn {
             position: absolute;
             top: 16px;
-            right: 20px;
-            background: none;
-            border: none;
-            color: var(--text-dim);
-            font-size: 32px;
+            right: 18px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: 300;
             line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            transition: color 0.2s;
+            transition: all 0.2s ease;
+            z-index: 10000;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .modal-close-btn:hover {
+        .modal-close-btn:hover, .modal-close-btn:active {
+            background: rgba(239, 68, 68, 0.9);
+            border-color: #ef4444;
             color: #ffffff;
+            transform: scale(1.08);
         }
 
         .modal-title {
@@ -1327,8 +1345,15 @@
             border-radius: 18px;
             border: none;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             text-transform: uppercase;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .action-btn:active {
+            transform: scale(0.97);
         }
 
         .primary-btn {
@@ -1357,16 +1382,19 @@
         }
 
         .cancel-btn {
-            background: var(--input-bg);
+            background: rgba(255, 255, 255, 0.08);
             color: var(--text-muted);
             border: 1px solid var(--border-subtle);
             border-radius: 16px;
+            touch-action: manipulation;
+            user-select: none;
+            cursor: pointer;
         }
 
-        .cancel-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
+        .cancel-btn:hover, .cancel-btn:active {
+            background: rgba(255, 255, 255, 0.16);
             color: #ffffff;
-            border-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.35);
         }
 
         /* Payment Step */
@@ -2539,22 +2567,28 @@
             right: 12px;
             top: 50%;
             transform: translateY(-50%);
-            width: 30px;
-            height: 30px;
+            width: 34px;
+            height: 34px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
-            border: none;
-            color: #fff;
-            font-size: 18px;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            font-size: 20px;
             line-height: 1;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.15s;
+            transition: all 0.15s ease;
+            z-index: 100;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
         .input-clear-btn:hover, .input-clear-btn:active {
-            background: rgba(239, 68, 68, 0.8);
+            background: rgba(239, 68, 68, 0.9);
+            border-color: #ef4444;
+            transform: translateY(-50%) scale(1.08);
         }
         .virtual-keyboard-box {
             width: 100%;
@@ -2856,7 +2890,7 @@
                 <span>←</span> НАЗАД
             </button>
             <div class="grid-modal-title" id="grid-modal-title">ВСЕ ШАБЛОНЫ</div>
-            <div class="header-spacer"></div>
+            <button id="template-close-btn" class="grid-back-btn" style="min-width: 44px; padding: 0 16px; font-size: 24px; line-height: 1;" title="Закрыть">&times;</button>
         </div>
         
         <!-- Categories Pills Bar (Dynamic from JS) -->
@@ -3508,7 +3542,7 @@
 </div>
 
 <script src="qrcode.min.js"></script>
-<script src="script.js?v=20261020_v11"></script>
+<script src="script.js?v=20261024_v1"></script>
 
 <!-- Белая вспышка при съёмке -->
 <div id="camera-flash"></div>

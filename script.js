@@ -1,0 +1,5565 @@
+// =============================================
+// TRENDUM AI PHOTO KIOSK — INTERACTIVE ENGINE
+// =============================================
+
+let selectedStyle = '';
+let selectedStylePhoto = 'images/photo1.jpg';
+let selectedStylePrice = 290;
+let selectedStyleLocation = '';
+let isTryOnMode = false;
+let selectedStyleModel = 'chatgpt-2';
+let selectedStylePrompt = '';
+let selectedStyleResolution = '2K';
+let selectedTemplateId = null;
+let selectedTemplateHtml = '';
+let isSelectingCard = false;
+let isAttractClosing = false;
+let currentCategory = 'ФОТО';
+let activeTemplateIndex = 0;
+let selectedStyleCategory = '';
+let selectedVideoDuration = 5;
+
+// УПРАВЛЕНИЕ РАЗРЕШЕНИЕМ ГЕНЕРАЦИИ (СТРОГО 1K ДЛЯ МАКСИМАЛЬНОЙ СКОРОСТИ 5-8 СЕК)
+let currentAiResolution = '1K';
+try { localStorage.setItem('kiosk_ai_resolution', '1K'); } catch (e) { }
+
+function setAiResolution(res) {
+    currentAiResolution = '1K';
+    try { localStorage.setItem('kiosk_ai_resolution', '1K'); } catch (e) { }
+
+    document.querySelectorAll('.ai-res-pill').forEach(btn => {
+        if (btn.dataset.res === '1K') {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    const badge = document.getElementById('pay-res-indicator');
+    if (badge) {
+        badge.textContent = '1K';
+    }
+}
+window.setAiResolution = setAiResolution;
+
+// КОНФИГУРАЦИЯ ГЛАВНОГО ЭКРАНА (ШАПКА И КАРТОЧКИ РАЗДЕЛОВ)
+function getStoredMainHeader() {
+    try {
+        const saved = localStorage.getItem('kiosk_main_header_v1');
+        if (saved) return JSON.parse(saved);
+    } catch (e) { }
+    return {
+        badge: 'PREMIUM PHOTO KIOSK',
+        title: 'TRENDUM',
+        subtitle: 'ФОТОСТУДИЯ ПРЕМИУМ КЛАССА'
+    };
+}
+
+function normalizeMainCards(cards) {
+    let list = Array.isArray(cards) ? [...cards] : [];
+    // Полностью удаляем любые карточки пригласительных, трендов, примерки и дополненной реальности
+    list = list.filter(c => {
+        const t = (c.title || '').toUpperCase();
+        const f = (c.filter || '').toUpperCase();
+        const id = Number(c.id);
+        if (t.includes('ПРИГЛАС') || f === 'INVITE' || f === 'INVITES') return false;
+        if (id === 3 || t.includes('ТРЕНД') || f === 'TRENDS' || f === 'TREND') return false;
+        if (id === 4 || id === 5 || t.includes('ПРИМЕР') || f === 'TRYON' || t.includes('ОДЕЖД')) return false;
+        if (id === 7 || t.includes('ДОПОЛНЕН') || t.includes('AR') || f === 'AR') return false;
+        return true;
+    });
+
+    if (list.length === 0) {
+        list = [
+            { id: 1, title: 'ФОТО', badge: 'ОБЛОЖКИ • ПОРТРЕТЫ • АРТ', subtitle: 'БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ', filter: 'PHOTO', category: 'ФОТО', img: 'images/photo1.jpg', categories: ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'] },
+            { id: 2, title: 'ВИДЕО', badge: 'КИНЕМАТОГРАФИЧНОЕ ВИДЕО', subtitle: 'ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ', filter: 'VIDEO', category: 'ВИДЕО', img: 'images/photo3.jpg', categories: ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'] },
+            { id: 6, title: 'СОЗДАЙ СВОЙ ТРЕК', badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ', subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ', filter: 'MUSIC', category: 'МУЗЫКА', img: 'images/photo2.jpg', categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'] },
+            { id: 8, title: 'АУДИОСКАЗКА', badge: '🪄 ДЕТСКАЯ АУДИОКНИГА • ИИ', subtitle: 'ПЕРСОНАЛЬНАЯ СКАЗКА ДЛЯ РЕБЕНКА С ОБЛОЖКОЙ И ГОЛОСОМ', filter: 'FAIRYTALE', category: 'СКАЗКА', img: 'images/fairytale_cover.jpg', categories: ['СКАЗКИ', 'ПРИКЛЮЧЕНИЯ', 'КОЛЫБЕЛЬНЫЕ', 'ПОУЧИТЕЛЬНЫЕ'] }
+        ];
+    } else {
+        let musicCard = list.find(c => c.id === 6 || (c.filter && c.filter.toUpperCase() === 'MUSIC') || (c.title && c.title.toUpperCase().includes('ТРЕК')));
+        if (!musicCard) {
+            list.push({
+                id: 6,
+                title: 'СОЗДАЙ СВОЙ ТРЕК',
+                badge: '🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ',
+                subtitle: 'СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ',
+                filter: 'MUSIC',
+                category: 'МУЗЫКА',
+                img: 'images/photo2.jpg',
+                categories: ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК']
+            });
+        }
+        let fairytaleCard = list.find(c => c.id === 8 || (c.filter && c.filter.toUpperCase() === 'FAIRYTALE') || (c.title && c.title.toUpperCase().includes('СКАЗК')));
+        if (!fairytaleCard) {
+            list.push({
+                id: 8,
+                title: 'АУДИОСКАЗКА',
+                badge: '🪄 ДЕТСКАЯ АУДИОКНИГА • ИИ',
+                subtitle: 'ПЕРСОНАЛЬНАЯ СКАЗКА ДЛЯ РЕБЕНКА С ОБЛОЖКОЙ И ГОЛОСОМ',
+                filter: 'FAIRYTALE',
+                category: 'СКАЗКА',
+                img: 'images/fairytale_cover.jpg',
+                categories: ['СКАЗКИ', 'ПРИКЛЮЧЕНИЯ', 'КОЛЫБЕЛЬНЫЕ', 'ПОУЧИТЕЛЬНЫЕ']
+            });
+        }
+    }
+
+    return list.map(c => {
+        const titleUp = (c.title || '').toUpperCase();
+        let cats = Array.isArray(c.categories) && c.categories.length > 0 ? [...c.categories] : null;
+        if (!cats) {
+            if (c.id === 1 || titleUp === 'ФОТО') {
+                cats = ['ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'АРТ'];
+            } else if (c.id === 2 || titleUp === 'ВИДЕО') {
+                cats = ['КИНЕМАТОГРАФ', 'НЕОН', 'АНИМАЦИЯ', 'РЕТРО VHS'];
+            } else if (c.id === 6 || titleUp.includes('ТРЕК') || titleUp.includes('МУЗЫК')) {
+                cats = ['ХИТЫ', 'РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'КЛУБНАЯ', 'ШАНСОН', 'ВОСТОК'];
+            } else if (c.id === 8 || titleUp.includes('СКАЗК')) {
+                cats = ['СКАЗКИ', 'ПРИКЛЮЧЕНИЯ', 'КОЛЫБЕЛЬНЫЕ', 'ПОУЧИТЕЛЬНЫЕ'];
+            } else {
+                cats = [c.title || 'ОБЩЕЕ'];
+            }
+        }
+        return {
+            ...c,
+            id: Number(c.id) || Date.now(),
+            categories: cats
+        };
+    });
+}
+
+function getStoredMainCards() {
+    try {
+        const saved = localStorage.getItem('kiosk_main_cards_v1');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) return normalizeMainCards(parsed);
+        }
+    } catch (e) { }
+    return normalizeMainCards([]);
+}
+
+let mainHeaderConfig = getStoredMainHeader();
+let mainCardsConfig = getStoredMainCards();
+
+function renderMainCards() {
+    const badgeEl = document.getElementById('main-brand-badge');
+    const titleEl = document.getElementById('main-brand-title');
+    const subEl = document.getElementById('main-brand-subtitle');
+    const container = document.getElementById('main-cards-container');
+
+    if (badgeEl && mainHeaderConfig.badge) badgeEl.textContent = mainHeaderConfig.badge;
+    if (titleEl && mainHeaderConfig.title) {
+        if (mainHeaderConfig.title.toUpperCase() === 'TRENDUM') {
+            titleEl.innerHTML = 'TREN<span>DUM</span>';
+        } else {
+            titleEl.textContent = mainHeaderConfig.title;
+        }
+    }
+    if (subEl && mainHeaderConfig.subtitle) subEl.textContent = mainHeaderConfig.subtitle;
+
+    if (!container) return;
+    container.innerHTML = '';
+
+    mainCardsConfig.forEach((c, idx) => {
+        const section = document.createElement('section');
+        section.className = `card card-${idx + 1}`;
+        section.onclick = function () {
+            window.selectCard(this, c.id);
+        };
+
+        const bgImg = c.img ? `background-image: url('${c.img}');` : '';
+        section.innerHTML = `
+            <div class="card-image" style="${bgImg}"></div>
+            <div class="point">${c.badge || ''}</div>
+            <div class="title">${c.title || ''}</div>
+            <div class="subtitle">${c.subtitle || ''}</div>
+        `;
+        container.appendChild(section);
+    });
+}
+
+// ТРЕКОВЫЕ ШАБЛОНЫ ДЛЯ 3D COVERFLOW ГАЛЕРЕИ (STYLE DRIBBLE)
+const templateCatalog = {
+    'ФОТО': [],
+    'ВИДЕО': []
+};
+
+// DYNAMIC CATEGORIES & TEMPLATES ENGINE WITH LOCALSTORAGE
+let kioskCategories = [];
+try {
+    const savedCats = localStorage.getItem('kiosk_categories_v2');
+    if (savedCats) kioskCategories = JSON.parse(savedCats);
+} catch (e) { }
+
+if (Array.isArray(kioskCategories) && kioskCategories.length > 0) {
+    kioskCategories = kioskCategories.filter(c => c !== 'ТРЕНДЫ' && c !== 'ПРИМЕРКА');
+}
+
+if (!kioskCategories || kioskCategories.length === 0) {
+    kioskCategories = ['ВСЕ', 'ОБЛОЖКИ', 'МУЛЬТИКИ', 'ИГРЫ', 'КИБЕРПАНК', 'ВИДЕО', 'МУЗЫКА'];
+}
+
+const LEGACY_STANDARD_TITLES = [
+    'KIDS FANTASY',
+    'CYBER MAN',
+    'TRENDING PHOTO',
+    'FORBES COVER',
+    'GIGACHAD SIGMA',
+    'NEON MOTION',
+    'RETRO 90S VHS',
+    'RETRO VHS',
+    'CYBER ROBOT',
+    'ROBLOX HERO',
+    'ANIME VIBE',
+    'CYBER SAMURAI',
+    'ANIME WORLD',
+    'TIKTOK DANCE',
+    'REELS VIBE'
+];
+const LEGACY_STANDARD_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+function isLegacyStandardTemplate(t) {
+    if (!t) return false;
+    const id = Number(t.id);
+    if (LEGACY_STANDARD_IDS.includes(id)) return true;
+    const titleUp = (t.title || '').trim().toUpperCase();
+    if (LEGACY_STANDARD_TITLES.includes(titleUp)) return true;
+    return false;
+}
+
+const DEFAULT_KIOSK_TEMPLATES = [
+    {
+        "id": 1789208643545,
+        "category": "ОБЛОЖКИ",
+        "title": "Portrait",
+        "price": 1,
+        "model": "chatgpt-2.5",
+        "prompt": "Создай портрет, не меняя черты лица. Черно-белое художественное фото мужчины, стоящей на фоне стены, на которую спроецировано крупное число «34». Свет от проектора ярко освещает цифры и часть фигуры, создавая глубокие тени и драматичный контраст. Мужчина одет в объемную белую рубашку, и стильные солнцезащитные очки. В руке он держит виски. Атмосфера элегантной вечеринки по случаю дня рождения, эстетика минимализма, высокая контрастность, пленочное зерно.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789208643545.png",
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789210227800,
+        "category": "ОБЛОЖКИ",
+        "title": "2",
+        "price": 2,
+        "model": "chatgpt-2.5",
+        "prompt": "Use the uploaded photo as the ABSOLUTE IDENTITY REFERENCE for FACIAL GEOMETRY ONLY — not for lighting, not for exposure, not for colour.  IDENTITY LOCK — HIGHEST PRIORITY: reproduce this exact face. Same skull and jaw geometry, same eye shape and spacing, same eyelid crease, same nose bridge width and tip shape, same lip shape and philtrum, same cheekbone height, same ear shape, same hairline, same age. Keep the natural asymmetry of the real face — one eye slightly different from the other, the mouth not perfectly level. Do NOT beautify, slim, symmetrise, de-age or \"improve\" anything. Do not create a lookalike. A viewer who knows this person must recognise them instantly.  LIGHT INTEGRATION — THIS IS THE MOST IMPORTANT INSTRUCTION AFTER IDENTITY. The face must be lit BY THIS SCENE, not carried over from the reference photo. Ignore the lighting of the source image completely and RE-LIGHT the head from scratch to match the environment: — the same hard low sun that carves the architecture also strikes the face, from the same direction and at the same angle; — a crisp nose shadow falls across the cheek on the shadow side, with the same hard edge as the architectural shadows on the ground; — the collar of the garment casts a real shadow across the jaw and neck; — warm ochre bounce from the sunlit concrete lifts the underside of the chin and the lower lip; — cool blue skylight fills the shadow side of the face; — specular highlights sit on the forehead, nose bridge and one cheekbone, with the same intensity as the highlights on the stone; — the catchlight in the eyes comes from the same direction as the sun; — exposure, contrast, colour temperature, black level and grain on the face MATCH the rest of the frame exactly. If the face reads as evenly lit while the scene is hard-lit, the image has FAILED. The head must look photographed in this place, at this hour, in this light — one exposure, one camera, one moment.  PROPORTION — the second failure to avoid. The head must sit at natural human scale relative to the body: roughly one seventh of the standing figure, shoulders no wider than about three head-widths at the actual shoulder line. Oversized tailoring may extend far beyond the body, but it must read as fabric hanging off a normally proportioned person, not as a garment with a small head placed on top. Neck, shoulder slope and the way the coat sits on the trapezius must be anatomically believable. The face should occupy a confident share of the frame — clearly readable, not a distant detail lost in the architecture.  SKIN, EYES, HAIR — photographic realism, not rendering: visible pores across nose and cheeks, fine vellus hair along the jaw catching the sun, real micro-texture, natural unevenness, freckles and moles exactly as on the reference, subsurface scattering glowing through the earlobes against the light. Sharp iris with radial fibre detail and a defined limbal ring, sclera faintly warm with fine visible capillaries, wet reflective eye surface, individual eyelashes of uneven length. Individual hair strands with a backlit flyaway halo, visible scalp at the parting, real strand separation at the silhouette.  CAMERA AND POSE: extreme low worm's-eye angle, camera almost at ground level, 20mm wide lens close to the figure, tilted into a hard 12-degree Dutch angle. The figure towers over the lens; the architecture converges steeply overhead and closes into an impossible vault above the head. Strong vertical convergence, curving horizon, deliberate barrel distortion in the architecture — but the FACE stays geometrically undistorted and correctly proportioned, as if shot on a longer lens and composited by physics rather than by software. Chin slightly lowered, eyes looking down the barrel of the lens, calm and completely unbothered by the impossible space. One shoulder dropped, weight on the back foot, the coat swinging open along a diagonal that follows the Dutch tilt.  SCENE: full-frame experimental editorial fashion photograph. The person stands inside a brutalist architecture that physically bends, stretches and reorganises around the body. Concrete walls fold like fabric, columns repeat into impossible perspective, platforms cantilever overhead. The clothing is an extension of the architecture: sharp geometric tailoring, elongated coat, exaggerated structured shoulders, rigid sculptural folds that rhyme with the concrete planes. The distortion is physical and photographic, never a digital glitch. The person stays stable and real while the SPACE becomes impossible.  PALETTE: restrained architectural range — concrete, graphite, black, cream, muted grey — with exactly ONE saturated accent colour used sparingly and deliberately.  LIGHT AND COMPOSITION: hard directional low sun, long architectural shadows raking across the ground, sharp highlights, deep dimensional contrast. Large areas of negative space balanced against massive geometric mass.  TEXTURE: subtle vintage film grain, analog print texture, slight colour fringing, fine surface imperfections, tactile photographic depth. The grain must lie over the face at the same strength as over the concrete.  FORMAT: vertical portrait, 3:4 aspect ratio.  FORBIDDEN: beauty retouching, skin smoothing, airbrushing, waxy plastic skin, blurred pores, symmetrical doll face, evenly lit face, flat frontal fill light on the face, a face whose lighting disagrees with the scene, a face pasted or composited in, mismatched colour temperature between head and body, an undersized head, 3D render, architectural visualisation, video game scene, CGI character, cyberpunk, cartoon, generic AI fashion image, typography, text, letters, numbers, logos, watermark.  The result must read as one photograph: the same person from the source, standing in a physically impossible but convincingly photographed brutalist universe, lit by its light.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789210227800.jpg",
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789558483328,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Flowers",
+        "price": 1,
+        "location": "",
+        "model": "chatgpt-2.5",
+        "prompt": "FORMAT: vertical portrait, 3:4 aspect ratio.\n\nMEDIUM — read this first. A hand-painted gouache illustration on cream cotton paper, in the language of character design rather than portraiture. Flat opaque colour areas with only two or three tones per surface, minimal internal modelling, a confident economical contour that carries the form, visible paper tooth, slight pigment granulation. Bold readable shapes before detail. This is an illustrated character, not a painted photograph: no photographic skin, no pores, no lens blur, no 3D shading, no rendered realism.\n\nCHARACTER DESIGN — the core of this style and the thing that must not be softened. Redraw the person with stylised proportions: the head noticeably larger relative to the body than in life, roughly one sixth of the standing figure; the eyes enlarged and set as clean graphic shapes; the nose and mouth reduced to simple confident marks; hands simplified into clear anatomically believable forms; the torso and clothing built from a few large masses with a strong, instantly readable silhouette. Every surface is a shape first and a texture second.\n\nIDENTITY THROUGH EXAGGERATION — how recognition survives this stylisation. Work like a caricaturist, not like a copyist: find the two or three traits that make THIS face unmistakable — the shape of the glasses, the mass and line of the hair, the jaw, the brow, the nose profile, the set of the eyes, facial hair, the way the head sits on the neck — and push them slightly BEYOND life while everything else is simplified. Preserve the true relationships: eye spacing, the proportion of forehead to nose to chin, the width of the jaw against the cheekbones, the hairline, the age, the build, the natural asymmetry of the real face. Do NOT smooth the distinctive traits away, do NOT beautify, slim, symmetrise or de-age, do NOT replace the head with a generic illustrated face or an anime face. Smoothing kills recognition faster than exaggeration does. Someone who knows this person must name them instantly, even though nothing here is photographic.\n\nPALETTE — narrow in RANGE but full in STRENGTH. Three families only: fresh sage-to-olive green, clean rose pink, warm cream paper. Clear, luminous, confident colour — real pink that reads as pink, real green with life in it, opaque and slightly chalky like true gouache. GREEN AND PINK MUST CARRY ROUGHLY EQUAL WEIGHT in the frame: if one of them dominates and the other survives only as an accent, the image has FAILED. Push value contrast — deep greens against pale pinks against bare cream — so it reads from across a room. Do NOT desaturate, grey down, fade or wash out. Forbidden outside the three families: saturated primaries, black, brown, blue sky, rainbow.\n\nCHARACTER CONCEPT — the person is not posing, they ARE somebody. Read the uploaded photo — their energy, attitude, age, what they seem to be like — and invent a persona that takes that trait and pushes it until it is funny, sharp or slightly absurd. Give them something to DO and something to HOLD: a prop, a costume detail, a gesture that tells a whole story in one frame. The register is punk irreverence delivered in a sweet, pretty medium; the clash between the tender painting and the rude or deadpan content IS the style. Attitude in the eyes, never a polite smile. The concept must fit THIS person and be impossible to transplant onto anyone else.\n\nPOSE: waist-up, the figure large and graphic in the frame. The pose carries the attitude — arms crossed, a hand raised, leaning in, brandishing the prop. Never a passive shoulders-square photo pose.\n\nWARDROBE: take the clothing from the uploaded photo — same garments, same cut, same layers, same collar and neckline — and REBUILD it in this flat painted language, repainted in the palette above. Simplify the folds into a few decisive shapes. Do not restyle or invent new outfits; the person must recognise their own clothes.\n\nWORLD: a background and a few oversized objects belonging to the invented persona, pushing its joke further. Big simple shapes, flat colour, no clutter, generous empty cream paper. Everything quieter in value than the head — the world sets up the character, the face lands the punchline.\n\nCRAFT: subtle paper grain across the whole image, slightly uneven edges of the flat washes, one or two places where pigment pooled, a soft border of untouched paper.\n\nFORBIDDEN: realistic portrait proportions; a painted photograph; softened or averaged features; a polite neutral subject with no idea behind it; a passive pose; decorative houseplants as filler; desaturated, dusty or washed-out colour; one colour dominating the frame; any text, letters, numbers, logos or watermark; photographic skin, pores, photoreal rendering; 3D render, CGI, plastic shading; generic anime or manga face; doll-like symmetrical beauty; a face that no longer resembles the source; crowded busy composition.\n\nThe result must read as a character from a coherent illustrated series — clearly this exact person, and clearly a drawing.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789558483328.jpg",
+        "htmlCode": ""
+    },
+    {
+        "id": 1789214435565,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "МУЛЬТИКИ",
+        "title": "Anime",
+        "price": 3,
+        "model": "chatgpt-2.5",
+        "prompt": "Сделай из загруженного изображения картинку в актуальном аниме-стиле. Используй выразительную линию с легкой вариативностью и минимальный сел-шейдинг с плоскими теневыми формами. Используй яркие, насыщенные цвета и чистое, графичное освещение. Стиль строится на преувеличенных, мультяшных пропорциях персонажей, с простыми, но очень выразительными чертами лица, позволяющими передавать широкий спектр эмоций, и с заметно искаженной, растянутой анатомией. Сделай пространство слегка искаженным, с заметно нарушенной перспективой и упрощенными формами объектов. Композиция и общее настроение должны быть энергичными, живыми и комедийными, в полностью стилизованном и нереалистичном мире.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789214435565.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789214494635,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Slimes",
+        "price": 2,
+        "model": "chatgpt-2.5",
+        "prompt": "Use the uploaded photo as the PRIMARY IDENTITY REFERENCE. Preserve the person’s identity and facial appearance with maximum accuracy. Use the provided reference image as the PRIMARY VISUAL STYLE REFERENCE. Create a full-frame editorial fashion image in the exact visual language of the reference: surreal hip-hop fashion photography, extreme horizontal motion-drag distortion, stretched fabric and elongated clothing trails, bold saturated red studio background, dramatic low-angle fashion composition, oversized contemporary streetwear, strong graphic silhouette, expressive visual weirdness, cool confident attitude, retro analog print aesthetic, subtle vintage film grain, tactile photographic texture, slightly imperfect printed-surface feel. IDENTITY PRESERVATION IS THE HIGHEST PRIORITY. The person must remain immediately recognizable as the person from the source photo. Preserve the exact facial identity, facial proportions, bone structure, eye shape, eyebrows, nose, lips, jawline, cheekbones, skin tone, hairline, hairstyle, age, and all distinctive facial characteristics from the source image. Do NOT redesign, beautify, idealize, masculinize, feminize, age, de-age, or otherwise alter the person’s face. Do not turn the person into a generic fashion model. Do not create a lookalike. It must clearly be the SAME PERSON from the uploaded photo. Preserve natural facial anatomy and realistic skin texture while translating the person into the visual style of the reference. STYLE MATCH: Match the reference image as closely as possible in: - overall visual language - composition - camera perspective - low-angle fashion photography - full-body framing - subject scale - bold red background - horizontal motion streaks - stretched and smeared clothing - elongated fabric trails - distorted garment silhouettes - dynamic horizontal movement - surreal fashion editorial feeling - hip-hop / contemporary streetwear attitude - retro film grain - analog photographic texture - slightly rough printed texture - strong contrast - saturated red environment - unusual proportions created by motion distortion - clean but deliberately strange fashion-art direction The motion distortion should primarily affect the CLOTHING and parts of the silhouette, creating long horizontal streaks that extend dramatically across the frame, while the face and essential facial features remain sharp, stable, recognizable, and anatomically correct. Create the illusion that the clothing is being pulled sideways through extreme motion, producing long flowing fabric trails and repeated stretched silhouettes. The distortion should feel physical, intentional, and fashion-editorial rather than like a digital glitch. The person should stand confidently with a strong, slightly confrontational fashion pose. Preserve the recognizable physical characteristics of the source person while adapting the pose and framing to the reference style. Use a dramatic low camera angle, making the figure feel powerful and imposing. The clothing should be transformed into a bold contemporary hip-hop fashion look while remaining believable and coherent. Use oversized silhouettes, layered fabrics, exaggerated proportions, premium streetwear details and fashion-editorial styling. The composition should be visually rich but controlled. The red background should occupy most of the frame and create a strong monochromatic visual field behind the subject. Add subtle retro photographic grain, analog imperfections, fine surface texture, slight print wear and cinematic photographic depth. Keep the face crisp and highly detailed even while the clothing and body silhouette contain extreme horizontal motion distortion. No typography. No text. No letters. No numbers. No logos. No barcode. No symbols that resemble writing. No magazine captions. No graphic labels. No watermark. The final image should look like a high-budget experimental fashion campaign photographed in a studio and then transformed through sophisticated analog motion-drag techniques. It should NOT look like a generic AI image, 3D render, cartoon, illustration, digital glitch art, or random motion blur. The result should feel like the same person from the source photograph photographed in the exact same artistic universe as the reference image. Ultra-detailed, high-end fashion photography, realistic face, realistic skin, tactile fabric, dramatic perspective, sophisticated motion distortion, retro analog texture, editorial art direction, 4K detail. --ar 4:5 --raw",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789214494635.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789214593489,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Water",
+        "price": 1,
+        "model": "chatgpt-2.5",
+        "prompt": "Создай подводный портрет сверхкрупным планом в момент сразу после того, как человек нырнул в бассейн или прозрачную неглубокую воду. Создай спокойную, невесомую, почти эфемерную атмосферу с акцентом на световые отражения. Без напряжения и без ощущения срочности.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789214593489.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789214671647,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Red",
+        "price": 1,
+        "model": "chatgpt-2.5",
+        "prompt": "РОЛЬ И ЭСТЕТИКА Ты — фотограф мирового уровня, специализирующийся на редакционных портретах с драматичным, насыщенным студийным светом. Задача — создать мощный, динамичный портрет с героическим ощущением. ЯКОРЬ ИДЕНТИЧНОСТИ (КРИТИЧЕСКОЕ СТРОГОЕ ОГРАНИЧЕНИЕ) Источник: используй человека с ПРИКРЕПЛЁННОГО РЕФЕРЕНСНОГО ФОТО. Сохранение: необходимо идеально сохранить его точные черты лица, тон кожи, причёску и естественное сходство без каких-либо изменений. Универсальность: свет и ракурс должны применяться к модели независимо от пола. ОДЕЖДА И СТИЛЬ Одежда: использовать ОДЕЖДУ ТОЧНО КАК НА РЕФЕРЕНСНОМ ФОТО. Сохранение: фасон, цвет, материал и посадка одежды должны полностью соответствовать оригиналу без каких-либо изменений или стилизации. Выражение лица: серьёзное, напряжённое, сосредоточенное. Взгляд направлен не в камеру, а в пространство выше, за пределы кадра. СЦЕНА И КОМПОЗИЦИЯ Фон: насыщенный однотонный оранжево-красный задник с плавными, интенсивными цветовыми градиентами без каких-либо узоров. Атмосфера должна ощущаться «горячей». Ракурс камеры (КРИТИЧЕСКИ ВАЖНО): съёмка снизу вверх. Этот угол должен делать персонажа мощным и доминирующим. Кадрирование: средний крупный план, акцент на лице и плечах. СВЕТ (ДРАМАТИЧНЫЙ И ЦВЕТНОЙ) Цветовая палитра: доминируют яркие оранжевые и глубокие красные оттенки Основной свет: сильный направленный источник, создающий глубокие драматичные тени на лице (эффект кьяроскуро), подчёркивающий структуру лица Контровой свет: мощный, выразительный обводящий свет или цветовой ореол, отделяющий голову и плечи от яркого фона Настроение: загадочная, напряжённая, высококонтрастная студийная эстетика ТЕХНИЧЕСКОЕ КАЧЕСТВО Стиль: фотореализм, высокая детализация Текстуры: резкий фокус на лице, в контрасте с гладкими градиентами фона Кожа: сохранить естественные поры и натуральную текстуру кожи",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789214671647.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789214790740,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "МУЛЬТИКИ",
+        "title": "Carricature",
+        "price": 2,
+        "model": "chatgpt-2.5",
+        "prompt": "Вертикальный причудливый плоский карикатурный портрет [люди с прикрепленной фотографии] с высокой геометрической формой головы, длинной узкой шеей, огромными круглыми глазами, крошечным ртом и невозмутимым смехом, одетого в [ОДЕЖДУ с фотографии]. Чистый черный контур, плавная цветовая гамма, простые формы лица, редкие рисунки на меху или коже животных, игривый сюрреалистический дизайн персонажей, смелая графическая палитра [синий]. Фоновые декорации: [Уличные декорации Нью-Йорка выполнены с использованием упрощенных форм, четкой глубины, небольшого количества пейзажей из окружающей среды и четкой мультяшной перспективы. Четкая цифровая иллюстрация, вертикальное обрамление в виде плаката, никакого реализма, никакого 3D-рендеринга, никакой живописной растушевки, соотношение сторон 4:5.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789214790740.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789215941940,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Red Gradient",
+        "price": 1,
+        "model": "chatgpt-2.5",
+        "prompt": "red gradient background, confidently. The lighting is dramatic and cinematic, emphasizing his facial structure and diving a luxury fashion magazine vibe. Ultra-realistic, high-detail, editorial photography style. 4K resolution, symmetrical composition, minimal background element. 4:3 ratio.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789215941940.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789216584056,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "FullXR",
+        "price": 3,
+        "model": "chatgpt-2.5",
+        "prompt": "red gradient background, confidently. The lighting is dramatic and cinematic, emphasizing his facial structure and diving a luxury fashion magazine vibe full body. Ultra-realistic, high-detail, editorial photography style. 4K resolution, symmetrical composition, minimal background element. 4:3 ratio.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789216584056.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789218220360,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Samurai",
+        "price": 2,
+        "model": "chatgpt-2.5",
+        "prompt": "Redraw the person from the uploaded photo as a modern Asian illustrated poster. IDENTITY FIRST, BUT STYLIZED. The person must stay instantly recognizable — keep the proportions of the face, the shape of the nose and lips, the eye shape and spacing, the eyebrows, the skin tone, the hairstyle and the expression. Do not beautify and do not invent features. But this is an ILLUSTRATION, not a painted photograph: simplify and stylize the drawing itself. HOW TO STYLIZE THE PERSON — this is the most important part The figure must read as a DRAWN ILLUSTRATED CHARACTER, not as a photograph painted over. A viewer should say «beautifully drawn character», never «retouched photo». • the face is built from a few clean shapes: cheek, jaw and chin as smooth simple planes, no detailed modelling, no rendered bone structure; • skin is TWO OR THREE FLAT TONES with one soft transition and a coral blush — no pores, no shine, no photographic shading, no subtle wrinkles; • eyes noticeably larger than in life, drawn with a crisp confident line, clean eyelids, lashes as a few strokes, iris as a flat shape with one highlight; • nose reduced to two or three delicate lines and a soft shadow, nostrils barely indicated; • lips as one clear filled shape with a simple highlight; • eyebrows as solid graphic strokes; • the figure is elongated and graceful: longer neck, narrower sloping shoulders, slender elongated hands with long fingers; • hair is a set of large decorative ribbons of colour with a handful of drawn strands on top — never thousands of separate hairs; • clothing folds simplified into few large calm shapes with flat washes. Identity survives through PROPORTIONS and FEATURES, not through realistic rendering: same face proportions, same nose and lip shapes, same eye spacing, same brows, same hair colour and length, same expression. TECHNIQUE Hand-painted gouache and watercolour illustration with soft airbrush shading. Visible fine paper grain over the whole image. The face is painted crisply, with clean delicate linework, defined eyes and soft blush on the cheeks and nose. Clothing and body are blended softly, with gentle gradients instead of hard edges. No harsh black outlines, no cel shading, no vector look. COLOUR PALETTE — strictly limited • background: dusty cornflower blue, flat and slightly muted • accent: warm coral orange, used only for the animal, small details and the seal • secondary: muted sage-olive green, fading into the clothing • clothing and clouds: creamy off-white with pale blue shadows • skin: warm, lightly tanned, with coral blush • hair: deep navy-black with cool blue highlights Nothing outside this palette. No saturated neon, no purple, no brown. COMPOSITION Three-quarter view portrait, waist-up to knee-up, the figure turned slightly away with the head looking back at the viewer. Long hair flowing in soft strands. Oversized loose clothing taken from the uploaded photo, with wide sleeves and heavy folds, drawn in the cream-to-sage gradient. BACKGROUND Behind the figure, a large stylized SPIRIT ANIMAL. CHOOSE the animal yourself so that it fits this particular person's face and mood — a tiger, a crane, a koi carp, a fox, a wolf, a snake, a deer, a phoenix or a dragon. Do not default to a tiger. Whichever animal you choose, paint it the same way: broad flat white body with coral markings, decorative outlines, one bright amber eye, partly hidden behind the person. Around it, stylized swirling clouds in the old Asian manner: rolling spiral shapes in cream white with pale blue outlines. Everything decorative and flat, no realistic depth. POSTER FRAME The illustration sits on a warm off-white paper sheet with a visible margin around it. In the lower right corner of the artwork, a small vertical red seal stamp with white carved marks, like a traditional artist's chop. AVOID: photorealism, a painted-over photograph, realistic skin rendering, rendered bone structure, detailed facial modelling, 3D render, anime, manga, chibi, thick black outlines, harsh cel shading, glossy digital painting, extra colours outside the palette, brand logos and readable text anywhere except the red seal.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789218220360.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789561124233,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "МУЛЬТИКИ",
+        "title": "Doodle style",
+        "price": 1,
+        "location": "",
+        "model": "chatgpt-2.5",
+        "prompt": "Turn this photo into a doodle-style character that looks intentionally ugly and funny, similar to a child's crayon drawing. Use a rough black outline like crayon or pencil, with messy scribble coloring.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789561124233.jpg",
+        "htmlCode": ""
+    },
+    {
+        "id": 1789567263652,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "Beauty",
+        "price": 1,
+        "location": "",
+        "model": "chatgpt-2.5",
+        "prompt": "Used uploaded photo, don’t change a face, don’t distort and keep the face exactly as in the uploaded photo and create a candid snapshot captured on a low-quality disposable camera. Photo-realistic Close-up shot,only macro face shot, black and white, Full, voluminous hair, hair slightly blown by the wind falling across the face, Chin slightly raised ,dreamy gaze, eyes is closed, and she is smiling,voluminous dress, squatting on wet, textured seaside rocks. ,voluminous dress white, The background features a dramatic, large coastal cliff face under a heavily misty, overcast and moody grey sky. The lighting is diffused and natural. The overall atmosphere is cinematic and raw. -—ar 9:16,add more cinematic photo taken on a film camera 85mm",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789567263652.jpg",
+        "htmlCode": ""
+    },
+    {
+        "id": 1789570220974,
+        "sectionId": 4,
+        "sectionTitle": "ПРИМЕРКА",
+        "category": "ТОЛСТОВКИ",
+        "title": "Men Style",
+        "price": 1,
+        "location": "Бутик 12а",
+        "model": "chatgpt-2.5",
+        "prompt": "",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1789570220974.jpg",
+        "htmlCode": ""
+    },
+    {
+        "id": 1790102576781,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "МУЛЬТИКИ",
+        "title": "Draw Style",
+        "price": 1,
+        "location": "",
+        "model": "chatgpt-2.5",
+        "resolution": "1K",
+        "prompt": "Используй загруженную фотографию как референс. Сохрани узнаваемую внешность человека, причёску, выражение лица, позу, одежду, детёныша животного и исходные цвета.\n\nПерерисуй изображение в виде милого, немного неуклюжего рисунка от руки: сделай голову непропорционально большой и слегка кривоватой, тело — маленьким и забавным, глаза — в виде точек, а черты лица — максимально простыми.\n\nИспользуй тонкие, слегка дрожащие линии чёрной шариковой ручки и небрежные штрихи цветными карандашами. Стиль должен выглядеть намеренно любительским, очаровательно неловким и немного детским, но при этом аккуратным и незахламлённым.\n\nУпрости фон, оставив много свободного пространства и белой бумаги.",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1790102576781.jpg",
+        "htmlCode": ""
+    },
+    {
+        "id": 1790104358488,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "ОБЛОЖКИ",
+        "title": "People",
+        "price": 1,
+        "location": "",
+        "model": "chatgpt-2.5",
+        "resolution": "1K",
+        "prompt": "Black-and-white cinematic street portrait of a young person with short tousled hair and a calm, serious expression, standing perfectly still in the center of a busy urban crowd. The subject is wearing a dark puffer jacket with a high collar. Strong contrast between the sharply focused face and the people moving around, long-exposure motion blur on both sides and in the foreground, blurred silhouettes, dramatic urban atmosphere, documentary photography, editorial fashion photography, realistic skin texture, soft overcast light, shallow depth of field, centered composition, eye-level camera, symmetrical framing, high-detail monochrome film grain, cinematic 35mm photography, vertical portrait",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1790104358488.jpg",
+        "htmlCode": ""
+    },
+    {
+        "id": 1790105406787,
+        "sectionId": 1,
+        "sectionTitle": "ФОТО",
+        "category": "МУЛЬТИКИ",
+        "title": "Material",
+        "price": 290,
+        "location": "",
+        "model": "chatgpt-2.5",
+        "resolution": "1K",
+        "prompt": "Please create a high-end fiber art editing poster for each character travel photo I upload. Do not collage multiple images - each photo should be output independently. The overall 3:4 vertical diptyl composition is adopted: the upper part retains the clearly visible original image, while the lower part reconstructs the same character of the \"woolen curly felt Doll\". Ensure that the boundary between the upper and lower parts is clear, smooth and restricted to prevent felt material from contaminating the photography area. The upper part should occupy approximately 45% to 50% of the frame, faithfully preserving the original photo. Accurately maintain the character's identity, number, facial features, hair volume, hat or scarf, expression, posture, hand contact, main clothing color, travel items, and the true relationship between the character and the environment. Just use fine independent magazina-style color grading and extremely light film grain processing, while ensuring it is clear and distinguishable as real photography. To fit the picture, you can naturally extend the simple background, but do not redraw the character, change the face, stretch, distort, mirror or change the clothing. Do not flatten and redraw the entire photo in the lower part. On the contrary, an independent display desktop felt travel doll can be made. It mainly adopts a half-body or small sitting posture. The doll occupies 55% to 75% of the width of the lower half and 58% to 82% of the height. It is placed on a warm white paper stand, light-colored fabric or a simple soft base. Maintain a continuous gap of approximately 30% to 45% around. Only include one easily recognizable environmental prompt - do not create complex rooms or complete toy displays. Depict the characters with genuine handcrafted materials: felted skin tones, fine beaded eyes, simplified felted noses and mouths, knitted or yarn clothing, and shape curly hair, bangs or hair segments with richly thick and fine yarn loops, with visible stitches. Retain the fiber fluff, suede direction, seams, soft body depressions, slight asymmetries, handcrafted flaws, and the genuine soft shadows cast on the paper frame. Facial features should not pursue realism but should be recognizable at a glance through hairstyles, expressions, clothing, gestures and accessories. Extract all the colors from the above photo, soften the skin tone, hair color, main garment color and one ambient tone to form four to six fiber colors. The color should be gentle and long-lasting, with the light-absorbing properties of yarn and wool - avoid plastic luster, highly saturated toy colors or fixed color palette that is irrelevant to the original image. Add a small amount of figurative text to the continuous blank Spaces or the edge of the doll's base. Extract 1 to 3 English word titles from the real content of the photo; The main title should be similar to a small woven label, hand-embroidered text or low-pile line font. Add the \"FELT NOTE 01\" field and attach a 5-12 Inglis observation sentence H. If the specific location cannot be confirmed, please use the title \"SOFT JOURNEY\" and the observation sentence \"A companion guards the warmth of the road\". The text must be clear and legible, consistent with the stitching and fabric structure - do not superimpose smooth digital fonts",
+        "img": "https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/templates/tpl_1790105406787.jpg",
+        "htmlCode": ""
+    },
+
+    // ==========================================
+    // РАЗДЕЛ: СТИЛИСТ (sectionId: 4)
+    // ==========================================
+    {
+        "id": 1790600000001,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "ДЕЛОВОЙ",
+        "title": "CEO Style",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Transform the person in the uploaded photo into a powerful CEO / business executive portrait. Keep the face, facial features and identity 100% identical. Dress them in a sharp tailored dark navy or charcoal suit with a crisp white shirt and a subtle luxury tie. Background: a sleek modern office with floor-to-ceiling glass windows overlooking a city skyline at golden hour. Cinematic dramatic lighting, confident posture, slight upward gaze, photorealistic, editorial quality, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000002,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "STREETWEAR",
+        "title": "Street Style",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Редизайн образа человека с фото в современный уличный стиль. Сохрани лицо и черты лица без изменений. Одень в стильный оверсайз худи, карго-штаны, кроссовки Supreme или Off-White, кепку snapback. Фон: граффити-стена в Нью-Йорке, золотой закатный час. Фотореалистично, editorial streetwear fashion, 3:4 портрет.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000003,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "LUXURY",
+        "title": "Luxury Look",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Transform the person into a high-fashion luxury editorial look. Preserve the face and identity completely. Dress them in Gucci or Louis Vuitton monogram outfit, designer sunglasses, gold jewelry. Background: white minimalist studio with soft dramatic lighting. Ultra-luxury fashion magazine cover quality, Vogue editorial style, 3:4 portrait, photorealistic.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000004,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "CASUAL",
+        "title": "Smart Casual",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Преобразуй образ человека с фото в стиль smart casual. Лицо и черты — строго без изменений. Одень в светлую льняную рубашку, узкие брюки светло-бежевого цвета, белые кожаные кроссовки. Фон: кафе в Милане, мягкий дневной свет через большие окна. Фотореалистично, lifestyle editorial, 3:4 портрет.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000005,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "СПОРТ",
+        "title": "Sport Style",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Преобразуй образ человека в спортивный стиль от Nike или Adidas. Сохрани лицо без изменений. Одень в спортивный костюм, кроссовки Jordan или Yeezy. Фон: современный тренажерный зал или стадион с подсветкой. Динамичная поза, уверенный взгляд, фотореалистично, 3:4 портрет.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000006,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "LUXURY",
+        "title": "Black Suit",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Transform the person into an all-black luxury suit editorial. Preserve face and identity exactly. Sharp black tuxedo or slim-fit black suit, black turtleneck underneath, minimal silver accessories. Background: dark moody studio with a single dramatic spotlight. Cinematic noir fashion, editorial quality, 3:4 portrait, photorealistic.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000007,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "STREETWEAR",
+        "title": "Cyberpunk Style",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Преобразуй человека с фото в киберпанк-стиль будущего. Лицо — без изменений. Одень в светящиеся неоновые элементы одежды, тактическую куртку, голографические детали. Фон: ночной город в дожде с неоновыми вывесками. Фотореалистично, cinematic cyberpunk, 3:4 портрет.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000008,
+        "sectionId": 4,
+        "sectionTitle": "СТИЛИСТ",
+        "category": "ДЕЛОВОЙ",
+        "title": "Magazine Cover",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Place the person from the uploaded photo on the cover of Forbes Magazine Central Asia. Keep the face 100% identical. Dress them in a sharp business suit. Add Forbes logo at the top, headline text 'PERSON OF THE YEAR', subheadings in English, professional studio lighting. Photorealistic magazine cover, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+
+    // ==========================================
+    // РАЗДЕЛ: ПАРИКМАХЕР (sectionId: 5)
+    // ==========================================
+    {
+        "id": 1790600000101,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "МУЖСКИЕ",
+        "title": "Undercut Classic",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change ONLY the hairstyle of the person in the uploaded photo. Keep the face, skin tone, eyes, nose, lips and all facial features 100% identical — do not alter anything except the hair. Apply a classic men's undercut hairstyle: shaved sides faded from skin to short, longer hair on top styled back with a slight wave. Natural dark hair color matching the person's skin tone. Photorealistic, studio portrait lighting, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000102,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "МУЖСКИЕ",
+        "title": "Buzz Cut",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change ONLY the hairstyle of the person. Face must remain identical — same eyes, nose, lips, bone structure, skin tone, age. Apply a clean buzz cut / military style: very short all over, uniform length 2-3mm, perfectly faded at the temples and neckline. Natural hair color. Photorealistic, clean studio lighting, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000103,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "МУЖСКИЕ",
+        "title": "Textured Crop",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change ONLY the hairstyle of the person. Preserve the face and all facial features exactly as in the uploaded photo. Apply a modern textured crop hairstyle: short faded sides with a slightly longer top that has visible texture and messy natural movement, fringe pushed slightly forward. Natural hair color. Photorealistic, editorial lighting, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000104,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "МУЖСКИЕ",
+        "title": "Long Waves",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Измени ТОЛЬКО прическу человека с фото. Лицо, черты, тон кожи — без изменений. Добавь мужскую длинную прическу: волнистые волосы до плеч, небрежно зачёсанные назад, лёгкая небрежность и текстура. Натуральный цвет волос под тон кожи. Фотореалистично, студийный свет, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000105,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "ЖЕНСКИЕ",
+        "title": "Bob Cut",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change ONLY the hairstyle. Keep the face and all facial features completely identical to the uploaded photo. Apply a sleek modern bob hairstyle: chin-length, smooth, straight or slightly wavy, with a clean blunt cut at the ends. Glossy healthy hair, natural dark color. Photorealistic, beauty editorial lighting, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000106,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "ЖЕНСКИЕ",
+        "title": "Long Straight",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Измени ТОЛЬКО прическу человека. Лицо — строго без изменений. Добавь длинные прямые шелковистые волосы до середины спины, идеально ровные с блеском. Чёрный или тёмно-каштановый цвет. Фотореалистично, beauty editorial, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000107,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "ЖЕНСКИЕ",
+        "title": "Curly Volume",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change ONLY the hairstyle. The face must remain 100% identical. Apply voluminous curly hair: big bouncy curls or loose waves, full body and volume, medium length to shoulders. Shiny healthy curls. Natural color. Photorealistic, glamour lighting, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000108,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "ЦВЕТ",
+        "title": "Platinum Blonde",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change ONLY the hair color and style of the person. Keep the face and all facial features exactly the same. Apply platinum blonde / ice white hair color with a sleek modern blowout style. High-gloss, salon-perfect finish. Photorealistic beauty portrait, studio lighting, 3:4.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000109,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "ЦВЕТ",
+        "title": "Red Hot",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Измени ТОЛЬКО цвет волос человека. Лицо — без изменений. Покрась волосы в насыщенный медно-красный / огненно-рыжий цвет с блеском. Стиль волос оставь как на фото или сделай лёгкие волны. Фотореалистично, beauty editorial, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790600000110,
+        "sectionId": 5,
+        "sectionTitle": "ПАРИКМАХЕР",
+        "category": "МУЖСКИЕ",
+        "title": "French Crop + Beard",
+        "price": 290,
+        "model": "chatgpt-2.5",
+        "prompt": "Change the hairstyle and add or refine facial hair. Keep the face 100% identical. Apply a sharp French crop haircut: short faded sides, short textured top with a slight fringe forward. Add a neatly trimmed short beard or stubble that frames the jaw well. Photorealistic, clean studio lighting, 3:4 portrait.",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+
+    // ==========================================
+    // РАЗДЕЛ: СОЗДАЙ СВОЙ ТРЕК (sectionId: 6, Music AI)
+    // ==========================================
+    {
+        "id": 1790700000001,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РЭП",
+        "title": "Trap & 808 Bass",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Качающий стильный трек в стиле современный трэп и хип-хоп, глубокий и плотный бас 808, динамичный ритмичный флоу, запоминающийся припев, качественный русский вокал с легким автотюном, студийный мастеринг",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000002,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ПОП",
+        "title": "Радио Поп-Хит",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Зажигательный танцевальный поп-хит для клубов и радиостанций, ультра-цепляющий припев, прямой танцевальный бит, яркий выразительный вокал, позитивное эйфорическое настроение, мощный фестивальный дроп",
+        "img": "images/photo2.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000003,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ФОНК",
+        "title": "Drift Phonk Beast",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Агрессивный ночной дрифт-фонк, cowbell мелодия, мощнейший перегруженный дисторшн-бас, драйвовый ночной вайб, underground rap vocal, быстрый темп, идеальный трек для авто",
+        "img": "images/photo3.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000004,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ПОЗДРАВЛЕНИЯ",
+        "title": "С Днём Рождения, Бро!",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Драйвовый пацанский хип-хоп с поздравлениями с днём рождения, качающий бодрый бит, тёплые братские слова, пожелания фарта, побед и бабла, позитивный припев",
+        "img": "assets/child.png",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000005,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ПОЗДРАВЛЕНИЯ",
+        "title": "С Днём Рождения, Королева!",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Праздничный сияющий поп-хит с поздравлением прекрасной девушки с днём рождения, звонкий красивый вокал, море комплиментов, радости и цветов, танцевальный ритм",
+        "img": "assets/hero_avatar.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000006,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РОК",
+        "title": "Стадионный Рок",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Мощный альтернативный стадионный рок с перегруженными драйвовыми гитарами, живыми барабанами и сильным эмоциональным рок-вокалом с хрипотцой, взрывной припев",
+        "img": "assets/hero_portrait.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000007,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ЛИРИКА",
+        "title": "Медляк о Любви",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Красивая трогательная романтическая песня о любви, нежное фортепиано, акустическая гитара, искренний чувственный бархатный вокал, глубокий текст о чувствах",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000008,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "КЛУБНАЯ",
+        "title": "Slap House Night",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Плотный прыгающий слэп-хаус бас в стиле Imanbek, клубная ночная атмосфера, гипнотический танцевальный ритм, цепляющий припев, мощная энергетика для танцпола",
+        "img": "assets/hero_robot.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000009,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "КЛУБНАЯ",
+        "title": "EDM Festival Drop",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Грандиозный фестивальный EDM гимн, нарастающий разгон и мощнейший эйфорический дроп, 128 BPM, стадионный масштаб, мощные синтезаторы и вокал",
+        "img": "images/photo2.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000010,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "КЛУБНАЯ",
+        "title": "Deep House Lounge",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Стильный атмосферный дип-хаус лаунж, чувственный бархатный женский вокал, мягкий саксофон, гипнотический грув, вечерний чилл и релакс",
+        "img": "images/photo3.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000011,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "КЛУБНАЯ",
+        "title": "Synthwave 80s Retro",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Ночной неоновый ретро-вейв 80-х, аналоговые синты, атмосфера ночной трассы и огней мегаполиса, ностальгический романтический вокал, ретро-эстетика",
+        "img": "assets/1489.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000012,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "КЛУБНАЯ",
+        "title": "Cyberpunk Techno",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Тёмный пульсирующий футуристичный индастриал техно-рейв, мощнейший индустриальный бас, энергетика киберпанка, гипнотический ночной ритм",
+        "img": "assets/hero_robot.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000013,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РЭП",
+        "title": "Old School 90s Boom-Bap",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Золотая эра хип-хопа 90-х, тёплый виниловый бум-бэп бит, скретчи, напористый уличный русский рэп-флоу, честный олдскульный стиль",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000014,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РЭП",
+        "title": "UK Drill Flow",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Тёмный скоростной дрилл с характерным скользящим 808 слайд-басом, хлёсткий флоу, дерзкий ночной вайб, плотные ударные",
+        "img": "images/photo2.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000015,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РЭП",
+        "title": "Кальянный Чилл",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Дымный расслабленный кальянный рэп, восточные струнные мотивы, мелодичный автотюн, мягкий бит, романтическая ночная атмосфера",
+        "img": "images/photo3.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000016,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ФОНК",
+        "title": "Brazilian Phonk (Baile)",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Трендовый вирусный бразильский фонк из TikTok, взрывной панч, качающий ритм фавелы, агрессивный саунд, мощный уличный дроп",
+        "img": "assets/child.png",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000017,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РОК",
+        "title": "Поп-Панк 2000-х",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Бодрый задорный гитарный поп-панк в стиле 2000-х, скоростной ритм, взрывная подростковая энергетика, запоминающийся весёлый припев",
+        "img": "assets/hero_portrait.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000018,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "РОК",
+        "title": "Русский Рок / Душа",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Глубокий смысловой русский рок, акустическая и электрогитара, искренний вокал с душевной хрипотцой, философский текст о жизни",
+        "img": "assets/hero_avatar.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000019,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ЛИРИКА",
+        "title": "Акустика под гитару",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Искренний душевный трек под акустическую гитару, тёплый вечер, честные простые слова от самого сердца, чистый выразительный вокал",
+        "img": "images/photo1.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000020,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ЛИРИКА",
+        "title": "R&B Soul Night",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Чувственный ночной R&B и нео-соул, медленный глубокий ритм, бархатные вокальные мелизмы, романтическая интимная атмосфера при свечах",
+        "img": "images/photo2.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000021,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ПОЗДРАВЛЕНИЯ",
+        "title": "Свадебный Хит / Любовь Навек",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Торжественная красивая песня для жениха и невесты на свадьбу, романтичный вальс и современный бит, благословение любви, счастье на долгие годы",
+        "img": "assets/1489.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000022,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ПОЗДРАВЛЕНИЯ",
+        "title": "Юбилейный Тост",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Торжественная душевная застольная песня к юбилею, аккордеон, гитара, уважение, тёплые воспоминания и пожелания крепкого здоровья и долголетия",
+        "img": "images/photo3.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000023,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ШАНСОН",
+        "title": "Душевный Шансон",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Тёплый душевный шансон, семиструнная гитара, глубокий мужской баритон, верность, дружба, воспоминания и житейская мудрость",
+        "img": "assets/hero_portrait.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1790700000024,
+        "sectionId": 6,
+        "sectionTitle": "СОЗДАЙ СВОЙ ТРЕК",
+        "category": "ВОСТОК",
+        "title": "Восточные сказки / Этно-Дэнс",
+        "price": 290,
+        "model": "suno",
+        "prompt": "Зажигательный восточный поп-бит, колоритные восточные струнные и ударные, праздничный танцевальный вайб, яркий мелодичный припев",
+        "img": "assets/hero_avatar.jpg",
+        "htmlCode": "",
+        "location": ""
+    },
+    {
+        "id": 1789200000002,
+        "sectionId": 2,
+        "sectionTitle": "ВИДЕО",
+        "category": "КИНЕМАТОГРАФ",
+        "title": "Neon Cinematic",
+        "price": 290,
+        "model": "omni-flash",
+        "prompt": "The person from the reference image accurately performs the exact movements from the reference video, keeping natural fluid motion, preserving facial identity and likeness, realistic body anatomy, cinematic lighting, 1080p high quality render",
+        "img": "assets/card_loop.mp4",
+        "htmlCode": "",
+        "location": ""
+    }
+];
+
+let masterTemplates = [];
+try {
+    const savedTpls = localStorage.getItem('kiosk_templates_v2');
+    if (savedTpls !== null) {
+        const parsed = JSON.parse(savedTpls);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+            masterTemplates = parsed;
+        }
+    }
+} catch (e) { }
+
+if (!Array.isArray(masterTemplates) || masterTemplates.length === 0) {
+    masterTemplates = JSON.parse(JSON.stringify(DEFAULT_KIOSK_TEMPLATES));
+}
+let deletedKioskTemplateIds = [];
+try {
+    deletedKioskTemplateIds = JSON.parse(localStorage.getItem('kiosk_deleted_templates') || '[]');
+    if (Array.isArray(deletedKioskTemplateIds) && deletedKioskTemplateIds.length > 0) {
+        masterTemplates = masterTemplates.filter(t => t && !deletedKioskTemplateIds.includes(String(t.id)));
+    }
+} catch(e) {}
+
+let activeSectionCard = mainCardsConfig.length > 0 ? mainCardsConfig[0] : null;
+
+function normalizeTemplates(tplList, cardsList) {
+    if (!Array.isArray(tplList)) return [];
+    const cards = cardsList || mainCardsConfig;
+
+    // Полностью удаляем старые стандартные шаблоны и любые шаблоны пригласительных
+    const cleanList = tplList.filter(t => {
+        if (!t) return false;
+        if (isLegacyStandardTemplate(t)) return false;
+        const m = (t.model || '').toLowerCase();
+        const c = (t.category || '').toUpperCase();
+        const title = (t.title || '').toUpperCase();
+        const st = (t.sectionTitle || '').toUpperCase();
+        if (m === 'invite-web') return false;
+        if (st.includes('ПРИГЛАС')) return false;
+        if (c.includes('ПРИГЛАС') || c === 'СВАДЬБА' || c === 'КЫЗ УЗАТУУ' || c === 'ЮБИЛЕЙ' || c === 'СУННОТ ТОЙ') return false;
+        if (title.includes('WEDDING') || title.includes('КЫЗ УЗАТУУ') || title.includes('JUBILEE LUXURY')) return false;
+        return true;
+    });
+
+    const normalized = cleanList.map(t => {
+        let sid = Number(t.sectionId);
+        let stitle = t.sectionTitle;
+        let cat = t.category || 'ОБЩЕЕ';
+
+        const catUp = (cat || '').toUpperCase();
+        const modelUp = (t.model || '').toLowerCase();
+        const titleUp = (t.title || '').toUpperCase();
+        const stUp = (stitle || '').toUpperCase();
+
+        if (!sid || sid === 3 || sid === 4 || sid === 5 || sid === 7 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || catUp.includes('ТРЕНД') || stUp.includes('ТРЕНД')) {
+            if (catUp === 'ВИДЕО' || modelUp.includes('omni') || modelUp.includes('video') || modelUp.includes('pixverse')) {
+                sid = 2;
+                stitle = 'ВИДЕО';
+                if (catUp === 'ВИДЕО' || catUp === 'ТРЕНДЫ' || catUp === 'ПРИМЕРКА') cat = 'НЕОН';
+            } else {
+                sid = 1;
+                stitle = 'ФОТО';
+                if (catUp === 'ТРЕНДЫ' || catUp === 'ПРИМЕРКА' || catUp.includes('ТОЛСТОВ') || catUp.includes('ХУДИ') || catUp.includes('ФУТБОЛ')) {
+                    cat = 'АРТ';
+                }
+            }
+        }
+
+        const matchedCard = cards.find(c => c.id === Number(sid));
+        if (matchedCard) {
+            stitle = matchedCard.title;
+        }
+
+        let modelNorm = (t.model || '').trim();
+        if (sid === 4 || stUp.includes('ПРИМЕР') || catUp.includes('ПРИМЕР') || Boolean(t.location)) {
+            modelNorm = 'nano-banana-2';
+        } else if (sid === 2 || stUp.includes('ВИДЕО') || catUp.includes('ВИДЕО')) {
+            modelNorm = (modelNorm === 'omni-flash' || modelNorm.includes('omni') || modelNorm.includes('pixverse') || !modelNorm)
+                ? 'pixverse-v6'
+                : modelNorm;
+        } else if (modelNorm !== 'omni-flash' && modelNorm !== 'pixverse-v6' && modelNorm !== 'roast-standup' && modelNorm !== 'nano-banana-2') {
+            modelNorm = 'chatgpt-2.5';
+        }
+
+        let resNorm = '1K';
+
+        let tTitle = (t.title || '').trim();
+        if (tTitle.includes('ИИ-ПРОЖАРКА') || modelNorm === 'roast-standup') {
+            tTitle = '🔥 СТЕНДАП-ПРОЖАРКА';
+        }
+
+        return {
+            ...t,
+            id: Number(t.id) || Date.now(),
+            sectionId: Number(sid),
+            sectionTitle: stitle || 'ФОТО',
+            category: cat,
+            title: tTitle,
+            model: modelNorm,
+            resolution: resNorm,
+            duration: Number(t.duration) || 5,
+            location: t.location || '',
+            htmlCode: t.htmlCode || ''
+        };
+    });
+
+    return normalized;
+}
+
+masterTemplates = normalizeTemplates(masterTemplates, mainCardsConfig);
+
+if (!masterTemplates.some(t => (t.model || '').toLowerCase() === 'roast-standup')) {
+    masterTemplates.push({
+        id: 99,
+        sectionId: 3,
+        sectionTitle: 'ТРЕНДЫ',
+        category: 'ПРОЖАРКА',
+        title: '🔥 СТЕНДАП-ПРОЖАРКА',
+        img: 'assets/hero_portrait.jpg',
+        price: 190,
+        model: 'roast-standup',
+        resolution: '2K',
+        prompt: 'Standup roast caricature with dynamic vision analysis'
+    });
+} else {
+    const roastTpl = masterTemplates.find(t => (t.model || '').toLowerCase() === 'roast-standup');
+    if (roastTpl) roastTpl.title = '🔥 СТЕНДАП-ПРОЖАРКА';
+}
+
+try {
+    localStorage.setItem('kiosk_templates_v2', JSON.stringify(masterTemplates));
+} catch (e) { }
+
+// Preload all template images into memory for instant rendering
+function preloadMasterImages() {
+    masterTemplates.forEach(item => {
+        if (item.img && !item.img.endsWith('.mp4') && !item.img.endsWith('.webm') && !item.img.includes('.mp4?') && !item.img.includes('.webm?')) {
+            const img = new Image();
+            img.src = item.img;
+        }
+    });
+}
+preloadMasterImages();
+
+// ПРОВЕРКА ТИПОВ ШАБЛОНОВ (ФОТО, ВИДЕО, ТРЕНДЫ)
+function isVideoTemplate(tpl) {
+    if (!tpl) return false;
+    const m = (tpl.model || '').toLowerCase();
+    const c = (tpl.category || '').toUpperCase();
+    const img = (tpl.img || '').toLowerCase();
+    return c === 'ВИДЕО' ||
+        m.includes('kling') ||
+        m.includes('omni') ||
+        m.includes('gemini') ||
+        m.includes('video') ||
+        img.endsWith('.mp4') ||
+        img.endsWith('.webm') ||
+        img.endsWith('.mov') ||
+        img.includes('.mp4?') ||
+        img.includes('.webm?');
+}
+
+function isTrendsTemplate(tpl) {
+    if (!tpl) return false;
+    const c = (tpl.category || '').toUpperCase();
+    const t = (tpl.title || '').toUpperCase();
+    return c === 'ТРЕНДЫ' || t.includes('TREND');
+}
+
+function isInviteTemplate(tpl) {
+    return false;
+}
+
+function isTryOnTemplate(tpl) {
+    if (!tpl) return false;
+    const m = (tpl.model || '').toLowerCase();
+    const c = (tpl.category || '').toUpperCase();
+    const t = (tpl.title || '').toUpperCase();
+    const st = (tpl.sectionTitle || '').toUpperCase();
+    return tpl.sectionId === 4 ||
+        tpl.sectionId === 5 ||
+        st.includes('ПРИМЕР') ||
+        st.includes('ОДЕЖД') ||
+        c.includes('ТОЛСТОВ') ||
+        c.includes('ХУДИ') ||
+        c.includes('ФУТБОЛ') ||
+        c.includes('КУРТК') ||
+        c.includes('МЕРЧ') ||
+        t.includes('ТОЛСТОВ') ||
+        t.includes('ХУДИ') ||
+        Boolean(tpl.location);
+}
+
+function isMusicTemplate(tpl) {
+    if (!tpl) return false;
+    const m = (tpl.model || '').toLowerCase();
+    const c = (tpl.category || '').toUpperCase();
+    const t = (tpl.title || '').toUpperCase();
+    const st = (tpl.sectionTitle || '').toUpperCase();
+    return tpl.sectionId === 6 ||
+        m === 'suno' ||
+        m.includes('suno') ||
+        m.includes('music') ||
+        st.includes('ТРЕК') ||
+        st.includes('МУЗЫК') ||
+        c.includes('РЭП') ||
+        c.includes('ПОП') ||
+        c.includes('ФОНК') ||
+        c.includes('РОК') ||
+        c.includes('ЛИРИК') ||
+        c.includes('ПОЗДРАВЛ') ||
+        c.includes('КЛУБН') ||
+        c.includes('ШАНСОН') ||
+        c.includes('ВОСТОК') ||
+        t.includes('ТРЕК') ||
+        t.includes('ХИТ');
+}
+
+let activeGridTab = 'ВСЕ';
+
+// 1. ВЫБОР КАРТОЧКИ — МГНОВЕННОЕ ОТКРЫТИЕ 2-КОЛОНОЧНОЙ СЕТКИ ШАБЛОНОВ
+function selectCard(cardEl, cardIdOrMode) {
+    if (isSelectingCard || isAttractClosing) return;
+    isSelectingCard = true;
+
+    // 1. Увеличиваем выбранную карточку
+    if (cardEl) cardEl.classList.add('card-selected');
+
+    // 2. Разлетаются невыбранные карточки
+    const allCards = document.querySelectorAll('.card');
+    allCards.forEach((otherCard, otherIdx) => {
+        if (otherCard !== cardEl) {
+            if (otherIdx % 2 === 0) {
+                otherCard.classList.add('fly-left');
+            } else {
+                otherCard.classList.add('fly-right');
+            }
+        }
+    });
+
+    try {
+        // 3. Открываем галерею или студию для конкретной кнопки
+        openTemplateGallery(cardIdOrMode);
+    } catch (err) {
+        console.error('Ошибка при открытии раздела:', err);
+    } finally {
+        setTimeout(() => {
+            allCards.forEach(c => c.classList.remove('fly-left', 'fly-right', 'card-selected'));
+            isSelectingCard = false;
+        }, 400);
+    }
+};
+
+// 2. GRID ROUTER & RENDERER (ДЛЯ КАЖДОЙ КНОПКИ — СВОИ КАТЕГОРИИ И СВОИ ШАБЛОНЫ)
+function openTemplateGallery(cardIdOrMode) {
+    // Фоновая проверка актуальных шаблонов из Supabase
+    if (typeof window.syncCloudConfig === 'function') {
+        window.syncCloudConfig();
+    }
+    // Находим активную кнопку главного экрана
+    let activeCard = null;
+    if (typeof cardIdOrMode === 'number' || (!isNaN(Number(cardIdOrMode)) && String(Number(cardIdOrMode)) === String(cardIdOrMode).trim())) {
+        activeCard = mainCardsConfig.find(c => c.id === Number(cardIdOrMode));
+    }
+    if (!activeCard && cardIdOrMode) {
+        const modeStr = String(cardIdOrMode).trim().toUpperCase();
+        activeCard = mainCardsConfig.find(c =>
+            (c.filter && c.filter.toUpperCase() === modeStr) ||
+            (c.title && c.title.toUpperCase() === modeStr) ||
+            (c.category && c.category.toUpperCase() === modeStr)
+        );
+    }
+    if (!activeCard) {
+        activeCard = mainCardsConfig[0];
+    }
+    activeSectionCard = activeCard;
+
+    const isMusicSec = activeCard && (
+        activeCard.id === 6 ||
+        (activeCard.filter && activeCard.filter.toUpperCase() === 'MUSIC') ||
+        (activeCard.title && activeCard.title.toUpperCase().includes('ТРЕК')) ||
+        (activeCard.category && activeCard.category.toUpperCase().includes('МУЗЫК'))
+    );
+
+    if (isMusicSec) {
+        if (typeof window.openDirectMusicStudio === 'function') {
+            window.openDirectMusicStudio(activeCard);
+            return;
+        }
+    }
+
+    const isFairytaleSec = activeCard && (
+        activeCard.id === 8 ||
+        (activeCard.filter && activeCard.filter.toUpperCase() === 'FAIRYTALE') ||
+        (activeCard.title && activeCard.title.toUpperCase().includes('СКАЗК')) ||
+        (activeCard.category && activeCard.category.toUpperCase().includes('СКАЗК'))
+    );
+
+    if (isFairytaleSec) {
+        if (typeof window.openDirectFairytaleStudio === 'function') {
+            window.openDirectFairytaleStudio(activeCard);
+            return;
+        }
+    }
+
+    const isArSec = activeCard && (
+        activeCard.id === 7 ||
+        (activeCard.filter && activeCard.filter.toUpperCase() === 'AR') ||
+        (activeCard.title && activeCard.title.toUpperCase().includes('ДОПОЛНЕН')) ||
+        (activeCard.title && activeCard.title.toUpperCase().includes('AR'))
+    );
+
+    if (isArSec) {
+        if (typeof window.openDirectArStudio === 'function') {
+            window.openDirectArStudio(activeCard);
+            return;
+        }
+    }
+
+    try {
+        const saved = localStorage.getItem('kiosk_templates_v2');
+        if (saved !== null) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                masterTemplates = normalizeTemplates(parsed, mainCardsConfig);
+            }
+        }
+    } catch (e) { }
+
+    if (!Array.isArray(masterTemplates) || masterTemplates.length === 0) {
+        masterTemplates = JSON.parse(JSON.stringify(DEFAULT_KIOSK_TEMPLATES));
+    }
+    try {
+        const delRaw = localStorage.getItem('kiosk_deleted_templates');
+        if (delRaw) {
+            const delList = JSON.parse(delRaw);
+            if (Array.isArray(delList) && delList.length > 0) {
+                masterTemplates = masterTemplates.filter(t => t && !delList.includes(String(t.id)));
+            }
+        }
+    } catch(e) {}
+
+    if (!masterTemplates.some(t => (t.model || '').toLowerCase() === 'roast-standup')) {
+        masterTemplates.push({
+            id: 99,
+            sectionId: 1,
+            sectionTitle: 'ФОТО',
+            category: 'АРТ',
+            title: '🔥 СТЕНДАП-ПРОЖАРКА',
+            img: 'assets/hero_portrait.jpg',
+            price: 190,
+            model: 'roast-standup',
+            prompt: 'Standup roast caricature with dynamic vision analysis'
+        });
+    } else {
+        const rTpl = masterTemplates.find(t => (t.model || '').toLowerCase() === 'roast-standup');
+        if (rTpl) {
+            rTpl.title = '🔥 СТЕНДАП-ПРОЖАРКА';
+            rTpl.sectionId = 1;
+            rTpl.sectionTitle = 'ФОТО';
+        }
+    }
+
+    try {
+        localStorage.setItem('kiosk_templates_v2', JSON.stringify(masterTemplates));
+    } catch (e) { }
+
+    const modal = document.getElementById('template-modal');
+    activeGridTab = 'ВСЕ';
+    renderCategoryPillsBar();
+    switchGridCategory('ВСЕ');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
+}
+window.selectCard = selectCard;
+
+function closeTemplateGallery() {
+    const modal = document.getElementById('template-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
+}
+
+// РЕНДЕРИНГ ДИНАМИЧЕСКИХ ПЛАШЕК КАТЕГОРИЙ ДЛЯ ТЕКУЩЕЙ ВЫБРАННОЙ КНОПКИ
+function renderCategoryPillsBar() {
+    const bar = document.getElementById('category-pills-bar');
+    if (!bar) return;
+    bar.innerHTML = '';
+
+    const card = activeSectionCard || mainCardsConfig[0];
+    const cats = (card && Array.isArray(card.categories) && card.categories.length > 0)
+        ? card.categories
+        : ['ОБЩЕЕ'];
+
+    const visibleCategories = ['ВСЕ', ...cats];
+
+    visibleCategories.forEach(cat => {
+        const btn = document.createElement('button');
+        const isActive = (cat.toUpperCase() === activeGridTab.toUpperCase());
+
+        btn.className = `cat-pill ${isActive ? 'active' : ''}`;
+        btn.textContent = cat.toUpperCase();
+        btn.onclick = () => switchGridCategory(cat);
+        bar.appendChild(btn);
+    });
+}
+
+// ПЕРЕКЛЮЧЕНИЕ КАТЕГОРИИ ВНУТРИ ВЫБРАННОЙ КНОПКИ
+window.switchGridCategory = function (catName) {
+    activeGridTab = catName;
+
+    const card = activeSectionCard || mainCardsConfig[0];
+    const cardTitle = card ? (card.title || 'ШАБЛОНЫ') : 'ШАБЛОНЫ';
+    const titleEl = document.getElementById('grid-modal-title');
+    if (titleEl) {
+        if (catName.toUpperCase() === 'ВСЕ') {
+            titleEl.textContent = cardTitle;
+        } else {
+            titleEl.textContent = `${cardTitle} • ${catName.toUpperCase()}`;
+        }
+    }
+
+    document.querySelectorAll('.cat-pill').forEach(pill => {
+        const pText = pill.textContent.trim().toUpperCase();
+        if (pText === catName.toUpperCase()) {
+            pill.classList.add('active');
+        } else {
+            pill.classList.remove('active');
+        }
+    });
+
+    renderGridTemplates();
+};
+
+function renderGridTemplates() {
+    const card = activeSectionCard || mainCardsConfig[0];
+    const targetSecId = card ? card.id : 1;
+    const targetTitle = card ? (card.title || '').toUpperCase() : '';
+
+    // 1. Фильтруем пул шаблонов СТРОГО по выбранной кнопке
+    let scoped = masterTemplates.filter(t => {
+        if (t.sectionId !== undefined && t.sectionId !== null) {
+            return Number(t.sectionId) === targetSecId;
+        }
+        if (t.sectionTitle && targetTitle && t.sectionTitle.toUpperCase() === targetTitle) {
+            return true;
+        }
+        // Обратная совместимость для старых шаблонов без sectionId
+        if (targetSecId === 2 || targetTitle.includes('ВИДЕО')) return isVideoTemplate(t);
+        if (targetSecId === 3 || targetTitle.includes('ТРЕНД')) return isTrendsTemplate(t);
+        if (targetSecId === 4 || targetSecId === 5 || targetTitle.includes('ПРИМЕР') || targetTitle.includes('ОДЕЖД')) return isTryOnTemplate(t);
+        if (targetSecId === 6 || targetTitle.includes('ТРЕК') || targetTitle.includes('МУЗЫК')) return isMusicTemplate(t);
+        return !isVideoTemplate(t) && !isTrendsTemplate(t) && !isTryOnTemplate(t) && !isMusicTemplate(t);
+    });
+
+    // 2. Внутри раздела фильтруем по выбранной подкатегории кнопки
+    let list = scoped;
+    if (activeGridTab.toUpperCase() !== 'ВСЕ') {
+        list = scoped.filter(item => (item.category || '').toUpperCase() === activeGridTab.toUpperCase());
+    }
+
+    const container = document.getElementById('template-grid-2col');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (list.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 70px 20px; color: var(--text-dim);">
+                <div style="margin-bottom: 14px; display: flex; justify-content: center; opacity: 0.9;">
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#D4A043" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="3" ry="3"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                </div>
+                <div style="font-size: 17px; font-weight: 700; color: #ffffff;">В этом разделе пока нет шаблонов</div>
+                <div style="font-size: 13px; margin-top: 6px; color: var(--text-muted);">Добавьте шаблоны через панель администратора /admin</div>
+            </div>
+        `;
+        return;
+    }
+
+    list.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'tile-card';
+
+        const isVid = typeof item.img === 'string' && (
+            item.img.endsWith('.mp4') || item.img.endsWith('.webm') || item.img.endsWith('.mov') ||
+            item.img.includes('.mp4?') || item.img.includes('.webm?')
+        );
+
+        let mediaEl;
+        if (isVid) {
+            mediaEl = document.createElement('video');
+            mediaEl.src = item.img;
+            mediaEl.autoplay = true;
+            mediaEl.loop = true;
+            mediaEl.muted = true;
+            mediaEl.playsInline = true;
+            mediaEl.style.width = '100%';
+            mediaEl.style.height = '100%';
+            mediaEl.style.objectFit = 'cover';
+        } else {
+            mediaEl = document.createElement('img');
+            mediaEl.src = item.img;
+            mediaEl.alt = item.title;
+            mediaEl.loading = 'eager';
+        }
+
+        // Плашка с ценой в сомах
+        const itemPrice = item.price || 290;
+        const priceBadge = document.createElement('div');
+        priceBadge.className = 'tile-price-badge';
+        priceBadge.innerHTML = `${itemPrice} <span>СОМ</span>`;
+
+        card.appendChild(mediaEl);
+        card.appendChild(priceBadge);
+
+        // Отображение названия и жанра ТОЛЬКО для раздела «СОЗДАЙ СВОЙ ТРЕК» (музыка)
+        const isMusic = isMusicTemplate(item) || targetSecId === 6 || targetTitle.includes('ТРЕК') || targetTitle.includes('МУЗЫК');
+        if (isMusic) {
+            card.classList.add('tile-card-music');
+
+            // Верхний бейдж жанра (напр: 🎵 РЭП, 🎵 РОК, 🎵 ХИТЫ)
+            const genreBadge = document.createElement('div');
+            genreBadge.className = 'tile-music-badge';
+            genreBadge.innerHTML = `<span>🎵</span> <span>${item.category || 'ТРЕК'}</span>`;
+            card.appendChild(genreBadge);
+
+            // Нижняя плашка с названием трека/стиля
+            const bottomInfo = document.createElement('div');
+            bottomInfo.className = 'tile-music-bottom';
+
+            const titleEl = document.createElement('div');
+            titleEl.className = 'tile-music-title';
+            titleEl.textContent = item.title || 'Музыкальный трек';
+            titleEl.title = item.title || '';
+
+            bottomInfo.appendChild(titleEl);
+            card.appendChild(bottomInfo);
+        }
+
+        // При клике на карточку — сразу переходим к экрану оплаты Finik ELQR!
+        card.addEventListener('click', () => {
+            if (isAttractClosing) return; // поглощаем клик закрытия заставки
+            selectedStyle = item.title;
+            selectedStylePhoto = item.img;
+            selectedStylePrice = itemPrice;
+            selectedStyleCategory = item.category || '';
+            selectedStyleLocation = item.location || '';
+            selectedStyleResolution = item.resolution || '2K';
+            setAiResolution(selectedStyleResolution);
+            isTryOnMode = isTryOnTemplate(item);
+            selectedStyleModel = item.model || 'chatgpt-2.5';
+            selectedStylePrompt = item.prompt || '';
+            selectedTemplateId = item.id;
+            selectedTemplateHtml = item.htmlCode || '';
+            selectedVideoDuration = Number(item.duration) || 5;
+            closeTemplateGallery();
+            openKioskFlow();
+        });
+
+        container.appendChild(card);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Initial pre-render of template tiles grid so opening is instantaneous
+    renderGridTemplates();
+
+    // DOM Elements
+    const modal = document.getElementById('kiosk-modal');
+    const modalClose = document.getElementById('modal-close');
+
+    // Steps
+    const stepMusicTheme = document.getElementById('step-music-theme');
+    const stepCamera = document.getElementById('step-camera');
+    const stepConfirm = document.getElementById('step-confirm');
+    const stepPayment = document.getElementById('step-payment');
+    const stepProcessing = document.getElementById('step-processing');
+    const stepResult = document.getElementById('step-result');
+    const stepRoastResult = document.getElementById('step-roast-result');
+
+    // Music Studio Elements
+    const musicInputAbout = document.getElementById('music-input-about');
+    const musicInputStyle = document.getElementById('music-input-style');
+    const musicAboutClearBtn = document.getElementById('music-about-clear-btn');
+    const musicStyleClearBtn = document.getElementById('music-style-clear-btn');
+    const musicThemeCancelBtn = document.getElementById('music-theme-cancel-btn');
+    const musicThemeCreateBtn = document.getElementById('music-theme-create-btn');
+    const musicVirtualKeyboard = document.getElementById('kiosk-virtual-keyboard');
+    try {
+        const initMusicPrice = localStorage.getItem('kiosk_music_price');
+        if (initMusicPrice && musicThemeCreateBtn) {
+            musicThemeCreateBtn.innerHTML = `🎵 СОЗДАТЬ ТРЕК • ${initMusicPrice} СОМ ➔`;
+        }
+    } catch (e) { }
+
+    // Roast Elements
+    const roastCaricatureImg = document.getElementById('roast-caricature-img');
+    const roastPunchTitle = document.getElementById('roast-punch-title');
+    const roastSpeechBody = document.getElementById('roast-speech-body');
+    const roastCharismaVal = document.getElementById('roast-charisma-val');
+    const roastCharismaBar = document.getElementById('roast-charisma-bar');
+    const roastFlawVal = document.getElementById('roast-flaw-val');
+    const roastMallVal = document.getElementById('roast-mall-val');
+    const roastQrImg = document.getElementById('roast-qr-img');
+    const roastFinishBtn = document.getElementById('roast-finish-btn');
+
+    // Camera & Confirm Elements
+    const webcamEl = document.getElementById('webcam');
+    const canvasEl = document.getElementById('photo-canvas');
+    const snapBtn = document.getElementById('snap-btn');
+    const countdownOverlay = document.getElementById('countdown-overlay');
+    const photoPreviewConfirm = document.getElementById('photo-preview-confirm');
+    const retakeBtn = document.getElementById('retake-btn');
+    const confirmPhotoBtn = document.getElementById('confirm-photo-btn');
+
+    // Video Recording DOM Elements & State
+    const camModalTitle = document.getElementById('cam-modal-title');
+    const camRecBadge = document.getElementById('cam-rec-badge');
+    const camRecCountdown = document.getElementById('cam-rec-countdown');
+    const timerSelectLabel = document.getElementById('timer-select-label');
+    const timerOptionsContainer = document.getElementById('timer-options-container');
+    const snapBtnIcon = document.getElementById('snap-btn-icon');
+    const snapBtnText = document.getElementById('snap-btn-text');
+    const confirmModalTitle = document.getElementById('confirm-modal-title');
+    const confirmModalSubtitle = document.getElementById('confirm-modal-subtitle');
+    const videoPreviewConfirm = document.getElementById('video-preview-confirm');
+
+    let capturedVideoBlob = null;
+    let capturedVideoUrl = null;
+    let mediaRecorder = null;
+    let recordedVideoChunks = [];
+    let isRecordingVideo = false;
+    let selectedVideoDuration = 4; // по умолчанию 4 секунды записи видео
+
+    function getSupportedVideoMimeType() {
+        if (typeof MediaRecorder === 'undefined') return '';
+        const types = [
+            'video/mp4;codecs=avc1',
+            'video/mp4',
+            'video/webm;codecs=vp9',
+            'video/webm;codecs=vp8',
+            'video/webm'
+        ];
+        for (const t of types) {
+            if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) {
+                return t;
+            }
+        }
+        return '';
+    }
+
+    // ВЫБОР РАЗРЕШЕНИЯ CHATGPT (1K, 2K HD, 4K ULTRA)
+    document.querySelectorAll('.ai-res-pill').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const res = btn.dataset.res || '2K';
+            setAiResolution(res);
+        });
+    });
+
+    setAiResolution(currentAiResolution);
+
+    // Payment Elements
+    const qrPaymentZone = document.getElementById('qr-payment-zone');
+    const simPayBtn = document.getElementById('sim-pay-btn');
+    const cancelPayBtn = document.getElementById('cancel-pay-btn');
+    const payStyleTitle = document.getElementById('pay-style-title');
+    const paySelectedThumb = document.getElementById('pay-selected-thumb');
+    const payAmountVal = document.getElementById('pay-amount-val');
+    const elqrImg = document.getElementById('elqr-img');
+    const paymentStatusText = document.getElementById('payment-status-text');
+
+    // Result Elements
+    const resultImg = document.getElementById('result-img');
+    const resultVideo = document.getElementById('result-video');
+    const finishBtn = document.getElementById('finish-btn');
+    const aiStatusText = document.getElementById('ai-status-text');
+
+    // AI Modern Progress Bar Elements
+    const aiProgressFill = document.getElementById('ai-progress-fill');
+    const aiProgressPercent = document.getElementById('ai-progress-percent');
+    const aiProgressModelBadge = document.getElementById('ai-progress-model-badge');
+    const aiProgressResBadge = document.getElementById('ai-progress-res-badge');
+    const aiProcessingMainTitle = document.getElementById('ai-processing-main-title');
+
+    // Контроллер неонового прогресс-бара генерации ИИ
+    let aiProgressTimer = null;
+    let currentAiProgress = 0;
+    let targetAiProgress = 0;
+
+    function resetAiProgress(titleText = 'СОЗДАНИЕ ПОРТРЕТА', modelName = 'chatgpt-2.5', res = '1K') {
+        if (aiProgressTimer) {
+            clearInterval(aiProgressTimer);
+            aiProgressTimer = null;
+        }
+        currentAiProgress = 0;
+        targetAiProgress = 8;
+
+        if (aiProcessingMainTitle) aiProcessingMainTitle.textContent = titleText;
+        if (aiProgressFill) aiProgressFill.style.width = '0%';
+        if (aiProgressPercent) aiProgressPercent.textContent = '0%';
+        if (aiStatusText) aiStatusText.textContent = 'Подготовка кадра...';
+
+        if (aiProgressModelBadge) {
+            aiProgressModelBadge.style.display = 'none';
+        }
+        if (aiProgressResBadge) {
+            aiProgressResBadge.style.display = 'none';
+        }
+
+        // Плавный интерполятор прогресса с частотой обновления 30ms (плавные 33 fps)
+        aiProgressTimer = setInterval(() => {
+            if (currentAiProgress < targetAiProgress) {
+                const diff = targetAiProgress - currentAiProgress;
+                const step = Math.max(0.25, diff * 0.08);
+                currentAiProgress = Math.min(targetAiProgress, currentAiProgress + step);
+                const displayVal = Math.floor(currentAiProgress);
+                if (aiProgressFill) aiProgressFill.style.width = `${currentAiProgress}%`;
+                if (aiProgressPercent) aiProgressPercent.textContent = `${displayVal}%`;
+            }
+        }, 30);
+    }
+
+    function setAiProgress(target, status) {
+        targetAiProgress = Math.min(95, Math.max(0, target));
+        if (status && aiStatusText) {
+            aiStatusText.textContent = status;
+        }
+    }
+
+    async function finishAiProgress() {
+        targetAiProgress = 100;
+        if (aiStatusText) aiStatusText.textContent = '✨ Готово! Открытие портрета...';
+
+        let timeout = 0;
+        while (currentAiProgress < 99 && timeout < 40) {
+            await new Promise(r => setTimeout(r, 25));
+            timeout++;
+        }
+        currentAiProgress = 100;
+        if (aiProgressFill) aiProgressFill.style.width = '100%';
+        if (aiProgressPercent) aiProgressPercent.textContent = '100%';
+
+        await new Promise(r => setTimeout(r, 380));
+
+        if (aiProgressTimer) {
+            clearInterval(aiProgressTimer);
+            aiProgressTimer = null;
+        }
+    }
+
+    function stopAiProgress() {
+        if (aiProgressTimer) {
+            clearInterval(aiProgressTimer);
+            aiProgressTimer = null;
+        }
+    }
+
+    // Try-On Location Info Card Elements
+    const tryonLocationInfoCard = document.getElementById('tryon-location-info-card');
+    const tryonLocPriceVal = document.getElementById('tryon-loc-price-val');
+    const tryonLocTitleVal = document.getElementById('tryon-loc-title-val');
+    const tryonLocPlaceVal = document.getElementById('tryon-loc-place-val');
+
+    let mediaStream = null;
+    let capturedPhotoData = null;
+    let currentOrderId = null;
+    let paymentPollTimer = null;
+    let phoneCamPollTimer = null;       // полинг загруженного фото с телефона
+    let phoneCamSessionId = null;       // уникальный ID сессии телефонной камеры
+    let phoneCamMode = false;           // true = гость использует телефонную камеру
+
+    // Supabase для мгновенного получения фото с телефона (без backend)
+    const SUPABASE_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
+    const SUPABASE_BUCKET = 'kiosk-media';
+
+    // МГНОВЕННАЯ И 100% НАДЕЖНАЯ ГЕНЕРАЦИЯ QR-КОДОВ (Векторный SVG + Canvas)
+    function renderInstantQR(element, text, size = 260) {
+        if (!element || !text) return;
+
+        function buildSvgString(qrModel, sz) {
+            const count = qrModel.getModuleCount();
+            let path = '';
+            for (let r = 0; r < count; r++) {
+                for (let c = 0; c < count; c++) {
+                    if (qrModel.isDark(r, c)) {
+                        path += `M${c},${r}h1v1h-1z`;
+                    }
+                }
+            }
+            return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${count} ${count}" width="${sz}" height="${sz}" shape-rendering="crispEdges" style="width:100%;height:100%;display:block;border-radius:12px;"><path fill="#ffffff" d="M0,0h${count}v${count}h-${count}z"/><path fill="#000000" d="${path}"/></svg>`;
+        }
+
+        try {
+            if (typeof QRCode !== 'undefined') {
+                const dummyDiv = document.createElement('div');
+                const qrInstance = new QRCode(dummyDiv, {
+                    text: text,
+                    width: size,
+                    height: size,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+
+                // 1. Приоритет: генерация чистого векторного SVG прямо в DOM контейнера
+                // Полностью исключает сетевые запросы, Canvas toDataURL и битые картинки
+                if (qrInstance && qrInstance._oQRCode) {
+                    const svgString = buildSvgString(qrInstance._oQRCode, size);
+
+                    const targetContainer = (element.tagName === 'IMG' && element.parentElement)
+                        ? element.parentElement
+                        : element;
+
+                    let svgHolder = targetContainer.querySelector('.qr-svg-holder');
+                    if (!svgHolder) {
+                        svgHolder = document.createElement('div');
+                        svgHolder.className = 'qr-svg-holder';
+                        svgHolder.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;';
+                        targetContainer.appendChild(svgHolder);
+                    }
+                    svgHolder.innerHTML = svgString;
+
+                    if (element.tagName === 'IMG') {
+                        element.style.display = 'none';
+                        try {
+                            element.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+                        } catch (e) { }
+                    }
+                    return;
+                }
+
+                // 2. Резерв: использование растрового Canvas из QRCode.js
+                const canvas = dummyDiv.querySelector('canvas');
+                if (canvas) {
+                    const pngDataUri = canvas.toDataURL('image/png');
+                    if (pngDataUri && pngDataUri.length > 50) {
+                        if (element.tagName === 'IMG') {
+                            element.src = pngDataUri;
+                            element.style.display = 'block';
+                        } else {
+                            element.innerHTML = '';
+                            element.appendChild(canvas);
+                        }
+                        return;
+                    }
+                }
+            }
+        } catch (qrErr) {
+            console.warn('Локальный QR рендер выдал исключение:', qrErr);
+        }
+
+        // Если библиотека не сработала, прячем img, чтобы не показывать значок битой картинки
+        if (element.tagName === 'IMG') {
+            element.style.display = 'none';
+        }
+    }
+
+
+    // ============================================================
+    //  МУЗЫКАЛЬНЫЙ ШАГ: СТУДИЯ «СОЗДАЙ СВОЙ ТРЕК» (4 ПАРАМЕТРА)
+    // ============================================================
+    let guestMusicTheme = '';
+    let selectedMusicStyle = 'Поп-хит';
+    let selectedMusicLang = 'Русский';
+    let activeMusicInput = null;
+    let vkCurrentLayout = 'RU'; // 'RU', 'EN', 'NUM'
+
+    const VK_LAYOUTS = {
+        RU: [
+            ['Й', 'Ц', 'У', 'К', 'Е', 'Н', 'Г', 'Ш', 'Щ', 'З', 'Х', 'Ъ'],
+            ['Ф', 'Ы', 'В', 'А', 'П', 'Р', 'О', 'Л', 'Д', 'Ж', 'Э'],
+            ['Я', 'Ч', 'С', 'М', 'И', 'Т', 'Ь', 'Б', 'Ю', { label: '⌫', action: 'backspace', special: true }]
+        ],
+        EN: [
+            ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+            ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+            ['Z', 'X', 'C', 'V', 'B', 'N', 'M', { label: '⌫', action: 'backspace', special: true }]
+        ],
+        NUM: [
+            ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+            ['-', '+', '=', '/', '(', ')', '"', '\'', '!', '?'],
+            [',', '.', ':', ';', '@', '#', '%', '&', { label: '⌫', action: 'backspace', special: true }]
+        ]
+    };
+
+    function renderVirtualKeyboard() {
+        if (!musicVirtualKeyboard) return;
+        musicVirtualKeyboard.innerHTML = '';
+
+        const layoutRows = vkCurrentLayout === 'RU'
+            ? VK_LAYOUTS.RU
+            : (vkCurrentLayout === 'EN' ? VK_LAYOUTS.EN : VK_LAYOUTS.NUM);
+
+        layoutRows.forEach(row => {
+            const rowEl = document.createElement('div');
+            rowEl.className = 'vk-row';
+            row.forEach(item => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'vk-key';
+                if (typeof item === 'object') {
+                    btn.textContent = item.label;
+                    if (item.special) btn.classList.add('vk-key-special');
+                    btn.onclick = () => handleVkAction(item.action);
+                } else {
+                    btn.textContent = item;
+                    btn.onclick = () => handleVkChar(item);
+                }
+                rowEl.appendChild(btn);
+            });
+            musicVirtualKeyboard.appendChild(rowEl);
+        });
+
+        // 4-я строка: переключение языка, ПРОБЕЛ, Сброс
+        const bottomRow = document.createElement('div');
+        bottomRow.className = 'vk-row';
+
+        // Кнопка 123 / АБВ
+        const numBtn = document.createElement('button');
+        numBtn.type = 'button';
+        numBtn.className = 'vk-key vk-key-special';
+        numBtn.textContent = vkCurrentLayout === 'NUM' ? (vkCurrentLayout === 'RU' ? 'АБВ' : 'ABC') : '123';
+        numBtn.onclick = () => {
+            vkCurrentLayout = vkCurrentLayout === 'NUM' ? 'RU' : 'NUM';
+            renderVirtualKeyboard();
+        };
+        bottomRow.appendChild(numBtn);
+
+        // Кнопка EN / RU
+        const langBtn = document.createElement('button');
+        langBtn.type = 'button';
+        langBtn.className = 'vk-key vk-key-special';
+        langBtn.textContent = vkCurrentLayout === 'RU' ? 'EN' : 'RU';
+        langBtn.onclick = () => {
+            vkCurrentLayout = vkCurrentLayout === 'RU' ? 'EN' : 'RU';
+            renderVirtualKeyboard();
+        };
+        bottomRow.appendChild(langBtn);
+
+        // ПРОБЕЛ
+        const spaceBtn = document.createElement('button');
+        spaceBtn.type = 'button';
+        spaceBtn.className = 'vk-key vk-key-space';
+        spaceBtn.textContent = 'ПРОБЕЛ';
+        spaceBtn.onclick = () => handleVkChar(' ');
+        bottomRow.appendChild(spaceBtn);
+
+        // Очистить активное поле
+        const clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'vk-key vk-key-special';
+        clearBtn.textContent = 'Сброс';
+        clearBtn.title = 'Очистить активное поле';
+        clearBtn.onclick = () => {
+            const target = activeMusicInput || musicInputAbout;
+            if (target) {
+                target.value = '';
+                target.focus();
+            }
+        };
+        bottomRow.appendChild(clearBtn);
+
+        musicVirtualKeyboard.appendChild(bottomRow);
+    }
+
+    function setActiveMusicInput(inputEl) {
+        activeMusicInput = inputEl;
+        if (musicInputAbout) {
+            musicInputAbout.classList.toggle('active-focus', musicInputAbout === inputEl);
+        }
+        if (musicInputStyle) {
+            musicInputStyle.classList.toggle('active-focus', musicInputStyle === inputEl);
+        }
+    }
+
+    function handleVkChar(char) {
+        const target = activeMusicInput || musicInputAbout;
+        if (!target) return;
+        target.value = (target.value || '') + char;
+        target.focus();
+    }
+
+    function handleVkAction(action) {
+        const target = activeMusicInput || musicInputAbout;
+        if (!target) return;
+        if (action === 'backspace') {
+            target.value = (target.value || '').slice(0, -1);
+            target.focus();
+        }
+    }
+
+    // Открытие прямой студии создания песни (без каталога шаблонов)
+    window.openDirectMusicStudio = function (card) {
+        if (typeof window.hideAttractScreen === 'function') {
+            window.hideAttractScreen();
+        }
+        const templateModal = document.getElementById('template-modal');
+        if (templateModal) templateModal.classList.add('hidden');
+
+        activeSectionCard = card || (Array.isArray(mainCardsConfig) ? mainCardsConfig.find(c => c.id === 6) : null);
+        const savedMusicPrice = parseInt(localStorage.getItem('kiosk_music_price'), 10);
+        selectedStylePrice = savedMusicPrice || (card && card.price) || 290;
+
+        const createBtn = document.getElementById('music-theme-create-btn');
+        if (createBtn) {
+            createBtn.innerHTML = `🎵 СОЗДАТЬ ТРЕК • ${selectedStylePrice} СОМ ➔`;
+        }
+
+        const kioskModal = document.getElementById('kiosk-modal');
+        if (kioskModal) kioskModal.style.display = 'flex';
+
+        const stepEl = document.getElementById('step-music-theme');
+        showStep(stepEl);
+
+        const inpAbout = document.getElementById('music-input-about');
+        setActiveMusicInput(inpAbout);
+        if (inpAbout) {
+            setTimeout(() => inpAbout.focus(), 150);
+        }
+
+        renderVirtualKeyboard();
+    };
+
+    // Фокус и клик по полям ввода
+    if (musicInputAbout) {
+        musicInputAbout.addEventListener('focus', () => setActiveMusicInput(musicInputAbout));
+        musicInputAbout.addEventListener('click', () => setActiveMusicInput(musicInputAbout));
+        musicInputAbout.addEventListener('pointerdown', () => setActiveMusicInput(musicInputAbout));
+        musicInputAbout.addEventListener('touchstart', () => setActiveMusicInput(musicInputAbout), { passive: true });
+    }
+    if (musicInputStyle) {
+        musicInputStyle.addEventListener('focus', () => setActiveMusicInput(musicInputStyle));
+        musicInputStyle.addEventListener('click', () => setActiveMusicInput(musicInputStyle));
+        musicInputStyle.addEventListener('pointerdown', () => setActiveMusicInput(musicInputStyle));
+        musicInputStyle.addEventListener('touchstart', () => setActiveMusicInput(musicInputStyle), { passive: true });
+    }
+
+    // Очистка полей ввода крестиком
+    if (musicAboutClearBtn && musicInputAbout) {
+        const handleClearAbout = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            musicInputAbout.value = '';
+            setActiveMusicInput(musicInputAbout);
+        };
+        musicAboutClearBtn.addEventListener('click', handleClearAbout);
+        musicAboutClearBtn.addEventListener('pointerdown', handleClearAbout);
+        musicAboutClearBtn.addEventListener('touchstart', handleClearAbout);
+    }
+    if (musicStyleClearBtn && musicInputStyle) {
+        const handleClearStyle = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            musicInputStyle.value = '';
+            setActiveMusicInput(musicInputStyle);
+        };
+        musicStyleClearBtn.addEventListener('click', handleClearStyle);
+        musicStyleClearBtn.addEventListener('pointerdown', handleClearStyle);
+        musicStyleClearBtn.addEventListener('touchstart', handleClearStyle);
+    }
+
+    // Выбор языка
+    document.querySelectorAll('#music-lang-chips .lang-choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#music-lang-chips .lang-choice-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
+
+    // Кнопка "Назад на главную"
+    if (musicThemeCancelBtn) {
+        const handleMusicCancel = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            closeKioskFlow();
+        };
+        musicThemeCancelBtn.addEventListener('click', handleMusicCancel);
+        musicThemeCancelBtn.addEventListener('pointerdown', handleMusicCancel);
+        musicThemeCancelBtn.addEventListener('touchstart', handleMusicCancel);
+    }
+
+    // Главная кнопка "СОЗДАТЬ ТРЕК"
+    if (musicThemeCreateBtn) {
+        musicThemeCreateBtn.addEventListener('click', () => {
+            const aboutForVal = (musicInputAbout ? musicInputAbout.value.trim() : '');
+            const styleVal = (musicInputStyle ? musicInputStyle.value.trim() : '');
+
+            const activeLangBtn = document.querySelector('#music-lang-chips .lang-choice-btn.active');
+            const langName = activeLangBtn ? (activeLangBtn.dataset.lang || activeLangBtn.textContent.trim()) : 'Русский';
+
+            const styleName = styleVal || 'Поп-хит';
+            const finalAbout = aboutForVal || 'Зажигательный трек про любовь, вдохновение и жизнь';
+
+            selectedStyle = styleName;
+            selectedStyleCategory = 'МУЗЫКА';
+            const savedMusicPrice = parseInt(localStorage.getItem('kiosk_music_price'), 10);
+            selectedStylePrice = savedMusicPrice || selectedStylePrice || 290;
+            selectedStyleModel = 'suno';
+            selectedStylePhoto = 'images/photo2.jpg';
+            selectedStyleLocation = '';
+            selectedStyleResolution = 'MP3';
+
+            guestMusicTheme = finalAbout;
+
+            let fullPrompt = `Музыкальный трек в стиле ${styleName}. `;
+            if (langName.includes('Қазақ') || langName.toLowerCase().includes('казах')) {
+                fullPrompt += `Язык вокала: Казахский (Қазақша / Kazakh language). `;
+            } else if (langName.includes('Кыргыз') || langName.toLowerCase().includes('кыргыз')) {
+                fullPrompt += `Язык вокала: Кыргызча (Кыргыз тили). `;
+            } else {
+                fullPrompt += `Язык вокала: ${langName}. `;
+            }
+            fullPrompt += `Тема и посвящение песни: ${finalAbout}. `;
+            fullPrompt += `Запоминающийся хитовый мотив, качественное студийное сведение, чистый вокал.`;
+
+            selectedStylePrompt = fullPrompt;
+
+            showStep(stepPayment);
+            initiatePaymentOrder();
+        });
+    }
+
+    // ========================================================
+    // СТУДИЯ АУДИОСКАЗОК (FAIRYTALE STUDIO)
+    // ========================================================
+    const fairytaleInputChild = document.getElementById('fairytale-input-child');
+    const fairytaleInputTheme = document.getElementById('fairytale-input-theme');
+    const fairytaleInputMood = document.getElementById('fairytale-input-mood');
+    const fairytaleChildClearBtn = document.getElementById('fairytale-child-clear-btn');
+    const fairytaleThemeClearBtn = document.getElementById('fairytale-theme-clear-btn');
+    const fairytaleMoodClearBtn = document.getElementById('fairytale-mood-clear-btn');
+    const fairytaleVirtualKeyboard = document.getElementById('fairytale-virtual-keyboard');
+    const fairytaleCancelBtn = document.getElementById('fairytale-cancel-btn');
+    const fairytaleCreateBtn = document.getElementById('fairytale-create-btn');
+
+    let activeFairytaleInput = fairytaleInputChild;
+    let ftVkCurrentLayout = 'RU';
+    let guestFairytaleData = null;
+
+    function setActiveFairytaleInput(inputEl) {
+        activeFairytaleInput = inputEl;
+        if (fairytaleInputChild) {
+            fairytaleInputChild.classList.toggle('active-focus', fairytaleInputChild === inputEl);
+        }
+        if (fairytaleInputTheme) {
+            fairytaleInputTheme.classList.toggle('active-focus', fairytaleInputTheme === inputEl);
+        }
+        if (fairytaleInputMood) {
+            fairytaleInputMood.classList.toggle('active-focus', fairytaleInputMood === inputEl);
+        }
+    }
+
+    function handleFtVkChar(char) {
+        const target = activeFairytaleInput || fairytaleInputChild;
+        if (!target) return;
+        target.value = (target.value || '') + char;
+        target.focus();
+    }
+
+    function handleFtVkAction(action) {
+        const target = activeFairytaleInput || fairytaleInputChild;
+        if (!target) return;
+        if (action === 'backspace') {
+            target.value = (target.value || '').slice(0, -1);
+            target.focus();
+        }
+    }
+
+    function renderFairytaleVirtualKeyboard() {
+        if (!fairytaleVirtualKeyboard) return;
+        fairytaleVirtualKeyboard.innerHTML = '';
+
+        let layout = VK_LAYOUTS.RU;
+        if (ftVkCurrentLayout === 'EN') layout = VK_LAYOUTS.EN;
+        else if (ftVkCurrentLayout === 'NUM') layout = VK_LAYOUTS.NUM;
+
+        layout.forEach(row => {
+            const rowEl = document.createElement('div');
+            rowEl.className = 'vk-row';
+            row.forEach(item => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'vk-key';
+                if (typeof item === 'object') {
+                    btn.textContent = item.label;
+                    if (item.special) btn.classList.add('vk-key-special');
+                    btn.onclick = () => handleFtVkAction(item.action);
+                } else {
+                    btn.textContent = item;
+                    btn.onclick = () => handleFtVkChar(item);
+                }
+                rowEl.appendChild(btn);
+            });
+            fairytaleVirtualKeyboard.appendChild(rowEl);
+        });
+
+        const bottomRow = document.createElement('div');
+        bottomRow.className = 'vk-row';
+
+        const numBtn = document.createElement('button');
+        numBtn.type = 'button';
+        numBtn.className = 'vk-key vk-key-special';
+        numBtn.textContent = ftVkCurrentLayout === 'NUM' ? (ftVkCurrentLayout === 'RU' ? 'АБВ' : 'ABC') : '123';
+        numBtn.onclick = () => {
+            ftVkCurrentLayout = ftVkCurrentLayout === 'NUM' ? 'RU' : 'NUM';
+            renderFairytaleVirtualKeyboard();
+        };
+        bottomRow.appendChild(numBtn);
+
+        const langBtn = document.createElement('button');
+        langBtn.type = 'button';
+        langBtn.className = 'vk-key vk-key-special';
+        langBtn.textContent = ftVkCurrentLayout === 'RU' ? 'EN' : 'RU';
+        langBtn.onclick = () => {
+            ftVkCurrentLayout = ftVkCurrentLayout === 'RU' ? 'EN' : 'RU';
+            renderFairytaleVirtualKeyboard();
+        };
+        bottomRow.appendChild(langBtn);
+
+        const spaceBtn = document.createElement('button');
+        spaceBtn.type = 'button';
+        spaceBtn.className = 'vk-key vk-key-space';
+        spaceBtn.textContent = 'ПРОБЕЛ';
+        spaceBtn.onclick = () => handleFtVkChar(' ');
+        bottomRow.appendChild(spaceBtn);
+
+        const clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'vk-key vk-key-special';
+        clearBtn.textContent = 'Сброс';
+        clearBtn.onclick = () => {
+            const target = activeFairytaleInput || fairytaleInputChild;
+            if (target) {
+                target.value = '';
+                target.focus();
+            }
+        };
+        bottomRow.appendChild(clearBtn);
+
+        fairytaleVirtualKeyboard.appendChild(bottomRow);
+    }
+
+    if (fairytaleInputChild) {
+        fairytaleInputChild.addEventListener('focus', () => setActiveFairytaleInput(fairytaleInputChild));
+        fairytaleInputChild.addEventListener('click', () => setActiveFairytaleInput(fairytaleInputChild));
+        fairytaleInputChild.addEventListener('pointerdown', () => setActiveFairytaleInput(fairytaleInputChild));
+    }
+    if (fairytaleInputTheme) {
+        fairytaleInputTheme.addEventListener('focus', () => setActiveFairytaleInput(fairytaleInputTheme));
+        fairytaleInputTheme.addEventListener('click', () => setActiveFairytaleInput(fairytaleInputTheme));
+        fairytaleInputTheme.addEventListener('pointerdown', () => setActiveFairytaleInput(fairytaleInputTheme));
+    }
+    if (fairytaleInputMood) {
+        fairytaleInputMood.addEventListener('focus', () => setActiveFairytaleInput(fairytaleInputMood));
+        fairytaleInputMood.addEventListener('click', () => setActiveFairytaleInput(fairytaleInputMood));
+        fairytaleInputMood.addEventListener('pointerdown', () => setActiveFairytaleInput(fairytaleInputMood));
+    }
+
+    if (fairytaleChildClearBtn && fairytaleInputChild) {
+        const handleClearChild = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            fairytaleInputChild.value = '';
+            setActiveFairytaleInput(fairytaleInputChild);
+        };
+        fairytaleChildClearBtn.addEventListener('click', handleClearChild);
+        fairytaleChildClearBtn.addEventListener('pointerdown', handleClearChild);
+        fairytaleChildClearBtn.addEventListener('touchstart', handleClearChild);
+    }
+    if (fairytaleThemeClearBtn && fairytaleInputTheme) {
+        const handleClearTheme = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            fairytaleInputTheme.value = '';
+            setActiveFairytaleInput(fairytaleInputTheme);
+        };
+        fairytaleThemeClearBtn.addEventListener('click', handleClearTheme);
+        fairytaleThemeClearBtn.addEventListener('pointerdown', handleClearTheme);
+        fairytaleThemeClearBtn.addEventListener('touchstart', handleClearTheme);
+    }
+    if (fairytaleMoodClearBtn && fairytaleInputMood) {
+        const handleClearMood = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            fairytaleInputMood.value = '';
+            setActiveFairytaleInput(fairytaleInputMood);
+        };
+        fairytaleMoodClearBtn.addEventListener('click', handleClearMood);
+        fairytaleMoodClearBtn.addEventListener('pointerdown', handleClearMood);
+        fairytaleMoodClearBtn.addEventListener('touchstart', handleClearMood);
+    }
+
+    document.querySelectorAll('#fairytale-lang-chips .lang-choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#fairytale-lang-chips .lang-choice-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
+
+    if (fairytaleCancelBtn) {
+        const handleFtCancel = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            closeKioskFlow();
+        };
+        fairytaleCancelBtn.addEventListener('click', handleFtCancel);
+        fairytaleCancelBtn.addEventListener('pointerdown', handleFtCancel);
+        fairytaleCancelBtn.addEventListener('touchstart', handleFtCancel);
+    }
+
+    window.openDirectFairytaleStudio = function (card) {
+        if (typeof window.hideAttractScreen === 'function') {
+            window.hideAttractScreen();
+        }
+        const templateModal = document.getElementById('template-modal');
+        if (templateModal) templateModal.classList.add('hidden');
+
+        activeSectionCard = card || (Array.isArray(mainCardsConfig) ? mainCardsConfig.find(c => c.id === 8) : null);
+        selectedStylePrice = 290;
+
+        const createBtn = document.getElementById('fairytale-create-btn');
+        if (createBtn) {
+            createBtn.innerHTML = `📸 ДАЛЕЕ: ФОТО РЕБЁНКА ➔`;
+        }
+
+        const kioskModal = document.getElementById('kiosk-modal');
+        if (kioskModal) kioskModal.style.display = 'flex';
+
+        const stepEl = document.getElementById('step-fairytale');
+        showStep(stepEl);
+
+        const inpChild = document.getElementById('fairytale-input-child');
+        setActiveFairytaleInput(inpChild);
+        if (inpChild) {
+            setTimeout(() => inpChild.focus(), 150);
+        }
+
+        renderFairytaleVirtualKeyboard();
+    };
+
+    if (fairytaleCreateBtn) {
+        fairytaleCreateBtn.addEventListener('click', () => {
+            const childVal = (fairytaleInputChild ? fairytaleInputChild.value.trim() : '');
+            const themeVal = (fairytaleInputTheme ? fairytaleInputTheme.value.trim() : '');
+            const moodVal = (fairytaleInputMood ? fairytaleInputMood.value.trim() : '');
+
+            const activeLangBtn = document.querySelector('#fairytale-lang-chips .lang-choice-btn.active');
+            const langCode = activeLangBtn ? (activeLangBtn.dataset.langCode || 'ru') : 'ru';
+            const langName = activeLangBtn ? (activeLangBtn.dataset.lang || 'Русский') : 'Русский';
+
+            const defaultChild = langCode === 'en' ? 'Little Explorer' : (langCode === 'kg' ? 'Балакай' : 'Малыш');
+            const defaultTheme = langCode === 'en' ? 'Magical space adventure and kind dragon' : (langCode === 'kg' ? 'Сыйкырдуу жылдыздар жана боорукер дос' : 'Волшебные приключения и верные друзья');
+            const defaultMood = langCode === 'en' ? 'Kind, brave and inspiring fairytale' : (langCode === 'kg' ? 'Боорукер, тайманбас жана акылдуу' : 'Добрый, смелый и поучительный');
+
+            const finalChild = childVal || defaultChild;
+            const finalTheme = themeVal || defaultTheme;
+            const finalMood = moodVal || defaultMood;
+
+            guestFairytaleData = {
+                childName: finalChild,
+                theme: finalTheme,
+                mood: finalMood,
+                lang: langCode,
+                langName: langName
+            };
+
+            selectedStyle = `Сказка для ${finalChild}`;
+            selectedStyleCategory = 'СКАЗКА';
+            selectedStylePrice = 290;
+            selectedStyleModel = 'fairytale';
+            selectedStylePhoto = 'images/fairytale_cover.jpg';
+            selectedStyleLocation = '';
+            selectedStyleResolution = 'VIDEO';
+
+            let fullPrompt = `Children 3D Pixar book cover fairytale for ${finalChild}. Theme: ${finalTheme}. Mood: ${finalMood}. Language: ${langName}. 3D Disney Pixar animation style.`;
+            selectedStylePrompt = fullPrompt;
+
+            // Переходим к съёмке фото ребёнка (на веб-камеру киоска или загрузке по QR с телефона)
+            resetCameraStep();
+            showStep(stepCamera);
+            startWebcam();
+        });
+    }
+
+    // ========================================================
+    // СТУДИЯ ДОПОЛНЕННОЙ РЕАЛЬНОСТИ (WEB AR STUDIO)
+    // ========================================================
+    let currentArMarker = 'images/photo1.jpg';
+    let currentArMedia = 'assets/hero_robot.jpg';
+    let isArMediaVideo = false;
+    let currentArSessionId = null;
+    let arPollTimer = null;
+    let arOverlayScale = 1.0;
+    let arOverlayOffsetX = 0;
+    let arOverlayOffsetY = 0;
+
+    function updateArAlignmentPreview() {
+        const layer = document.getElementById('ar-floating-layer');
+        const badgeScale = document.getElementById('ar-val-scale');
+        const badgeX = document.getElementById('ar-val-x');
+        const badgeY = document.getElementById('ar-val-y');
+
+        if (badgeScale) badgeScale.textContent = Math.round(arOverlayScale * 100) + '%';
+        if (badgeX) badgeX.textContent = arOverlayOffsetX + 'px';
+        if (badgeY) badgeY.textContent = arOverlayOffsetY + 'px';
+
+        if (layer) {
+            layer.style.width = (arOverlayScale * 100) + '%';
+            layer.style.height = (arOverlayScale * 100) + '%';
+            layer.style.transform = `translate(calc(-50% + ${arOverlayOffsetX}px), calc(-50% + ${arOverlayOffsetY}px))`;
+        }
+    }
+
+    window.openDirectArStudio = function (card) {
+        if (typeof window.hideAttractScreen === 'function') {
+            window.hideAttractScreen();
+        }
+        const templateModal = document.getElementById('template-modal');
+        if (templateModal) templateModal.classList.add('hidden');
+
+        activeSectionCard = card || (Array.isArray(mainCardsConfig) ? mainCardsConfig.find(c => c.id === 7 || (c.filter && c.filter.toUpperCase() === 'AR')) : null);
+        selectedStylePrice = (card && card.price) ? card.price : 290;
+
+        const createBtn = document.getElementById('ar-studio-create-btn');
+        if (createBtn) {
+            createBtn.innerHTML = `✨ СОЗДАТЬ AR • ${selectedStylePrice} СОМ ➔`;
+        }
+
+        const kioskModal = document.getElementById('kiosk-modal');
+        if (kioskModal) kioskModal.style.display = 'flex';
+
+        const stepEl = document.getElementById('step-ar-studio');
+        showStep(stepEl);
+
+        // Инициализация превью
+        const imgMarker = document.getElementById('ar-marker-img');
+        const imgMedia = document.getElementById('ar-media-img');
+        const vidMedia = document.getElementById('ar-media-vid');
+        if (imgMarker) imgMarker.src = currentArMarker;
+        if (imgMedia) imgMedia.src = currentArMedia;
+        if (vidMedia) vidMedia.style.display = 'none';
+        if (imgMedia) imgMedia.style.display = 'block';
+
+        arOverlayScale = 1.0;
+        arOverlayOffsetX = 0;
+        arOverlayOffsetY = 0;
+        updateArAlignmentPreview();
+    };
+
+    // Контроллеры масштаба и позиции
+    const btnScaleDown = document.getElementById('ar-ctrl-scale-down');
+    const btnScaleUp = document.getElementById('ar-ctrl-scale-up');
+    const btnScaleFit = document.getElementById('ar-ctrl-scale-fit');
+    const btnXLeft = document.getElementById('ar-ctrl-x-left');
+    const btnXRight = document.getElementById('ar-ctrl-x-right');
+    const btnYUp = document.getElementById('ar-ctrl-y-up');
+    const btnYDown = document.getElementById('ar-ctrl-y-down');
+    const btnResetPos = document.getElementById('ar-ctrl-reset-pos');
+
+    if (btnScaleDown) btnScaleDown.addEventListener('click', () => { arOverlayScale = Math.max(0.3, +(arOverlayScale - 0.1).toFixed(2)); updateArAlignmentPreview(); });
+    if (btnScaleUp) btnScaleUp.addEventListener('click', () => { arOverlayScale = Math.min(2.5, +(arOverlayScale + 0.1).toFixed(2)); updateArAlignmentPreview(); });
+    if (btnScaleFit) btnScaleFit.addEventListener('click', () => { arOverlayScale = 1.0; arOverlayOffsetX = 0; arOverlayOffsetY = 0; updateArAlignmentPreview(); });
+    if (btnXLeft) btnXLeft.addEventListener('click', () => { arOverlayOffsetX -= 12; updateArAlignmentPreview(); });
+    if (btnXRight) btnXRight.addEventListener('click', () => { arOverlayOffsetX += 12; updateArAlignmentPreview(); });
+    if (btnYUp) btnYUp.addEventListener('click', () => { arOverlayOffsetY -= 12; updateArAlignmentPreview(); });
+    if (btnYDown) btnYDown.addEventListener('click', () => { arOverlayOffsetY += 12; updateArAlignmentPreview(); });
+    if (btnResetPos) btnResetPos.addEventListener('click', () => { arOverlayOffsetX = 0; arOverlayOffsetY = 0; updateArAlignmentPreview(); });
+
+    // 1. Открытие QR-кода загрузки со смартфона
+    function openArPhoneQrModal() {
+        currentArSessionId = 'ar_sess_' + Date.now() + '_' + Math.random().toString(36).substring(7);
+        const qrBox = document.getElementById('ar-popup-marker-qr');
+        const qrEl = document.getElementById('ar-phone-qr-img');
+        const stEl = document.getElementById('ar-phone-poll-status');
+        if (!qrBox || !qrEl) return;
+
+        const uploadUrl = `${window.location.origin}/ar-upload?session=${currentArSessionId}`;
+        renderInstantQR(qrEl, uploadUrl, 160);
+        qrBox.style.display = 'flex';
+        if (stEl) stEl.textContent = 'Ожидание файлов...';
+
+        // Поллинг готовности сессии
+        if (arPollTimer) clearInterval(arPollTimer);
+        arPollTimer = setInterval(async () => {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/ar-sessions/${currentArSessionId}/ready.json?_t=${Date.now()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.markerUrl && data.mediaUrl) {
+                        clearInterval(arPollTimer);
+                        arPollTimer = null;
+                        currentArMarker = data.markerUrl;
+                        currentArMedia = data.mediaUrl;
+                        isArMediaVideo = data.isVideo !== false;
+
+                        const imgMarker = document.getElementById('ar-marker-img');
+                        const vidMedia = document.getElementById('ar-media-vid');
+                        const imgMedia = document.getElementById('ar-media-img');
+
+                        if (imgMarker) imgMarker.src = currentArMarker;
+                        if (isArMediaVideo) {
+                            if (vidMedia) {
+                                vidMedia.src = currentArMedia;
+                                vidMedia.style.display = 'block';
+                                vidMedia.play().catch(() => { });
+                            }
+                            if (imgMedia) imgMedia.style.display = 'none';
+                        } else {
+                            if (imgMedia) {
+                                imgMedia.src = currentArMedia;
+                                imgMedia.style.display = 'block';
+                            }
+                            if (vidMedia) vidMedia.style.display = 'none';
+                        }
+
+                        const mst = document.getElementById('ar-marker-status');
+                        const cst = document.getElementById('ar-media-status');
+                        if (mst) mst.textContent = '✅ Фото с телефона получено!';
+                        if (cst) cst.textContent = '✅ Медиа с телефона получено!';
+
+                        qrBox.style.display = 'none';
+                    }
+                }
+            } catch (e) { }
+        }, 1500);
+    }
+
+    const arBtnPhoneMarker = document.getElementById('ar-btn-phone-marker');
+    const arBtnPhoneMedia = document.getElementById('ar-btn-phone-media');
+    const arBtnCloseQr = document.getElementById('ar-btn-close-qr');
+    if (arBtnPhoneMarker) arBtnPhoneMarker.addEventListener('click', openArPhoneQrModal);
+    if (arBtnPhoneMedia) arBtnPhoneMedia.addEventListener('click', openArPhoneQrModal);
+    if (arBtnCloseQr) {
+        arBtnCloseQr.addEventListener('click', () => {
+            const qrBox = document.getElementById('ar-popup-marker-qr');
+            if (qrBox) qrBox.style.display = 'none';
+            if (arPollTimer) { clearInterval(arPollTimer); arPollTimer = null; }
+        });
+    }
+
+    // 4. Отмена в AR студии
+    const arCancelBtn = document.getElementById('ar-studio-cancel-btn');
+    if (arCancelBtn) {
+        const handleArCancel = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            if (arPollTimer) { clearInterval(arPollTimer); arPollTimer = null; }
+            closeKioskFlow();
+        };
+        arCancelBtn.addEventListener('click', handleArCancel);
+        arCancelBtn.addEventListener('pointerdown', handleArCancel);
+        arCancelBtn.addEventListener('touchstart', handleArCancel);
+    }
+
+    // 5. Кнопка "СОЗДАТЬ AR" -> переход к оплате
+    const arCreateBtn = document.getElementById('ar-studio-create-btn');
+    if (arCreateBtn) {
+        arCreateBtn.addEventListener('click', () => {
+            if (arPollTimer) { clearInterval(arPollTimer); arPollTimer = null; }
+
+            selectedStyle = 'ДОПОЛНЕННАЯ РЕАЛЬНОСТЬ';
+            selectedStyleCategory = 'AR';
+            selectedStyleModel = 'ar-studio';
+            selectedStylePhoto = currentArMarker;
+            selectedStylePrice = selectedStylePrice || 290;
+            selectedStyleLocation = '';
+            selectedStyleResolution = 'AR-HD';
+
+            showStep(stepPayment);
+            initiatePaymentOrder();
+        });
+    }
+
+    // 6. Генерация и публикация AR проекта в Supabase после оплаты
+    async function runArProjectGeneration() {
+        resetAiProgress('СОЗДАНИЕ AR ПРОЕКТА', 'ar-studio', 'HD');
+        setAiProgress(20, 'Подготовка файлов маркера и медиа...');
+
+        try {
+            const orderId = currentOrderId || ('AR_' + Date.now());
+
+            // 1. Загрузка маркера (если это локальный Blob / DataURL)
+            let finalMarkerUrl = currentArMarker;
+            if (currentArMarkerBlob || (currentArMarker && currentArMarker.startsWith('data:'))) {
+                setAiProgress(40, 'Загрузка фото-маркера в облако...');
+                const markerBlob = currentArMarkerBlob || await (await fetch(currentArMarker)).blob();
+                const mPath = `ar/${orderId}/marker.jpg`;
+                const upM = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${mPath}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
+                    body: markerBlob
+                });
+                if (upM.ok) {
+                    finalMarkerUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${mPath}`;
+                }
+            }
+
+            // 2. Загрузка видео/медиа
+            let finalMediaUrl = currentArMedia;
+            if (currentArMediaBlob || (currentArMedia && currentArMedia.startsWith('blob:'))) {
+                setAiProgress(65, 'Загрузка оживающего медиаконтента...');
+                const ext = isArMediaVideo ? 'mp4' : 'jpg';
+                const cPath = `ar/${orderId}/media.${ext}`;
+                const upC = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${cPath}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': isArMediaVideo ? 'video/mp4' : 'image/jpeg', 'x-upsert': 'true' },
+                    body: currentArMediaBlob
+                });
+                if (upC.ok) {
+                    finalMediaUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${cPath}`;
+                }
+            }
+
+            // 3. Компиляция высокоточного 3D нейро-маркера MindAR
+            let mindTargetUrl = '';
+            try {
+                if (window.MINDAR && window.MINDAR.IMAGE && window.MINDAR.IMAGE.Compiler) {
+                    setAiProgress(75, 'Компиляция 3D нейро-маркера MindAR...');
+                    const compiler = new window.MINDAR.IMAGE.Compiler();
+                    const markerImgEl = new Image();
+                    markerImgEl.crossOrigin = 'anonymous';
+                    markerImgEl.src = finalMarkerUrl;
+                    await new Promise(r => { markerImgEl.onload = r; markerImgEl.onerror = r; });
+
+                    if (markerImgEl.width > 0) {
+                        await compiler.compileImageTargets([markerImgEl], (p) => {
+                            setAiProgress(75 + Math.round(p * 10), `Компиляция AR: ${Math.round(p * 100)}%...`);
+                        });
+                        const mindBuffer = await compiler.exportData();
+                        const mindBlob = new Blob([mindBuffer], { type: 'application/octet-stream' });
+                        const mindPath = `ar/${orderId}/target.mind`;
+                        const upMind = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${mindPath}`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
+                            body: mindBlob
+                        });
+                        if (upMind.ok) {
+                            mindTargetUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${mindPath}`;
+                            console.log('[MindAR] 3D маркер скомпилирован и сохранен:', mindTargetUrl);
+                        }
+                    }
+                }
+            } catch (mErr) {
+                console.warn('[MindAR Compiler Warning]', mErr);
+            }
+
+            // 4. Сохранение манифеста проекта
+            setAiProgress(90, 'Генерация WebAR манифеста и QR-кода...');
+            const arManifest = {
+                id: orderId,
+                orderId: orderId,
+                title: 'TRENDUM AR ОЖИВАЮЩЕЕ ФОТО',
+                markerUrl: finalMarkerUrl,
+                mediaUrl: finalMediaUrl,
+                mindUrl: mindTargetUrl,
+                isVideo: isArMediaVideo,
+                scale: arOverlayScale,
+                offsetX: arOverlayOffsetX,
+                offsetY: arOverlayOffsetY,
+                createdAt: Date.now()
+            };
+
+            await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/ar/${orderId}.json`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'x-upsert': 'true' },
+                body: JSON.stringify(arManifest)
+            });
+
+            await finishAiProgress();
+
+            // 4. Показ экрана результата
+            const arViewerUrl = `${window.location.origin}/ar?id=${orderId}`;
+            console.log('[AR Studio] Проект успешно создан! Ссылка AR:', arViewerUrl);
+
+            showStep(stepResult);
+
+            if (resultImg) {
+                resultImg.src = finalMarkerUrl;
+                resultImg.style.display = 'block';
+            }
+            if (resultVideo) resultVideo.style.display = 'none';
+            const audioBox = document.getElementById('result-audio-box');
+            if (audioBox) audioBox.style.display = 'none';
+
+            // Брендированный QR код
+            const resultQrEl = document.getElementById('result-qr-img');
+            if (resultQrEl) {
+                renderInstantQR(resultQrEl, arViewerUrl, 260);
+            }
+
+        } catch (err) {
+            console.error('[AR Studio] Ошибка создания проекта:', err);
+            stopAiProgress();
+            alert('Ошибка при создании AR проекта: ' + err.message);
+            showStep(stepPayment);
+        }
+    }
+
+    // ШАГ 1: ОТКРЫТИЕ ПОТОКА (ДЛЯ ОБЫЧНЫХ ШАБЛОНОВ ФОТО/ВИДЕО)
+    window.openKioskFlow = function () {
+        if (modal) modal.style.display = 'flex';
+
+        const curTpl = (Array.isArray(masterTemplates) ? masterTemplates : []).find(t => t.id === selectedTemplateId || t.title === selectedStyle);
+        const isMusic = isMusicTemplate(curTpl) || selectedStyleModel === 'suno';
+
+        if (isMusic) {
+            openDirectMusicStudio(activeSectionCard);
+        } else {
+            showStep(stepPayment);
+            initiatePaymentOrder();
+        }
+    };
+
+    if (modalClose) {
+        const handleModalClose = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            closeKioskFlow();
+        };
+        modalClose.addEventListener('click', handleModalClose);
+        modalClose.addEventListener('pointerdown', handleModalClose);
+        modalClose.addEventListener('touchstart', handleModalClose);
+    }
+    if (cancelPayBtn) {
+        const handleCancelPay = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            closeKioskFlow();
+            if (selectedStyleModel === 'suno' || (activeSectionCard && (activeSectionCard.id === 6 || (activeSectionCard.filter && activeSectionCard.filter.toUpperCase() === 'MUSIC')))) {
+                openDirectMusicStudio(activeSectionCard);
+            } else if (selectedStyleModel === 'fairytale' || (activeSectionCard && (activeSectionCard.id === 8 || (activeSectionCard.filter && activeSectionCard.filter.toUpperCase() === 'FAIRYTALE')))) {
+                openDirectFairytaleStudio(activeSectionCard);
+            } else {
+                openTemplateGallery();
+            }
+        };
+        cancelPayBtn.addEventListener('click', handleCancelPay);
+        cancelPayBtn.addEventListener('pointerdown', handleCancelPay);
+        cancelPayBtn.addEventListener('touchstart', handleCancelPay);
+    }
+
+    if (retakeBtn) {
+        retakeBtn.addEventListener('click', () => {
+            if (capturedVideoUrl) {
+                URL.revokeObjectURL(capturedVideoUrl);
+                capturedVideoUrl = null;
+            }
+            capturedVideoBlob = null;
+            if (videoPreviewConfirm) {
+                videoPreviewConfirm.pause();
+                videoPreviewConfirm.src = '';
+                videoPreviewConfirm.style.display = 'none';
+            }
+            resetCameraStep();
+            showStep(stepCamera);
+            // Если был режим телефона — восстановим его UI
+            if (phoneCamMode) {
+                switchToPhoneCam();
+            } else {
+                startWebcam();
+            }
+        });
+    }
+
+    if (confirmPhotoBtn) {
+        confirmPhotoBtn.addEventListener('click', () => {
+            if (selectedStyleModel === 'fairytale') {
+                // Для сказки фото ребенка подтверждено — переходим к оплате
+                showStep(stepPayment);
+                initiatePaymentOrder();
+                return;
+            }
+            showStep(stepProcessing);
+            runAIGeneration();
+        });
+    }
+
+    function closeKioskFlow() {
+        stopPaymentPolling();
+        isPaymentSuccessHandled = false;
+        isAiGenerating = false;
+        if (simPayBtn) simPayBtn.disabled = false;
+        stopWebcam();
+        stopPhoneCamPolling();
+        if (capturedVideoUrl) {
+            URL.revokeObjectURL(capturedVideoUrl);
+            capturedVideoUrl = null;
+        }
+        capturedVideoBlob = null;
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            try { mediaRecorder.stop(); } catch (e) { }
+        }
+        if (videoPreviewConfirm) {
+            videoPreviewConfirm.pause();
+            videoPreviewConfirm.src = '';
+            videoPreviewConfirm.style.display = 'none';
+        }
+        // Удаляем файл телефонной сессии из Supabase при выходе
+        if (phoneCamSessionId) {
+            fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/phone-cam/${phoneCamSessionId}.jpg`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+            }).catch(() => { });
+        }
+        phoneCamMode = false;
+        phoneCamSessionId = null;
+        if (photoPreviewConfirm) photoPreviewConfirm.src = '';
+        if (resultVideo) {
+            try {
+                resultVideo.pause();
+                resultVideo.src = '';
+            } catch (e) { }
+        }
+        const resultAudioPlayer = document.getElementById('result-audio-player');
+        const resultAudioBgPlayer = document.getElementById('result-audio-bg-player');
+        if (resultAudioPlayer) {
+            try {
+                resultAudioPlayer.pause();
+                resultAudioPlayer.src = '';
+            } catch (e) { }
+        }
+        if (resultAudioBgPlayer) {
+            try {
+                resultAudioBgPlayer.pause();
+                resultAudioBgPlayer.src = '';
+            } catch (e) { }
+        }
+        const studioCustomPlayer = document.getElementById('studio-custom-player');
+        if (studioCustomPlayer) studioCustomPlayer.classList.remove('playing');
+        if (studioVinylDisc) studioVinylDisc.classList.remove('playing');
+        const studioProgressFill = document.getElementById('studio-progress-fill');
+        if (studioProgressFill) studioProgressFill.style.width = '0%';
+        const studioProgressThumb = document.getElementById('studio-progress-thumb');
+        if (studioProgressThumb) studioProgressThumb.style.left = '0%';
+        const studioCurrentTime = document.getElementById('studio-current-time');
+        if (studioCurrentTime) studioCurrentTime.textContent = '0:00';
+        const resultAudioBox = document.getElementById('result-audio-box');
+        if (resultAudioBox) resultAudioBox.style.display = 'none';
+
+        if (musicInputAbout) musicInputAbout.value = '';
+        if (musicInputFor) musicInputFor.value = '';
+        document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
+
+        if (tryonLocationInfoCard) tryonLocationInfoCard.style.display = 'none';
+        const kioskModalEl = document.getElementById('kiosk-modal');
+        if (kioskModalEl) kioskModalEl.style.display = 'none';
+        const tplModalEl = document.getElementById('template-modal');
+        if (tplModalEl) {
+            tplModalEl.classList.add('hidden');
+            tplModalEl.style.display = 'none';
+        }
+        if (modal) modal.style.display = 'none';
+
+        // Скрываем все внутренние экраны/шаги
+        const stepFairytaleEl = document.getElementById('step-fairytale');
+        [stepMusicTheme, stepFairytaleEl, stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepRoastResult].forEach(s => {
+            if (s) s.style.display = 'none';
+        });
+
+        resetState();
+        syncCloudConfig(); // Обновление при завершении сессии заказа
+    }
+
+    function showStep(stepEl) {
+        const stepFairytale = document.getElementById('step-fairytale');
+        [stepMusicTheme, stepFairytale, stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepRoastResult].forEach(s => {
+            if (s) s.style.display = 'none';
+        });
+        if (stepEl) stepEl.style.display = 'block';
+    }
+
+    function resetState() {
+        countdownOverlay.textContent = '';
+        currentOrderId = null;
+        isAiGenerating = false;
+        isPaymentSuccessHandled = false;
+        selectedStyleCategory = '';
+    }
+
+    // ============================================================
+    //  ПЕРЕКЛЮЧЕНИЕ ИСТОЧНИКА КАМЕРЫ: КИОСК / ТЕЛЕФОН
+    // ============================================================
+    const tabKioskCam = document.getElementById('tab-kiosk-cam');
+    const tabPhoneCam = document.getElementById('tab-phone-cam');
+    const webcamLiveBox = document.getElementById('webcam-live-box');
+    const phoneCamPanel = document.getElementById('phone-cam-panel');
+    const phoneQrImg = document.getElementById('phone-qr-img');
+    const timerSelectWrap = document.getElementById('timer-select-wrapper');
+    const snapBtnEl = document.getElementById('snap-btn');
+    const camSubtitle = document.getElementById('cam-subtitle');
+
+    if (tabKioskCam) {
+        tabKioskCam.addEventListener('click', () => {
+            phoneCamMode = false;
+            stopPhoneCamPolling();
+            tabKioskCam.classList.add('active');
+            tabPhoneCam.classList.remove('active');
+            // Показываем камеру, скрываем QR
+            if (webcamLiveBox) webcamLiveBox.style.display = '';
+            if (phoneCamPanel) phoneCamPanel.classList.remove('visible');
+            if (timerSelectWrap) timerSelectWrap.style.display = '';
+            if (snapBtnEl) snapBtnEl.style.display = '';
+            if (camSubtitle) camSubtitle.textContent = 'Встаньте по центру и смотрите в камеру';
+            startWebcam();
+        });
+    }
+
+    if (tabPhoneCam) {
+        tabPhoneCam.addEventListener('click', () => {
+            switchToPhoneCam();
+        });
+    }
+
+    function switchToPhoneCam() {
+        phoneCamMode = true;
+        stopWebcam();
+        tabPhoneCam.classList.add('active');
+        if (tabKioskCam) tabKioskCam.classList.remove('active');
+        // Скрываем живую камеру, показываем QR-панель
+        if (webcamLiveBox) webcamLiveBox.style.display = 'none';
+        if (timerSelectWrap) timerSelectWrap.style.display = 'none';
+        if (snapBtnEl) snapBtnEl.style.display = 'none';
+        if (camSubtitle) camSubtitle.textContent = 'Откройте ссылку на телефоне и сделайте снимок';
+        if (phoneCamPanel) phoneCamPanel.classList.add('visible');
+
+        // Удаляем старый файл предыдущей сессии из Supabase (не засоряем базу)
+        if (phoneCamSessionId) {
+            const oldPath = `phone-cam/${phoneCamSessionId}.jpg`;
+            fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${oldPath}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+            }).catch(() => { }); // Игнорируем ошибки удаления
+        }
+
+        // Генерируем уникальный session ID
+        phoneCamSessionId = 'cam-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+        // Формируем URL мобильной страницы
+        const origin = location.origin || 'https://kiosk394.vercel.app';
+        const phoneUrl = `${origin}/kiosk-ui/phone-cam.html?session=${phoneCamSessionId}`;
+
+        // Мгновенный QR код для смартфона
+        if (phoneQrImg) {
+            renderInstantQR(phoneQrImg, phoneUrl, 200);
+        }
+
+        // Запускаем полинг появления фото в Supabase
+        startPhoneCamPolling(phoneCamSessionId);
+    }
+
+    // Полинг фото с телефона каждые 2 секунды
+    function startPhoneCamPolling(sessionId) {
+        stopPhoneCamPolling();
+        phoneCamPollTimer = setInterval(async () => {
+            if (sessionId !== phoneCamSessionId) { clearInterval(phoneCamPollTimer); return; }
+            try {
+                const url = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/phone-cam/${sessionId}.jpg?_t=${Date.now()}`;
+                const res = await fetch(url, { method: 'HEAD' });
+                if (res.ok) {
+                    stopPhoneCamPolling();
+                    // Фото готово — загружаем его как capturedPhotoData
+                    const imgRes = await fetch(url);
+                    const blob = await imgRes.blob();
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        capturedPhotoData = e.target.result;
+                        if (photoPreviewConfirm) photoPreviewConfirm.src = capturedPhotoData;
+                        showStep(stepConfirm);
+                    };
+                    reader.readAsDataURL(blob);
+                }
+            } catch (e) { /* игнорируем сетевые ошибки */ }
+        }, 2000);
+    }
+
+    function stopPhoneCamPolling() {
+        if (phoneCamPollTimer) {
+            clearInterval(phoneCamPollTimer);
+            phoneCamPollTimer = null;
+        }
+    }
+
+    // Сбрасываем UI камеры при открытии шага camera (по умолчанию — киоск)
+    function resetCameraStep() {
+        phoneCamMode = false;
+        if (tabKioskCam) tabKioskCam.classList.add('active');
+        if (tabPhoneCam) tabPhoneCam.classList.remove('active');
+        if (webcamLiveBox) webcamLiveBox.style.display = '';
+        if (phoneCamPanel) phoneCamPanel.classList.remove('visible');
+        if (timerSelectWrap) timerSelectWrap.style.display = '';
+        if (snapBtnEl) {
+            snapBtnEl.style.display = '';
+            snapBtnEl.disabled = false;
+        }
+        if (camRecBadge) camRecBadge.style.display = 'none';
+
+        const isMotionControl = false; // Kling Motion Control удалён — используем Omni Flash
+
+        const isVideoMode = !isMotionControl && (
+            (selectedStyleModel && (selectedStyleModel.includes('omni') || selectedStyleModel.includes('gemini'))) ||
+            (isVideoTemplate({
+                model: selectedStyleModel,
+                category: (selectedTemplateId && masterTemplates.find(t => t.id === selectedTemplateId)?.category) || '',
+                img: selectedStylePhoto
+            }) && !isMotionControl)
+        );
+
+        if (isVideoMode) {
+            // Длительность берется строго из видео-референса шаблона
+            selectedVideoDuration = 5;
+            if (selectedStylePhoto) {
+                const probe = document.createElement('video');
+                probe.preload = 'metadata';
+                probe.src = selectedStylePhoto;
+                probe.onloadedmetadata = () => {
+                    if (probe.duration && !isNaN(probe.duration) && probe.duration > 0) {
+                        const exactDur = Math.round(probe.duration);
+                        selectedVideoDuration = Math.max(2, Math.min(15, exactDur));
+                        console.log(`[Video Reference] Длительность из референса: ${selectedVideoDuration} сек`);
+                        if (snapBtnText) snapBtnText.textContent = `НАЧАТЬ ЗАПИСЬ (${selectedVideoDuration} СЕК)`;
+                    }
+                };
+            }
+
+            if (camModalTitle) camModalTitle.textContent = 'ЗАПИСЬ ВИДЕО';
+            if (camSubtitle) camSubtitle.textContent = 'Помашите рукой, улыбнитесь или примите позу — запишем короткий ролик';
+
+            // Кнопки длительности видео полностью убраны: длительность совпадает с референсом
+            if (timerSelectWrap) timerSelectWrap.style.display = 'none';
+            if (timerOptionsContainer) timerOptionsContainer.innerHTML = '';
+
+            if (snapBtnIcon) {
+                snapBtnIcon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7" fill="#ef4444" stroke="none"/><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>`;
+            }
+            if (snapBtnText) snapBtnText.textContent = `НАЧАТЬ ЗАПИСЬ (${selectedVideoDuration || 5} СЕК)`;
+            if (snapBtnEl) {
+                snapBtnEl.style.background = 'linear-gradient(135deg, #e11d48 0%, #b91c1c 100%)';
+                snapBtnEl.style.color = '#ffffff';
+                snapBtnEl.style.boxShadow = '0 0 25px rgba(225, 29, 72, 0.4)';
+            }
+        } else {
+            if (camModalTitle) camModalTitle.textContent = isMotionControl ? 'СЪЁМКА ДЛЯ ТАНЦА' : 'СЪЁМКА ФОТО';
+            if (camSubtitle) {
+                if (isMotionControl) {
+                    camSubtitle.textContent = 'Встаньте по центру и смотрите в камеру — нейросеть перенесет движения из видео на ваше фото';
+                } else if (isTryOnMode) {
+                    camSubtitle.textContent = 'Встаньте по центру в полный рост или по пояс, чтобы примерить вещь';
+                } else {
+                    camSubtitle.textContent = 'Встаньте по центру и смотрите в камеру';
+                }
+            }
+            if (timerSelectWrap) timerSelectWrap.style.display = '';
+            if (timerSelectLabel) timerSelectLabel.textContent = 'ТАЙМЕР СЪЁМКИ:';
+            if (timerOptionsContainer) {
+                timerOptionsContainer.innerHTML = `
+                    <button type="button" class="timer-btn active" data-timer="3">3 СЕК</button>
+                    <button type="button" class="timer-btn" data-timer="5">5 СЕК</button>
+                    <button type="button" class="timer-btn" data-timer="8">8 СЕК</button>
+                    <button type="button" class="timer-btn" data-timer="10">10 СЕК</button>
+                `;
+                selectedCaptureDuration = 3;
+                timerOptionsContainer.querySelectorAll('.timer-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        timerOptionsContainer.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        selectedCaptureDuration = parseInt(btn.getAttribute('data-timer'), 10) || 3;
+                    });
+                });
+            }
+            if (snapBtnIcon) {
+                snapBtnIcon.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>`;
+            }
+            if (snapBtnText) snapBtnText.textContent = isMotionControl ? 'СДЕЛАТЬ ФОТО ДЛЯ ТАНЦА' : 'СДЕЛАТЬ ФОТО';
+            if (snapBtnEl) {
+                snapBtnEl.style.background = '';
+                snapBtnEl.style.color = '';
+                snapBtnEl.style.boxShadow = '';
+            }
+        }
+    }
+
+
+
+    // ИНИЦИАЛИЗАЦИЯ ЗАКАЗА И QR-КОДА OBUSINESS ELQR
+    async function initiatePaymentOrder() {
+        if (payStyleTitle) payStyleTitle.textContent = guestMusicTheme ? `${guestMusicTheme} (${selectedStyle})` : selectedStyle;
+
+        const isVid = typeof selectedStylePhoto === 'string' && (
+            selectedStylePhoto.endsWith('.mp4') || selectedStylePhoto.endsWith('.webm') || selectedStylePhoto.endsWith('.mov') ||
+            selectedStylePhoto.includes('.mp4?') || selectedStylePhoto.includes('.webm?')
+        );
+        const paySelectedVideo = document.getElementById('pay-selected-video');
+        if (isVid && paySelectedVideo) {
+            paySelectedVideo.src = selectedStylePhoto;
+            paySelectedVideo.style.display = 'block';
+            if (paySelectedThumb) paySelectedThumb.style.display = 'none';
+        } else {
+            if (paySelectedThumb) {
+                paySelectedThumb.src = selectedStylePhoto;
+                paySelectedThumb.style.display = 'block';
+            }
+            if (paySelectedVideo) {
+                paySelectedVideo.pause();
+                paySelectedVideo.style.display = 'none';
+            }
+        }
+
+        if (payAmountVal) payAmountVal.textContent = selectedStylePrice || 290;
+
+        const paySubtext = document.querySelector('.pay-subtext');
+        if (paySubtext) {
+            paySubtext.style.display = 'none';
+            paySubtext.innerHTML = '';
+        }
+
+        // БРЕНДИРОВАННЫЙ ОФИЦИАЛЬНЫЙ FINIK ELQR (0мс):
+        const amount = selectedStylePrice || 290;
+        currentOrderId = 'TRD-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
+        const DEFAULT_STATIC_QR = 'https://qr.finik.kg/#00020101021132750011qr.finik.kg0114averspay-items1032cd47050e1ea84bc886fdacd1b1f0e7461302125204799953034175908Finik-QR63040896';
+        const configuredStaticQr = localStorage.getItem('kiosk_finik_static_qr') || DEFAULT_STATIC_QR;
+        const configuredAccountId = localStorage.getItem('kiosk_finik_account_id') || 'cd47050e-1ea8-4bc8-86fd-acd1b1f0e746';
+        const configuredQrImg = localStorage.getItem('kiosk_finik_qr_img') || 'images/finik_elqr_badge.png';
+
+        if (elqrImg) {
+            elqrImg.style.transition = 'opacity 0.25s ease, filter 0.25s ease';
+            elqrImg.style.opacity = '0.35';
+            elqrImg.style.filter = 'blur(2px)';
+        }
+        if (paymentStatusText) paymentStatusText.textContent = `Формирование счёта на ${amount} сом...`;
+
+        // Сброс флагов оплаты для нового заказа
+        isPaymentSuccessHandled = false;
+        isAiGenerating = false;
+        if (simPayBtn) {
+            simPayBtn.disabled = false;
+            simPayBtn.textContent = 'ТЕСТ: ИМИТИРОВАТЬ ОПЛАТУ';
+        }
+
+        // Сразу запускаем опрос статуса платежа
+        startPaymentPolling(currentOrderId);
+
+        // В фоне регистрируем заказ в платежной системе
+        try {
+            const resp = await fetch('/api/payment/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orderId: currentOrderId,
+                    amount: amount,
+                    templateTitle: selectedStyle,
+                    accountId: configuredAccountId,
+                    staticQr: configuredStaticQr
+                })
+            });
+            const data = await resp.json();
+
+            // Когда Finik вернул официальный динамический QR с зафиксированной суммой чека
+            if (data.success && data.qrImageUrl) {
+                if (elqrImg) {
+                    elqrImg.src = data.qrImageUrl;
+                    elqrImg.style.opacity = '1';
+                    elqrImg.style.filter = 'none';
+                }
+                if (paymentStatusText) paymentStatusText.textContent = `Ожидание оплаты ${amount} сом...`;
+            } else if (data.success && data.paymentUrl && !data.paymentUrl.includes('qr.finik.kg')) {
+                if (elqrImg) {
+                    renderInstantQR(elqrImg, data.paymentUrl, 260);
+                    elqrImg.style.opacity = '1';
+                    elqrImg.style.filter = 'none';
+                }
+                if (paymentStatusText) paymentStatusText.textContent = `Ожидание оплаты ${amount} сом...`;
+            } else {
+                if (elqrImg) {
+                    elqrImg.src = configuredQrImg;
+                    elqrImg.style.opacity = '1';
+                    elqrImg.style.filter = 'none';
+                }
+                if (paymentStatusText) paymentStatusText.textContent = 'Ожидание оплаты...';
+            }
+        } catch (e) {
+            console.warn('API error (автономный режим Finik ELQR активен):', e);
+            if (elqrImg) {
+                elqrImg.src = configuredQrImg;
+                elqrImg.style.opacity = '1';
+                elqrImg.style.filter = 'none';
+            }
+            if (paymentStatusText) paymentStatusText.textContent = 'Ожидание оплаты...';
+        }
+    }
+
+    // ПОЛЛИНГ СТАТУСА ПЛАТЕЖА (ПРОВЕРКА ВЕБХУКА КАЖДЫЕ 1.8 СЕКУНДЫ)
+    function startPaymentPolling(orderId) {
+        stopPaymentPolling();
+        paymentPollTimer = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/payment/status?orderId=${encodeURIComponent(orderId)}&_t=${Date.now()}`);
+                const info = await res.json();
+                if (info.success && info.status === 'PAID') {
+                    stopPaymentPolling();
+                    handlePaymentSuccess();
+                }
+            } catch (err) {
+                // Ignore network hiccups during polling
+            }
+        }, 1800);
+    }
+
+    function stopPaymentPolling() {
+        if (paymentPollTimer) {
+            clearInterval(paymentPollTimer);
+            paymentPollTimer = null;
+        }
+    }
+
+    let isPaymentSuccessHandled = false;
+
+    // ОПЛАТА УСПЕШНО ПОЛУЧЕНА
+    function handlePaymentSuccess() {
+        if (isPaymentSuccessHandled) {
+            console.log('[Payment] handlePaymentSuccess уже обработан, повтор отменен');
+            return;
+        }
+        isPaymentSuccessHandled = true;
+        stopPaymentPolling();
+        if (simPayBtn) simPayBtn.disabled = true;
+
+        try {
+            const catUp = (typeof selectedStyleCategory === 'string') ? selectedStyleCategory.toUpperCase() : '';
+            const modelLow = (typeof selectedStyleModel === 'string') ? selectedStyleModel.toLowerCase() : '';
+
+            const isArPaid = modelLow === 'ar-studio' || catUp === 'AR';
+            if (isArPaid) {
+                if (paymentStatusText) {
+                    paymentStatusText.textContent = '✅ Оплата получена! Создаем AR проект...';
+                }
+                showStep(stepProcessing);
+                runArProjectGeneration();
+                return;
+            }
+
+            const isFairytalePaid = modelLow === 'fairytale' ||
+                modelLow.includes('fairytale') ||
+                modelLow.includes('elevenlabs') ||
+                catUp === 'СКАЗКА' ||
+                catUp.includes('СКАЗК');
+
+            const isMusicPaid = modelLow === 'suno' ||
+                modelLow.includes('suno') ||
+                modelLow.includes('music') ||
+                ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА', 'МУЗЫКА'].includes(catUp);
+
+            if (isFairytalePaid || isMusicPaid) {
+                // Для сказки и музыки камера не нужна — сразу запускаем генерацию
+                if (paymentStatusText) {
+                    paymentStatusText.textContent = isFairytalePaid 
+                        ? '✅ Оплата получена! Создаем сказку...'
+                        : '✅ Оплата получена! Запускаем генерацию...';
+                }
+                showStep(stepProcessing);
+                runAIGeneration();
+            } else {
+                // Для фото/видео — открываем камеру
+                if (paymentStatusText) {
+                    paymentStatusText.textContent = '✅ Оплата получена! Включаем камеру...';
+                }
+                resetCameraStep();
+                showStep(stepCamera);
+                if (webcamEl && webcamEl.srcObject && webcamEl.paused) {
+                    webcamEl.play().catch(() => { });
+                }
+                startWebcam();
+            }
+        } catch (err) {
+            console.error('[Payment] Ошибка в handlePaymentSuccess, fallback на камеру:', err);
+            resetCameraStep();
+            showStep(stepCamera);
+            startWebcam();
+        }
+    }
+
+    // ТЕСТОВАЯ КНОПКА СИМУЛЯЦИИ ОПЛАТЫ
+    if (simPayBtn) {
+        const handleSimPay = async (e) => {
+            if (e) {
+                try { e.preventDefault(); } catch (err) { }
+            }
+            if (isPaymentSuccessHandled || simPayBtn.disabled) return;
+            simPayBtn.disabled = true;
+            simPayBtn.textContent = '⏳ ОПЛАЧЕНО...';
+            stopPaymentPolling();
+
+            if (currentOrderId) {
+                try {
+                    await fetch('/api/payment/simulate-success', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId: currentOrderId })
+                    });
+                } catch(e) {
+                    console.warn('simulate-success error:', e);
+                }
+            }
+            handlePaymentSuccess();
+        };
+
+        simPayBtn.addEventListener('click', handleSimPay);
+        simPayBtn.addEventListener('pointerup', handleSimPay);
+    }
+
+    // 2. WEBCAM LOGIC (АДАПТИВНЫЙ FULL HD 1080p / 720p 30 FPS БЕЗ ЛАГОВ)
+    let availableVideoDevices = [];
+    let currentDeviceIndex = 0;
+    let fpsCallbackId = null;
+    let fpsFrameCount = 0;
+    let fpsLastTime = performance.now();
+    let lowFpsStreak = 0;
+    let currentCamResolution = localStorage.getItem('kiosk_camera_res') || '720p';
+    let currentCameraFps = 30;
+    let lastSingleFrameTime = performance.now();
+    let recentFrameDeltas = [];
+
+    const switchCamBtn = document.getElementById('switch-cam-btn');
+    const switchCamLabel = document.getElementById('switch-cam-label');
+    const camInfoBadge = document.getElementById('cam-info-badge');
+    const camDeviceSelect = document.getElementById('cam-device-select');
+    const btnRes1080 = document.getElementById('btn-res-1080');
+    const btnRes720 = document.getElementById('btn-res-720');
+    const camFpsWarning = document.getElementById('cam-fps-warning');
+    const warnFpsVal = document.getElementById('warn-fps-val');
+    const openDiagBtn = document.getElementById('open-diag-btn');
+
+    // ЭЛЕМЕНТЫ МОДАЛЬНОГО ОКНА ДИАГНОСТИКИ
+    const diagModal = document.getElementById('diag-modal');
+    const closeDiagBtn = document.getElementById('close-diag-btn');
+    const sendDiagBtn = document.getElementById('send-diag-btn');
+    const copyDiagBtn = document.getElementById('copy-diag-btn');
+    const diagSendStatus = document.getElementById('diag-send-status');
+    const diagCamFps = document.getElementById('diag-cam-fps');
+    const diagCamStatus = document.getElementById('diag-cam-status');
+    const diagFrameDelta = document.getElementById('diag-frame-delta');
+    const diagFrameDetail = document.getElementById('diag-frame-detail');
+    const diagUiFps = document.getElementById('diag-ui-fps');
+    const diagCamRes = document.getElementById('diag-cam-res');
+    const diagResTarget = document.getElementById('diag-res-target');
+    const diagVerdictText = document.getElementById('diag-verdict-text');
+    const diagCamName = document.getElementById('diag-cam-name');
+    const diagGpuInfo = document.getElementById('diag-gpu-info');
+    const diagCpuRam = document.getElementById('diag-cpu-ram');
+    const diagTrackSettings = document.getElementById('diag-track-settings');
+    const diagRecentDeltas = document.getElementById('diag-recent-deltas');
+
+    function updateResButtonsUI() {
+        if (btnRes1080 && btnRes720) {
+            if (currentCamResolution === '720p') {
+                btnRes720.style.background = 'var(--primary)';
+                btnRes720.style.color = '#000';
+                btnRes1080.style.background = 'transparent';
+                btnRes1080.style.color = '#aaa';
+            } else {
+                btnRes1080.style.background = 'var(--primary)';
+                btnRes1080.style.color = '#000';
+                btnRes720.style.background = 'transparent';
+                btnRes720.style.color = '#aaa';
+            }
+        }
+    }
+
+    function setCamResolution(res) {
+        currentCamResolution = res;
+        localStorage.setItem('kiosk_camera_res', res);
+        updateResButtonsUI();
+        if (camFpsWarning) camFpsWarning.style.display = 'none';
+        lowFpsStreak = 0;
+        startWebcam();
+    }
+
+    if (btnRes1080) btnRes1080.addEventListener('click', () => setCamResolution('1080p'));
+    if (btnRes720) btnRes720.addEventListener('click', () => setCamResolution('720p'));
+
+    if (camDeviceSelect) {
+        camDeviceSelect.addEventListener('change', (e) => {
+            const newId = e.target.value;
+            if (newId) {
+                localStorage.setItem('kiosk_user_selected_cam_id', newId);
+                localStorage.setItem('kiosk_camera_device_id', newId);
+                startWebcam();
+            }
+        });
+    }
+
+    let uiFrameCount = 0;
+    let uiLastTime = performance.now();
+    let currentUiFps = 60;
+    let uiRafId = null;
+
+    function startTrackingUiFps() {
+        if (uiRafId) return;
+        uiLastTime = performance.now();
+        uiFrameCount = 0;
+        const onUiFrame = (now) => {
+            uiFrameCount++;
+            const elapsed = now - uiLastTime;
+            if (elapsed >= 1000) {
+                currentUiFps = Math.round((uiFrameCount * 1000) / elapsed);
+                uiFrameCount = 0;
+                uiLastTime = now;
+            }
+            uiRafId = requestAnimationFrame(onUiFrame);
+        };
+        uiRafId = requestAnimationFrame(onUiFrame);
+    }
+
+    function stopTrackingUiFps() {
+        if (uiRafId) {
+            cancelAnimationFrame(uiRafId);
+            uiRafId = null;
+        }
+    }
+
+    function getWebGLInfo() {
+        try {
+            const c = document.createElement('canvas');
+            const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+            if (!gl) return { vendor: 'N/A', renderer: 'WebGL недоступен' };
+            const ext = gl.getExtension('WEBGL_debug_renderer_info');
+            if (ext) {
+                return {
+                    vendor: gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) || 'Unknown',
+                    renderer: gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || 'Unknown'
+                };
+            }
+            return {
+                vendor: gl.getParameter(gl.VENDOR) || 'Unknown',
+                renderer: gl.getParameter(gl.RENDERER) || 'Unknown'
+            };
+        } catch (e) {
+            return { vendor: 'Error', renderer: e.message };
+        }
+    }
+
+    function gatherDiagnosticData() {
+        const track = mediaStream ? mediaStream.getVideoTracks()[0] : null;
+        const settings = (track && track.getSettings) ? track.getSettings() : {};
+        const capabilities = (track && track.getCapabilities) ? track.getCapabilities() : {};
+        const gpu = getWebGLInfo();
+
+        let avgDelta = 0;
+        let minDelta = 0;
+        let maxDelta = 0;
+        if (recentFrameDeltas.length > 0) {
+            avgDelta = Math.round(recentFrameDeltas.reduce((a, b) => a + b, 0) / recentFrameDeltas.length);
+            minDelta = Math.min(...recentFrameDeltas);
+            maxDelta = Math.max(...recentFrameDeltas);
+        }
+
+        const w = webcamEl ? webcamEl.videoWidth : 0;
+        const h = webcamEl ? webcamEl.videoHeight : 0;
+
+        let verdict = '';
+        const isBasicGpu = gpu.renderer.includes('Basic Render') || gpu.renderer.includes('SwiftShader') || gpu.renderer.includes('Software');
+
+        if (isBasicGpu || currentUiFps <= 12) {
+            verdict = `🚨 КРИТИЧЕСКАЯ ПРИЧИНА ТОРМОЗОВ — ОТКЛЮЧЕН GPU (${currentUiFps} FPS ЭКРАНА):\n` +
+                `Видеочип: "${gpu.renderer}". Браузер рендерит интерфейс и Full HD видео чисто процессором через софтверную эмуляцию, из-за чего процессор перегружен на 100% и выдает 2 FPS!\n` +
+                `КАК ИСПРАВИТЬ:\n` +
+                `1. Откройте в Chrome chrome://settings/system и ВКЛЮЧИТЕ пункт "Использовать аппаратное ускорение (при наличии)", затем нажмите Перезапустить.\n` +
+                `2. Откройте chrome://flags/#ignore-gpu-blocklist, переключите в "Enabled" и нажмите Relaunch.\n` +
+                `3. Если в chrome://gpu всё еще Basic Render Driver — в Windows не установлен видеодрайвер (Диспетчер устройств -> Видеоадаптеры -> нужен Intel HD Graphics, а не Microsoft Basic Display).`;
+        } else if (currentCameraFps <= 7 && avgDelta >= 170) {
+            verdict = `⚠️ СЕНСОР КАМЕРЫ НА ДЛИННОЙ ВЫДЕРЖКЕ (~${avgDelta} мс на кадр):\n` +
+                `1. Сенсор UVC-камеры при недостатке света автоматически растянул затвор до ~1/4 сек (250 мс), из-за чего физически не может выдать более ${currentCameraFps} FPS.\n` +
+                `👉 ТЕСТ СВЕТА: Включите фонарик смартфона и посветите прямо в глазок камеры на 3 секунды. Если FPS сразу подскочит до 25-30 — добавьте свет на киоск!\n` +
+                `2. Если света достаточно: в Windows Chrome драйвер MediaFoundation часто багует на портах USB 2.0. Перейдите по ссылке chrome://flags/#enable-media-foundation-video-capture, выберите Disabled и нажмите Relaunch.`;
+        } else if (currentUiFps < 25) {
+            verdict = `⚠️ НИЗКИЙ FPS ИНТЕРФЕЙСА (${currentUiFps} FPS):\n` +
+                `Сам браузер медленно отрисовывает кадры. GPU: ${gpu.renderer}.\n` +
+                `Включите в настройках Chrome: Система -> 'Использовать аппаратное ускорение'.`;
+        } else if (currentCameraFps >= 24) {
+            verdict = `✅ ОТЛИЧНО: Поток плавный (${currentCameraFps} FPS), задержка кадра ~${avgDelta} мс, отрисовка интерфейса ${currentUiFps} FPS.`;
+        } else {
+            verdict = `ℹ️ УМЕРЕННАЯ ЧАСТОТА: ${currentCameraFps} FPS (интервал ~${avgDelta} мс). Рекомендуется включить режим 720p и проверить направленное освещение.`;
+        }
+
+        return {
+            timestamp: new Date().toISOString(),
+            url: window.location.href,
+            camera: {
+                fps: currentCameraFps,
+                label: track ? track.label : 'Не подключена',
+                width: w,
+                height: h,
+                resolutionMode: currentCamResolution,
+                avgDeltaMs: avgDelta,
+                minDeltaMs: minDelta,
+                maxDeltaMs: maxDelta,
+                recentDeltas: recentFrameDeltas.slice(-10),
+                settings: settings,
+                capabilities: capabilities
+            },
+            ui: {
+                fps: currentUiFps,
+                windowSize: `${window.innerWidth}x${window.innerHeight}`,
+                screenSize: `${screen.width}x${screen.height}`,
+                dpr: window.devicePixelRatio
+            },
+            system: {
+                userAgent: navigator.userAgent,
+                cpuCores: navigator.hardwareConcurrency || 'N/A',
+                deviceMemoryGb: navigator.deviceMemory || 'N/A',
+                gpu: gpu
+            },
+            devices: availableVideoDevices.map(d => ({ label: d.label, id: d.deviceId })),
+            verdict: verdict
+        };
+    }
+
+    let diagUpdateTimer = null;
+    function renderDiagnostics() {
+        const data = gatherDiagnosticData();
+
+        if (diagCamFps) {
+            diagCamFps.textContent = `${data.camera.fps} FPS`;
+            diagCamFps.style.color = data.camera.fps >= 24 ? '#4ade80' : (data.camera.fps >= 15 ? '#f59e0b' : '#ef4444');
+        }
+        if (diagCamStatus) {
+            diagCamStatus.textContent = data.camera.fps <= 7 ? '⚠️ КРИТИЧЕСКИЙ ЛАГ' : (data.camera.fps >= 24 ? 'Нормальный поток' : 'Сниженная частота');
+        }
+        if (diagFrameDelta) {
+            diagFrameDelta.textContent = data.camera.avgDeltaMs > 0 ? `${data.camera.avgDeltaMs} мс` : '-- мс';
+            diagFrameDelta.style.color = data.camera.avgDeltaMs <= 40 ? '#4ade80' : (data.camera.avgDeltaMs <= 70 ? '#f59e0b' : '#ef4444');
+        }
+        if (diagFrameDetail) {
+            diagFrameDetail.textContent = data.camera.avgDeltaMs >= 170 ? 'Затвор ~1/4 сек (свет/драйвер)' : 'Интервал кадра';
+        }
+        if (diagUiFps) {
+            diagUiFps.textContent = `${data.ui.fps} FPS`;
+            diagUiFps.style.color = data.ui.fps >= 40 ? '#4ade80' : '#ef4444';
+        }
+        if (diagCamRes) {
+            diagCamRes.textContent = `${data.camera.width} × ${data.camera.height}`;
+        }
+        if (diagResTarget) {
+            diagResTarget.textContent = `Целевой режим: ${data.camera.resolutionMode}`;
+        }
+        if (diagVerdictText) {
+            diagVerdictText.innerHTML = data.verdict.replace(/\n/g, '<br>');
+        }
+        if (diagCamName) {
+            diagCamName.textContent = data.camera.label;
+        }
+        if (diagGpuInfo) {
+            diagGpuInfo.textContent = `${data.system.gpu.renderer} (${data.system.gpu.vendor})`;
+        }
+        if (diagCpuRam) {
+            diagCpuRam.textContent = `${data.system.cpuCores} ядер CPU • ${data.system.deviceMemoryGb} GB RAM`;
+        }
+        if (diagTrackSettings) {
+            const s = data.camera.settings;
+            diagTrackSettings.textContent = `w:${s.width || '--'}, h:${s.height || '--'}, fps:${s.frameRate || '--'}, facing:${s.facingMode || 'user'}`;
+        }
+        if (diagRecentDeltas) {
+            diagRecentDeltas.textContent = data.camera.recentDeltas.length > 0 ? `[${data.camera.recentDeltas.join(', ')}]` : 'накопление...';
+        }
+
+        return data;
+    }
+
+    function openDiagModal() {
+        if (!diagModal) return;
+        diagModal.style.display = 'flex';
+        startTrackingUiFps();
+        renderDiagnostics();
+        if (diagUpdateTimer) clearInterval(diagUpdateTimer);
+        diagUpdateTimer = setInterval(renderDiagnostics, 700);
+    }
+
+    function closeDiagModal() {
+        if (!diagModal) return;
+        diagModal.style.display = 'none';
+        stopTrackingUiFps();
+        if (diagUpdateTimer) {
+            clearInterval(diagUpdateTimer);
+            diagUpdateTimer = null;
+        }
+    }
+
+    async function sendDiagnosticsToServer() {
+        const data = renderDiagnostics();
+        if (sendDiagBtn) {
+            sendDiagBtn.disabled = true;
+            sendDiagBtn.textContent = '⏳ ОТПРАВКА...';
+        }
+        if (diagSendStatus) {
+            diagSendStatus.style.display = 'block';
+            diagSendStatus.style.color = '#38bdf8';
+            diagSendStatus.textContent = 'Отправка отчета на сервер...';
+        }
+
+        try {
+            let sent = false;
+            try {
+                const res = await fetch('/api/diag', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) sent = true;
+            } catch (e) {
+                console.warn('POST /api/diag err:', e);
+            }
+
+            if (!sent) {
+                const SUPA_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co';
+                const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZ2tjY2x3dHd4bW5nY3pjcXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5NjQ3OTksImV4cCI6MjEwNDU0MDc5OX0.AR2bUswLEm5pJ4ORsfQiNqZMlvcp0b5LhZaMr0FtKew';
+                const sRes = await fetch(`${SUPA_URL}/storage/v1/object/kiosk-media/diag/kiosk_report.json`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPA_KEY,
+                        'Authorization': `Bearer ${SUPA_KEY}`,
+                        'Content-Type': 'application/json',
+                        'x-upsert': 'true'
+                    },
+                    body: JSON.stringify(data, null, 2)
+                });
+                if (sRes.ok) sent = true;
+            }
+
+            if (sent) {
+                if (diagSendStatus) {
+                    diagSendStatus.style.color = '#4ade80';
+                    diagSendStatus.textContent = '✅ ЛОГ УСПЕШНО ОТПРАВЛЕН! Разработчик видит данные на сервере.';
+                }
+                if (sendDiagBtn) {
+                    sendDiagBtn.textContent = '✅ ОТПРАВЛЕНО (ОБНОВИТЬ)';
+                    sendDiagBtn.disabled = false;
+                }
+            } else {
+                throw new Error('Сервер не ответил 200 OK');
+            }
+        } catch (err) {
+            if (diagSendStatus) {
+                diagSendStatus.style.color = '#ef4444';
+                diagSendStatus.textContent = '❌ Ошибка отправки: ' + err.message + '. Скопируйте текст кнопкой ниже.';
+            }
+            if (sendDiagBtn) {
+                sendDiagBtn.textContent = '🚀 ПОВТОРИТЬ ОТПРАВКУ';
+                sendDiagBtn.disabled = false;
+            }
+        }
+    }
+
+    function copyDiagnosticsToClipboard() {
+        const data = gatherDiagnosticData();
+        const text = `=== ДИАГНОСТИКА КИОСКА (${new Date().toLocaleString('ru')}) ===\n` +
+            `Камера: ${data.camera.label}\n` +
+            `FPS Камеры: ${data.camera.fps} FPS\n` +
+            `Интервал кадра: ~${data.camera.avgDeltaMs} мс (мин: ${data.camera.minDeltaMs}, макс: ${data.camera.maxDeltaMs})\n` +
+            `Разрешение: ${data.camera.width}x${data.camera.height} (${data.camera.resolutionMode})\n` +
+            `FPS Экрана: ${data.ui.fps} FPS\n` +
+            `GPU: ${data.system.gpu.renderer} (${data.system.gpu.vendor})\n` +
+            `CPU/RAM: ${data.system.cpuCores} cores, ${data.system.deviceMemoryGb} GB\n` +
+            `Дельты 10 кадров: [${data.camera.recentDeltas.join(', ')}]\n` +
+            `UserAgent: ${data.system.userAgent}\n` +
+            `ВЕРДИКТ:\n${data.verdict}\n` +
+            `==================================`;
+
+        navigator.clipboard.writeText(text).then(() => {
+            if (copyDiagBtn) {
+                const orig = copyDiagBtn.textContent;
+                copyDiagBtn.textContent = '✅ СКОПИРОВАНО В БУФЕР!';
+                setTimeout(() => { copyDiagBtn.textContent = orig; }, 2500);
+            }
+        }).catch(() => {
+            alert(text);
+        });
+    }
+
+    if (openDiagBtn) openDiagBtn.addEventListener('click', openDiagModal);
+    if (closeDiagBtn) closeDiagBtn.addEventListener('click', closeDiagModal);
+    if (camFpsWarning) camFpsWarning.addEventListener('click', openDiagModal);
+    if (sendDiagBtn) sendDiagBtn.addEventListener('click', sendDiagnosticsToServer);
+    if (copyDiagBtn) copyDiagBtn.addEventListener('click', copyDiagnosticsToClipboard);
+    if (diagModal) {
+        diagModal.addEventListener('click', (e) => {
+            if (e.target === diagModal) closeDiagModal();
+        });
+    }
+
+    function updateCamBadge(track, camFps = 30) {
+        if (!camInfoBadge) return;
+        camInfoBadge.style.display = 'none';
+    }
+
+    function startFpsCounter() {
+        if (!webcamEl || !('requestVideoFrameCallback' in HTMLVideoElement.prototype)) return;
+        if (fpsCallbackId && 'cancelVideoFrameCallback' in webcamEl) {
+            webcamEl.cancelVideoFrameCallback(fpsCallbackId);
+            fpsCallbackId = null;
+        }
+        fpsFrameCount = 0;
+        fpsLastTime = performance.now();
+        lastSingleFrameTime = performance.now();
+        lowFpsStreak = 0;
+
+        const onFrame = (now) => {
+            const singleDelta = Math.round(now - lastSingleFrameTime);
+            lastSingleFrameTime = now;
+            if (singleDelta > 0 && singleDelta < 3000) {
+                recentFrameDeltas.push(singleDelta);
+                if (recentFrameDeltas.length > 25) {
+                    recentFrameDeltas.shift();
+                }
+            }
+
+            fpsFrameCount++;
+            const elapsed = now - fpsLastTime;
+            if (elapsed >= 900) {
+                const fps = Math.round((fpsFrameCount * 1000) / elapsed);
+                currentCameraFps = fps;
+                const track = mediaStream ? mediaStream.getVideoTracks()[0] : null;
+                updateCamBadge(track, fps);
+
+                if (camFpsWarning) {
+                    camFpsWarning.style.display = 'none';
+                }
+
+                fpsFrameCount = 0;
+                fpsLastTime = now;
+            }
+            if (mediaStream && webcamEl && webcamEl.srcObject) {
+                fpsCallbackId = webcamEl.requestVideoFrameCallback(onFrame);
+            }
+        };
+
+        fpsCallbackId = webcamEl.requestVideoFrameCallback(onFrame);
+    }
+
+    // Поиск наилучшей камеры киоска (приоритет внешним USB / Logitech BRIO, исключая IR/Hello)
+    function getOptimalCamera(devices, preferredId) {
+        if (!devices || devices.length === 0) return null;
+        if (preferredId) {
+            const found = devices.find(d => d.deviceId === preferredId);
+            if (found) return found;
+        }
+        const isExcluded = (lbl) => /(?:ir\b|infrared|hello|virtual|obs)/i.test(lbl || '');
+        const isPreferred = (lbl) => /(?:brio|logitech|usb\s*video|c920|c922|c930|live\s*streamer|hd\s*pro|webcam|camera)/i.test(lbl || '');
+
+        const validCams = devices.filter(d => !isExcluded(d.label));
+        const bestCam = validCams.find(d => isPreferred(d.label));
+        if (bestCam) return bestCam;
+        if (validCams.length > 0) return validCams[0];
+        return devices[0];
+    }
+
+    async function startWebcam() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert('Браузер не поддерживает камеру или страница открыта без HTTPS.');
+            return;
+        }
+
+        try {
+            updateResButtonsUI();
+
+            // 1. Опрашиваем устройства
+            try {
+                const devs = await navigator.mediaDevices.enumerateDevices();
+                availableVideoDevices = devs.filter(d => d.kind === 'videoinput');
+            } catch (e) {
+                console.warn('Ошибка enumerateDevices:', e);
+            }
+
+            const savedId = localStorage.getItem('kiosk_user_selected_cam_id') || localStorage.getItem('kiosk_camera_device_id');
+            const targetCam = getOptimalCamera(availableVideoDevices, savedId);
+            const chosenDeviceId = targetCam ? targetCam.deviceId : savedId;
+
+            // Если видеопоток уже работает и активен — просто гарантируем воспроизведение в <video>
+            const existingTrack = (mediaStream && mediaStream.getVideoTracks()) ? mediaStream.getVideoTracks()[0] : null;
+            if (existingTrack && existingTrack.readyState === 'live' && targetCam && (!targetCam.label || existingTrack.label === targetCam.label)) {
+                if (webcamEl) {
+                    if (webcamEl.srcObject !== mediaStream) webcamEl.srcObject = mediaStream;
+                    webcamEl.muted = true;
+                    webcamEl.defaultMuted = true;
+                    webcamEl.play().catch(() => { });
+                }
+                return;
+            }
+
+            stopWebcam();
+
+            // 2. Запрашиваем видеопоток (начиная с легкого 720p)
+            const is720 = currentCamResolution === '720p';
+            let openedStream = null;
+            const videoConstraints = {
+                width: is720 ? { ideal: 1280 } : { ideal: 1920 },
+                height: is720 ? { ideal: 720 } : { ideal: 1080 },
+                frameRate: { ideal: 30 }
+            };
+            if (chosenDeviceId) {
+                videoConstraints.deviceId = { ideal: chosenDeviceId };
+            }
+
+            try {
+                openedStream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: videoConstraints
+                });
+            } catch (errConstraint) {
+                console.warn('Ошибка идеальных параметров, fallback на базовый video:', errConstraint);
+                try {
+                    openedStream = await navigator.mediaDevices.getUserMedia({
+                        audio: false,
+                        video: chosenDeviceId ? { deviceId: { ideal: chosenDeviceId } } : true
+                    });
+                } catch (errBasic) {
+                    openedStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+                }
+            }
+
+            mediaStream = openedStream;
+            if (!mediaStream) {
+                throw new Error('Поток камеры не получен. Проверьте подключение камеры к киоску.');
+            }
+
+            // 3. После успешного запроса права выданы — обновляем список с РЕАЛЬНЫМИ именами устройств
+            try {
+                const refreshed = await navigator.mediaDevices.enumerateDevices();
+                availableVideoDevices = refreshed.filter(d => d.kind === 'videoinput');
+            } catch (e) { }
+
+            let currentTrack = (mediaStream && mediaStream.getVideoTracks()) ? mediaStream.getVideoTracks()[0] : null;
+
+            // 4. Проверяем: если открылась случайная (например встроенная или IR) камера, а киоск имеет внешнюю USB (Logitech BRIO):
+            const realBestCam = getOptimalCamera(availableVideoDevices, savedId);
+            if (realBestCam && currentTrack && realBestCam.label && currentTrack.label !== realBestCam.label) {
+                console.log('⚡ Авто-переключение на обнаруженную приоритетную камеру:', realBestCam.label);
+                try {
+                    const betterStream = await navigator.mediaDevices.getUserMedia({
+                        audio: false,
+                        video: {
+                            deviceId: { exact: realBestCam.deviceId },
+                            width: is720 ? { ideal: 1280 } : { ideal: 1920 },
+                            height: is720 ? { ideal: 720 } : { ideal: 1080 },
+                            frameRate: { ideal: 30 }
+                        }
+                    });
+                    if (betterStream) {
+                        mediaStream.getTracks().forEach(t => t.stop());
+                        mediaStream = betterStream;
+                        currentTrack = mediaStream.getVideoTracks()[0];
+                        localStorage.setItem('kiosk_camera_device_id', realBestCam.deviceId);
+                    }
+                } catch (camErr) {
+                    console.warn('Не удалось переключиться на лучшую камеру, остаёмся на открытой:', camErr);
+                }
+            }
+
+            // Заполняем выпадающий список доступных камер прямо на экране киоска
+            if (camDeviceSelect && availableVideoDevices.length > 0) {
+                camDeviceSelect.innerHTML = '';
+                availableVideoDevices.forEach((dev, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = dev.deviceId;
+                    const cleanName = (dev.label || `Камера ${idx + 1}`).replace(/\(.*?\)/g, '').trim();
+                    opt.textContent = `📷 ${cleanName}`;
+                    if (currentTrack && dev.label === currentTrack.label) {
+                        opt.selected = true;
+                    }
+                    camDeviceSelect.appendChild(opt);
+                });
+            }
+
+            if (switchCamBtn) {
+                switchCamBtn.style.display = 'none';
+            }
+
+            if (currentTrack) {
+                currentDeviceIndex = availableVideoDevices.findIndex(d =>
+                    (currentTrack.label && d.label === currentTrack.label)
+                );
+                if (currentDeviceIndex === -1) currentDeviceIndex = 0;
+            }
+
+            if (switchCamLabel && availableVideoDevices[currentDeviceIndex]) {
+                const rawName = availableVideoDevices[currentDeviceIndex].label || 'Камера';
+                const cleanName = rawName.replace(/\(.*?\)/g, '').trim();
+                const shortName = cleanName.length > 18 ? cleanName.slice(0, 16) + '…' : cleanName;
+                switchCamLabel.textContent = `📷 ${shortName}`;
+            }
+
+            // 5. Привязываем поток к элементу <video> со всеми атрибутами автовоспроизведения
+            if (webcamEl && mediaStream) {
+                webcamEl.muted = true;
+                webcamEl.defaultMuted = true;
+                webcamEl.volume = 0;
+                webcamEl.setAttribute('muted', '');
+                webcamEl.setAttribute('autoplay', '');
+                webcamEl.setAttribute('playsinline', '');
+
+                webcamEl.srcObject = mediaStream;
+
+                const ensurePlay = () => {
+                    if (webcamEl.paused) {
+                        webcamEl.play().catch(e => console.warn('Play retry:', e));
+                    }
+                };
+
+                webcamEl.onloadedmetadata = ensurePlay;
+                webcamEl.oncanplay = ensurePlay;
+                webcamEl.onloadeddata = ensurePlay;
+                ensurePlay();
+
+                // Watchdog: если видео задержалось с запуском — мягко пинаем воспроизведение
+                let watchdogAttempts = 0;
+                const playWatchdog = setInterval(() => {
+                    watchdogAttempts++;
+                    if (!mediaStream || watchdogAttempts > 15) {
+                        clearInterval(playWatchdog);
+                        return;
+                    }
+                    if (webcamEl.paused || webcamEl.readyState < 2) {
+                        webcamEl.play().catch(() => { });
+                    } else {
+                        clearInterval(playWatchdog);
+                    }
+                }, 200);
+
+                updateCamBadge(currentTrack);
+                startFpsCounter();
+            }
+        } catch (err) {
+            console.error('Ошибка доступа к камере:', err);
+            let detail = err.name ? `${err.name}: ${err.message}` : String(err);
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                detail += '\n\nПричина: Браузер заблокировал доступ к камере (нужен флаг --use-fake-ui-for-media-stream в ярлыке).';
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                detail += '\n\nПричина: Физическая камера не обнаружена в системе Windows. Проверьте USB-кабель камеры (Logitech BRIO).';
+            } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                detail += '\n\nПричина: Камера уже занята другой программой (OBS, Zoom, Skype и т.п.).';
+            }
+            alert(`Не удалось подключиться к камере:\n${detail}`);
+        }
+    }
+
+    // Переключение между камерами киоска
+    async function switchCamera() {
+        if (availableVideoDevices.length <= 1) return;
+        currentDeviceIndex = (currentDeviceIndex + 1) % availableVideoDevices.length;
+        const nextDev = availableVideoDevices[currentDeviceIndex];
+        if (nextDev) {
+            localStorage.setItem('kiosk_user_selected_cam_id', nextDev.deviceId);
+            localStorage.setItem('kiosk_camera_device_id', nextDev.deviceId);
+            if (camDeviceSelect) camDeviceSelect.value = nextDev.deviceId;
+            await startWebcam();
+        }
+    }
+
+    if (switchCamBtn) {
+        switchCamBtn.addEventListener('click', switchCamera);
+    }
+
+    function stopWebcam() {
+        if (fpsCallbackId && webcamEl && 'cancelVideoFrameCallback' in webcamEl) {
+            webcamEl.cancelVideoFrameCallback(fpsCallbackId);
+            fpsCallbackId = null;
+        }
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
+        }
+        if (webcamEl) {
+            webcamEl.srcObject = null;
+        }
+        if (camFpsWarning) {
+            camFpsWarning.style.display = 'none';
+        }
+    }
+
+    if (webcamEl) {
+        webcamEl.addEventListener('loadedmetadata', () => {
+            const track = mediaStream ? mediaStream.getVideoTracks()[0] : null;
+            updateCamBadge(track);
+        });
+    }
+
+    // ВЫБОР ДЛИТЕЛЬНОСТИ ТАЙМЕРА СЪЁМКИ (3, 5, 8, 10 СЕКУНД)
+    let selectedCaptureDuration = 3;
+    const timerButtons = document.querySelectorAll('.timer-btn');
+    timerButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            timerButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedCaptureDuration = parseInt(btn.getAttribute('data-timer'), 10) || 3;
+        });
+    });
+
+    // Гарантия снятия блокировки автовоспроизведения видео при любом клике или тапе
+    const kickWebcamPlayback = () => {
+        if (webcamEl && webcamEl.srcObject && webcamEl.paused) {
+            webcamEl.play().catch(() => { });
+        }
+    };
+    window.addEventListener('pointerdown', kickWebcamPlayback, { passive: true });
+    window.addEventListener('touchstart', kickWebcamPlayback, { passive: true });
+    window.addEventListener('click', kickWebcamPlayback, { passive: true });
+
+    // 3. SNAP PHOTO / RECORD VIDEO, COUNTDOWN И ПОДТВЕРЖДЕНИЕ ГОСТЕМ
+    snapBtn.addEventListener('click', () => {
+        if (webcamEl && webcamEl.paused) {
+            webcamEl.play().catch(() => { });
+        }
+        snapBtn.disabled = true;
+
+        const isMotionControl = false; // Kling Motion Control удалён — используем Omni Flash
+
+        // Omni Flash — гость записывает живое видео для Video-to-Video трансформации
+        const isVideoMode = !isMotionControl && (
+            (selectedStyleModel && (selectedStyleModel.includes('omni') || selectedStyleModel.includes('gemini'))) ||
+            (isVideoTemplate({
+                model: selectedStyleModel,
+                category: (selectedTemplateId && masterTemplates.find(t => t.id === selectedTemplateId)?.category) || '',
+                img: selectedStylePhoto
+            }) && !isMotionControl)
+        );
+
+        if (isVideoMode) {
+            // Режим видеосъемки: быстрый отсчет 3.. 2.. 1.. и запись живого видео гостя
+            let count = 3;
+            countdownOverlay.textContent = count;
+
+            const preTimer = setInterval(() => {
+                if (webcamEl && webcamEl.paused) {
+                    webcamEl.play().catch(() => { });
+                }
+                count--;
+                if (count > 0) {
+                    countdownOverlay.textContent = count;
+                } else {
+                    clearInterval(preTimer);
+                    countdownOverlay.textContent = '';
+                    startGuestVideoRecording();
+                }
+            }, 1000);
+            return;
+        }
+
+        // Режим фотосъемки (включая Kling Motion Control, примерку и фото-портреты)
+        let count = selectedCaptureDuration;
+        countdownOverlay.textContent = count;
+
+        const timer = setInterval(() => {
+            if (webcamEl && webcamEl.paused) {
+                webcamEl.play().catch(() => { });
+            }
+            count--;
+            if (count > 0) {
+                countdownOverlay.textContent = count;
+            } else {
+                clearInterval(timer);
+                countdownOverlay.innerHTML = '<span style="font-size: 72px; color: var(--primary);">✦</span>';
+                takeSnapshot();
+                setTimeout(() => {
+                    stopWebcam();
+                    snapBtn.disabled = false;
+                    countdownOverlay.textContent = '';
+                    if (confirmModalTitle) confirmModalTitle.textContent = isMotionControl ? 'ОТЛИЧНЫЙ КАДР ДЛЯ ТАНЦА?' : 'ОТЛИЧНЫЙ КАДР?';
+                    if (confirmModalSubtitle) confirmModalSubtitle.textContent = isMotionControl ? 'Проверьте снимок перед переносом движений танца' : 'Проверьте снимок перед отправкой на создание портрета';
+                    if (photoPreviewConfirm) {
+                        photoPreviewConfirm.src = capturedPhotoData;
+                        photoPreviewConfirm.style.display = 'block';
+                    }
+                    if (videoPreviewConfirm) {
+                        videoPreviewConfirm.pause();
+                        videoPreviewConfirm.src = '';
+                        videoPreviewConfirm.style.display = 'none';
+                    }
+                    showStep(stepConfirm);
+                }, 400);
+            }
+        }, 1000);
+    });
+
+    // Запись живого видеоролика гостя через MediaRecorder
+    function startGuestVideoRecording() {
+        isRecordingVideo = true;
+        recordedVideoChunks = [];
+
+        // Делаем стоп-кадр лица для превью/постера
+        takeSnapshot();
+
+        const mime = getSupportedVideoMimeType();
+        try {
+            mediaRecorder = mime ? new MediaRecorder(mediaStream, { mimeType: mime }) : new MediaRecorder(mediaStream);
+        } catch (err) {
+            console.warn('Fallback к стандартному MediaRecorder:', err);
+            mediaRecorder = new MediaRecorder(mediaStream);
+        }
+
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) {
+                recordedVideoChunks.push(e.data);
+            }
+        };
+
+        mediaRecorder.onstop = () => {
+            isRecordingVideo = false;
+            const finalMime = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'video/mp4';
+            capturedVideoBlob = new Blob(recordedVideoChunks, { type: finalMime });
+            if (capturedVideoUrl) URL.revokeObjectURL(capturedVideoUrl);
+            capturedVideoUrl = URL.createObjectURL(capturedVideoBlob);
+
+            stopWebcam();
+            snapBtn.disabled = false;
+            if (camRecBadge) camRecBadge.style.display = 'none';
+
+            if (confirmModalTitle) confirmModalTitle.textContent = 'ОТЛИЧНЫЙ РОЛИК?';
+            if (confirmModalSubtitle) confirmModalSubtitle.textContent = 'Проверьте видео перед созданием клипа';
+            if (videoPreviewConfirm) {
+                videoPreviewConfirm.src = capturedVideoUrl;
+                videoPreviewConfirm.style.display = 'block';
+                videoPreviewConfirm.play().catch(e => console.warn('Preview play err:', e));
+            }
+            if (photoPreviewConfirm) {
+                photoPreviewConfirm.style.display = 'none';
+            }
+            showStep(stepConfirm);
+        };
+
+        mediaRecorder.start(250);
+
+        let durationLeft = selectedVideoDuration || 4;
+        if (camRecBadge) camRecBadge.style.display = 'inline-flex';
+        if (camRecCountdown) camRecCountdown.textContent = durationLeft;
+
+        const recTimer = setInterval(() => {
+            durationLeft--;
+            if (camRecCountdown) camRecCountdown.textContent = durationLeft;
+            if (durationLeft <= 0) {
+                clearInterval(recTimer);
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+            }
+        }, 1000);
+    }
+
+    function takeSnapshot() {
+        // Белая вспышка — имитация затвора
+        const flashEl = document.getElementById('camera-flash');
+        if (flashEl) {
+            flashEl.classList.add('active');
+            setTimeout(() => flashEl.classList.remove('active'), 180);
+        }
+
+        const rawW = webcamEl.videoWidth || 1920;
+        const rawH = webcamEl.videoHeight || 1080;
+
+        // Ограничиваем максимальный размер до 1280px для мгновенной передачи в ИИ и четкого захвата лица
+        let targetW = rawW;
+        let targetH = rawH;
+        const maxDim = 1280;
+        if (targetW > maxDim || targetH > maxDim) {
+            if (targetW > targetH) {
+                targetH = Math.round((targetH * maxDim) / targetW);
+                targetW = maxDim;
+            } else {
+                targetW = Math.round((targetW * maxDim) / targetH);
+                targetH = maxDim;
+            }
+        }
+
+        canvasEl.width = targetW;
+        canvasEl.height = targetH;
+        const ctx = canvasEl.getContext('2d', { alpha: false });
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Отрисовываем с зеркальным отражением (как в превью камеры)
+        ctx.save();
+        ctx.translate(targetW, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(webcamEl, 0, 0, targetW, targetH);
+        ctx.restore();
+
+        // 0.88 обеспечивает высокую четкость черт лица при размере файла всего ~200-300 КБ
+        capturedPhotoData = canvasEl.toDataURL('image/jpeg', 0.88);
+    }
+
+    let isAiGenerating = false;
+    // 4. СТУДИЙНАЯ ОБРАБОТКА И СОЗДАНИЕ ПОРТРЕТА / ПРОЖАРКА (С СОВРЕМЕННЫМ НЕОНОВЫМ ПРОГРЕСС-БАРОМ)
+    async function runAIGeneration() {
+        if (isAiGenerating) {
+            console.warn('[AI Pipeline] runAIGeneration уже запущен, повторный вызов заблокирован');
+            return;
+        }
+        isAiGenerating = true;
+
+        // Проверка: режим Стендап-Прожарки
+        const isRoast = selectedStyleModel === 'roast-standup' || (selectedStyle && selectedStyle.toUpperCase().includes('ПРОЖАР'));
+
+        if (isRoast) {
+            resetAiProgress('СТЕНДАП-ПРОЖАРКА', 'chatgpt-2.5', '2K');
+            const roastStatuses = [
+                `Анализ лука и позы перед камерой...`,
+                `Сканирование стиля и настроения...`,
+                `Подбор остроумного монолога...`,
+                `Создание комического шаржа...`,
+                `Запись голоса стендап-комика...`
+            ];
+            let rIdx = 0;
+            setAiProgress(15, roastStatuses[0]);
+            const rInterval = setInterval(() => {
+                rIdx++;
+                if (rIdx < roastStatuses.length) {
+                    setAiProgress(Math.min(90, 15 + rIdx * 18), roastStatuses[rIdx]);
+                }
+            }, 1400);
+
+            try {
+                const aggregatorKey = localStorage.getItem('kiosk_aggregator_key') || '';
+                const openaiKey = localStorage.getItem('kiosk_openai_key') || '';
+
+                const resp = await fetch('/api/ai/roast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        photoData: capturedPhotoData,
+                        orderId: currentOrderId,
+                        aggregatorKey,
+                        openaiKey
+                    })
+                });
+
+                clearInterval(rInterval);
+
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.success) {
+                        await finishAiProgress();
+
+                        if (roastCaricatureImg) roastCaricatureImg.src = data.imageUrl || data.originalPhotoUrl || selectedStylePhoto;
+                        if (roastPunchTitle) roastPunchTitle.textContent = data.title || 'ПРОЖАРКА В ТЦ';
+                        const cleanSpeech = (data.text || '').replace(/\[\w+\]/g, '').replace(/\.\.\./g, '…');
+                        if (roastSpeechBody) roastSpeechBody.textContent = `«${cleanSpeech}»`;
+
+                        const charisma = Number(data.charisma) || 16;
+                        if (roastCharismaVal) roastCharismaVal.textContent = charisma + '%';
+                        if (roastCharismaBar) roastCharismaBar.style.width = charisma + '%';
+
+                        if (roastFlawVal) roastFlawVal.textContent = data.flaw || 'Аура рассрочки MBank';
+                        if (roastMallVal) roastMallVal.textContent = data.mallStatus || 'Эксперт по фудкорту';
+
+                        // QR код на скачивание
+                        if (roastQrImg) {
+                            const dlUrl = data.imageUrl || data.originalPhotoUrl || window.location.href;
+                            renderInstantQR(roastQrImg, dlUrl, 220);
+                        }
+
+                        showStep(stepRoastResult);
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('[Roast Pipeline Error]', err);
+                clearInterval(rInterval);
+                stopAiProgress();
+            }
+        }
+
+        const isMotionControl = false; // Kling Motion Control удалён
+
+        const isFairytaleSelection = selectedStyleModel === 'fairytale' ||
+            (selectedStyleCategory && selectedStyleCategory.toUpperCase() === 'СКАЗКА') ||
+            (selectedStyle && selectedStyle.toUpperCase().includes('СКАЗК'));
+
+        const isMusicSelection = !isFairytaleSelection && (selectedStyleModel === 'suno' ||
+            selectedStyleModel.includes('suno') ||
+            selectedStyleModel.includes('music') ||
+            (selectedStyleCategory && ['РЭП', 'ПОП', 'ФОНК', 'РОК', 'ПОЗДРАВЛЕНИЯ', 'ЛИРИКА'].includes(selectedStyleCategory.toUpperCase())));
+
+        const isVideoSelection = !isMusicSelection && !isFairytaleSelection && (
+            selectedStyleModel === 'omni-flash' ||
+            selectedStyleModel.includes('omni') ||
+            selectedStyleModel.includes('gemini') ||
+            selectedStyleModel.includes('video'));
+
+        const genTitle = isFairytaleSelection ? 'СОЗДАНИЕ ВОЛШЕБНОЙ СКАЗКИ' : isMusicSelection ? 'СОЗДАНИЕ ПЕСНИ' : isMotionControl ? 'СОЗДАНИЕ ТАНЦА' : isVideoSelection ? 'СОЗДАНИЕ ВИДЕОРОЛИКА' : isTryOnMode ? 'ВИРТУАЛЬНАЯ ПРИМЕРКА' : 'СОЗДАНИЕ ПОРТРЕТА';
+        resetAiProgress(genTitle, selectedStyleModel, currentAiResolution);
+
+        const fairytaleInitialStatuses = [
+            `Придумывание волшебного сюжета для вашего ребенка...`,
+            `Генерация 3D-обложки книги в стиле сказочной анимации...`,
+            `Озвучивание сказки живым профессиональным голосом...`,
+            `Подготовка персональной аудиокниги и субтитров...`
+        ];
+        const musicInitialStatuses = [
+            `Создание оригинальной мелодии и аранжировки...`,
+            `Написание текста песни и куплетов...`,
+            `Синтез студийного вокала и партий инструментов...`,
+            `Финальный мастеринг двух версий трека...`
+        ];
+        const motionInitialStatuses = [
+            `Анализ позы и силуэта на вашем фото...`,
+            `Загрузка хореографии из видео-референса...`,
+            `Синхронизация пластики и движений...`,
+            `Создание танцевального клипа...`
+        ];
+        const videoInitialStatuses = [
+            `Анализ кадра и карты глубины...`,
+            `Генерация динамики и траектории движения...`,
+            `Подготовка видеопотока...`
+        ];
+        const statuses = isFairytaleSelection ? fairytaleInitialStatuses : isMusicSelection ? musicInitialStatuses : isMotionControl ? motionInitialStatuses : isVideoSelection ? videoInitialStatuses : isTryOnMode ? [
+            `Анализ силуэта и позы...`,
+            `Подбор размера и примерка кроя...`,
+            `Сохранение черт лица и индивидуальности...`,
+            `Прорисовка складок ткани и реалистичного света...`
+        ] : [
+            `Анализ кадра и освещения...`,
+            `Создание художественного стиля...`,
+            `Прорисовка деталей портрета...`,
+            `Финальная цветокоррекция...`
+        ];
+
+        let idx = 0;
+        setAiProgress(14, statuses[0]);
+
+        const interval = setInterval(() => {
+            idx++;
+            if (idx < statuses.length) {
+                // Плавно растём от 14 до ~26%, не застреваем на одном значении
+                setAiProgress(14 + idx * 4, statuses[idx]);
+            } else {
+                // Статусы закончились — показываем последний, медленно ползём к 29%
+                const extraTarget = Math.min(29, 14 + idx * 2);
+                setAiProgress(extraTarget, statuses[statuses.length - 1]);
+            }
+        }, 1500);
+
+        let finalResultUrl = null;
+        let finalAudioUrls = [];
+        let generationError = null;
+
+        // Если гостем было записано живое видео — сначала загружаем его в Supabase Storage
+        let guestVideoUrl = null;
+        if (capturedVideoBlob) {
+            setAiProgress(8, 'Подготовка видеоматериала...');
+            try {
+                const ext = (capturedVideoBlob.type && capturedVideoBlob.type.includes('mp4')) ? 'mp4' : 'webm';
+                const vidFileName = `guests/guest_vid_${currentOrderId || Date.now()}.${ext}`;
+                const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${vidFileName}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                        'Content-Type': capturedVideoBlob.type || 'video/mp4',
+                        'x-upsert': 'true'
+                    },
+                    body: capturedVideoBlob
+                });
+                if (uploadRes.ok) {
+                    guestVideoUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${vidFileName}`;
+                    console.log('[Kiosk Video] Записанное видео гостя успешно загружено в Supabase:', guestVideoUrl);
+                } else {
+                    console.warn('[Kiosk Video] Ошибка загрузки видео в Supabase:', uploadRes.status);
+                }
+            } catch (e) {
+                console.warn('[Kiosk Video] Ошибка при загрузке видео гостя:', e);
+            }
+        }
+
+        try {
+            const aggregatorUrl = localStorage.getItem('kiosk_aggregator_url') || '';
+            const aggregatorKey = localStorage.getItem('kiosk_aggregator_key') || '';
+            const elevenlabsApiKey = localStorage.getItem('kiosk_elevenlabs_api_key') || '';
+            const elevenlabsModel = localStorage.getItem('kiosk_elevenlabs_model') || 'eleven_v4';
+
+            let finalPrompt = selectedStylePrompt;
+            let finalTitle = selectedStyle;
+            if (isMusicSelection && guestMusicTheme) {
+                finalPrompt = `${selectedStylePrompt}. Тема и посвящение песни: ${guestMusicTheme}. Песня написана персонально для: ${guestMusicTheme}.`;
+                finalTitle = `${guestMusicTheme} (${selectedStyle})`;
+            }
+
+            const resp = await fetch('/api/ai/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    photoData: capturedPhotoData,
+                    videoUrl: guestVideoUrl,
+                    guestVideoUrl: guestVideoUrl,
+                    templateImg: selectedStylePhoto,
+                    prompt: finalPrompt,
+                    model: selectedStyleModel || 'chatgpt-2.5-sunburst',
+                    title: finalTitle,
+                    price: selectedStylePrice,
+                    orderId: currentOrderId,
+                    location: selectedStyleLocation,
+                    isTryOn: isTryOnMode,
+                    isFairytale: isFairytaleSelection,
+                    fairytaleData: guestFairytaleData,
+                    elevenlabsApiKey,
+                    elevenlabsModel,
+                    fairytaleBgTracks: JSON.parse(localStorage.getItem('kiosk_fairytale_bg_tracks') || '[]'),
+                    resolution: '1K',
+                    duration: selectedVideoDuration || 5,
+                    aggregatorUrl,
+                    aggregatorKey
+                })
+            });
+
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data.success) {
+
+                    if (data.pending && data.taskId) {
+                        clearInterval(interval);
+                        console.log(`[AI Polling] Задача ${data.taskId} в процессе генерации, запускаем поллинг...`);
+                        const isVideoTask = Boolean(data.isVideo) || isVideoSelection;
+                        const fairytalePollStatuses = [
+                            `Придумывание волшебного сюжета для сказки...`,
+                            `Отрисовка 3D-обложки книги в стиле сказочной анимации...`,
+                            `Синтез сказочного голоса диктора через ElevenLabs...`,
+                            `Сведение звука и подготовка субтитров...`,
+                            `Финальная подготовка аудиокниги для сохранения...`
+                        ];
+                        const musicPollStatuses = [
+                            `Студийное создание мелодии и ритма...`,
+                            `Написание текста песни и рифм по вашей теме...`,
+                            `Аранжировка инструментов и студийный бит...`,
+                            `Запись двух версий персонального трека...`,
+                            `Финальный студийный мастеринг MP3...`
+                        ];
+                        const photoPollStatuses = [
+                            `Обработка портрета в высоком качестве...`,
+                            `Прорисовка фотореалистичных черт лица...`,
+                            `Художественная стилизация и сохранение сходства...`,
+                            `Шлифовка реалистичной текстуры и света...`,
+                            `Финальная подготовка кадра...`
+                        ];
+                        const tryOnPollStatuses = [
+                            `Примерка одежды на фото...`,
+                            `Точная посадка кроя по вашей фигуре...`,
+                            `Сохранение черт лица и позы...`,
+                            `Прорисовка реалистичной ткани и теней...`,
+                            `Финальная подготовка образа...`
+                        ];
+                        const motionPollStatuses = [
+                            `Анализ пластики и ритма движений...`,
+                            `Перенос хореографии танца на ваше фото...`,
+                            `Прорисовка реалистичной мимики и света...`,
+                            `Создание плавного видеоролика...`,
+                            `Финальная сборка видеоролика...`
+                        ];
+                        const videoPollStatuses = [
+                            `Анализ кадра и построение карты глубины...`,
+                            `Генерация динамики и плавных движений...`,
+                            `Рендеринг кадров видеопотока...`,
+                            `Цветокоррекция и сглаживание анимации...`,
+                            `Финальная сборка видеоролика...`
+                        ];
+                        const activePollStatuses = isFairytaleSelection
+                            ? fairytalePollStatuses
+                            : isMusicSelection
+                                ? musicPollStatuses
+                                : isMotionControl
+                                    ? motionPollStatuses
+                                    : isVideoTask
+                                        ? videoPollStatuses
+                                        : (isTryOnMode || selectedStyleModel === 'nano-banana-2')
+                                            ? tryOnPollStatuses
+                                            : photoPollStatuses;
+
+                        let pollIdx = 0;
+                        let pollAttempts = 0;
+                        const effectiveApiKey = data.apiKey || aggregatorKey || '';
+                        const pollDelay = 2000;
+                        setAiProgress(30, activePollStatuses[0]);
+
+                        // Бесконечный цикл — выходим ТОЛЬКО при явном успехе или ошибке от Kie.ai
+                        // Никогда не прерываем по таймауту/счётчику — ждём сколько нужно
+                        while (true) {
+                            await new Promise(r => setTimeout(r, pollDelay));
+                            pollAttempts++;
+
+                            // Плавный и непрерывный рост шкалы прогресса
+                            const elapsedSec = pollAttempts * (pollDelay / 1000);
+                            let pollTarget;
+                            if (elapsedSec < 30) {
+                                pollTarget = Math.floor(30 + (elapsedSec / 30) * 30); // 30% -> 60%
+                            } else if (elapsedSec < 90) {
+                                pollTarget = Math.floor(60 + ((elapsedSec - 30) / 60) * 22); // 60% -> 82%
+                            } else if (elapsedSec < 180) {
+                                pollTarget = Math.floor(82 + ((elapsedSec - 90) / 90) * 11); // 82% -> 93%
+                            } else if (elapsedSec < 360) {
+                                pollTarget = Math.min(96, Math.floor(93 + ((elapsedSec - 180) / 180) * 3)); // 93% -> 96%
+                            } else {
+                                pollTarget = 97; // держим 97% сколько угодно долго
+                            }
+
+                            // Динамический статус в зависимости от времени ожидания
+                            let currentStatusText = activePollStatuses[pollIdx % activePollStatuses.length];
+                            if (isMusicSelection) {
+                                if (elapsedSec > 25 && elapsedSec <= 50) {
+                                    currentStatusText = `Создание рифм и сведение студийного бита...`;
+                                } else if (elapsedSec > 50 && elapsedSec <= 75) {
+                                    currentStatusText = `Синтез вокала и партий инструментов...`;
+                                } else if (elapsedSec > 75) {
+                                    currentStatusText = `Финальный мастеринг и экспорт двух версий MP3...`;
+                                }
+                            } else if (elapsedSec > 40 && elapsedSec <= 120) {
+                                currentStatusText = `Обработка в очереди нейросетей, ожидаем...`;
+                            } else if (elapsedSec > 120 && elapsedSec <= 240) {
+                                currentStatusText = `Нейросеть работает над вашим изображением...`;
+                            } else if (elapsedSec > 240) {
+                                currentStatusText = `Финальный рендеринг и улучшение качества...`;
+                            }
+
+                            setAiProgress(pollTarget, currentStatusText);
+                            pollIdx++;
+
+                            try {
+                                const apiKeyParam = effectiveApiKey ? `&apiKey=${encodeURIComponent(effectiveApiKey)}` : '';
+                                const sRes = await fetch(`/api/ai/status?taskId=${encodeURIComponent(data.taskId)}&orderId=${encodeURIComponent(currentOrderId || '')}${apiKeyParam}&_t=${Date.now()}`);
+                                if (sRes.ok) {
+                                    const sData = await sRes.json();
+                                    if (sData.state === 'success' && sData.resultUrl) {
+                                        console.log(`[AI Polling] Успех за ${elapsedSec}с! Результат:`, sData.resultUrl);
+                                        finalResultUrl = sData.resultUrl;
+                                        if (sData.audioUrls && sData.audioUrls.length > 0) finalAudioUrls = sData.audioUrls;
+                                        break;
+                                    } else if (sData.state === 'fail') {
+                                        console.warn('[AI Polling] Явная ошибка от Kie.ai:', sData.error);
+                                        generationError = sData.error || 'Ошибка при генерации нейросетью';
+                                        break;
+                                    }
+                                    // Любой другой статус (pending/running/queue) — продолжаем ждать
+                                }
+                            } catch (pollErr) {
+                                // Сетевая ошибка — не прерываем, продолжаем опрос
+                                console.warn(`[AI Polling] Сетевая ошибка (попытка ${pollAttempts}):`, pollErr.message);
+                            }
+                        }
+                    } else if (data.resultUrl) {
+                        finalResultUrl = data.resultUrl;
+                        if (data.audioUrls && data.audioUrls.length > 0) finalAudioUrls = data.audioUrls;
+                    }
+                } else {
+                    generationError = data.error || 'Ошибка при запуске генерации';
+                }
+            } else {
+                generationError = `Ошибка сервера генерации (HTTP ${resp.status})`;
+            }
+        } catch (err) {
+            console.warn('[AI Pipeline] Ошибка генерации:', err);
+            generationError = err.message || 'Ошибка генерации';
+            stopAiProgress();
+        }
+
+        clearInterval(interval);
+
+        // Если результат не получен — не показываем шаблон под видом результата!
+        if (!finalResultUrl) {
+            isAiGenerating = false;
+            stopAiProgress();
+            console.error('[AI Pipeline] Результат не получен:', generationError);
+            alert(generationError || 'Не удалось завершить создание видео/фото. Пожалуйста, попробуйте еще раз.');
+            if (isMusicSelection) {
+                showStep(stepPayment);
+            } else {
+                showStep(stepConfirm);
+            }
+            return;
+        }
+
+        // Завершаем заполнение прогресс-бара до 100% с неоновым свечением
+        await finishAiProgress();
+
+        const isAudioResult = typeof finalResultUrl === 'string' && (
+            finalResultUrl.endsWith('.mp3') ||
+            finalResultUrl.endsWith('.wav') ||
+            finalResultUrl.endsWith('.m4a') ||
+            finalResultUrl.includes('/audio/') ||
+            finalResultUrl.includes('.mp3?') ||
+            finalResultUrl.includes('.wav?') ||
+            isMusicSelection
+        );
+
+        const isVideoResult = !isAudioResult && typeof finalResultUrl === 'string' && (
+            finalResultUrl.endsWith('.mp4') ||
+            finalResultUrl.endsWith('.webm') ||
+            finalResultUrl.includes('/video/') ||
+            finalResultUrl.includes('.mp4?') ||
+            finalResultUrl.includes('.webm?')
+        );
+
+        const resultAudioBox = document.getElementById('result-audio-box');
+        const resultAudioPlayer = document.getElementById('result-audio-player');
+        const resultAudioBgPlayer = document.getElementById('result-audio-bg-player');
+        const studioBgBadge = document.getElementById('studio-bg-track-badge');
+        const studioBgName = document.getElementById('studio-bg-track-name');
+        const resultAudioTitle = document.getElementById('result-audio-title');
+        const resultAudioGenre = document.getElementById('result-audio-genre');
+        const stepResultTitle = document.querySelector('#step-result .modal-title');
+        const stepResultSubtitle = document.querySelector('#step-result .modal-subtitle');
+
+        let currentBgTrackUrl = null;
+        let currentBgTrackName = null;
+
+        const resultFairytaleBox = document.getElementById('result-fairytale-box');
+        const fairytaleSubtitlesText = document.getElementById('fairytale-subtitles-text');
+
+        if (isFairytaleSelection) {
+            if (resultImg) resultImg.style.display = 'none';
+            if (resultAudioBox) resultAudioBox.style.display = 'none';
+
+            if (stepResultTitle) stepResultTitle.textContent = 'ВАША ВОЛШЕБНАЯ СКАЗКА ГОТОВА! 🪄';
+            if (stepResultSubtitle) stepResultSubtitle.textContent = 'Отсканируйте QR-код, чтобы сохранить видеосказку в галерею смартфона';
+
+            // 1. Если доступно скомпилированное MP4 видео
+            if (isVideoResult && resultVideo) {
+                if (resultFairytaleBox) resultFairytaleBox.style.display = 'none';
+                resultVideo.src = finalResultUrl;
+                resultVideo.muted = false;
+                resultVideo.style.display = 'block';
+                resultVideo.play().catch(() => {
+                    resultVideo.muted = true;
+                    resultVideo.play().catch(() => {});
+                });
+            } else {
+                // 2. Если результат передан аудиопотоком (на Vercel) — воспроизведение видеосказки через обложку и живые субтитры
+                if (resultVideo) resultVideo.style.display = 'none';
+                if (resultFairytaleBox) resultFairytaleBox.style.display = 'block';
+
+                currentBgTrackUrl = data.bgTrackUrl || null;
+                currentBgTrackName = data.bgTrackName || 'Сказочная мелодия';
+
+                if (!currentBgTrackUrl) {
+                    try {
+                        const localBgs = JSON.parse(localStorage.getItem('kiosk_fairytale_bg_tracks') || '[]')
+                            .filter(t => t && t.active !== false && t.url);
+                        if (localBgs.length > 0) {
+                            const rnd = localBgs[Math.floor(Math.random() * localBgs.length)];
+                            currentBgTrackUrl = rnd.url;
+                            currentBgTrackName = rnd.name || 'Сказочная мелодия';
+                        }
+                    } catch(e) {}
+                }
+
+                if (resultAudioBgPlayer && currentBgTrackUrl) {
+                    resultAudioBgPlayer.src = currentBgTrackUrl;
+                    resultAudioBgPlayer.volume = 0.18;
+                    resultAudioBgPlayer.currentTime = 0;
+                }
+
+                if (resultAudioPlayer) {
+                    resultAudioPlayer.src = finalResultUrl;
+                    resultAudioPlayer.currentTime = 0;
+                    resultAudioPlayer.play().catch(() => {});
+
+                    resultAudioPlayer.onplay = () => {
+                        if (resultAudioBgPlayer && resultAudioBgPlayer.src) resultAudioBgPlayer.play().catch(() => {});
+                    };
+                    resultAudioPlayer.onpause = () => {
+                        if (resultAudioBgPlayer) resultAudioBgPlayer.pause();
+                    };
+                    resultAudioPlayer.onended = () => {
+                        if (resultAudioBgPlayer) { resultAudioBgPlayer.pause(); resultAudioBgPlayer.currentTime = 0; }
+                    };
+
+                    // Живая синхронизация субтитров со звуком
+                    const childName = guestFairytaleData?.childName || 'малыш';
+                    const narrativeText = data.speechText || data.prompt || selectedStylePrompt || `Сказка для ${childName}`;
+                    const sentences = narrativeText.split(/(?<=[.!?])\s+/).filter(Boolean);
+                    if (fairytaleSubtitlesText) {
+                        fairytaleSubtitlesText.textContent = sentences[0] || `Сказка для ${childName}`;
+                        resultAudioPlayer.ontimeupdate = () => {
+                            if (!resultAudioPlayer.duration) return;
+                            const progress = resultAudioPlayer.currentTime / resultAudioPlayer.duration;
+                            const idx = Math.min(sentences.length - 1, Math.floor(progress * sentences.length));
+                            if (sentences[idx]) fairytaleSubtitlesText.textContent = sentences[idx];
+                        };
+                    }
+                }
+            }
+        } else if (isAudioResult && resultAudioBox && resultAudioPlayer) {
+            if (resultImg) resultImg.style.display = 'none';
+            if (resultVideo) {
+                resultVideo.pause();
+                resultVideo.style.display = 'none';
+            }
+            if (resultFairytaleBox) resultFairytaleBox.style.display = 'none';
+            resultAudioBox.style.display = 'flex';
+                if (stepResultTitle) stepResultTitle.textContent = 'ВАШ МУЗЫКАЛЬНЫЙ ХИТ ГОТОВ! 🎵';
+                if (stepResultSubtitle) stepResultSubtitle.textContent = 'Послушайте созданные варианты и отсканируйте QR-код для загрузки MP3';
+                if (resultAudioTitle) {
+                    const themeClean = guestMusicTheme ? guestMusicTheme.trim() : '';
+                    resultAudioTitle.textContent = themeClean ? `«${themeClean}»` : (selectedStyle ? `Хит: ${selectedStyle}` : 'Ваш персональный трек');
+                }
+                if (resultAudioGenre) {
+                    resultAudioGenre.textContent = `🎵 ${selectedStyle || 'ХИТ'} • СТУДИЙНАЯ ЗАПИСЬ`;
+                }
+                if (studioBgBadge) studioBgBadge.style.display = 'none';
+                if (resultAudioBgPlayer) {
+                    resultAudioBgPlayer.pause();
+                    resultAudioBgPlayer.src = '';
+                }
+
+            // Кастомный студийный плеер Trendum Sound
+            const studioCustomPlayer = document.getElementById('studio-custom-player');
+            const studioVinylDisc = document.getElementById('studio-vinyl-disc');
+            const studioPlayToggle = document.getElementById('studio-play-toggle');
+            const studioPlayIcon = document.getElementById('studio-play-icon');
+            const studioPauseIcon = document.getElementById('studio-pause-icon');
+            const studioCurrentTime = document.getElementById('studio-current-time');
+            const studioTotalTime = document.getElementById('studio-total-time');
+            const studioProgressTrack = document.getElementById('studio-progress-track');
+            const studioProgressFill = document.getElementById('studio-progress-fill');
+            const studioProgressThumb = document.getElementById('studio-progress-thumb');
+            const studioSeekBackward = document.getElementById('studio-seek-backward');
+            const studioSeekForward = document.getElementById('studio-seek-forward');
+
+            const formatStudioTime = (seconds) => {
+                if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
+                const m = Math.floor(seconds / 60);
+                const s = Math.floor(seconds % 60);
+                return `${m}:${s < 10 ? '0' : ''}${s}`;
+            };
+
+            const updateStudioPlayerState = (isPlaying) => {
+                if (studioPlayIcon && studioPauseIcon) {
+                    studioPlayIcon.style.display = isPlaying ? 'none' : 'block';
+                    studioPauseIcon.style.display = isPlaying ? 'block' : 'none';
+                }
+                if (studioCustomPlayer) studioCustomPlayer.classList.toggle('playing', isPlaying);
+                if (studioVinylDisc) studioVinylDisc.classList.toggle('playing', isPlaying);
+            };
+
+            // Привязка событий воспроизведения
+            resultAudioPlayer.onplay = () => {
+                updateStudioPlayerState(true);
+                if (isFairytaleSelection && resultAudioBgPlayer && resultAudioBgPlayer.src) {
+                    resultAudioBgPlayer.play().catch(e => console.warn('BGM play error:', e));
+                }
+            };
+            resultAudioPlayer.onpause = () => {
+                updateStudioPlayerState(false);
+                if (resultAudioBgPlayer) resultAudioBgPlayer.pause();
+            };
+            resultAudioPlayer.onended = () => {
+                updateStudioPlayerState(false);
+                if (studioProgressFill) studioProgressFill.style.width = '0%';
+                if (studioProgressThumb) studioProgressThumb.style.left = '0%';
+                if (studioCurrentTime) studioCurrentTime.textContent = '0:00';
+                if (resultAudioBgPlayer) {
+                    resultAudioBgPlayer.pause();
+                    resultAudioBgPlayer.currentTime = 0;
+                }
+            };
+            resultAudioPlayer.ontimeupdate = () => {
+                const cur = resultAudioPlayer.currentTime || 0;
+                const dur = resultAudioPlayer.duration || 0;
+                if (studioCurrentTime) studioCurrentTime.textContent = formatStudioTime(cur);
+                if (dur > 0) {
+                    const pct = Math.min(100, Math.max(0, (cur / dur) * 100));
+                    if (studioProgressFill) studioProgressFill.style.width = pct + '%';
+                    if (studioProgressThumb) studioProgressThumb.style.left = pct + '%';
+                }
+            };
+            resultAudioPlayer.onloadedmetadata = () => {
+                if (studioTotalTime) studioTotalTime.textContent = formatStudioTime(resultAudioPlayer.duration || 0);
+            };
+            resultAudioPlayer.ondurationchange = () => {
+                if (studioTotalTime) studioTotalTime.textContent = formatStudioTime(resultAudioPlayer.duration || 0);
+            };
+
+            if (studioPlayToggle) {
+                studioPlayToggle.onclick = () => {
+                    if (resultAudioPlayer.paused) {
+                        resultAudioPlayer.play().catch(e => console.warn('Play error:', e));
+                    } else {
+                        resultAudioPlayer.pause();
+                    }
+                };
+            }
+            if (studioSeekBackward) {
+                studioSeekBackward.onclick = () => {
+                    resultAudioPlayer.currentTime = Math.max(0, (resultAudioPlayer.currentTime || 0) - 10);
+                };
+            }
+            if (studioSeekForward) {
+                studioSeekForward.onclick = () => {
+                    resultAudioPlayer.currentTime = Math.min(resultAudioPlayer.duration || 9999, (resultAudioPlayer.currentTime || 0) + 10);
+                };
+            }
+            if (studioProgressTrack) {
+                studioProgressTrack.onclick = (e) => {
+                    const rect = studioProgressTrack.getBoundingClientRect();
+                    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+                    if (resultAudioPlayer.duration) {
+                        resultAudioPlayer.currentTime = ratio * resultAudioPlayer.duration;
+                    }
+                };
+            }
+
+            // Показываем переключатель вариантов если Suno вернул 2 трека
+            const variantSwitcher = document.getElementById('audio-variants-switcher');
+            const btnVar1 = document.getElementById('btn-audio-var-1');
+            const btnVar2 = document.getElementById('btn-audio-var-2');
+            if (variantSwitcher && finalAudioUrls.length >= 2) {
+                variantSwitcher.style.display = 'flex';
+                const setVariant = (idx) => {
+                    resultAudioPlayer.src = finalAudioUrls[idx];
+                    resultAudioPlayer.currentTime = 0;
+                    if (studioProgressFill) studioProgressFill.style.width = '0%';
+                    if (studioProgressThumb) studioProgressThumb.style.left = '0%';
+                    if (btnVar1) btnVar1.classList.toggle('active', idx === 0);
+                    if (btnVar2) btnVar2.classList.toggle('active', idx === 1);
+                    resultAudioPlayer.play().catch(e => { });
+                };
+                if (btnVar1) btnVar1.onclick = () => setVariant(0);
+                if (btnVar2) btnVar2.onclick = () => setVariant(1);
+                setVariant(0);
+            } else {
+                if (variantSwitcher) variantSwitcher.style.display = 'none';
+                resultAudioPlayer.src = finalResultUrl;
+                resultAudioPlayer.currentTime = 0;
+                resultAudioPlayer.play().catch(e => console.warn('Audio play error:', e));
+            }
+
+        } else if (isVideoResult && resultVideo) {
+            if (isFairytaleSelection) {
+                if (stepResultTitle) stepResultTitle.textContent = 'ВАША ВОЛШЕБНАЯ СКАЗКА ГОТОВА! 🪄';
+                if (stepResultSubtitle) stepResultSubtitle.textContent = 'Отсканируйте QR-код, чтобы сохранить видеосказку в галерею смартфона';
+            } else {
+                if (stepResultTitle) stepResultTitle.textContent = 'ВАШ РЕЗУЛЬТАТ ГОТОВ!';
+                if (stepResultSubtitle) stepResultSubtitle.textContent = 'Отсканируйте QR-код камерой телефона, чтобы сохранить фото или видео';
+            }
+            if (resultAudioBox) {
+                if (resultAudioPlayer) resultAudioPlayer.pause();
+                if (resultAudioBgPlayer) resultAudioBgPlayer.pause();
+                resultAudioBox.style.display = 'none';
+            }
+            resultVideo.src = finalResultUrl;
+            resultVideo.muted = isFairytaleSelection ? false : true;
+            resultVideo.style.display = 'block';
+            resultVideo.play().catch(e => {
+                resultVideo.muted = true;
+                resultVideo.play().catch(() => {});
+            });
+            if (resultImg) resultImg.style.display = 'none';
+        } else if (resultImg) {
+            if (stepResultTitle) stepResultTitle.textContent = 'ВАШ РЕЗУЛЬТАТ ГОТОВ!';
+            if (stepResultSubtitle) stepResultSubtitle.textContent = 'Отсканируйте QR-код камерой телефона, чтобы сохранить фото';
+            if (resultAudioBox) {
+                if (resultAudioPlayer) resultAudioPlayer.pause();
+                if (resultAudioBgPlayer) resultAudioBgPlayer.pause();
+                resultAudioBox.style.display = 'none';
+            }
+            resultImg.src = finalResultUrl;
+            resultImg.style.display = 'block';
+            if (resultVideo) {
+                resultVideo.pause();
+                resultVideo.style.display = 'none';
+            }
+        }
+
+        // Формирование брендированного QR-кода для скачивания результата на смартфон
+        const resultQrEl = document.getElementById('result-qr-img');
+        const targetResultUrl = finalResultUrl || selectedStylePhoto || window.location.href;
+        if (resultQrEl) {
+            let qrDownloadUrl = '';
+            if (targetResultUrl && targetResultUrl.startsWith('http')) {
+                const query = new URLSearchParams({
+                    file: targetResultUrl,
+                    title: selectedStyle || 'Фото',
+                    loc: selectedStyleLocation || '',
+                    price: selectedStylePrice || ''
+                });
+
+                // Если сказка (видео)
+                if (isFairytaleSelection) {
+                    query.set('mode', 'video');
+                    const child = guestFairytaleData?.childName || 'малыша';
+                    query.set('title', `Сказка для ${child}`);
+                } else if (isAudioResult) {
+                    query.set('mode', 'audio');
+                    if (finalAudioUrls.length >= 2) {
+                        query.set('file2', finalAudioUrls[1]);
+                    }
+                } else if (isVideoResult) {
+                    query.set('mode', 'video');
+                }
+                qrDownloadUrl = `${window.location.origin}/download?${query.toString()}`;
+            } else {
+                qrDownloadUrl = window.location.href;
+            }
+            console.log('📱 Формирование брендированного QR-кода TRENDUM для загрузки:', qrDownloadUrl);
+            renderInstantQR(resultQrEl, qrDownloadUrl, 260);
+        }
+
+
+        // Отображение информации где купить временно отключено по запросу
+        if (tryonLocationInfoCard) {
+            tryonLocationInfoCard.style.display = 'none';
+        }
+
+        showStep(stepResult);
+        isAiGenerating = false;
+    }
+
+    // 5. FINISH & TEMPLATE SELECTION
+    if (finishBtn) {
+        const handleFinish = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            closeKioskFlow();
+        };
+        finishBtn.addEventListener('click', handleFinish);
+        finishBtn.addEventListener('pointerdown', handleFinish);
+        finishBtn.addEventListener('touchstart', handleFinish);
+    }
+
+    if (roastFinishBtn) {
+        const handleRoastFinish = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            closeKioskFlow();
+        };
+        roastFinishBtn.addEventListener('click', handleRoastFinish);
+        roastFinishBtn.addEventListener('pointerdown', handleRoastFinish);
+        roastFinishBtn.addEventListener('touchstart', handleRoastFinish);
+    }
+
+    // 3D Cover Flow Gallery Controls & Touch Swiping
+    const templateBackBtn = document.getElementById('template-back-btn');
+    const templateCloseBtn = document.getElementById('template-close-btn');
+    const selectTemplateBtn = document.getElementById('select-template-btn');
+
+    if (templateBackBtn) {
+        const handleTplBack = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            closeTemplateGallery();
+        };
+        templateBackBtn.addEventListener('click', handleTplBack);
+        templateBackBtn.addEventListener('pointerdown', handleTplBack);
+        templateBackBtn.addEventListener('touchstart', handleTplBack);
+    }
+
+    if (templateCloseBtn) {
+        const handleTplClose = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            closeTemplateGallery();
+        };
+        templateCloseBtn.addEventListener('click', handleTplClose);
+        templateCloseBtn.addEventListener('pointerdown', handleTplClose);
+        templateCloseBtn.addEventListener('touchstart', handleTplClose);
+    }
+
+    if (selectTemplateBtn) {
+        selectTemplateBtn.addEventListener('click', () => {
+            const list = templateCatalog[currentCategory] || templateCatalog['ФОТО'];
+            if (list[activeTemplateIndex]) {
+                const cur = list[activeTemplateIndex];
+                selectedStyle = cur.title;
+                selectedStylePhoto = cur.img;
+                selectedStylePrice = cur.price || 290;
+                selectedStyleLocation = cur.location || '';
+                selectedStyleResolution = cur.resolution || '2K';
+                setAiResolution(selectedStyleResolution);
+                isTryOnMode = isTryOnTemplate(cur);
+                selectedStyleModel = cur.model || 'chatgpt-2.5';
+                selectedStylePrompt = cur.prompt || '';
+                selectedTemplateId = cur.id;
+                selectedTemplateHtml = cur.htmlCode || '';
+            }
+            closeTemplateGallery();
+            openKioskFlow();
+        });
+    }
+
+    // Touch Swipe for 3D Cover Flow Carousel
+    let touchStartX = 0;
+    const trackEl = document.getElementById('coverflow-track');
+    if (trackEl) {
+        trackEl.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        }, { passive: true });
+
+        trackEl.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const diff = touchEndX - touchStartX;
+            const list = templateCatalog[currentCategory] || templateCatalog['ФОТО'];
+
+            if (diff > 40 && activeTemplateIndex > 0) {
+                activeTemplateIndex--;
+                renderCoverFlow();
+            } else if (diff < -40 && activeTemplateIndex < list.length - 1) {
+                activeTemplateIndex++;
+                renderCoverFlow();
+            }
+        }, { passive: true });
+    }
+
+    // =============================================
+    // 7. INACTIVITY ATTRACT MODE (PLAYLIST ENGINE FOR VIDEO & PHOTO)
+    // =============================================
+    // Настройка таймера заставки (берется из админки kiosk_attract_timeout, по умолчанию 5 сек)
+    function getInactivityTimeout() {
+        try {
+            const val = parseInt(localStorage.getItem('kiosk_attract_timeout'), 10);
+            if (!isNaN(val) && val >= 3) {
+                return val * 1000;
+            }
+        } catch (e) { }
+        return 5000; // по умолчанию 5 секунд
+    }
+
+    let inactivityTimer = null;
+    let lastX = 0;
+    let lastY = 0;
+
+    // ДЕФОЛТНЫЕ ПЛЕЙЛИСТЫ ЗАСТАВКИ (РЕАЛЬНЫЕ БАННЕРЫ ПОЛЬЗОВАТЕЛЯ ИЗ SUPABASE)
+    const defaultTopPlaylist = [
+        { id: 1, type: 'image', title: 'ТЦ Сити Балыкчы', src: 'https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/ads/1788971899884_ChatGPT_Image_9_____._2026__.__22_38_14.png', duration: 7000 },
+        { id: 2, type: 'image', title: 'ТЦ Сити Балыкчы — Постер', src: 'https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/ads/1788971730541_ChatGPT_Image_9_____._2026__.__22_35_19.png', duration: 7000 },
+        { id: 3, type: 'image', title: 'Кыргызская модель в горах — Ваша реклама', src: 'https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/ads/1788973234347_Firefly_gpt-image____________________________________________________fashion____________________________802408.png', duration: 6000 },
+        { id: 4, type: 'image', title: 'Кыргызская модель у юрты — Ваша реклама', src: 'https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/ads/1788973066769_Firefly_gpt-image____________________________________________________fashion____________________________130164.png', duration: 6000 },
+        { id: 5, type: 'image', title: 'Кондитерская — Ваша реклама', src: 'https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/ads/1788973060391_Firefly_gpt-image_________________________________________________________130164.png', duration: 5000 },
+        { id: 6, type: 'image', title: 'Торговый центр — Ваша реклама', src: 'https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/ads/1788973054610_Firefly_gpt-image.png', duration: 5000 }
+    ];
+
+    const defaultBottomPlaylist = [
+        { id: 1, type: 'image', title: 'Щенок — Тапни по экрану', src: 'https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/ads/1789035913022_ChatGPT_Image_10_____._2026__.__16_25_02.png', duration: 6000 },
+        { id: 2, type: 'image', title: 'Котёнок — Тапни по экрану', src: 'https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/ads/1789035748569_ChatGPT_Image_10_____._2026__.__16_21_41.png', duration: 6000 },
+        { id: 3, type: 'image', title: 'Слонёнок — Тапни по экрану!', src: 'https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/ads/1788973308152_Firefly_gpt-image___________________________________________________________________1080___480_802408.png', duration: 6000 },
+        { id: 4, type: 'image', title: 'Воин с драконом', src: 'https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/ads/1788973244928_ChatGPT_Image_9_____._2026__.__20_38_13.png', duration: 6000 }
+    ];
+
+    // ОБЛАЧНАЯ КОНФИГУРАЦИЯ БАННЕРОВ И НАСТРОЕК (SUPABASE STORAGE)
+    const CLOUD_CONFIG_URL = 'https://pegkcclwtwxmngczcqtk.supabase.co/storage/v1/object/public/kiosk-media/config/settings.json';
+    let lastCloudUpdatedAt = null;
+    let isSyncingCloud = false;
+
+    async function syncCloudConfig() {
+        if (isSyncingCloud) return;
+        isSyncingCloud = true;
+        try {
+            const res = await fetch(CLOUD_CONFIG_URL + '?_t=' + Date.now(), { cache: 'no-store' });
+            if (res.ok) {
+                const data = await res.json();
+
+                // Если конфиг не менялся, не перерисовываем DOM без необходимости
+                if (data.updated_at && lastCloudUpdatedAt === data.updated_at) {
+                    return;
+                }
+                if (data.updated_at) {
+                    lastCloudUpdatedAt = data.updated_at;
+                }
+
+                if (data.main_header) {
+                    mainHeaderConfig = data.main_header;
+                    try { localStorage.setItem('kiosk_main_header_v1', JSON.stringify(data.main_header)); } catch (e) { }
+                }
+                if (Array.isArray(data.main_cards) && data.main_cards.length > 0) {
+                    mainCardsConfig = normalizeMainCards(data.main_cards);
+                    try { localStorage.setItem('kiosk_main_cards_v1', JSON.stringify(mainCardsConfig)); } catch (e) { }
+                    renderMainCards();
+                }
+
+                if (Array.isArray(data.ads_top) && data.ads_top.length > 0) {
+                    topPlaylist = data.ads_top;
+                    try { localStorage.setItem('kiosk_ads_top', JSON.stringify(data.ads_top)); } catch (e) { }
+                }
+                if (Array.isArray(data.ads_bottom) && data.ads_bottom.length > 0) {
+                    bottomPlaylist = data.ads_bottom;
+                    try { localStorage.setItem('kiosk_ads_bottom', JSON.stringify(data.ads_bottom)); } catch (e) { }
+                }
+                if (data.attract_timeout) {
+                    try { localStorage.setItem('kiosk_attract_timeout', data.attract_timeout); } catch (e) { }
+                }
+                if (data.music_price) {
+                    try {
+                        localStorage.setItem('kiosk_music_price', data.music_price.toString());
+                        const createBtn = document.getElementById('music-theme-create-btn');
+                        if (createBtn) {
+                            createBtn.innerHTML = `🎵 СОЗДАТЬ ТРЕК • ${data.music_price} СОМ ➔`;
+                        }
+                    } catch (e) { }
+                }
+                if (data.pixverse_markup) {
+                    try { localStorage.setItem('kiosk_pixverse_markup', data.pixverse_markup.toString()); } catch (e) { }
+                }
+                if (Array.isArray(data.fairytale_bg_tracks)) {
+                    try { localStorage.setItem('kiosk_fairytale_bg_tracks', JSON.stringify(data.fairytale_bg_tracks)); } catch(e){}
+                }
+                if (data.elevenlabs_api_key) {
+                    try { localStorage.setItem('kiosk_elevenlabs_api_key', data.elevenlabs_api_key); } catch(e){}
+                }
+                if (data.elevenlabs_model) {
+                    try { localStorage.setItem('kiosk_elevenlabs_model', data.elevenlabs_model); } catch(e){}
+                }
+                let delIds = [];
+                if (Array.isArray(data.deleted_template_ids) && data.deleted_template_ids.length > 0) {
+                    delIds = data.deleted_template_ids.map(String);
+                    try { localStorage.setItem('kiosk_deleted_templates', JSON.stringify(delIds)); } catch(e){}
+                }
+                if (Array.isArray(data.templates) && data.templates.length > 0) {
+                    masterTemplates = normalizeTemplates(data.templates.filter(t => t && !delIds.includes(String(t.id))), mainCardsConfig);
+                    try {
+                        localStorage.setItem('kiosk_templates_v2', JSON.stringify(masterTemplates));
+                    } catch (e) {
+                        console.warn('Storage quota warning:', e);
+                    }
+                    renderGridTemplates();
+                    renderCategoryPillsBar();
+                }
+                if (Array.isArray(data.categories)) {
+                    kioskCategories = data.categories;
+                    try { localStorage.setItem('kiosk_categories_v2', JSON.stringify(data.categories)); } catch (e) { }
+                    renderCategoryPillsBar();
+                }
+                if (data.finik_account_id) {
+                    try { localStorage.setItem('kiosk_finik_account_id', data.finik_account_id); } catch (e) { }
+                }
+                if (data.finik_pos_id) {
+                    try { localStorage.setItem('kiosk_finik_pos_id', data.finik_pos_id); } catch (e) { }
+                }
+                if (data.finik_merchant_name) {
+                    try { localStorage.setItem('kiosk_finik_merchant_name', data.finik_merchant_name); } catch (e) { }
+                }
+                if (data.finik_static_qr) {
+                    try { localStorage.setItem('kiosk_finik_static_qr', data.finik_static_qr); } catch (e) { }
+                }
+                if (data.finik_qr_img) {
+                    try { localStorage.setItem('kiosk_finik_qr_img', data.finik_qr_img); } catch (e) { }
+                }
+                console.log('☁️ Авто-синхронизация Supabase: обновлены шаблоны и настройки на устройстве (' + (data.templates ? data.templates.length : 0) + ' шт.)');
+            }
+        } catch (e) {
+            console.warn('Cloud config fetch skipped/offline:', e);
+        } finally {
+            isSyncingCloud = false;
+        }
+    }
+    window.syncCloudConfig = syncCloudConfig;
+
+    function getTopPlaylist() {
+        try {
+            const data = localStorage.getItem('kiosk_ads_top');
+            if (data) {
+                const parsed = JSON.parse(data);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (e) { }
+        return defaultTopPlaylist;
+    }
+
+    function getBottomPlaylist() {
+        try {
+            const data = localStorage.getItem('kiosk_ads_bottom');
+            if (data) {
+                const parsed = JSON.parse(data);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (e) { }
+        return defaultBottomPlaylist;
+    }
+
+    let topPlaylist = getTopPlaylist();
+    let bottomPlaylist = getBottomPlaylist();
+
+    let topIndex = 0;
+    let bottomIndex = 0;
+    let topPlaylistTimer = null;
+    let bottomPlaylistTimer = null;
+
+    function resetInactivityTimer() {
+        clearTimeout(inactivityTimer);
+        // Заставка НЕ работает на экранах оплаты, камеры, генерации, результата
+        const modal = document.getElementById('kiosk-modal');
+        if (modal && modal.style.display === 'flex') return;
+        inactivityTimer = setTimeout(showAttractScreen, getInactivityTimeout());
+    }
+
+    function playTopPlaylistNext() {
+        clearTimeout(topPlaylistTimer);
+        if (!topPlaylist || topPlaylist.length === 0) return;
+        if (topIndex >= topPlaylist.length) topIndex = 0;
+        const item = topPlaylist[topIndex];
+        const vEl = document.getElementById('attract-promo-video');
+        const imgEl = document.getElementById('attract-promo-img');
+        const fallback = document.getElementById('attract-top-fallback');
+
+        if (!item) return;
+
+        // Нормализация длительности (секунды в мс)
+        const durMs = (item.duration ? (item.duration > 100 ? item.duration : item.duration * 1000) : 5000);
+        const fallbackMs = (item.fallbackDuration ? (item.fallbackDuration > 100 ? item.fallbackDuration : item.fallbackDuration * 1000) : 8000);
+
+        if (item.type === 'video') {
+            const blurTop = document.getElementById('attract-top-blur');
+            if (blurTop) { blurTop.style.opacity = '0'; blurTop.style.backgroundImage = 'none'; }
+            if (imgEl) imgEl.classList.remove('active');
+            if (vEl) {
+                vEl.src = item.src;
+                vEl.muted = true;
+                vEl.classList.add('active');
+
+                vEl.onended = () => {
+                    topIndex = (topIndex + 1) % topPlaylist.length;
+                    playTopPlaylistNext();
+                };
+
+                vEl.onerror = () => {
+                    if (fallback) fallback.style.display = 'flex';
+                    topPlaylistTimer = setTimeout(() => {
+                        topIndex = (topIndex + 1) % topPlaylist.length;
+                        playTopPlaylistNext();
+                    }, 5000);
+                };
+
+                vEl.play().then(() => {
+                    if (fallback) fallback.style.display = 'none';
+                }).catch(e => {
+                    topPlaylistTimer = setTimeout(() => {
+                        topIndex = (topIndex + 1) % topPlaylist.length;
+                        playTopPlaylistNext();
+                    }, fallbackMs);
+                });
+            }
+        } else if (item.type === 'image') {
+            const blurTop = document.getElementById('attract-top-blur');
+            if (blurTop) {
+                blurTop.style.backgroundImage = `url("${item.src}")`;
+                blurTop.style.opacity = '0.85';
+            }
+            if (vEl) vEl.classList.remove('active');
+            if (imgEl) {
+                imgEl.src = item.src;
+                imgEl.classList.add('active');
+            }
+            if (fallback) fallback.style.display = 'none';
+
+            topPlaylistTimer = setTimeout(() => {
+                topIndex = (topIndex + 1) % topPlaylist.length;
+                playTopPlaylistNext();
+            }, durMs);
+        }
+    }
+
+    function playBottomPlaylistNext() {
+        clearTimeout(bottomPlaylistTimer);
+        if (!bottomPlaylist || bottomPlaylist.length === 0) return;
+        if (bottomIndex >= bottomPlaylist.length) bottomIndex = 0;
+        const item = bottomPlaylist[bottomIndex];
+        const vEl = document.getElementById('attract-card-video');
+        const imgEl = document.getElementById('attract-card-img');
+
+        if (!item) return;
+
+        // Нормализация длительности (секунды в мс)
+        const durMs = (item.duration ? (item.duration > 100 ? item.duration : item.duration * 1000) : 5000);
+        const fallbackMs = (item.fallbackDuration ? (item.fallbackDuration > 100 ? item.fallbackDuration : item.fallbackDuration * 1000) : 8000);
+
+        if (item.type === 'video') {
+            const blurBottom = document.getElementById('attract-bottom-blur');
+            if (blurBottom) { blurBottom.style.opacity = '0'; blurBottom.style.backgroundImage = 'none'; }
+            if (imgEl) imgEl.classList.remove('active');
+            if (vEl) {
+                vEl.src = item.src;
+                vEl.muted = true;
+                vEl.classList.add('active');
+
+                vEl.onended = () => {
+                    bottomIndex = (bottomIndex + 1) % bottomPlaylist.length;
+                    playBottomPlaylistNext();
+                };
+
+                vEl.play().catch(e => {
+                    bottomPlaylistTimer = setTimeout(() => {
+                        bottomIndex = (bottomIndex + 1) % bottomPlaylist.length;
+                        playBottomPlaylistNext();
+                    }, fallbackMs);
+                });
+            }
+        } else if (item.type === 'image') {
+            const blurBottom = document.getElementById('attract-bottom-blur');
+            if (blurBottom) {
+                blurBottom.style.backgroundImage = `url("${item.src}")`;
+                blurBottom.style.opacity = '0.85';
+            }
+            if (vEl) vEl.classList.remove('active');
+            if (imgEl) {
+                imgEl.src = item.src;
+                imgEl.classList.add('active');
+            }
+
+            bottomPlaylistTimer = setTimeout(() => {
+                bottomIndex = (bottomIndex + 1) % bottomPlaylist.length;
+                playBottomPlaylistNext();
+            }, durMs);
+        }
+    }
+
+    function showAttractScreen() {
+        // Фоново проверяем обновления в облаке Supabase
+        syncCloudConfig().then(() => {
+            topPlaylist = getTopPlaylist();
+            bottomPlaylist = getBottomPlaylist();
+        });
+
+        // Подгружаем актуальные рекламные плейлисты
+        topPlaylist = getTopPlaylist();
+        bottomPlaylist = getBottomPlaylist();
+
+        const attractOverlay = document.getElementById('attract-overlay');
+        if (attractOverlay) {
+            attractOverlay.classList.remove('hidden');
+            attractOverlay.style.display = 'flex';
+        }
+
+        topIndex = 0;
+        bottomIndex = 0;
+        playTopPlaylistNext();
+        playBottomPlaylistNext();
+    }
+
+    function stopAttractPlaylists() {
+        clearTimeout(topPlaylistTimer);
+        clearTimeout(bottomPlaylistTimer);
+        const v1 = document.getElementById('attract-promo-video');
+        const v2 = document.getElementById('attract-card-video');
+        if (v1) v1.pause();
+        if (v2) v2.pause();
+    }
+
+    window.hideAttractScreen = function () {
+        const attractOverlay = document.getElementById('attract-overlay');
+        if (attractOverlay && (attractOverlay.style.display === 'flex' || !attractOverlay.classList.contains('hidden'))) {
+            isAttractClosing = true;
+            attractOverlay.classList.add('hidden');
+            attractOverlay.style.display = 'none';
+            stopAttractPlaylists();
+
+            setTimeout(() => {
+                isAttractClosing = false;
+            }, 450);
+        }
+        resetInactivityTimer();
+        syncCloudConfig(); // Свежие данные из Supabase прямо при пробуждении киоска
+    };
+
+    // Сброс таймера и закрытие заставки при касании
+    ['touchstart', 'pointerdown', 'click', 'keydown'].forEach(evt => {
+        window.addEventListener(evt, () => {
+            window.hideAttractScreen();
+        }, { passive: true });
+    });
+
+    // Безопасное отслеживание реального перемещения мыши (> 10px)
+    window.addEventListener('mousemove', (e) => {
+        if (Math.abs(e.clientX - lastX) > 10 || Math.abs(e.clientY - lastY) > 10) {
+            lastX = e.clientX;
+            lastY = e.clientY;
+            const attractOverlay = document.getElementById('attract-overlay');
+            if (attractOverlay && !attractOverlay.classList.contains('hidden')) {
+                window.hideAttractScreen();
+            } else {
+                resetInactivityTimer();
+            }
+        }
+    }, { passive: true });
+
+    // Инициализация главного экрана, синхронизация с облаком и запуск таймера
+    // Скрываем карточки до получения актуальных данных — убираем мигание старого фото
+    const cardsContainer = document.getElementById('main-cards-container');
+    if (cardsContainer) {
+        cardsContainer.style.opacity = '0';
+        cardsContainer.style.transition = 'opacity 0.35s ease';
+    }
+
+    renderMainCards(); // рендер из localStorage (пока скрыт)
+
+    // Показываем карточки только после получения облачных данных
+    syncCloudConfig().finally(() => {
+        if (cardsContainer) cardsContainer.style.opacity = '1';
+    });
+
+    // Fallback: если облако не ответило за 1.5 сек — всё равно показываем
+    setTimeout(() => {
+        if (cardsContainer && cardsContainer.style.opacity === '0') {
+            cardsContainer.style.opacity = '1';
+        }
+    }, 1500);
+
+    resetInactivityTimer();
+
+    // Авто-синхронизация с Supabase каждые 20 секунд (независимость от киоска и автообновление всех устройств)
+    setInterval(() => {
+        syncCloudConfig();
+    }, 20000);
+
+    // Авто-синхронизация при возвращении фокуса / видимости окна
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncCloudConfig();
+    });
+    window.addEventListener('focus', () => {
+        syncCloudConfig();
+    });
+
+    // ============================================================
+    // KIOSK LOCKDOWN & ANTI-TAMPER SECURITY MODULE
+    // Защита физического экрана киоска от взлома и системных меню Chrome
+    // ============================================================
+
+    // 1. Блокировка контекстного меню (правый клик и долгий тап пальцем на тачскрине)
+    document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        return false;
+    }, { capture: true, passive: false });
+
+    // 2. Блокировка перетаскивания изображений и ссылок (drag-and-drop)
+    document.addEventListener('dragstart', (e) => {
+        e.preventDefault();
+        return false;
+    }, { capture: true });
+
+    // 3. Блокировка системных горячих клавиш и вызова DevTools
+    window.addEventListener('keydown', (e) => {
+        // F1..F12
+        if (e.key === 'F11' || e.key === 'F12' || e.keyCode === 122 || e.keyCode === 123) {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+R (Reload), Ctrl+Shift+R, Ctrl+U (View Source), Ctrl+S (Save), Ctrl+P (Print)
+        if (e.ctrlKey && ['r', 'R', 'u', 'U', 's', 'S', 'p', 'P'].includes(e.key)) {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+Shift+I / J / C (DevTools Inspect)
+        if (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) {
+            e.preventDefault();
+            return false;
+        }
+    }, { capture: true });
+
+    // 4. Защита от случайного мультитач-зума (pinch-to-zoom) на сенсорном экране
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length > 1) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    document.addEventListener('gesturestart', (e) => {
+        e.preventDefault();
+    }, { passive: false });
+
+    // 5. Кнопка быстрого обновления страницы в правом верхнем углу (стиль Chrome)
+    const kioskReloadBtn = document.getElementById('kiosk-reload-btn');
+    if (kioskReloadBtn) {
+        let isReloading = false;
+        const triggerReload = (e) => {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            if (isReloading) return;
+            isReloading = true;
+            kioskReloadBtn.classList.add('is-reloading');
+            setTimeout(() => {
+                window.location.href = window.location.origin + window.location.pathname + '?_reload=' + Date.now();
+            }, 180);
+        };
+
+        kioskReloadBtn.addEventListener('click', triggerReload);
+        kioskReloadBtn.addEventListener('pointerdown', () => {
+            kioskReloadBtn.style.transform = 'scale(0.92)';
+        });
+        kioskReloadBtn.addEventListener('pointerup', () => {
+            if (!isReloading) kioskReloadBtn.style.transform = '';
+        });
+    }
+
+    // 6. Секретный жест администратора: 5 быстрых тапов по названию TRENDUM вверху экрана
+    const brandHeader = document.querySelector('.top-brand-center');
+    const adminExitModal = document.getElementById('admin-exit-modal');
+    const adminBtnClose = document.getElementById('admin-btn-close-app');
+    const adminBtnReload = document.getElementById('admin-btn-reload-app');
+    const adminBtnCancel = document.getElementById('admin-btn-cancel-app');
+
+    if (brandHeader && adminExitModal) {
+        let brandTapCount = 0;
+        let brandTapTimer = null;
+
+        const onBrandTap = (e) => {
+            brandTapCount++;
+            clearTimeout(brandTapTimer);
+            if (brandTapCount >= 5) {
+                brandTapCount = 0;
+                adminExitModal.style.display = 'flex';
+                if (e && e.stopPropagation) e.stopPropagation();
+            } else {
+                brandTapTimer = setTimeout(() => {
+                    brandTapCount = 0;
+                }, 2200);
+            }
+        };
+
+        brandHeader.addEventListener('click', onBrandTap);
+
+        const adminBtnTestCam = document.getElementById('admin-btn-test-cam');
+        if (adminBtnTestCam) {
+            adminBtnTestCam.addEventListener('click', () => {
+                adminExitModal.style.display = 'none';
+                if (modal) modal.style.display = 'flex';
+                resetCameraStep();
+                showStep(stepCamera);
+                startWebcam();
+            });
+        }
+
+        if (adminBtnClose) {
+            adminBtnClose.addEventListener('click', () => {
+                // Закрываем окно браузера
+                window.open('', '_self', '');
+                window.close();
+            });
+        }
+        if (adminBtnReload) {
+            adminBtnReload.addEventListener('click', () => {
+                window.location.reload();
+            });
+        }
+        if (adminBtnCancel) {
+            adminBtnCancel.addEventListener('click', () => {
+                adminExitModal.style.display = 'none';
+            });
+        }
+    }
+});

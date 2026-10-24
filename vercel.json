@@ -12,6 +12,7 @@
     }
   ],
   "rewrites": [
+    { "source": "/script.js", "destination": "/kiosk-ui/script.js" },
     { "source": "/download", "destination": "/kiosk-ui/download" },
     { "source": "/download/", "destination": "/kiosk-ui/download" },
     { "source": "/ar", "destination": "/kiosk-ui/ar" },

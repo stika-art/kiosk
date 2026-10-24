@@ -1397,13 +1397,19 @@ function openTemplateGallery(cardIdOrMode) {
     activeGridTab = 'ВСЕ';
     renderCategoryPillsBar();
     switchGridCategory('ВСЕ');
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+    }
 }
 window.selectCard = selectCard;
 
 function closeTemplateGallery() {
     const modal = document.getElementById('template-modal');
-    if (modal) modal.classList.add('hidden');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
 }
 
 // РЕНДЕРИНГ ДИНАМИЧЕСКИХ ПЛАШЕК КАТЕГОРИЙ ДЛЯ ТЕКУЩЕЙ ВЫБРАННОЙ КНОПКИ
@@ -2067,16 +2073,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Очистка полей ввода крестиком
     if (musicAboutClearBtn && musicInputAbout) {
-        musicAboutClearBtn.addEventListener('click', () => {
+        const handleClearAbout = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
             musicInputAbout.value = '';
             setActiveMusicInput(musicInputAbout);
-        });
+        };
+        musicAboutClearBtn.addEventListener('click', handleClearAbout);
+        musicAboutClearBtn.addEventListener('pointerdown', handleClearAbout);
+        musicAboutClearBtn.addEventListener('touchstart', handleClearAbout);
     }
     if (musicStyleClearBtn && musicInputStyle) {
-        musicStyleClearBtn.addEventListener('click', () => {
+        const handleClearStyle = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
             musicInputStyle.value = '';
             setActiveMusicInput(musicInputStyle);
-        });
+        };
+        musicStyleClearBtn.addEventListener('click', handleClearStyle);
+        musicStyleClearBtn.addEventListener('pointerdown', handleClearStyle);
+        musicStyleClearBtn.addEventListener('touchstart', handleClearStyle);
     }
 
     // Выбор языка
@@ -2089,9 +2103,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Кнопка "Назад на главную"
     if (musicThemeCancelBtn) {
-        musicThemeCancelBtn.addEventListener('click', () => {
+        const handleMusicCancel = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
             closeKioskFlow();
-        });
+        };
+        musicThemeCancelBtn.addEventListener('click', handleMusicCancel);
+        musicThemeCancelBtn.addEventListener('pointerdown', handleMusicCancel);
+        musicThemeCancelBtn.addEventListener('touchstart', handleMusicCancel);
     }
 
     // Главная кнопка "СОЗДАТЬ ТРЕК"
@@ -2272,22 +2290,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (fairytaleChildClearBtn && fairytaleInputChild) {
-        fairytaleChildClearBtn.addEventListener('click', () => {
+        const handleClearChild = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
             fairytaleInputChild.value = '';
             setActiveFairytaleInput(fairytaleInputChild);
-        });
+        };
+        fairytaleChildClearBtn.addEventListener('click', handleClearChild);
+        fairytaleChildClearBtn.addEventListener('pointerdown', handleClearChild);
+        fairytaleChildClearBtn.addEventListener('touchstart', handleClearChild);
     }
     if (fairytaleThemeClearBtn && fairytaleInputTheme) {
-        fairytaleThemeClearBtn.addEventListener('click', () => {
+        const handleClearTheme = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
             fairytaleInputTheme.value = '';
             setActiveFairytaleInput(fairytaleInputTheme);
-        });
+        };
+        fairytaleThemeClearBtn.addEventListener('click', handleClearTheme);
+        fairytaleThemeClearBtn.addEventListener('pointerdown', handleClearTheme);
+        fairytaleThemeClearBtn.addEventListener('touchstart', handleClearTheme);
     }
     if (fairytaleMoodClearBtn && fairytaleInputMood) {
-        fairytaleMoodClearBtn.addEventListener('click', () => {
+        const handleClearMood = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
             fairytaleInputMood.value = '';
             setActiveFairytaleInput(fairytaleInputMood);
-        });
+        };
+        fairytaleMoodClearBtn.addEventListener('click', handleClearMood);
+        fairytaleMoodClearBtn.addEventListener('pointerdown', handleClearMood);
+        fairytaleMoodClearBtn.addEventListener('touchstart', handleClearMood);
     }
 
     document.querySelectorAll('#fairytale-lang-chips .lang-choice-btn').forEach(btn => {
@@ -2298,9 +2328,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     if (fairytaleCancelBtn) {
-        fairytaleCancelBtn.addEventListener('click', () => {
+        const handleFtCancel = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
             closeKioskFlow();
-        });
+        };
+        fairytaleCancelBtn.addEventListener('click', handleFtCancel);
+        fairytaleCancelBtn.addEventListener('pointerdown', handleFtCancel);
+        fairytaleCancelBtn.addEventListener('touchstart', handleFtCancel);
     }
 
     window.openDirectFairytaleStudio = function (card) {
@@ -2536,10 +2570,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. Отмена в AR студии
     const arCancelBtn = document.getElementById('ar-studio-cancel-btn');
     if (arCancelBtn) {
-        arCancelBtn.addEventListener('click', () => {
+        const handleArCancel = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
             if (arPollTimer) { clearInterval(arPollTimer); arPollTimer = null; }
             closeKioskFlow();
-        });
+        };
+        arCancelBtn.addEventListener('click', handleArCancel);
+        arCancelBtn.addEventListener('pointerdown', handleArCancel);
+        arCancelBtn.addEventListener('touchstart', handleArCancel);
     }
 
     // 5. Кнопка "СОЗДАТЬ AR" -> переход к оплате
@@ -2701,9 +2739,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    modalClose.addEventListener('click', closeKioskFlow);
+    if (modalClose) {
+        const handleModalClose = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            closeKioskFlow();
+        };
+        modalClose.addEventListener('click', handleModalClose);
+        modalClose.addEventListener('pointerdown', handleModalClose);
+        modalClose.addEventListener('touchstart', handleModalClose);
+    }
     if (cancelPayBtn) {
-        cancelPayBtn.addEventListener('click', () => {
+        const handleCancelPay = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
             closeKioskFlow();
             if (selectedStyleModel === 'suno' || (activeSectionCard && (activeSectionCard.id === 6 || (activeSectionCard.filter && activeSectionCard.filter.toUpperCase() === 'MUSIC')))) {
                 openDirectMusicStudio(activeSectionCard);
@@ -2712,7 +2759,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 openTemplateGallery();
             }
-        });
+        };
+        cancelPayBtn.addEventListener('click', handleCancelPay);
+        cancelPayBtn.addEventListener('pointerdown', handleCancelPay);
+        cancelPayBtn.addEventListener('touchstart', handleCancelPay);
     }
 
     if (retakeBtn) {
@@ -2818,7 +2868,21 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
 
         if (tryonLocationInfoCard) tryonLocationInfoCard.style.display = 'none';
-        modal.style.display = 'none';
+        const kioskModalEl = document.getElementById('kiosk-modal');
+        if (kioskModalEl) kioskModalEl.style.display = 'none';
+        const tplModalEl = document.getElementById('template-modal');
+        if (tplModalEl) {
+            tplModalEl.classList.add('hidden');
+            tplModalEl.style.display = 'none';
+        }
+        if (modal) modal.style.display = 'none';
+
+        // Скрываем все внутренние экраны/шаги
+        const stepFairytaleEl = document.getElementById('step-fairytale');
+        [stepMusicTheme, stepFairytaleEl, stepCamera, stepConfirm, stepPayment, stepProcessing, stepResult, stepRoastResult].forEach(s => {
+            if (s) s.style.display = 'none';
+        });
+
         resetState();
         syncCloudConfig(); // Обновление при завершении сессии заказа
     }
@@ -4872,18 +4936,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 5. FINISH & TEMPLATE SELECTION
-    finishBtn.addEventListener('click', closeKioskFlow);
+    if (finishBtn) {
+        const handleFinish = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            closeKioskFlow();
+        };
+        finishBtn.addEventListener('click', handleFinish);
+        finishBtn.addEventListener('pointerdown', handleFinish);
+        finishBtn.addEventListener('touchstart', handleFinish);
+    }
 
     if (roastFinishBtn) {
-        roastFinishBtn.addEventListener('click', closeKioskFlow);
+        const handleRoastFinish = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            closeKioskFlow();
+        };
+        roastFinishBtn.addEventListener('click', handleRoastFinish);
+        roastFinishBtn.addEventListener('pointerdown', handleRoastFinish);
+        roastFinishBtn.addEventListener('touchstart', handleRoastFinish);
     }
 
     // 3D Cover Flow Gallery Controls & Touch Swiping
     const templateBackBtn = document.getElementById('template-back-btn');
+    const templateCloseBtn = document.getElementById('template-close-btn');
     const selectTemplateBtn = document.getElementById('select-template-btn');
 
     if (templateBackBtn) {
-        templateBackBtn.addEventListener('click', closeTemplateGallery);
+        const handleTplBack = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            closeTemplateGallery();
+        };
+        templateBackBtn.addEventListener('click', handleTplBack);
+        templateBackBtn.addEventListener('pointerdown', handleTplBack);
+        templateBackBtn.addEventListener('touchstart', handleTplBack);
+    }
+
+    if (templateCloseBtn) {
+        const handleTplClose = (e) => {
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            closeTemplateGallery();
+        };
+        templateCloseBtn.addEventListener('click', handleTplClose);
+        templateCloseBtn.addEventListener('pointerdown', handleTplClose);
+        templateCloseBtn.addEventListener('touchstart', handleTplClose);
     }
 
     if (selectTemplateBtn) {
