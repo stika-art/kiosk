@@ -2886,8 +2886,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const resultAudioBox = document.getElementById('result-audio-box');
             if (resultAudioBox) resultAudioBox.style.display = 'none';
 
-            if (musicInputAbout) musicInputAbout.value = '';
-            if (musicInputFor) musicInputFor.value = '';
+            const musicAboutEl = document.getElementById('music-input-about');
+            if (musicAboutEl) musicAboutEl.value = '';
+            const musicStyleEl = document.getElementById('music-input-style');
+            if (musicStyleEl) musicStyleEl.value = '';
+            const ftChildEl = document.getElementById('fairytale-input-child');
+            if (ftChildEl) ftChildEl.value = '';
+            const ftThemeEl = document.getElementById('fairytale-input-theme');
+            if (ftThemeEl) ftThemeEl.value = '';
+            const ftMoodEl = document.getElementById('fairytale-input-mood');
+            if (ftMoodEl) ftMoodEl.value = '';
             document.querySelectorAll('.theme-chip').forEach(c => c.classList.remove('active'));
 
             if (tryonLocationInfoCard) tryonLocationInfoCard.style.display = 'none';
