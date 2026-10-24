@@ -1,9 +1,15 @@
 <!DOCTYPE html>
 <html lang="ru" class="notranslate" translate="no">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="google" content="notranslate">
-    <title>TRENDUM</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TRENDUM — Премиальный Фотокиоск</title>
+    
+    <!-- Защита киоска: доступ разрешен только для авторизованных терминалов -->
     <script>
         (function() {
             try {
@@ -11,20 +17,21 @@
                 var kioskKey = urlParams.get('kiosk') || urlParams.get('terminal_key');
                 var storedPin = localStorage.getItem('kiosk_admin_pin') || '7799';
 
-                // Если передан секретный мастер-ключ (?kiosk=7799 или ?kiosk=active) — привязываем этот ПК навсегда
+                // Быстрая авторизация терминала по секретному мастер-ключу (?kiosk=7799)
                 if (kioskKey === storedPin || kioskKey === '7799' || kioskKey === 'active' || kioskKey === 'true') {
                     localStorage.setItem('trendum_terminal_authorized', 'true');
-                    window.location.replace('/kiosk-ui/' + window.location.search);
-                    return;
+                    urlParams.delete('kiosk');
+                    urlParams.delete('terminal_key');
+                    var cleanUrl = window.location.pathname + (urlParams.toString() ? ('?' + urlParams.toString()) : '') + window.location.hash;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                    return; // Авторизован, продолжаем показ киоска
                 }
 
-                // Проверяем, авторизован ли данный компьютер как рабочий киоск
+                // Проверка авторизации текущего устройства
                 var isAuthorized = localStorage.getItem('trendum_terminal_authorized') === 'true';
 
-                if (isAuthorized) {
-                    window.location.replace('/kiosk-ui/' + window.location.search);
-                } else {
-                    // Клиенты с телефонов и посторонние посетители перенаправляются на страницу скачивания
+                // Если устройство НЕ авторизовано как киоск — немедленно перенаправляем на скачивание
+                if (!isAuthorized) {
                     window.location.replace('/download');
                 }
             } catch (e) {
@@ -32,10 +39,3488 @@
             }
         })();
     </script>
+    
+    <!-- Google Fonts Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body, :root, .kiosk, .modal-content, .scrollable {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+
+        @keyframes mEqPulse {
+            0% { height: 10px; opacity: 0.5; }
+            100% { height: 48px; opacity: 1; }
+        }
+
+        /* =======================================================
+           TRENDUM ULTRA LUXURY AUDIO STUDIO CARD
+        ======================================================= */
+        .trendum-studio-card {
+            display: none;
+            width: 100%;
+            width: clamp(340px, 35vw, 460px);
+            min-height: 440px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at 50% 15%, rgba(212, 160, 67, 0.18) 0%, rgba(20, 20, 26, 0.98) 60%, #08080a 100%);
+            border-radius: 24px;
+            padding: 22px 20px;
+            border: 1px solid rgba(212, 160, 67, 0.4);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 35px rgba(212, 160, 67, 0.15);
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .studio-top-bar {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 14px;
+            background: rgba(0, 0, 0, 0.65);
+            border: 1px solid rgba(212, 160, 67, 0.35);
+            border-radius: 20px;
+            margin-bottom: 14px;
+        }
+        .studio-live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #ff3b30;
+            box-shadow: 0 0 8px #ff3b30;
+            animation: studioPulse 1.2s ease-in-out infinite;
+        }
+        .studio-badge-text {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.8px;
+            color: #e5c07b;
+            text-transform: uppercase;
+        }
+
+        .studio-vinyl-wrap {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .studio-vinyl-body {
+            width: 136px;
+            height: 136px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #1a1a1f 0%, #0d0d12 45%, #181820 65%, #050508 100%);
+            border: 3px solid #2f2f38;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.85), inset 0 0 15px rgba(0,0,0,0.9);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .studio-vinyl-wrap.playing .studio-vinyl-body {
+            animation: studioVinylSpin 5s linear infinite;
+        }
+        .studio-vinyl-grooves {
+            position: absolute;
+            inset: 10px;
+            border-radius: 50%;
+            border: 1px dashed rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 0 0 6px rgba(255,255,255,0.02), inset 0 0 0 14px rgba(255,255,255,0.02), inset 0 0 0 22px rgba(255,255,255,0.02);
+        }
+        .studio-vinyl-label {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #d4a043 0%, #9a6f23 100%);
+            box-shadow: 0 0 15px rgba(212, 160, 67, 0.5), inset 0 1px 2px rgba(255,255,255,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+        }
+        .studio-vinyl-center-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #09090b;
+            border: 2px solid rgba(255,255,255,0.4);
+            margin-bottom: 2px;
+        }
+        .studio-vinyl-brand {
+            font-size: 7px;
+            font-weight: 900;
+            color: #1a1508;
+            letter-spacing: 0.8px;
+        }
+        .studio-vinyl-sub {
+            font-size: 5px;
+            font-weight: 800;
+            color: rgba(26, 21, 8, 0.8);
+            letter-spacing: 0.5px;
+        }
+        .studio-vinyl-glow {
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(212, 160, 67, 0.28) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.5;
+            transition: opacity 0.4s ease;
+        }
+        .studio-vinyl-wrap.playing .studio-vinyl-glow {
+            opacity: 1;
+            animation: studioGlowPulse 1.8s ease-in-out infinite alternate;
+        }
+
+        .studio-track-info {
+            text-align: center;
+            margin-bottom: 14px;
+            width: 100%;
+        }
+        .studio-genre-pill {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #d4a043;
+            background: rgba(212, 160, 67, 0.12);
+            border: 1px solid rgba(212, 160, 67, 0.28);
+            padding: 3px 12px;
+            border-radius: 14px;
+            margin-bottom: 6px;
+        }
+        .studio-track-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.3;
+            letter-spacing: 0.3px;
+            max-width: 95%;
+            margin: 0 auto;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.7);
+            word-break: break-word;
+        }
+
+        .studio-variants-bar {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 14px;
+        }
+        .studio-var-card {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+        .studio-var-card.active {
+            background: linear-gradient(135deg, rgba(212, 160, 67, 0.25) 0%, rgba(180, 130, 45, 0.12) 100%);
+            border-color: #d4a043;
+            box-shadow: 0 4px 18px rgba(212, 160, 67, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        .studio-var-indicator {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.25);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .studio-var-card.active .studio-var-indicator {
+            background: #d4a043;
+            border-color: #ffe082;
+            box-shadow: 0 0 8px #d4a043;
+        }
+        .studio-var-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        .studio-var-name {
+            font-size: 12px;
+            font-weight: 800;
+            color: #f4f4f5;
+            letter-spacing: 0.5px;
+        }
+        .studio-var-card.active .studio-var-name {
+            color: #d4a043;
+        }
+        .studio-var-sub {
+            font-size: 10px;
+            color: #a1a1aa;
+            font-weight: 600;
+        }
+        .studio-var-play-icon {
+            font-size: 10px;
+            color: #a1a1aa;
+            opacity: 0.7;
+            transition: all 0.2s;
+        }
+        .studio-var-card.active .studio-var-play-icon {
+            color: #d4a043;
+            opacity: 1;
+            transform: scale(1.15);
+        }
+
+        .studio-custom-player {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 12px 14px;
+            box-sizing: border-box;
+        }
+
+        .studio-eq-spectrum {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 4px;
+            height: 22px;
+            margin-bottom: 10px;
+        }
+        .studio-eq-bar {
+            width: 3.5px;
+            height: 5px;
+            background: linear-gradient(to top, #9a6f23, #d4a043);
+            border-radius: 2px;
+            transition: height 0.15s ease;
+        }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(1)  { animation: eqDance 0.7s infinite alternate 0.1s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(2)  { animation: eqDance 0.9s infinite alternate 0.2s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(3)  { animation: eqDance 0.6s infinite alternate 0.05s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(4)  { animation: eqDance 1.1s infinite alternate 0.3s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(5)  { animation: eqDance 0.8s infinite alternate 0.15s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(6)  { animation: eqDance 1.0s infinite alternate 0.25s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(7)  { animation: eqDance 0.65s infinite alternate 0.12s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(8)  { animation: eqDance 1.2s infinite alternate 0.35s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(9)  { animation: eqDance 0.75s infinite alternate 0.18s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(10) { animation: eqDance 0.95s infinite alternate 0.28s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(11) { animation: eqDance 0.6s infinite alternate 0.08s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(12) { animation: eqDance 1.05s infinite alternate 0.32s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(13) { animation: eqDance 0.85s infinite alternate 0.22s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(14) { animation: eqDance 0.7s infinite alternate 0.14s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(15) { animation: eqDance 1.15s infinite alternate 0.4s; }
+        .studio-custom-player.playing .studio-eq-bar:nth-child(16) { animation: eqDance 0.65s infinite alternate 0.1s; }
+
+        .studio-timeline-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .studio-time-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #a1a1aa;
+            font-variant-numeric: tabular-nums;
+            min-width: 32px;
+        }
+        .studio-progress-track {
+            flex: 1;
+            height: 7px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            touch-action: none;
+        }
+        .studio-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #9a6f23, #d4a043);
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(212, 160, 67, 0.5);
+            pointer-events: none;
+        }
+        .studio-progress-thumb {
+            position: absolute;
+            top: 50%;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 0 10px #d4a043;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .studio-controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+        }
+        .studio-btn-seek {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05);
+            color: #d4a043;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .studio-btn-seek:active {
+            transform: scale(0.92);
+            background: rgba(212, 160, 67, 0.2);
+        }
+        .studio-btn-play {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #d4a043 0%, #b8862d 100%);
+            color: #1a1205;
+            box-shadow: 0 8px 25px rgba(212, 160, 67, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .studio-btn-play:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(212, 160, 67, 0.6);
+        }
+        .studio-btn-play:active {
+            transform: scale(0.94);
+        }
+
+        @keyframes studioVinylSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes studioGlowPulse {
+            from { transform: scale(0.95); opacity: 0.5; }
+            to { transform: scale(1.08); opacity: 1; }
+        }
+        @keyframes studioPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+        @keyframes eqDance {
+            0% { height: 4px; }
+            100% { height: 20px; }
+        }
+
+        ::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            background: transparent !important;
+        }
+
+        /* Кнопка обновления страницы в правом верхнем углу (стиль Chrome) */
+        .kiosk-reload-btn {
+            position: fixed;
+            top: 20px;
+            right: 22px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(22, 22, 28, 0.92);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(212, 160, 67, 0.35);
+            color: rgba(255, 255, 255, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 999999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.12);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), 
+                        background 0.2s ease, 
+                        border-color 0.2s ease, 
+                        box-shadow 0.2s ease, 
+                        color 0.2s ease;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .kiosk-reload-btn:hover {
+            background: rgba(212, 160, 67, 0.22);
+            border-color: var(--primary);
+            color: #FFFFFF;
+            transform: scale(1.08);
+            box-shadow: 0 0 20px rgba(212, 160, 67, 0.45), 0 8px 30px rgba(0, 0, 0, 0.7);
+        }
+
+        .kiosk-reload-btn:active {
+            transform: scale(0.92);
+            background: rgba(212, 160, 67, 0.35);
+        }
+
+        .kiosk-reload-btn svg {
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .kiosk-reload-btn.is-reloading svg {
+            transform: rotate(360deg);
+        }
+
+        :root {
+            --primary: #D4A043;
+            --primary-hover: #B88328;
+            --primary-light: rgba(212, 160, 67, 0.12);
+            --primary-border: rgba(212, 160, 67, 0.3);
+            --bg-dark: #141414;
+            --card-bg: #1E1E1E;
+            --card-hover: #262626;
+            --input-bg: #2A2A2A;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --text-main: #FFFFFF;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --text-dim: rgba(255, 255, 255, 0.38);
+            --gold-glow: 0 0 25px rgba(212, 160, 67, 0.35);
+        }
+
+        html, body {
+            width: 100%;
+            min-height: 100%;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* =====================================================
+           MAIN KIOSK CANVAS (ALTYN KAZYK LUXURY DARK GOLD)
+        ===================================================== */
+        .kiosk {
+            width: 100vw;
+            min-height: 100vh;
+            margin: 0;
+            padding: 30px 24px;
+            position: relative;
+            overflow-x: hidden;
+            overflow-y: auto;
+            scrollbar-width: none;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        .kiosk::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Subtle Luxury Radial Gold Ambient Glow */
+        .kiosk::before {
+            content: "";
+            position: absolute;
+            top: -120px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 850px;
+            height: 520px;
+            background: radial-gradient(ellipse at center, rgba(212, 160, 67, 0.12) 0%, rgba(20, 20, 20, 0) 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* =====================================================
+           TOP BRAND HEADER
+        ===================================================== */
+        .top-brand-center {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 28px;
+            position: relative;
+            z-index: 10;
+            cursor: pointer;
+        }
+
+        .brand-badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            border-radius: 20px;
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .top-brand-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(38px, 5.5vw, 64px);
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: #ffffff;
+            text-transform: uppercase;
+            line-height: 1.1;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 0 30px rgba(212, 160, 67, 0.25);
+        }
+
+        .top-brand-title span {
+            color: var(--primary);
+        }
+
+        .top-brand-subtitle {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(12px, 1.8vw, 15px);
+            font-weight: 600;
+            letter-spacing: 3.5px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            text-transform: uppercase;
+        }
+
+        .top-brand-line {
+            width: 140px;
+            height: 2px;
+            margin: 14px auto 0;
+            background: linear-gradient(90deg, transparent, var(--primary) 40%, var(--primary) 60%, transparent);
+            box-shadow: 0 0 8px rgba(212, 160, 67, 0.5);
+        }
+
+        /* =====================================================
+           MAIN SELECTION CARDS (4 ROWS)
+        ===================================================== */
+        .card {
+            height: clamp(170px, 17.5vh, 320px);
+            margin-bottom: 14px;
+            position: relative;
+            overflow: hidden;
+            background: var(--card-bg);
+            border-radius: 24px;
+            border: 1px solid rgba(212, 160, 67, 0.22);
+            cursor: pointer;
+            z-index: 2;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            will-change: transform;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                        box-shadow 0.4s ease, 
+                        border-color 0.4s ease;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+        }
+
+        .card:hover {
+            transform: translateY(-3px) scale(1.008);
+            border-color: var(--primary);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(212, 160, 67, 0.25);
+        }
+
+        /* Flying Animation for Unselected Cards */
+        .card.fly-left {
+            transition: transform 0.65s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.5s ease !important;
+            transform: translateX(-150vw) rotate(-15deg) scale(0.8) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        .card.fly-right {
+            transition: transform 0.65s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.5s ease !important;
+            transform: translateX(150vw) rotate(15deg) scale(0.8) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* Selected Card Maximal Zoom Expansion */
+        .card.card-selected {
+            transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.65s ease !important;
+            transform: scale(1.4) translateY(-5px) !important;
+            z-index: 99999 !important;
+            opacity: 1 !important;
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 30px rgba(212, 160, 67, 0.6), 0 16px 36px rgba(0, 0, 0, 0.85) !important;
+        }
+
+        /* Card Image & Background Vignette */
+        .card-image {
+            position: absolute;
+            inset: 0;
+            background-position: center;
+            background-size: cover;
+            filter: brightness(0.75) contrast(1.05);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .card:hover .card-image {
+            transform: scale(1.04);
+            filter: brightness(0.85) contrast(1.05);
+        }
+
+        /* Luxury Matte Dark Vignette Overlay */
+        .card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                180deg,
+                rgba(20, 20, 20, 0.15) 0%,
+                rgba(20, 20, 20, 0.45) 45%,
+                rgba(20, 20, 20, 0.92) 100%
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Card Text Elements */
+        .point {
+            position: absolute;
+            left: 36px;
+            top: 24px;
+            z-index: 5;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: rgba(20, 20, 20, 0.75);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--primary-border);
+            border-radius: 20px;
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .title {
+            position: absolute;
+            left: 36px;
+            bottom: 64px;
+            z-index: 5;
+            font-size: clamp(38px, 5.5vw, 60px);
+            font-weight: 900;
+            letter-spacing: 2.5px;
+            color: #FFFFFF;
+            text-transform: uppercase;
+            line-height: 1;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
+        }
+
+        .subtitle {
+            position: absolute;
+            left: 36px;
+            bottom: 30px;
+            z-index: 5;
+            font-size: clamp(12px, 1.6vw, 15px);
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.75);
+            text-transform: uppercase;
+        }
+
+        .timer-badge,
+        .top-navigation,
+        .card .monitor,
+        .card .tech-left,
+        .card .tech-right,
+        .card .date,
+        .card .slider,
+        .hud-grid,
+        .glitch {
+            display: none !important;
+        }
+
+        /* =====================================================
+           TEMPLATE GALLERY MODAL (2-COLUMN MASONRY GRID)
+        ===================================================== */
+        .template-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-dark);
+            padding: 24px 22px 14px 22px;
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.35s ease, visibility 0.35s ease;
+        }
+
+        .template-modal.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .grid-modal-header {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .header-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .grid-back-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--primary-border);
+            color: var(--primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            padding: 10px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .grid-back-btn:hover {
+            background: var(--primary);
+            color: #141414;
+            border-color: var(--primary);
+            box-shadow: 0 4px 20px rgba(212, 160, 67, 0.4);
+            transform: scale(1.04);
+        }
+
+        .grid-modal-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            color: #ffffff;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .header-spacer {
+            width: 110px;
+            height: 42px;
+            pointer-events: none;
+        }
+
+        /* Category Pills Bar */
+        .category-pills {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 6px 4px 12px 4px;
+            scrollbar-width: none;
+        }
+
+        .category-pills::-webkit-scrollbar {
+            display: none;
+        }
+
+        .cat-pill {
+            position: relative;
+            background: var(--card-bg);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            padding: 10px 24px;
+            border-radius: 30px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .cat-pill:hover {
+            color: #ffffff;
+            border-color: var(--primary-border);
+            transform: translateY(-2px);
+        }
+
+        .cat-pill.active {
+            color: #141414;
+            background: var(--primary);
+            border-color: var(--primary);
+            font-weight: 800;
+            box-shadow: 0 4px 20px rgba(212, 160, 67, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* 2-Column Pure Image Grid — Вертикальный скролл строго вниз */
+        .template-grid-2col {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-auto-rows: max-content;
+            gap: 20px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 10px 8px 60px 8px;
+            flex: 1;
+            min-height: 0;
+            align-content: start;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) rgba(255, 255, 255, 0.05);
+        }
+        .template-grid-2col::-webkit-scrollbar {
+            width: 6px;
+        }
+        .template-grid-2col::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 4px;
+        }
+        .template-grid-2col::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        .tile-card {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            border-radius: 24px;
+            background: var(--card-bg);
+            border: 1.5px solid var(--border-subtle);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+        }
+
+        .tile-card img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 22px;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+
+        .tile-card:hover, .tile-card:active {
+            transform: translateY(-4px) scale(1.015);
+            border-color: var(--primary) !important;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.9), 0 0 25px rgba(212, 160, 67, 0.35);
+        }
+
+        .tile-card:hover img {
+            transform: scale(1.03);
+        }
+
+        /* Price Badge on Tile */
+        .tile-price-badge {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: linear-gradient(135deg, #E2AD49, #C48E2C);
+            color: #141414;
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            padding: 6px 14px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tile-price-badge span {
+            font-size: 11px;
+            font-weight: 700;
+            opacity: 0.9;
+        }
+
+        /* Название и бейдж жанра для шаблонов «СОЗДАЙ СВОЙ ТРЕК» */
+        .tile-music-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(10, 10, 16, 0.78);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(226, 173, 73, 0.4);
+            color: #f3c267;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            z-index: 5;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .tile-music-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 38px 12px 12px 12px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(5, 5, 10, 0.72) 40%, rgba(5, 5, 10, 0.96) 100%);
+            border-bottom-left-radius: 22px;
+            border-bottom-right-radius: 22px;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .tile-music-title {
+            font-size: 13.5px;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.25;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            word-break: break-word;
+            padding-right: 76px;
+            letter-spacing: 0.2px;
+        }
+
+        @media (max-width: 480px) {
+            .tile-music-badge {
+                font-size: 9px;
+                padding: 2px 6px;
+                top: 8px;
+                left: 8px;
+            }
+            .tile-music-bottom {
+                padding: 28px 8px 8px 8px;
+            }
+            .tile-music-title {
+                font-size: 11.5px;
+                padding-right: 64px;
+            }
+        }
+
+        /* =====================================================
+           MODAL OVERLAYS (PHOTO FLOW & PAYMENT)
+        ===================================================== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(10, 10, 10, 0.94);
+            backdrop-filter: blur(14px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--primary-border);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95), 0 0 45px rgba(212, 160, 67, 0.2);
+            width: min(96vw, 980px);
+            max-height: 94vh;
+            overflow-y: auto;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+            padding: 36px 32px;
+            border-radius: 28px;
+            position: relative;
+            color: #fff;
+            text-align: center;
+        }
+        .modal-content::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 32px;
+            line-height: 1;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            color: #ffffff;
+        }
+
+        .modal-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: var(--primary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .modal-subtitle {
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        /* Переключатель источника камеры */
+        .cam-source-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 18px;
+        }
+        .cam-source-tab {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            border-radius: 50px;
+            border: 1.5px solid rgba(212,160,67,0.35);
+            background: rgba(30,30,30,0.7);
+            color: rgba(255,255,255,0.55);
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .cam-source-tab.active {
+            background: rgba(212,160,67,0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .cam-source-tab svg { flex-shrink: 0; }
+
+        /* Панель QR телефона */
+        #phone-cam-panel {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            padding: 20px;
+            background: rgba(20,20,20,0.9);
+            border: 1.5px solid rgba(212,160,67,0.3);
+            border-radius: 18px;
+            margin-bottom: 20px;
+        }
+        #phone-cam-panel.visible { display: flex; }
+        #phone-qr-img {
+            width: 200px;
+            height: 200px;
+            border-radius: 12px;
+            background: #fff;
+            padding: 6px;
+        }
+        .phone-cam-instruction {
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            line-height: 1.5;
+            max-width: 300px;
+        }
+        .phone-cam-instruction strong { color: var(--primary); }
+        #phone-cam-status {
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px;
+            color: var(--text-dim);
+            letter-spacing: 0.8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .pulse-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: pulse-anim 1.4s ease-in-out infinite;
+        }
+        @keyframes pulse-anim {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.35; transform: scale(0.65); }
+        }
+
+        /* Camera View */
+        .webcam-box {
+            position: relative;
+            width: 100%;
+            max-width: 780px;
+            aspect-ratio: 16 / 9;
+            margin: 0 auto 20px;
+            background: #000;
+            border: 2px solid rgba(212, 160, 67, 0.4);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 25px rgba(212, 160, 67, 0.15);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            background: #000;
+            will-change: transform;
+        }
+
+        .cam-info-badge {
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 10, 15, 0.82);
+            border: 1px solid rgba(212, 160, 67, 0.6);
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 5px 16px;
+            border-radius: 20px;
+            pointer-events: none;
+            z-index: 10;
+            background: rgba(10, 10, 15, 0.94);
+            white-space: nowrap;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .webcam-hud {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .hud-corner {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            border: 2px solid var(--primary);
+        }
+        .top-left { top: 16px; left: 16px; border-right: none; border-bottom: none; border-top-left-radius: 6px; }
+        .top-right { top: 16px; right: 16px; border-left: none; border-bottom: none; border-top-right-radius: 6px; }
+        .bottom-left { bottom: 16px; left: 16px; border-right: none; border-top: none; border-bottom-left-radius: 6px; }
+        .bottom-right { bottom: 16px; right: 16px; border-left: none; border-top: none; border-bottom-right-radius: 6px; }
+
+        .countdown-num {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            font-size: 96px;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 30px rgba(212, 160, 67, 0.8);
+        }
+
+        /* Timer Select */
+        .timer-select-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 22px;
+        }
+
+        .timer-select-label {
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .timer-options {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .timer-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 8px 18px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .timer-btn:hover {
+            border-color: var(--primary-border);
+            color: #ffffff;
+        }
+
+        .timer-btn.active {
+            background: var(--primary);
+            color: #141414;
+            border-color: var(--primary);
+            font-weight: 800;
+            box-shadow: 0 0 15px rgba(212, 160, 67, 0.4);
+            transform: scale(1.05);
+        }
+
+        /* Buttons */
+        .action-btn {
+            font-family: 'Outfit', sans-serif;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            padding: 14px 32px;
+            border-radius: 18px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #E2AD49, #C48E2C);
+            color: #141414;
+            box-shadow: 0 4px 20px rgba(212, 160, 67, 0.35);
+        }
+
+        .primary-btn:hover {
+            background: linear-gradient(135deg, #F0BC59, #D4A043);
+            box-shadow: 0 6px 25px rgba(212, 160, 67, 0.55);
+            transform: translateY(-2px);
+        }
+
+        .success-btn {
+            background: var(--input-bg);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            border-radius: 16px;
+        }
+
+        .success-btn:hover {
+            background: var(--primary);
+            color: #141414;
+            box-shadow: 0 4px 15px rgba(212, 160, 67, 0.3);
+        }
+
+        .cancel-btn {
+            background: var(--input-bg);
+            color: var(--text-muted);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+        }
+
+        .cancel-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Payment Step */
+        .pay-summary-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--input-bg);
+            border: 1px solid var(--primary-border);
+            border-radius: 18px;
+            padding: 16px 20px;
+            margin-bottom: 22px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            text-align: left;
+        }
+
+        .pay-summary-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .pay-thumb {
+            width: 64px;
+            height: 64px;
+            border-radius: 14px;
+            object-fit: cover;
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 15px rgba(212, 160, 67, 0.35);
+        }
+
+        .pay-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pay-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-dim);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .pay-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 2px 0;
+            text-transform: uppercase;
+        }
+
+        .pay-subtext {
+            font-size: 12px;
+            color: var(--primary);
+        }
+
+        .pay-summary-right {
+            text-align: right;
+        }
+
+        .pay-amount {
+            font-family: 'Outfit', sans-serif;
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 15px rgba(212, 160, 67, 0.4);
+        }
+
+        .pay-amount .currency {
+            font-size: 15px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .qr-pay-box {
+            background: rgba(20, 20, 20, 0.6);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 24px 20px;
+        }
+
+        .qr-container-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .qr-code-img {
+            background: #ffffff;
+            padding: 14px;
+            border-radius: 18px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+            display: inline-block;
+            margin-bottom: 14px;
+        }
+
+        .elqr-real-img {
+            width: 200px;
+            height: 200px;
+            display: block;
+        }
+
+        .qr-logos-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .qr-bank-pill {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+        }
+        .qr-bank-pill.obank { background: #E4002B; color: #fff; }
+        .qr-bank-pill.mbank { background: #00A859; color: #fff; }
+        .qr-bank-pill.optima { background: #FF6600; color: #fff; }
+        .qr-bank-pill.elkart { background: #0072CE; color: #fff; }
+
+        .payment-status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 18px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary);
+            animation: pulseGlow 1.4s infinite ease-in-out;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(0.9); opacity: 0.5; }
+            50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 18px var(--primary); }
+        }
+
+        .pay-actions-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        /* Выбор разрешения ChatGPT (1K, 2K, 4K) */
+        .ai-res-control-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin: 14px 0 10px 0;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 10px 18px;
+        }
+        .ai-res-label {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+        .ai-res-pills {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .ai-res-pill {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1.5px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            color: #e2e8f0;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 95px;
+        }
+        .ai-res-pill:hover {
+            border-color: rgba(212, 160, 67, 0.6);
+            transform: translateY(-2px);
+        }
+        .ai-res-pill.active {
+            background: rgba(212, 160, 67, 0.22);
+            border-color: #d4a043;
+            color: #fff;
+            box-shadow: 0 0 18px rgba(212, 160, 67, 0.4), inset 0 0 8px rgba(212, 160, 67, 0.2);
+            transform: scale(1.03);
+        }
+        .ai-res-pill .pill-res {
+            font-size: 15px;
+            font-weight: 900;
+            letter-spacing: 0.05em;
+        }
+        .ai-res-pill .pill-sub {
+            font-size: 10px;
+            opacity: 0.75;
+            font-weight: 600;
+        }
+
+        /* Processing Step & Modern AI Progress Bar */
+        .cyber-spinner {
+            width: 64px;
+            height: 64px;
+            border: 4px solid rgba(212, 160, 67, 0.15);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 40px auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Modern Luxury Neon Progress Bar */
+        .ai-processing-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 560px;
+            margin: 15px auto 25px auto;
+            padding: 38px 28px;
+            background: rgba(22, 22, 22, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 160, 67, 0.28);
+            border-radius: 28px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 35px rgba(212, 160, 67, 0.12);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .ai-processing-visual {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ai-pulse-glow {
+            position: absolute;
+            width: 84px;
+            height: 84px;
+            background: radial-gradient(circle, rgba(212, 160, 67, 0.5) 0%, rgba(212, 160, 67, 0) 70%);
+            border-radius: 50%;
+            animation: aiPulse 2.4s ease-in-out infinite;
+        }
+
+        .ai-orbit {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .ai-orbit-outer {
+            width: 106px;
+            height: 106px;
+            border: 2px dashed rgba(212, 160, 67, 0.35);
+            animation: aiSpinClockwise 14s linear infinite;
+        }
+
+        .ai-orbit-inner {
+            width: 80px;
+            height: 80px;
+            border: 2.5px solid transparent;
+            border-top-color: var(--primary);
+            border-bottom-color: #FFE082;
+            animation: aiSpinCounter 2.2s linear infinite;
+            filter: drop-shadow(0 0 10px rgba(212, 160, 67, 0.65));
+        }
+
+        .ai-core-icon {
+            position: relative;
+            z-index: 2;
+            color: #FFE082;
+            filter: drop-shadow(0 0 14px rgba(212, 160, 67, 0.85));
+            animation: aiCoreFloat 2.4s ease-in-out infinite;
+        }
+
+        .ai-processing-title {
+            font-size: 26px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 22px;
+            background: linear-gradient(135deg, #FFFFFF 0%, #F5D38A 50%, #D4A043 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+        }
+
+        .ai-progress-card {
+            width: 100%;
+            background: rgba(14, 14, 14, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 20px 22px;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .ai-progress-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            gap: 12px;
+        }
+
+        .ai-progress-status-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+            overflow: hidden;
+            flex: 1;
+        }
+
+        .ai-status-dot {
+            width: 9px;
+            height: 9px;
+            min-width: 9px;
+            border-radius: 50%;
+            background: #D4A043;
+            box-shadow: 0 0 10px #D4A043, 0 0 20px #D4A043;
+            animation: dotBlink 1.4s ease-in-out infinite alternate;
+        }
+
+        .ai-status-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ai-progress-val {
+            font-size: 22px;
+            font-weight: 900;
+            color: #FFE082;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 14px rgba(212, 160, 67, 0.6);
+            min-width: 58px;
+            text-align: right;
+        }
+
+        .ai-progress-track {
+            width: 100%;
+            height: 16px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(212, 160, 67, 0.28);
+            border-radius: 999px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.85);
+        }
+
+        .ai-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #B88328 0%, #D4A043 50%, #FFE082 100%);
+            border-radius: 999px;
+            position: relative;
+            transition: width 0.15s ease-out;
+            box-shadow: 0 0 16px rgba(212, 160, 67, 0.75);
+        }
+
+        .ai-progress-shimmer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
+            background-size: 200% 100%;
+            animation: aiShimmer 1.8s infinite linear;
+            border-radius: 999px;
+            pointer-events: none;
+        }
+
+        .ai-progress-head-glow {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            box-shadow: 0 0 12px 3px #FFFFFF, 0 0 22px 6px #D4A043;
+            pointer-events: none;
+        }
+
+        .ai-progress-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        /* Подсказка времени ожидания */
+        .ai-wait-hint {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 10px 16px;
+            background: rgba(212, 160, 67, 0.08);
+            border: 1px solid rgba(212, 160, 67, 0.22);
+            border-radius: 12px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.65);
+            text-align: center;
+            line-height: 1.4;
+        }
+        .ai-wait-hint strong {
+            color: #FFE082;
+            font-weight: 700;
+        }
+        .ai-wait-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        /* Вспышка камеры при снимке */
+        #camera-flash {
+            position: fixed;
+            inset: 0;
+            background: #ffffff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.05s ease-in;
+        }
+        #camera-flash.active {
+            opacity: 1;
+        }
+
+        .ai-meta-tag {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 5px 12px;
+            border-radius: 8px;
+            text-transform: uppercase;
+        }
+
+        @keyframes aiPulse {
+            0%, 100% { transform: scale(0.88); opacity: 0.45; }
+            50% { transform: scale(1.18); opacity: 0.9; }
+        }
+
+        @keyframes aiSpinClockwise {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes aiSpinCounter {
+            to { transform: rotate(-360deg); }
+        }
+
+        @keyframes aiCoreFloat {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-3px) scale(1.06); }
+        }
+
+        @keyframes dotBlink {
+            0% { opacity: 0.4; transform: scale(0.85); }
+            100% { opacity: 1; transform: scale(1.15); }
+        }
+
+        @keyframes aiShimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Result Step - Крупный объемный вид для всех типов контента */
+        .result-content {
+            display: flex;
+            gap: 36px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+
+        .result-image-box {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 24px;
+            padding: 4px;
+            border: 3px solid var(--primary);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 40px rgba(212, 160, 67, 0.35);
+            transition: transform 0.3s ease;
+        }
+        .result-image-box:hover {
+            transform: scale(1.01);
+        }
+
+        .result-image-box img {
+            width: auto;
+            max-width: 480px;
+            min-height: 420px;
+            max-height: 620px;
+            border-radius: 20px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .result-image-box video {
+            width: 100%;
+            max-width: 440px;
+            min-height: 480px;
+            max-height: 620px;
+            border-radius: 20px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .result-qr-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1.5px solid var(--primary-border);
+            border-radius: 24px;
+            padding: 24px 28px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+        }
+
+        .result-qr {
+            background: #fff;
+            padding: 12px;
+            border-radius: 18px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.9);
+            width: 200px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .result-qr img,
+        .result-qr svg,
+        .result-qr canvas,
+        .result-qr .qr-svg-holder {
+            width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            object-fit: contain;
+        }
+
+        @media (max-width: 900px), (max-height: 1300px) {
+            .result-content {
+                gap: 16px !important;
+                margin-bottom: 16px !important;
+            }
+            .result-image-box img,
+            .result-image-box video {
+                max-width: min(85vw, 360px) !important;
+                min-height: 220px !important;
+                max-height: 38vh !important;
+            }
+            .result-qr-box {
+                padding: 14px 20px !important;
+                gap: 8px !important;
+            }
+            .result-qr {
+                width: 170px !important;
+                height: 170px !important;
+                padding: 10px !important;
+            }
+        }
+
+        .qr-badge-title {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+
+        .qr-timer {
+            font-size: 12px;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        /* =====================================================
+           TRY-ON LOCATION INFO CARD (ГДЕ ПРИОБРЕСТИ ВЕЩЬ)
+        ===================================================== */
+        .tryon-location-card {
+            width: 100%;
+            max-width: 280px;
+            margin-top: 10px;
+            padding: 14px 16px;
+            background: linear-gradient(135deg, rgba(212, 160, 67, 0.12) 0%, rgba(26, 26, 26, 0.95) 100%);
+            border: 1.5px solid rgba(212, 160, 67, 0.45);
+            border-radius: 18px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 20px rgba(212, 160, 67, 0.12);
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            animation: fadeInLocCard 0.4s ease forwards;
+        }
+        @keyframes fadeInLocCard {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .tryon-loc-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .tryon-loc-tag {
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+        .tryon-loc-price {
+            font-size: 12px;
+            font-weight: 900;
+            background: var(--primary);
+            color: #141414;
+            padding: 2px 7px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
+        .tryon-loc-item-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: #ffffff;
+            line-height: 1.25;
+        }
+        .tryon-loc-place-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(212, 160, 67, 0.25);
+            padding: 7px 10px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #F3D289;
+        }
+        .tryon-loc-pin {
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .tryon-loc-hint {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.55);
+            line-height: 1.3;
+        }
+
+        /* =====================================================
+           STANDUP ROAST STEP & CARICATURE POSTER STYLES
+        ===================================================== */
+        .roast-poster-box {
+            position: relative;
+            width: min(92vw, 380px);
+            height: min(68vh, 600px);
+            border-radius: 28px;
+            border: 3.5px solid #ff453a;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 45px rgba(255, 69, 58, 0.4);
+            background: #121212;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .roast-poster-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .roast-stamp {
+            position: absolute;
+            top: 24px;
+            right: 20px;
+            background: rgba(255, 59, 48, 0.18);
+            border: 3.5px dashed #ff3b30;
+            color: #ff453a;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            padding: 8px 18px;
+            border-radius: 12px;
+            transform: rotate(12deg);
+            box-shadow: 0 8px 25px rgba(255, 59, 48, 0.45);
+            text-shadow: 0 0 15px rgba(255, 59, 48, 0.8);
+            pointer-events: none;
+            z-index: 10;
+        }
+        .roast-info-card {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-width: 440px;
+            text-align: left;
+        }
+        .roast-bubble {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1.5px solid rgba(255, 69, 58, 0.35);
+            border-radius: 22px;
+            padding: 20px 24px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+            position: relative;
+        }
+        .roast-title-text {
+            font-size: 22px;
+            font-weight: 900;
+            color: #ff453a;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(255, 69, 58, 0.4);
+        }
+        .roast-speech-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #ffffff;
+            font-style: italic;
+        }
+        .voice-wave-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            height: 36px;
+            margin-top: 14px;
+            padding: 8px 16px;
+            background: rgba(255, 69, 58, 0.12);
+            border: 1px solid rgba(255, 69, 58, 0.35);
+            border-radius: 30px;
+            width: fit-content;
+            cursor: pointer;
+        }
+        .wave-col {
+            width: 4px;
+            height: 8px;
+            background: #ff453a;
+            border-radius: 3px;
+            animation: waveAnim 1s ease-in-out infinite alternate;
+        }
+        .wave-col:nth-child(2) { animation-delay: 0.15s; }
+        .wave-col:nth-child(3) { animation-delay: 0.3s; }
+        .wave-col:nth-child(4) { animation-delay: 0.45s; }
+        .wave-col:nth-child(5) { animation-delay: 0.6s; }
+        @keyframes waveAnim {
+            0% { height: 6px; }
+            100% { height: 26px; }
+        }
+        .vibe-meter-box {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid var(--border-subtle);
+            border-radius: 18px;
+            padding: 16px 20px;
+        }
+        .charisma-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .charisma-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff453a, #ff9f0a);
+            border-radius: 10px;
+            width: 20%;
+            transition: width 1s ease-out;
+        }
+
+        /* =====================================================
+           ATTRACT MODE SCREEN SAVER
+        ===================================================== */
+        .attract-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 999999;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .attract-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .attract-top-video {
+            height: 75%;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            background: #000;
+        }
+
+        /* Мягкая растушёвка снизу верхнего блока — плавный переход к нижнему */
+        .attract-top-video::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 60%, rgba(0,0,0,0.98) 100%);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .attract-blur-backdrop {
+            position: absolute;
+            inset: -20px;
+            background-size: cover;
+            background-position: center;
+            filter: blur(25px) brightness(0.4);
+            transform: scale(1.1);
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+
+        .attract-blur-backdrop.active {
+            opacity: 1;
+        }
+
+        .media-layer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+            z-index: 2;
+        }
+
+        .media-layer.active {
+            opacity: 1;
+            visibility: visible;
+            z-index: 3;
+        }
+
+        .attract-video-fallback {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at 50% 45%, #1E1E1E 0%, #141414 80%);
+            z-index: 1;
+        }
+
+        .cyber-glow-orb {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(212, 160, 67, 0.35), transparent 70%);
+            animation: orbPulse 3s infinite alternate ease-in-out;
+        }
+
+        @keyframes orbPulse {
+            0% { transform: scale(0.85); opacity: 0.6; }
+            100% { transform: scale(1.15); opacity: 1; }
+        }
+
+        .fallback-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 36px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: var(--primary);
+            margin-top: 20px;
+            text-shadow: 0 0 20px rgba(212, 160, 67, 0.5);
+            text-transform: uppercase;
+        }
+
+        .fallback-subtitle {
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            text-transform: uppercase;
+        }
+
+        .attract-ad-badge {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            z-index: 10;
+            background: rgba(20, 20, 20, 0.85);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        /* Внешний отсек для нижней рекламы (25% экрана) */
+        .attract-bottom-wrapper {
+            height: 25%;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+        }
+
+        /* Мягкая растушёвка сверху нижнего отсека — бесшовное слияние с верхним блоком */
+        .attract-bottom-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        /* Размытый фон (Backdrop) СЗАДИ закруглённого баннера */
+        .attract-bottom-wrapper .attract-blur-backdrop {
+            position: absolute;
+            inset: -40px;
+            width: calc(100% + 80px);
+            height: calc(100% + 80px);
+            background-size: cover;
+            background-position: center;
+            filter: blur(50px) brightness(0.5) saturate(1.2);
+            transform: scale(1.15);
+            z-index: 1;
+            opacity: 0.95;
+            transition: opacity 0.6s ease, background-image 0.6s ease;
+            pointer-events: none;
+            /* Растушёвка краёв бэкдропа по краям экрана */
+            -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 50%, rgba(0,0,0,0.6) 80%, rgba(0,0,0,0) 100%);
+            mask-image: radial-gradient(ellipse at center, rgba(0,0,0,1) 50%, rgba(0,0,0,0.6) 80%, rgba(0,0,0,0) 100%);
+        }
+
+        /* Сама парящая закруглённая карточка поверх размытия */
+        .attract-bottom-card {
+            height: calc(100% - 32px);
+            width: calc(100% - 36px);
+            position: relative;
+            overflow: hidden;
+            background: #141414;
+            border: 1.5px solid rgba(212, 160, 67, 0.45);
+            border-radius: 28px;
+            box-shadow: 0 16px 45px rgba(0, 0, 0, 0.9), 0 0 30px rgba(212, 160, 67, 0.25);
+            z-index: 2;
+        }
+
+        .attract-bottom-card .media-layer,
+        .attract-bottom-card video,
+        .attract-bottom-card img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            border-radius: 26px;
+            display: block;
+        }
+
+        /* Responsive Tweaks */
+        @media (max-width: 600px) {
+            .kiosk {
+                padding: 20px 16px;
+            }
+            .card {
+                height: 28vh;
+                min-height: 220px;
+            }
+            .point {
+                left: 20px;
+                top: 18px;
+            }
+            .title {
+                left: 20px;
+                bottom: 50px;
+            }
+            .subtitle {
+                left: 20px;
+                bottom: 22px;
+            }
+        }
+
+        /* СТИЛИ СТУДИИ СОЗДАНИЯ ПЕСНИ (СОЗДАЙ СВОЙ ТРЕК) */
+        .music-form-group {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            text-align: left;
+        }
+        .music-group-label {
+            font-size: 11.5px;
+            font-weight: 800;
+            color: var(--primary, #d4a043);
+            letter-spacing: 0.8px;
+            display: block;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .music-theme-chips-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+            text-align: left;
+        }
+        .music-chips-label {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: 0.8px;
+            display: block;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .music-theme-chips, .music-selector-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-start;
+        }
+        .theme-chip {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #f1f5f9;
+            padding: 7px 12px;
+            border-radius: 20px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .theme-chip:hover, .theme-chip:active {
+            background: rgba(236, 72, 153, 0.22);
+            border-color: #ec4899;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+        .theme-chip.active {
+            background: #ec4899 !important;
+            border-color: #f472b6 !important;
+            color: #fff !important;
+            box-shadow: 0 0 12px rgba(236, 72, 153, 0.5);
+        }
+        .style-choice-btn, .lang-choice-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1.5px solid rgba(255, 255, 255, 0.14);
+            color: #f1f5f9;
+            padding: 8px 14px;
+            border-radius: 18px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .style-choice-btn:hover, .lang-choice-btn:hover {
+            background: rgba(212, 160, 67, 0.14);
+            border-color: rgba(212, 160, 67, 0.5);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+        .style-choice-btn.active, .lang-choice-btn.active {
+            background: linear-gradient(135deg, var(--primary, #d4a043) 0%, #b88628 100%) !important;
+            border-color: #ffd700 !important;
+            color: #000000 !important;
+            font-weight: 800;
+            box-shadow: 0 4px 14px rgba(212, 160, 67, 0.4);
+            transform: scale(1.02);
+        }
+        .kiosk-touch-input.active-focus {
+            border-color: var(--primary, #d4a043) !important;
+            box-shadow: 0 0 16px rgba(212, 160, 67, 0.35) !important;
+            background: rgba(15, 15, 26, 0.9) !important;
+        }
+        .music-input-wrap {
+            position: relative;
+            width: 100%;
+            max-width: 680px;
+            margin: 0 auto;
+        }
+        .kiosk-touch-input {
+            width: 100%;
+            padding: 13px 44px 13px 16px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1.5px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            outline: none;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+            transition: all 0.2s ease;
+        }
+        .kiosk-touch-input:focus {
+            border-color: var(--primary, #d4a043);
+            box-shadow: 0 0 14px rgba(212, 160, 67, 0.35);
+        }
+        .kiosk-touch-input::placeholder {
+            color: rgba(255, 255, 255, 0.35);
+            font-weight: 500;
+            font-size: 16px;
+        }
+        .input-clear-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+        .input-clear-btn:hover, .input-clear-btn:active {
+            background: rgba(239, 68, 68, 0.8);
+        }
+        .virtual-keyboard-box {
+            width: 100%;
+            max-width: 720px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            user-select: none;
+            background: rgba(15, 15, 25, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 12px 8px;
+        }
+        .vk-row {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+        .vk-key {
+            height: 44px;
+            min-width: 36px;
+            flex: 1;
+            max-width: 52px;
+            padding: 0 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.08s ease;
+            touch-action: manipulation;
+        }
+        .vk-key:hover {
+            background: rgba(255, 255, 255, 0.18);
+        }
+        .vk-key:active {
+            background: #ec4899;
+            color: #fff;
+            transform: scale(0.94);
+        }
+        .vk-key-special {
+            background: rgba(212, 160, 67, 0.18);
+            border-color: rgba(212, 160, 67, 0.4);
+            color: #D4A043;
+            max-width: 76px;
+            font-size: 13px;
+        }
+        .vk-key-special:hover {
+            background: rgba(212, 160, 67, 0.3);
+        }
+        .vk-key-space {
+            flex: 4;
+            max-width: 240px;
+            font-size: 13px;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        /* ── СТУДИЯ ДОПОЛНЕННОЙ РЕАЛЬНОСТИ (AR STUDIO) ── */
+        .ar-studio-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 900px;
+            margin: 10px auto 14px auto;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .ar-composite-preview {
+            width: 320px;
+            height: 320px;
+            position: relative;
+            border-radius: 18px;
+            overflow: hidden;
+            background: #000;
+            border: 2px solid rgba(0, 242, 254, 0.4);
+            box-shadow: 0 0 35px rgba(0, 242, 254, 0.25);
+            user-select: none;
+            touch-action: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ar-base-marker-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .ar-floating-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            transform: translate(-50%, -50%);
+            border: 2.5px dashed #00f2fe;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 25px rgba(0, 242, 254, 0.5);
+            pointer-events: none;
+            transition: transform 0.05s ease-out, width 0.05s, height 0.05s;
+        }
+        .ar-floating-overlay video, .ar-floating-overlay img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .ar-controls-panel {
+            flex: 1;
+            min-width: 300px;
+            max-width: 440px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .ar-ctrl-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .ar-ctrl-label {
+            font-size: 11.5px;
+            font-weight: 800;
+            color: #00f2fe;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+        .ar-ctrl-btns {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .ar-small-btn {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 9px 13px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .ar-small-btn:hover, .ar-small-btn:active {
+            background: #00f2fe;
+            color: #000;
+            border-color: #00f2fe;
+        }
+        .ar-val-badge {
+            font-size: 12px;
+            font-weight: 800;
+            color: #d4a043;
+            background: rgba(212, 160, 67, 0.1);
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(212, 160, 67, 0.25);
+        }
+        .ar-phone-qr-popup {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 15, 20, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            z-index: 10;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            text-align: center;
+            gap: 10px;
+        }
+    </style>
 </head>
+
 <body>
-    <p style="font-family: sans-serif; text-align: center; margin-top: 40px; color: #888;">
-        Загрузка системы TRENDUM...
-    </p>
+
+<div class="kiosk">
+
+    <!-- КНОПКА ОБНОВЛЕНИЯ СТРАНИЦЫ (ВЕРХНИЙ ПРАВЫЙ УГОЛ) -->
+    <button type="button" id="kiosk-reload-btn" class="kiosk-reload-btn" aria-label="Обновить страницу" title="Обновить страницу">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-2.63-6.36L21 8"/>
+            <polyline points="21 3 21 8 16 8"/>
+        </svg>
+    </button>
+
+    <!-- СЕКРЕТНОЕ МЕНЮ АДМИНИСТРАТОРА (ВЫХОД В WINDOWS) -->
+    <div id="admin-exit-modal" style="display:none; position:fixed; inset:0; z-index:9999999; background:rgba(0,0,0,0.85); backdrop-filter:blur(6px); align-items:center; justify-content:center;">
+        <div style="background:#1c1c24; border:1px solid #d4a043; border-radius:24px; padding:32px; text-align:center; max-width:380px; width:90%; color:#fff; box-shadow:0 12px 40px rgba(0,0,0,0.8);">
+            <div style="font-size:36px; margin-bottom:12px;">⚙️</div>
+            <h3 style="font-size:20px; font-weight:800; margin-bottom:8px; color:#d4a043;">Меню терминала</h3>
+            <p style="font-size:14px; color:#aaa; margin-bottom:24px;">Выберите действие для киоска:</p>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <button type="button" id="admin-btn-test-cam" style="padding:15px; background:rgba(212,160,67,0.2); border:1px solid #d4a043; color:#d4a043; font-weight:800; border-radius:14px; font-size:15px; cursor:pointer;">📷 Проверить камеру киоска</button>
+                <button type="button" id="admin-btn-close-app" style="padding:15px; background:#dc2626; color:#fff; font-weight:800; border-radius:14px; border:none; font-size:15px; cursor:pointer;">❌ Выйти в Windows (Закрыть киоск)</button>
+                <button type="button" id="admin-btn-reload-app" style="padding:15px; background:#d4a043; color:#000; font-weight:800; border-radius:14px; border:none; font-size:15px; cursor:pointer;">🔄 Перезагрузить страницу</button>
+                <button type="button" id="admin-btn-cancel-app" style="padding:13px; background:#2a2a36; color:#ccc; border-radius:14px; border:1px solid #444; font-size:14px; cursor:pointer;">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================
+         TOP CENTER LUXURY BRAND HEADER
+    ========================================== -->
+    <header class="top-brand-center">
+        <div class="brand-badge-pill" id="main-brand-badge">PREMIUM PHOTO KIOSK</div>
+        <h1 class="top-brand-title" id="main-brand-title">TREN<span>DUM</span></h1>
+        <div class="top-brand-subtitle" id="main-brand-subtitle">ФОТОСТУДИЯ ПРЕМИУМ КЛАССА</div>
+        <div class="top-brand-line"></div>
+    </header>
+
+    <!-- CONTAINER FOR DYNAMIC MAIN SCREEN CARDS -->
+    <div id="main-cards-container" style="display: contents;">
+        <!-- CARD 1 — ФОТО -->
+        <section class="card card-1" onclick="selectCard(this, 'ФОТО')">
+            <div class="card-image" style="background-image: url('images/photo1.jpg');"></div>
+            <div class="point">ОБЛОЖКИ • ПОРТРЕТЫ • АРТ</div>
+            <div class="title">ФОТО</div>
+            <div class="subtitle">БОЛЕЕ 100 СТИЛЕЙ СТУДИЙНОЙ СЪЁМКИ</div>
+        </section>
+
+        <!-- CARD 2 — ВИДЕО -->
+        <section class="card card-2" onclick="selectCard(this, 'ВИДЕО')">
+            <div class="card-image" style="background-image: url('images/photo3.jpg');"></div>
+            <div class="point">КИНЕМАТОГРАФИЧНОЕ ВИДЕО</div>
+            <div class="title">ВИДЕО</div>
+            <div class="subtitle">ЖИВЫЕ ПОРТРЕТЫ И АНИМАЦИЯ</div>
+        </section>
+
+        <!-- CARD 3 — СОЗДАЙ СВОЙ ТРЕК -->
+        <section class="card card-3" onclick="selectCard(this, 6)">
+            <div class="card-image" style="background-image: url('images/photo2.jpg');"></div>
+            <div class="point">🎵 МУЗЫКАЛЬНЫЙ ИИ • ХИТЫ</div>
+            <div class="title">СОЗДАЙ СВОЙ ТРЕК</div>
+            <div class="subtitle">СОЗДАЙ ИМЕННОЙ ХИТ В ЛЮБОМ МУЗЫКАЛЬНОМ ЖАНРЕ</div>
+        </section>
+
+        <!-- CARD 4 — АУДИОСКАЗКА -->
+        <section class="card card-4" onclick="selectCard(this, 8)">
+            <div class="card-image" style="background-image: url('images/fairytale_cover.jpg');"></div>
+            <div class="point">🪄 ДЕТСКАЯ АУДИОКНИГА • ИИ</div>
+            <div class="title">АУДИОСКАЗКА</div>
+            <div class="subtitle">ПЕРСОНАЛЬНАЯ СКАЗКА ДЛЯ РЕБЕНКА С ОБЛОЖКОЙ И ГОЛОСОМ</div>
+        </section>
+    </div>
+
+</div>
+
+<!-- =========================================
+     ATTRACT MODE SCREEN SAVER (PLAYLIST SUPPORT FOR VIDEO & PHOTO)
+========================================== -->
+<div id="attract-overlay" class="attract-overlay hidden">
+    <!-- Top 3/4 Video & Photo Playlist Container -->
+    <div class="attract-top-video">
+        <div id="attract-top-blur" class="attract-blur-backdrop"></div>
+        <video id="attract-promo-video" autoplay muted playsinline defaultMuted preload="auto" class="media-layer active"></video>
+        <img id="attract-promo-img" class="media-layer" alt="Ad Slide">
+        
+        <div class="attract-video-fallback" id="attract-top-fallback">
+            <div class="cyber-glow-orb"></div>
+            <div class="fallback-title">TRENDUM</div>
+            <div class="fallback-subtitle">ПРЕМИАЛЬНЫЙ ФОТОКИОСК</div>
+        </div>
+        <div class="attract-ad-badge">РЕКЛАМА</div>
+    </div>
+
+    <!-- Bottom 1/4 Video & Photo Playlist Container -->
+    <div class="attract-bottom-wrapper">
+        <div id="attract-bottom-blur" class="attract-blur-backdrop"></div>
+        <div class="attract-bottom-card">
+            <video id="attract-card-video" autoplay muted playsinline defaultMuted preload="auto" class="media-layer active"></video>
+            <img id="attract-card-img" class="media-layer" alt="Card Slide">
+        </div>
+    </div>
+</div>
+
+<!-- =========================================
+     2-COLUMN PURE IMAGE GRID WITH CATEGORIES
+========================================== -->
+<div id="template-modal" class="template-modal hidden">
+    <!-- Header Controls -->
+    <div class="grid-modal-header">
+        <div class="header-top-bar">
+            <button id="template-back-btn" class="grid-back-btn">
+                <span>←</span> НАЗАД
+            </button>
+            <div class="grid-modal-title" id="grid-modal-title">ВСЕ ШАБЛОНЫ</div>
+            <div class="header-spacer"></div>
+        </div>
+        
+        <!-- Categories Pills Bar (Dynamic from JS) -->
+        <div class="category-pills" id="category-pills-bar">
+            <!-- Category Pills generated dynamically by JS -->
+        </div>
+    </div>
+
+    <!-- 2-Column Pure Image Tiles Grid -->
+    <div class="template-grid-2col" id="template-grid-2col">
+        <!-- Pure image tile cards generated by JS -->
+    </div>
+</div>
+
+<!-- =========================================
+     MODAL OVERLAYS (PHOTO FLOW & PAYMENT)
+========================================== -->
+<div id="kiosk-modal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <button id="modal-close" class="modal-close-btn">&times;</button>
+        <!-- STEP 0.5: DIRECT MUSIC STUDIO (СОЗДАЙ СВОЙ ТРЕК) -->
+        <div id="step-music-theme" class="step-view" style="display:none; max-width: 760px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 6px;">
+                <span class="step-badge" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; background: rgba(212, 160, 67, 0.12); border: 1px solid rgba(212, 160, 67, 0.4); color: var(--primary, #d4a043); letter-spacing: 0.5px;">
+                    🎵 МУЗЫКАЛЬНАЯ СТУДИЯ
+                </span>
+            </div>
+            <h2 class="modal-title" style="margin-top: 4px; margin-bottom: 4px; text-align: center; font-size: 24px; font-weight: 800;">ПАРАМЕТРЫ ПЕСНИ</h2>
+            <p class="modal-subtitle" style="text-align: center; max-width: 540px; margin: 0 auto 12px auto; font-size: 13px; color: var(--text-dim, #94a3b8);">
+                Укажите тему и посвящение, стиль музыки и выберите язык вокала
+            </p>
+
+            <!-- 1. О ЧЁМ И ДЛЯ КОГО БУДЕТ ПЕСНЯ -->
+            <div class="music-form-group">
+                <label class="music-group-label">О ЧЁМ И ДЛЯ КОГО БУДЕТ ПЕСНЯ:</label>
+                <div class="music-input-wrap">
+                    <input type="text" id="music-input-about" class="kiosk-touch-input active-focus" placeholder="Например: Про любовь и семью, для любимой жены Айдай..." maxlength="140" autocomplete="off" inputmode="none" readonly style="cursor: pointer;">
+                    <button type="button" id="music-about-clear-btn" class="input-clear-btn" title="Очистить">&times;</button>
+                </div>
+            </div>
+
+            <!-- 2. СТИЛЬ МУЗЫКИ -->
+            <div class="music-form-group">
+                <label class="music-group-label">СТИЛЬ МУЗЫКИ (ЖАНР):</label>
+                <div class="music-input-wrap">
+                    <input type="text" id="music-input-style" class="kiosk-touch-input" placeholder="Например: Поп-хит, Рэп, Рок, Клубный, Шансон, Медляк..." maxlength="80" autocomplete="off" inputmode="none" readonly style="cursor: pointer;">
+                    <button type="button" id="music-style-clear-btn" class="input-clear-btn" title="Очистить">&times;</button>
+                </div>
+            </div>
+
+            <!-- 3. НА КАКОМ ЯЗЫКЕ -->
+            <div class="music-form-group" style="margin-bottom: 10px;">
+                <label class="music-group-label">ЯЗЫК ИСПОЛНЕНИЯ ВОКАЛА:</label>
+                <div class="music-selector-chips" id="music-lang-chips">
+                    <button type="button" class="lang-choice-btn active" data-lang="Русский">🇷🇺 Русский</button>
+                    <button type="button" class="lang-choice-btn" data-lang="Кыргызча">🇰🇬 Кыргызча</button>
+                    <button type="button" class="lang-choice-btn" data-lang="English">🇬🇧 English</button>
+                    <button type="button" class="lang-choice-btn" data-lang="Қазақша">🇰🇿 Қазақша</button>
+                    <button type="button" class="lang-choice-btn" data-lang="Türkçe">🇹🇷 Türkçe</button>
+                </div>
+            </div>
+
+            <!-- Сенсорная клавиатура на экране -->
+            <div id="kiosk-virtual-keyboard" class="virtual-keyboard-box"></div>
+
+            <div class="modal-actions" style="margin-top: 14px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                <button type="button" id="music-theme-cancel-btn" class="action-btn cancel-btn" style="min-width: 170px;">
+                    ← НА ГЛАВНУЮ
+                </button>
+                <button type="button" id="music-theme-create-btn" class="action-btn primary-btn" style="min-width: 280px; font-weight: 800; font-size: 15px; background: linear-gradient(135deg, var(--primary, #d4a043) 0%, #b88628 100%); color: #000; border: none; box-shadow: 0 4px 20px rgba(212,160,67,0.35);">
+                    🎵 СОЗДАТЬ ТРЕК • 290 СОМ ➔
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 0.7: DIRECT FAIRYTALE STUDIO (АУДИОСКАЗКА) -->
+        <div id="step-fairytale" class="step-view" style="display:none; max-width: 760px; margin: 0 auto;">
+            <div style="text-align: center; margin-bottom: 6px;">
+                <span class="step-badge" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; background: rgba(212, 160, 67, 0.15); border: 1px solid rgba(212, 160, 67, 0.5); color: var(--primary, #d4a043); letter-spacing: 0.5px;">
+                    🪄 ВОЛШЕБНАЯ АУДИОКНИГА • ИИ
+                </span>
+            </div>
+            <h2 class="modal-title" style="margin-top: 4px; margin-bottom: 4px; text-align: center; font-size: 24px; font-weight: 800;">ПЕРСОНАЛЬНАЯ СКАЗКА</h2>
+            <p class="modal-subtitle" style="text-align: center; max-width: 580px; margin: 0 auto 12px auto; font-size: 13px; color: var(--text-dim, #94a3b8);">
+                Укажите имя ребенка, выберите тему и настроение. ИИ создаст красивую 3D-обложку, напишет добрую сказку и озвучит живым сказочным голосом!
+            </p>
+
+            <!-- 1. ЯЗЫК СКАЗКИ -->
+            <div class="music-form-group" style="margin-bottom: 12px;">
+                <label class="music-group-label">ЯЗЫК СКАЗКИ И ОЗВУЧКИ:</label>
+                <div class="music-selector-chips" id="fairytale-lang-chips">
+                    <button type="button" class="lang-choice-btn active" data-lang="Русский" data-lang-code="ru">🇷🇺 Русский</button>
+                    <button type="button" class="lang-choice-btn" data-lang="Кыргызча" data-lang-code="kg">🇰🇬 Кыргызча</button>
+                </div>
+            </div>
+
+            <!-- 2. ИМЯ И ВОЗРАСТ РЕБЕНКА -->
+            <div class="music-form-group">
+                <label class="music-group-label">ИМЯ И ВОЗРАСТ ГЛАВНОГО ГЕРОЯ (РЕБЕНКА):</label>
+                <div class="music-input-wrap">
+                    <input type="text" id="fairytale-input-child" class="kiosk-touch-input active-focus" placeholder="Например: Амир, 5 лет (любит звезды и динозавров)..." maxlength="100" autocomplete="off" inputmode="none" readonly style="cursor: pointer;">
+                    <button type="button" id="fairytale-child-clear-btn" class="input-clear-btn" title="Очистить">&times;</button>
+                </div>
+            </div>
+
+            <!-- 3. ТЕМА СКАЗКИ (БЫСТРЫЕ ЧИПЫ + ПОЛЕ) -->
+            <div class="music-form-group">
+                <label class="music-group-label">О ЧЁМ СКАЗКА (ВЫБЕРИТЕ ИЛИ НАПИШИТЕ):</label>
+                <div class="music-selector-chips" id="fairytale-theme-chips" style="margin-bottom: 8px;">
+                    <button type="button" class="lang-choice-btn" data-theme="Космос и звездолет">🚀 Космос и звезды</button>
+                    <button type="button" class="lang-choice-btn" data-theme="Дружелюбный динозаврик">🦖 Динозаврик</button>
+                    <button type="button" class="lang-choice-btn" data-theme="Принцесса и волшебный замок">👑 Принцесса и замок</button>
+                    <button type="button" class="lang-choice-btn" data-theme="Тайна волшебного леса">🌲 Волшебный лес</button>
+                    <button type="button" class="lang-choice-btn" data-theme="Ожившие любимые игрушки">🧸 Ожившие игрушки</button>
+                    <button type="button" class="lang-choice-btn" data-theme="Храбрый маленький львенок">🦁 Храбрый львенок</button>
+                    <button type="button" class="lang-choice-btn" data-theme="Первый день в садике">🎒 Первый день в садике</button>
+                </div>
+                <div class="music-input-wrap">
+                    <input type="text" id="fairytale-input-theme" class="kiosk-touch-input" placeholder="Или напишите свою тему (например: подводное царство...)" maxlength="120" autocomplete="off" inputmode="none" readonly style="cursor: pointer;">
+                    <button type="button" id="fairytale-theme-clear-btn" class="input-clear-btn" title="Очистить">&times;</button>
+                </div>
+            </div>
+
+            <!-- 4. НАСТРОЕНИЕ И ХАРАКТЕР -->
+            <div class="music-form-group" style="margin-bottom: 12px;">
+                <label class="music-group-label">ХАРАКТЕР И НАСТРОЕНИЕ СКАЗКИ:</label>
+                <div class="music-selector-chips" id="fairytale-mood-chips">
+                    <button type="button" class="lang-choice-btn active" data-mood="Колыбельная на ночь">🌙 Успокаивающая колыбельная (на ночь)</button>
+                    <button type="button" class="lang-choice-btn" data-mood="Веселое приключение">✨ Захватывающее приключение</button>
+                    <button type="button" class="lang-choice-btn" data-mood="О дружбе и доброте">💖 О доброте и дружбе</button>
+                </div>
+            </div>
+
+            <!-- Сенсорная клавиатура на экране -->
+            <div id="fairytale-virtual-keyboard" class="virtual-keyboard-box"></div>
+
+            <div class="modal-actions" style="margin-top: 14px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                <button type="button" id="fairytale-cancel-btn" class="action-btn cancel-btn" style="min-width: 170px;">
+                    ← НА ГЛАВНУЮ
+                </button>
+                <button type="button" id="fairytale-create-btn" class="action-btn primary-btn" style="min-width: 290px; font-weight: 800; font-size: 15px; background: linear-gradient(135deg, #d4a043 0%, #f59e0b 50%, #b45309 100%); color: #000; border: none; box-shadow: 0 4px 25px rgba(212,160,67,0.45);">
+                    🪄 СОЗДАТЬ СКАЗКУ • 290 СОМ ➔
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 1: CAMERA PREVIEW -->
+        <div id="step-camera" class="step-view" style="display:none;">
+            <h2 class="modal-title" id="cam-modal-title">СЪЁМКА ФОТО</h2>
+            <p class="modal-subtitle" id="cam-subtitle">Встаньте по центру и смотрите в камеру</p>
+
+            <!-- ПЕРЕКЛЮЧАТЕЛЬ ИСТОЧНИКА КАМЕРЫ -->
+            <div class="cam-source-tabs">
+                <button type="button" class="cam-source-tab active" id="tab-kiosk-cam">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    КАМЕРА КИОСКА
+                </button>
+                <button type="button" class="cam-source-tab" id="tab-phone-cam">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                    КАМЕРА ТЕЛЕФОНА
+                </button>
+                <!-- Скрытая заглушка для совместимости со скриптами -->
+                <button type="button" id="switch-cam-btn" style="display: none !important;"><span id="switch-cam-label"></span></button>
+            </div>
+
+            <!-- ПАНЕЛЬ УПРАВЛЕНИЯ КАМЕРОЙ (СКРЫТА ДЛЯ ГОСТЕЙ) -->
+            <div id="cam-settings-bar" style="display: none !important;">
+                <select id="cam-device-select" style="background: rgba(20,20,30,0.9); border: 1px solid rgba(212,160,67,0.5); color: #fff; padding: 7px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; outline: none; cursor: pointer; max-width: 280px;">
+                    <option value="">📷 Поиск камер...</option>
+                </select>
+
+                <div style="display: inline-flex; background: rgba(20,20,30,0.9); border: 1px solid rgba(212,160,67,0.5); border-radius: 12px; padding: 3px; gap: 4px;">
+                    <button type="button" id="btn-res-1080" class="res-toggle-btn active" style="background: var(--primary); color: #000; border: none; padding: 6px 14px; border-radius: 9px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.2s;">
+                        ⚡ 1080p FHD
+                    </button>
+                    <button type="button" id="btn-res-720" class="res-toggle-btn" style="background: transparent; color: #aaa; border: none; padding: 6px 14px; border-radius: 9px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.2s;">
+                        🚀 720p (30 FPS)
+                    </button>
+                </div>
+
+                <button type="button" id="open-diag-btn" style="background: rgba(212,160,67,0.15); border: 1px solid rgba(212,160,67,0.5); color: var(--primary); padding: 7px 14px; border-radius: 12px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.2s;">
+                    🔍 ДИАГНОСТИКА
+                </button>
+            </div>
+
+            <!-- ПРЕВЬЮ КАМЕРЫ КИОСКА -->
+            <div class="webcam-box" id="webcam-live-box">
+                <video id="webcam" autoplay playsinline muted></video>
+                <canvas id="photo-canvas" style="display:none;"></canvas>
+                <div class="webcam-hud">
+                    <div id="cam-info-badge" class="cam-info-badge" style="display: none !important;"></div>
+                    <div id="cam-rec-badge" style="display: none; position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(220, 38, 38, 0.95); color: #fff; padding: 7px 20px; border-radius: 24px; font-size: 14px; font-weight: 800; letter-spacing: 0.5px; z-index: 25; box-shadow: 0 0 25px rgba(220, 38, 38, 0.7); align-items: center; gap: 9px; border: 1px solid rgba(255,255,255,0.4);">
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background: #ffffff; display: inline-block;"></span>
+                        <span>ИДЁТ ЗАПИСЬ: <span id="cam-rec-countdown">4</span> СЕК</span>
+                    </div>
+                    <div class="hud-corner top-left"></div>
+                    <div class="hud-corner top-right"></div>
+                    <div class="hud-corner bottom-left"></div>
+                    <div class="hud-corner bottom-right"></div>
+                    <div id="countdown-overlay" class="countdown-num"></div>
+                    <div id="cam-fps-warning" style="display: none !important;"></div>
+                </div>
+            </div>
+
+            <!-- ПАНЕЛЬ QR ДЛЯ КАМЕРЫ ТЕЛЕФОНА -->
+            <div id="phone-cam-panel">
+                <img id="phone-qr-img" src="" alt="QR-код для телефона">
+                <p class="phone-cam-instruction">
+                    Отсканируйте QR-код камерой телефона.<br>
+                    Откройте ссылку, сделайте снимок —<br>
+                    <strong>фото появится на экране киоска.</strong>
+                </p>
+                <div id="phone-cam-status">
+                    <div class="pulse-dot"></div>
+                    ОЖИДАНИЕ ФОТО С ТЕЛЕФОНА...
+                </div>
+            </div>
+
+            <!-- ВЫБОР ТАЙМЕРА ДЛЯ СЪЁМКИ (3, 5, 8, 10 СЕКУНД) -->
+            <div class="timer-select-wrapper" id="timer-select-wrapper">
+                <span class="timer-select-label" id="timer-select-label">ТАЙМЕР СЪЁМКИ:</span>
+                <div class="timer-options" id="timer-options-container">
+                    <button type="button" class="timer-btn active" data-timer="3">3 СЕК</button>
+                    <button type="button" class="timer-btn" data-timer="5">5 СЕК</button>
+                    <button type="button" class="timer-btn" data-timer="8">8 СЕК</button>
+                    <button type="button" class="timer-btn" data-timer="10">10 СЕК</button>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="snap-btn" class="action-btn primary-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span id="snap-btn-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg></span>
+                    <span id="snap-btn-text">СДЕЛАТЬ ФОТО</span>
+                </button>
+            </div>
+        </div>
+
+
+        <!-- STEP 1.5: CONFIRM & RETAKE PHOTO / VIDEO -->
+        <div id="step-confirm" class="step-view" style="display:none;">
+            <h2 class="modal-title" id="confirm-modal-title">ОТЛИЧНЫЙ КАДР?</h2>
+            <p class="modal-subtitle" id="confirm-modal-subtitle">Проверьте снимок перед отправкой на создание портрета</p>
+
+            <div class="webcam-box" id="confirm-photo-box" style="position: relative; background: #000;">
+                <img id="photo-preview-confirm" src="" alt="Ваш снимок" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+                <video id="video-preview-confirm" src="" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: contain; display: none;"></video>
+            </div>
+
+            <!-- ВЫБОР РАЗРЕШЕНИЯ (СКРЫТ: ТОЛЬКО 1K ДЛЯ МАКСИМАЛЬНОЙ СКОРОСТИ СТУДИИ) -->
+            <div class="ai-res-control-box" id="ai-res-control-box" style="display: none !important;">
+                <span class="ai-res-label">⚡ КАЧЕСТВО СЪЕМКИ:</span>
+                <div class="ai-res-pills" id="ai-res-pills">
+                    <button type="button" class="ai-res-pill active" data-res="1K">
+                        <span class="pill-res">1K</span>
+                        <span class="pill-sub">Быстро</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+                <button id="retake-btn" class="action-btn cancel-btn" style="min-width: 180px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                    <span>ПЕРЕСНЯТЬ</span>
+                </button>
+                <button id="confirm-photo-btn" class="action-btn primary-btn" style="min-width: 220px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span>ПОДТВЕРДИТЬ</span>
+                </button>
+            </div>
+        </div>
+
+
+        <!-- STEP 2: PAYMENT (SOM / OBUSINESS ELQR) -->
+        <div id="step-payment" class="step-view" style="display:none;">
+            <h2 class="modal-title">ОПЛАТА</h2>
+            <p class="modal-subtitle">Отсканируйте QR-код через любое банковское приложение</p>
+
+            <div class="pay-summary-card">
+                <div class="pay-summary-left">
+                    <img id="pay-selected-thumb" src="images/photo1.jpg" alt="Превью стиля" class="pay-thumb">
+                    <video id="pay-selected-video" class="pay-thumb" autoplay loop muted playsinline style="display:none;"></video>
+                    <div class="pay-details">
+                        <span class="pay-label">ВЫБРАННЫЙ ШАБЛОН:</span>
+                        <div id="pay-style-title" class="pay-title">ВЫБРАННЫЙ СТИЛЬ</div>
+                        <div class="pay-subtext" style="display: none !important;"></div>
+                    </div>
+                </div>
+                <div class="pay-summary-right">
+                    <span class="pay-label">К ОПЛАТЕ:</span>
+                    <div class="pay-amount"><span id="pay-amount-val">290</span> <span class="currency">СОМ</span></div>
+                </div>
+            </div>
+
+            <div id="qr-payment-zone" class="qr-pay-box">
+                <div class="qr-container-card">
+                    <div id="qr-code-wrapper" class="qr-code-img" style="background: #ffffff; padding: 16px 20px 20px 20px; border-radius: 22px; box-shadow: 0 12px 35px rgba(0,0,0,0.65); display: inline-flex; flex-direction: column; align-items: center;">
+                        <img id="elqr-img" src="images/finik_elqr_badge.png" alt="Finik ELQR" class="elqr-real-img" style="width: 270px; height: auto; max-height: 285px; object-fit: contain; display: block; border-radius: 12px;">
+                    </div>
+                </div>
+
+                <div class="payment-status-indicator">
+                    <div class="pulse-dot"></div>
+                    <span id="payment-status-text">Ожидание оплаты...</span>
+                </div>
+
+                <div class="pay-actions-row">
+                    <button id="sim-pay-btn" class="action-btn success-btn">ТЕСТ: ИМИТИРОВАТЬ ОПЛАТУ</button>
+                    <button id="cancel-pay-btn" class="action-btn cancel-btn">← ДРУГОЙ ШАБЛОН</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 3: PROCESSING (MODERN AI NEON PROGRESS BAR) -->
+        <div id="step-processing" class="step-view" style="display:none;">
+            <div class="ai-processing-card">
+                <!-- Футуристический светящийся световой реактор -->
+                <div class="ai-processing-visual">
+                    <div class="ai-pulse-glow"></div>
+                    <div class="ai-orbit ai-orbit-outer"></div>
+                    <div class="ai-orbit ai-orbit-inner"></div>
+                    <div class="ai-core-icon">
+                        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <h2 class="modal-title ai-processing-title" id="ai-processing-main-title">СОЗДАНИЕ ПОРТРЕТА</h2>
+
+                <!-- Премиальный современный прогресс-бар -->
+                <div class="ai-progress-card">
+                    <div class="ai-progress-top">
+                        <div class="ai-progress-status-wrap">
+                            <span class="ai-status-dot"></span>
+                            <span id="ai-status-text" class="ai-status-label">Обработка фотографии...</span>
+                        </div>
+                        <span id="ai-progress-percent" class="ai-progress-val">0%</span>
+                    </div>
+
+                    <div class="ai-progress-track">
+                        <div id="ai-progress-fill" class="ai-progress-fill" style="width: 0%;">
+                            <span class="ai-progress-shimmer"></span>
+                            <span class="ai-progress-head-glow"></span>
+                        </div>
+                    </div>
+
+                    <!-- Подсказка времени ожидания -->
+                    <div class="ai-wait-hint">
+                        <span class="ai-wait-icon">⏳</span>
+                        <span>Обычно занимает от <strong>1 до 3 минут</strong> — пожалуйста, не уходите</span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 4: RESULT & DOWNLOAD QR (УКРУПНЁННЫЙ ВИД РЕЗУЛЬТАТА) -->
+        <div id="step-result" class="step-view" style="display:none;">
+            <h2 class="modal-title">ВАШ РЕЗУЛЬТАТ ГОТОВ!</h2>
+            <p class="modal-subtitle">Отсканируйте QR-код камерой телефона, чтобы сохранить фото или видео</p>
+
+            <div class="result-content">
+                <div class="result-image-box">
+                    <img id="result-img" src="" alt="Ваш результат">
+                    <video id="result-video" src="" autoplay loop muted playsinline style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 20px;"></video>
+                    
+                    <!-- ВИДЕО-СКАЗКА: ОБЛОЖКА И ЖИВЫЕ СУБТИТРЫ (С ОЗВУЧКОЙ ELEVENLABS 4) -->
+                    <div id="result-fairytale-box" style="display: none; position: relative; width: 100%; height: 100%; border-radius: 20px; overflow: hidden; background: #0b0517; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+                        <img id="fairytale-cover-img" src="/images/fairytale_cover.jpg" style="width: 100%; height: 100%; object-fit: cover; filter: brightness(0.92);" alt="Сказка">
+                        <div id="fairytale-subtitles-box" style="position: absolute; bottom: 25px; left: 16px; right: 16px; text-align: center; background: rgba(10, 5, 20, 0.78); backdrop-filter: blur(12px); border: 1px solid rgba(212, 160, 67, 0.45); border-radius: 16px; padding: 14px 18px; box-shadow: 0 8px 30px rgba(0,0,0,0.7);">
+                            <div id="fairytale-subtitles-text" style="color: #ffffff; font-size: 19px; font-weight: 800; line-height: 1.45; text-shadow: 0 2px 10px rgba(0,0,0,0.9); font-family: 'Outfit', sans-serif;">
+                                Загрузка сказки...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- АУДИОПЛЕЕР ДЛЯ СОЗДАНИЯ ТРЕКОВ (ПРЕМИУМ СТУДИЯ TRENDUM SOUND) -->
+                    <div id="result-audio-box" class="trendum-studio-card">
+                        <!-- Верхний бейдж качества -->
+                        <div class="studio-top-bar">
+                            <span class="studio-live-dot"></span>
+                            <span class="studio-badge-text">TRENDUM MASTER SOUND • 24-BIT LOSSLESS</span>
+                        </div>
+
+                        <!-- Вращающийся виниловый диск (Vinyl Record Player) -->
+                        <div class="studio-vinyl-wrap" id="studio-vinyl-disc">
+                            <div class="studio-vinyl-body">
+                                <div class="studio-vinyl-grooves"></div>
+                                <div class="studio-vinyl-label">
+                                    <div class="studio-vinyl-center-dot"></div>
+                                    <div class="studio-vinyl-brand">TRENDUM</div>
+                                    <div class="studio-vinyl-sub">STUDIO AI</div>
+                                </div>
+                            </div>
+                            <div class="studio-vinyl-glow"></div>
+                        </div>
+
+                        <!-- Информация о треке -->
+                        <div class="studio-track-info">
+                            <div class="studio-genre-pill" id="result-audio-genre">🎵 ПЕРСОНАЛЬНЫЙ СТУДИЙНЫЙ СИНГЛ</div>
+                            <div class="studio-track-title" id="result-audio-title">Ваш персональный трек</div>
+                        </div>
+
+                        <!-- Переключатель 2 вариантов трека (Студийные табы) -->
+                        <div id="audio-variants-switcher" class="studio-variants-bar" style="display: none;">
+                            <button type="button" id="btn-audio-var-1" class="studio-var-card active">
+                                <div class="studio-var-indicator"></div>
+                                <div class="studio-var-content">
+                                    <span class="studio-var-name">ВАРИАНТ 1</span>
+                                    <span class="studio-var-sub">Основной микс</span>
+                                </div>
+                                <span class="studio-var-play-icon">▶</span>
+                            </button>
+                            <button type="button" id="btn-audio-var-2" class="studio-var-card">
+                                <div class="studio-var-indicator"></div>
+                                <div class="studio-var-content">
+                                    <span class="studio-var-name">ВАРИАНТ 2</span>
+                                    <span class="studio-var-sub">Вторая версия</span>
+                                </div>
+                                <span class="studio-var-play-icon">▶</span>
+                            </button>
+                        </div>
+
+                        <!-- КАСТОМНЫЙ ПРЕМИАЛЬНЫЙ АУДИОПЛЕЕР (Без дефолтного белого Chrome контрола) -->
+                        <div class="studio-custom-player" id="studio-custom-player">
+                            <!-- Скрытый нативный аудиоплеер для воспроизведения звука через JS -->
+                            <audio id="result-audio-player" preload="auto" style="display: none;"></audio>
+                            <audio id="result-audio-bg-player" preload="auto" loop style="display: none;"></audio>
+
+                            <!-- Анимированный спектральный эквалайзер -->
+                            <div class="studio-eq-spectrum" id="studio-eq-spectrum">
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                                <span class="studio-eq-bar"></span>
+                            </div>
+
+                            <!-- Интерактивная полоса прогресса (таймлайн) -->
+                            <div class="studio-timeline-box" id="studio-timeline-box">
+                                <span class="studio-time-label" id="studio-current-time">0:00</span>
+                                <div class="studio-progress-track" id="studio-progress-track">
+                                    <div class="studio-progress-fill" id="studio-progress-fill" style="width: 0%;"></div>
+                                    <div class="studio-progress-thumb" id="studio-progress-thumb" style="left: 0%;"></div>
+                                </div>
+                                <span class="studio-time-label" id="studio-total-time">0:00</span>
+                            </div>
+
+                            <!-- Кнопки управления воспроизведением -->
+                            <div class="studio-controls-row">
+                                <button type="button" class="studio-btn-seek" id="studio-seek-backward" title="Назад на 10 сек">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg>
+                                </button>
+
+                                <button type="button" class="studio-btn-play" id="studio-play-toggle" title="Воспроизвести / Пауза">
+                                    <svg id="studio-play-icon" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                                    <svg id="studio-pause-icon" width="26" height="26" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                                </button>
+
+                                <button type="button" class="studio-btn-seek" id="studio-seek-forward" title="Вперед на 10 сек">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>
+                                </button>
+                            </div>
+
+                            <!-- Бейдж фоновой сказочной музыки -->
+                            <div id="studio-bg-track-badge" style="display: none; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: #f3d289; margin-top: 12px; font-weight: 700; background: rgba(212,160,67,0.12); padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(212,160,67,0.3);">
+                                <span>🪄 Фоновая музыка:</span>
+                                <span id="studio-bg-track-name" style="color: #fff;"></span>
+                                <span style="font-size: 11px; opacity: 0.75;">(BGM ~18%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="result-qr-box">
+                    <span class="qr-badge-title">📱 СКАЧАТЬ НА ТЕЛЕФОН</span>
+                    <div class="result-qr">
+                        <img id="result-qr-img" src="" alt="QR-код для скачивания" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                    <span class="qr-timer">Доступно 24 часа • HD качество</span>
+
+                    <!-- КАРТОЧКА ГДЕ ПРИОБРЕСТИ ВЕЩЬ (ДЛЯ РАЗДЕЛА ПРИМЕРКА) -->
+                    <div id="tryon-location-info-card" class="tryon-location-card" style="display: none;">
+                        <div class="tryon-loc-header">
+                            <span class="tryon-loc-tag">🛍️ ГДЕ КУПИТЬ ЭТУ ВЕЩЬ</span>
+                            <span class="tryon-loc-price" id="tryon-loc-price-val">450 СОМ</span>
+                        </div>
+                        <div class="tryon-loc-item-title" id="tryon-loc-title-val">Толстовка Trendum Oversize</div>
+                        <div class="tryon-loc-place-box">
+                            <span class="tryon-loc-pin">📍</span>
+                            <span id="tryon-loc-place-val">Рынок Дордой, ряд 5, контейнер 142</span>
+                        <div class="tryon-loc-hint">Покажите это фото продавцу в контейнере для покупки!</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button id="finish-btn" class="action-btn primary-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 220px; padding: 18px 36px; font-size: 16px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    <span>В НАЧАЛО</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP ROAST: СТЕНДАП-ПРОЖАРКА & КАРИКАТУРА -->
+        <div id="step-roast-result" class="step-view" style="display:none;">
+            <h2 class="modal-title" style="color: #ff453a;">🔥 ВЫ БЫЛИ ПРОЖАРЕНЫ!</h2>
+            <p class="modal-subtitle">Забирайте постер и карикатуру в Instagram Stories</p>
+
+            <div class="result-content" style="gap: 36px; align-items: center; justify-content: center;">
+                <!-- Постер карикатуры со штампом "ПРОЖАРЕН" -->
+                <div class="roast-poster-box">
+                    <img id="roast-caricature-img" src="" alt="Карикатура" class="roast-poster-img">
+                    <div class="roast-stamp">ПРОЖАРЕН</div>
+                </div>
+
+                <!-- Блок вердикта комика и вайб-метр -->
+                <div class="roast-info-card">
+                    <div class="roast-bubble">
+                        <div id="roast-punch-title" class="roast-title-text">ОХРАННИК ПАКЕТОВ ИЗ ZARA</div>
+                        <div id="roast-speech-body" class="roast-speech-text">
+                            «Так... взгляд человека, который пришел в молл ради бесплатного вайфая. Пафоса на миллион!»
+                        </div>
+                    </div>
+
+                    <!-- Вайб-метр: харизма и статусы -->
+                    <div class="vibe-meter-box">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                            <span style="font-size: 11px; font-weight: 800; color: var(--text-dim); letter-spacing: 1px;">⚡ УРОВЕНЬ ХАРИЗМЫ:</span>
+                            <span id="roast-charisma-val" style="font-size: 18px; font-weight: 900; color: #ff453a;">18%</span>
+                        </div>
+                        <div class="charisma-bar-bg">
+                            <div id="roast-charisma-bar" class="charisma-bar-fill" style="width: 18%;"></div>
+                        </div>
+
+                        <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px;">
+                            <div style="font-size: 13px; color: var(--text-muted);">
+                                ⚠️ <strong style="color: #fff;">Главный грех:</strong> <span id="roast-flaw-val">Аура рассрочки MBank</span>
+                            </div>
+                            <div style="font-size: 13px; color: var(--text-muted);">
+                                🏬 <strong style="color: #fff;">Статус в ТЦ:</strong> <span id="roast-mall-val">Эксперт по фудкорту</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QR-код скачивания на телефон -->
+                    <div style="display: flex; align-items: center; gap: 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--primary-border); border-radius: 18px; padding: 12px 18px;">
+                        <div style="width: 100px; height: 100px; background: #fff; padding: 6px; border-radius: 12px; flex-shrink: 0;">
+                            <img id="roast-qr-img" src="" alt="QR" style="width: 100%; height: 100%; object-fit: contain;">
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; font-weight: 800; color: var(--primary); letter-spacing: 1px;">📱 СКАЧАТЬ В СТОРИС</div>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+                                Сканируйте камерой, чтобы забрать карикатуру и аудиозапись стендапера.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 24px; display: flex; gap: 14px; justify-content: center;">
+                <button id="roast-replay-btn" class="action-btn cancel-btn" style="min-width: 200px; padding: 16px;">
+                    🔊 СЛУШАТЬ СНОВА
+                </button>
+                <button id="roast-finish-btn" class="action-btn primary-btn" style="min-width: 200px; padding: 16px;">
+                    В НАЧАЛО
+                </button>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+
+<!-- =====================================================
+     МОДАЛЬНОЕ ОКНО АППАРАТНОЙ ДИАГНОСТИКИ КИОСКА
+===================================================== -->
+<div id="diag-modal" class="modal-overlay" style="display:none; z-index: 100000; background: rgba(5, 5, 10, 0.96);">
+    <div class="modal-content" style="max-width: 860px; width: 95vw; text-align: left; padding: 28px; border: 1px solid rgba(212,160,67,0.6); box-shadow: 0 20px 60px rgba(0,0,0,0.95), 0 0 40px rgba(212,160,67,0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 26px;">🔍</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: 0.5px;">АППАРАТНЫЙ ЛОГ И ДИАГНОСТИКА КИОСКА</h3>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Замер частоты сенсора камеры, времени затвора, GPU и браузера</div>
+                </div>
+            </div>
+            <button id="close-diag-btn" type="button" style="background: rgba(255,255,255,0.1); border: none; color: #fff; width: 36px; height: 36px; border-radius: 50%; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">&times;</button>
+        </div>
+
+        <!-- КЛЮЧЕВЫЕ МЕТРИКИ КАРТОЧКАМИ -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px;">
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">Частота камеры</div>
+                <div id="diag-cam-fps" style="font-size: 28px; font-weight: 900; color: #ef4444; margin-top: 4px;">-- FPS</div>
+                <div id="diag-cam-status" style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Замер...</div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">Интервал кадров (Delta)</div>
+                <div id="diag-frame-delta" style="font-size: 28px; font-weight: 900; color: #f59e0b; margin-top: 4px;">-- мс</div>
+                <div id="diag-frame-detail" style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Выдержка сенсора</div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">FPS Экрана / UI</div>
+                <div id="diag-ui-fps" style="font-size: 28px; font-weight: 900; color: #4ade80; margin-top: 4px;">-- FPS</div>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">Отрисовка браузера</div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">Фактич. Разрешение</div>
+                <div id="diag-cam-res" style="font-size: 22px; font-weight: 900; color: #fff; margin-top: 8px;">-- × --</div>
+                <div id="diag-res-target" style="font-size: 11px; color: #94a3b8; margin-top: 4px;">--</div>
+            </div>
+        </div>
+
+        <!-- АВТОМАТИЧЕСКИЙ ВЕРДИКТ -->
+        <div id="diag-verdict-box" style="background: rgba(212,160,67,0.1); border: 1px solid rgba(212,160,67,0.5); border-radius: 14px; padding: 16px; margin-bottom: 18px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; color: var(--primary); margin-bottom: 6px;">
+                <span>💡</span> ВЕРДИКТ И ПРИЧИНА ТОРМОЗОВ:
+            </div>
+            <div id="diag-verdict-text" style="font-size: 13px; color: #e2e8f0; line-height: 1.55;">
+                Сбор телеметрии камеры...
+            </div>
+        </div>
+
+        <!-- ПОДРОБНЫЕ ДАННЫЕ В ТАБЛИЦЕ -->
+        <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; font-family: monospace; font-size: 12px; line-height: 1.6; max-height: 160px; overflow-y: auto;">
+            <div style="color: #94a3b8;"><b>📷 Камера:</b> <span id="diag-cam-name" style="color: #fff;">--</span></div>
+            <div style="color: #94a3b8;"><b>🎮 GPU / WebGL:</b> <span id="diag-gpu-info" style="color: #fff;">--</span></div>
+            <div style="color: #94a3b8;"><b>💻 CPU Cores / RAM:</b> <span id="diag-cpu-ram" style="color: #fff;">--</span></div>
+            <div style="color: #94a3b8;"><b>⚙️ Настройки потока:</b> <span id="diag-track-settings" style="color: #fff;">--</span></div>
+            <div style="color: #94a3b8;"><b>⏱️ Дельты кадров (мс):</b> <span id="diag-recent-deltas" style="color: #38bdf8;">--</span></div>
+        </div>
+
+        <!-- ДЕЙСТВИЯ -->
+        <div style="display: flex; gap: 12px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
+            <button id="copy-diag-btn" type="button" class="action-btn cancel-btn" style="padding: 12px 20px; font-size: 13px; border-radius: 12px; cursor: pointer;">
+                📋 СКОПИРОВАТЬ ТЕКСТ
+            </button>
+            <button id="send-diag-btn" type="button" class="action-btn primary-btn" style="padding: 12px 24px; font-size: 13px; font-weight: 800; border-radius: 12px; cursor: pointer; background: var(--primary); color: #000;">
+                🚀 ОТПРАВИТЬ ЛОГ НА СЕРВЕР
+            </button>
+        </div>
+        <div id="diag-send-status" style="font-size: 13px; font-weight: 700; margin-top: 10px; text-align: right; color: #4ade80; display: none;"></div>
+    </div>
+</div>
+
+<script src="qrcode.min.js"></script>
+<script src="script.js?v=20261020_v11"></script>
+
+<!-- Белая вспышка при съёмке -->
+<div id="camera-flash"></div>
+
 </body>
 </html>

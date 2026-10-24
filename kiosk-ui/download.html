@@ -585,17 +585,26 @@
                     btnDownloadText.textContent = 'СКАЧАТЬ ВИДЕО (MP4) 🎬';
                 }
 
-                videoEl.src = fileUrl;
-                videoEl.muted = false; // Включаем звук для воспроизведения видеосказки
-                videoEl.controls = true;
-                videoEl.onloadeddata = () => {
+                if (fileUrl.includes('.mp3') || fileUrl.includes('/audio/') || fileUrl.includes('.wav')) {
+                    photoEl.src = '/images/fairytale_cover.jpg';
+                    photoEl.style.display = 'block';
                     loader.style.display = 'none';
-                    videoEl.style.display = 'block';
-                };
-                videoEl.onerror = () => {
-                    loader.style.display = 'none';
-                    videoEl.style.display = 'block';
-                };
+
+                    const ftAudio = new Audio(fileUrl);
+                    ftAudio.play().catch(() => {});
+                } else {
+                    videoEl.src = fileUrl;
+                    videoEl.muted = false; // Включаем звук для воспроизведения видеосказки
+                    videoEl.controls = true;
+                    videoEl.onloadeddata = () => {
+                        loader.style.display = 'none';
+                        videoEl.style.display = 'block';
+                    };
+                    videoEl.onerror = () => {
+                        loader.style.display = 'none';
+                        videoEl.style.display = 'block';
+                    };
+                }
 
                 async function triggerDownload() {
                     const orig = btnDownloadText.textContent;

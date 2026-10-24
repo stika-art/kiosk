@@ -4561,24 +4561,30 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentBgTrackUrl = null;
         let currentBgTrackName = null;
 
-        if (isAudioResult && resultAudioBox && resultAudioPlayer) {
-            if (resultImg) resultImg.style.display = 'none';
-            if (resultVideo) {
-                resultVideo.pause();
-                resultVideo.style.display = 'none';
-            }
-            resultAudioBox.style.display = 'flex';
+        const resultFairytaleBox = document.getElementById('result-fairytale-box');
+        const fairytaleSubtitlesText = document.getElementById('fairytale-subtitles-text');
 
-            if (isFairytaleSelection) {
-                if (stepResultTitle) stepResultTitle.textContent = 'ВАША ВОЛШЕБНАЯ СКАЗКА ГОТОВА! 🪄';
-                if (stepResultSubtitle) stepResultSubtitle.textContent = 'Послушайте сказку в исполнении ElevenLabs 4 и отсканируйте QR-код для загрузки';
-                if (resultAudioTitle) {
-                    const childName = guestFairytaleData?.childName || 'малыш';
-                    resultAudioTitle.textContent = `Сказка для ${childName}`;
-                }
-                if (resultAudioGenre) {
-                    resultAudioGenre.textContent = '🪄 ДЕТСКАЯ АУДИОКНИГА • ELEVENLABS 4';
-                }
+        if (isFairytaleSelection) {
+            if (resultImg) resultImg.style.display = 'none';
+            if (resultAudioBox) resultAudioBox.style.display = 'none';
+
+            if (stepResultTitle) stepResultTitle.textContent = 'ВАША ВОЛШЕБНАЯ СКАЗКА ГОТОВА! 🪄';
+            if (stepResultSubtitle) stepResultSubtitle.textContent = 'Отсканируйте QR-код, чтобы сохранить видеосказку в галерею смартфона';
+
+            // 1. Если доступно скомпилированное MP4 видео
+            if (isVideoResult && resultVideo) {
+                if (resultFairytaleBox) resultFairytaleBox.style.display = 'none';
+                resultVideo.src = finalResultUrl;
+                resultVideo.muted = false;
+                resultVideo.style.display = 'block';
+                resultVideo.play().catch(() => {
+                    resultVideo.muted = true;
+                    resultVideo.play().catch(() => {});
+                });
+            } else {
+                // 2. Если результат передан аудиопотоком (на Vercel) — воспроизведение видеосказки через обложку и живые субтитры
+                if (resultVideo) resultVideo.style.display = 'none';
+                if (resultFairytaleBox) resultFairytaleBox.style.display = 'block';
 
                 currentBgTrackUrl = data.bgTrackUrl || null;
                 currentBgTrackName = data.bgTrackName || 'Сказочная мелодия';
@@ -4600,13 +4606,45 @@ document.addEventListener('DOMContentLoaded', () => {
                     resultAudioBgPlayer.volume = 0.18;
                     resultAudioBgPlayer.currentTime = 0;
                 }
-                if (studioBgBadge && currentBgTrackUrl) {
-                    studioBgBadge.style.display = 'inline-flex';
-                    if (studioBgName) studioBgName.textContent = currentBgTrackName;
-                } else if (studioBgBadge) {
-                    studioBgBadge.style.display = 'none';
+
+                if (resultAudioPlayer) {
+                    resultAudioPlayer.src = finalResultUrl;
+                    resultAudioPlayer.currentTime = 0;
+                    resultAudioPlayer.play().catch(() => {});
+
+                    resultAudioPlayer.onplay = () => {
+                        if (resultAudioBgPlayer && resultAudioBgPlayer.src) resultAudioBgPlayer.play().catch(() => {});
+                    };
+                    resultAudioPlayer.onpause = () => {
+                        if (resultAudioBgPlayer) resultAudioBgPlayer.pause();
+                    };
+                    resultAudioPlayer.onended = () => {
+                        if (resultAudioBgPlayer) { resultAudioBgPlayer.pause(); resultAudioBgPlayer.currentTime = 0; }
+                    };
+
+                    // Живая синхронизация субтитров со звуком
+                    const childName = guestFairytaleData?.childName || 'малыш';
+                    const narrativeText = data.speechText || data.prompt || selectedStylePrompt || `Сказка для ${childName}`;
+                    const sentences = narrativeText.split(/(?<=[.!?])\s+/).filter(Boolean);
+                    if (fairytaleSubtitlesText) {
+                        fairytaleSubtitlesText.textContent = sentences[0] || `Сказка для ${childName}`;
+                        resultAudioPlayer.ontimeupdate = () => {
+                            if (!resultAudioPlayer.duration) return;
+                            const progress = resultAudioPlayer.currentTime / resultAudioPlayer.duration;
+                            const idx = Math.min(sentences.length - 1, Math.floor(progress * sentences.length));
+                            if (sentences[idx]) fairytaleSubtitlesText.textContent = sentences[idx];
+                        };
+                    }
                 }
-            } else {
+            }
+        } else if (isAudioResult && resultAudioBox && resultAudioPlayer) {
+            if (resultImg) resultImg.style.display = 'none';
+            if (resultVideo) {
+                resultVideo.pause();
+                resultVideo.style.display = 'none';
+            }
+            if (resultFairytaleBox) resultFairytaleBox.style.display = 'none';
+            resultAudioBox.style.display = 'flex';
                 if (stepResultTitle) stepResultTitle.textContent = 'ВАШ МУЗЫКАЛЬНЫЙ ХИТ ГОТОВ! 🎵';
                 if (stepResultSubtitle) stepResultSubtitle.textContent = 'Послушайте созданные варианты и отсканируйте QR-код для загрузки MP3';
                 if (resultAudioTitle) {
@@ -4621,7 +4659,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     resultAudioBgPlayer.pause();
                     resultAudioBgPlayer.src = '';
                 }
-            }
 
             // Кастомный студийный плеер Trendum Sound
             const studioCustomPlayer = document.getElementById('studio-custom-player');
